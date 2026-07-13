@@ -7,10 +7,20 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
+    DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
+    DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionRepository,
+    DpmBulkReviewCampaignDefinitionWorkflowOverview,
     DpmWaveSourceRef,
+    build_bulk_review_campaign_definition_launch_history_page,
+    build_bulk_review_campaign_definition_launch_package,
     build_bulk_review_campaign_definition_preview_readiness,
+    build_bulk_review_campaign_definition_workflow_overview,
+)
+from src.core.waves.campaign_definition_events import (
+    DpmBulkReviewCampaignDefinitionLifecycleEventPage,
+    build_bulk_review_campaign_definition_lifecycle_events,
 )
 from src.core.waves.campaign_definition_lifecycle import (
     retire_bulk_review_campaign_definition,
@@ -239,4 +249,88 @@ class DpmWaveCampaignApplicationService:
             ),
             requested_as_of_date=requested_as_of_date,
             actor_id=actor_id,
+        )
+
+    def get_campaign_definition_launch_package(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+        requested_as_of_date: str,
+        actor_id: str,
+        correlation_id: str | None,
+    ) -> DpmBulkReviewCampaignDefinitionLaunchPackage:
+        return build_bulk_review_campaign_definition_launch_package(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            ),
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+        )
+
+    def get_campaign_definition_workflow_overview(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+        requested_as_of_date: str,
+        actor_id: str | None,
+        active_on: date | None,
+        include_launch_package: bool,
+        correlation_id: str | None,
+        launch_history_limit: int,
+        launch_history_offset: int,
+    ) -> DpmBulkReviewCampaignDefinitionWorkflowOverview:
+        return build_bulk_review_campaign_definition_workflow_overview(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            ),
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            active_on=active_on,
+            launch_history_limit=launch_history_limit,
+            launch_history_offset=launch_history_offset,
+            include_launch_package=include_launch_package,
+            correlation_id=correlation_id,
+        )
+
+    def list_campaign_definition_lifecycle_events(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+    ) -> DpmBulkReviewCampaignDefinitionLifecycleEventPage:
+        return build_bulk_review_campaign_definition_lifecycle_events(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            )
+        )
+
+    def list_campaign_definition_launch_history(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+        limit: int,
+        offset: int,
+    ) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
+        return build_bulk_review_campaign_definition_launch_history_page(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            ),
+            limit=limit,
+            offset=offset,
         )

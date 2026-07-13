@@ -2,13 +2,22 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_launch_package_http import (
-    get_campaign_definition_launch_package_response,
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_not_found_http_exception,
 )
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
     campaign_trusted_context_required,
+)
+from src.api.routers.wave_campaign_workflow_telemetry import (
+    campaign_workflow_http_exception,
+    record_campaign_workflow_readiness,
+    record_campaign_workflow_unexpected_error,
+)
+from src.api.services.wave_campaign_application import (
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
 )
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
@@ -19,7 +28,6 @@ from src.api.routers.wave_route_parameters import (
 )
 from src.core.waves import (
     DpmBulkReviewCampaignDefinitionLaunchPackage,
-    DpmBulkReviewCampaignDefinitionRepository,
 )
 
 
@@ -47,16 +55,30 @@ def get_bulk_review_campaign_definition_launch_package(
     actor_id: CampaignLaunchActorIdRequiredQuery,
     correlation_id: CampaignLaunchCorrelationIdQuery = None,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchPackage:
-    return get_campaign_definition_launch_package_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        requested_as_of_date=requested_as_of_date,
-        actor_id=actor_id,
-        correlation_id=correlation_id,
-        repository=repository,
+    surface = "launch_package"
+    try:
+        package = application_service.get_campaign_definition_launch_package(
+            tenant_id=trusted_context.tenant_id,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_workflow_http_exception(
+            surface=surface,
+            exc=campaign_definition_not_found_http_exception(),
+        ) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_readiness(
+        surface=surface,
+        blocked=package.launch_state == "BLOCKED",
     )
+    return package
