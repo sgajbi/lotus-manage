@@ -13,6 +13,7 @@ def test_test_family_classifier_covers_representative_proof_families() -> None:
     examples = {
         "tests/unit/dpm/api/test_portfolio_memory_api.py": "api_runtime",
         "tests/unit/test_domain_data_product_contracts.py": "contract_governance",
+        "tests/unit/test_pm_quality_operations_runbook.py": "contract_governance",
         "tests/unit/test_observability_contracts.py": "observability_security",
         "tests/unit/dpm/waves/test_wave_lifecycle_commands.py": ("domain_lifecycle_methodology"),
         "tests/integration/test_health.py": "integration_runtime",

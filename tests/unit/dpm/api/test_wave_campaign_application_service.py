@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from datetime import date
 
 import pytest
 
@@ -28,14 +28,18 @@ def _service() -> DpmWaveCampaignApplicationService:
     )
 
 
-def _create_command() -> DpmCampaignDefinitionCreateCommand:
+def _create_command(
+    *,
+    campaign_id: str = "campaign-application-boundary",
+    as_of_date: str = "2026-05-10",
+) -> DpmCampaignDefinitionCreateCommand:
     return DpmCampaignDefinitionCreateCommand(
         tenant_id="tenant-sg",
-        campaign_id="campaign-application-boundary",
+        campaign_id=campaign_id,
         campaign_version="2026.05",
         display_name="Application boundary campaign",
         status="ACTIVE",
-        as_of_date="2026-05-10",
+        as_of_date=as_of_date,
         rationale="Validate campaign application service orchestration.",
         eligible_portfolio_types=["DISCRETIONARY"],
         candidates=[
@@ -292,29 +296,28 @@ def test_campaign_application_service_records_and_lists_workflow_evidence() -> N
     assert maker_checker_controls.count == 1
 
 
-def test_campaign_definition_routes_depend_on_application_service_boundary() -> None:
-    route_paths = [
-        Path("src/api/routers/wave_campaign_definition_routes.py"),
-        Path("src/api/routers/wave_campaign_definition_lifecycle_routes.py"),
-        Path("src/api/routers/wave_campaign_readiness_routes.py"),
-        Path("src/api/routers/wave_campaign_discovery_routes.py"),
-        Path("src/api/routers/wave_campaign_operating_queue_routes.py"),
-        Path("src/api/routers/wave_campaign_approval_inbox_routes.py"),
-        Path("src/api/routers/wave_campaign_workflow_board_routes.py"),
-        Path("src/api/routers/wave_campaign_assignment_plan_routes.py"),
-        Path("src/api/routers/wave_campaign_workflow_automation_routes.py"),
-        Path("src/api/routers/wave_campaign_workflow_overview_routes.py"),
-        Path("src/api/routers/wave_campaign_launch_package_routes.py"),
-        Path("src/api/routers/wave_campaign_launch_routes.py"),
-        Path("src/api/routers/wave_campaign_audit_read_routes.py"),
-        Path("src/api/routers/wave_campaign_approval_decision_evidence_routes.py"),
-        Path("src/api/routers/wave_campaign_assignment_action_evidence_routes.py"),
-        Path("src/api/routers/wave_campaign_assignment_task_evidence_routes.py"),
-        Path("src/api/routers/wave_campaign_maker_checker_evidence_routes.py"),
-    ]
+def test_campaign_application_service_centralizes_read_model_filters_and_active_date() -> None:
+    service = _service()
+    service.create_campaign_definition(
+        command=_create_command(
+            campaign_id="campaign-active",
+            as_of_date="2026-05-10",
+        )
+    )
+    service.create_campaign_definition(
+        command=_create_command(
+            campaign_id="campaign-other-date",
+            as_of_date="2026-05-11",
+        )
+    )
 
-    for route_path in route_paths:
-        source = route_path.read_text(encoding="utf-8")
-        assert "get_wave_campaign_application_service" in source
-        assert "get_campaign_definition_repository" not in source
-        assert "DpmBulkReviewCampaignDefinitionRepository" not in source
+    query = service.load_campaign_read_model_query(
+        tenant_id="tenant-sg",
+        campaign_id=None,
+        campaign_status="ACTIVE",
+        as_of_date="2026-05-10",
+        active_on=date(2026, 5, 12),
+    )
+
+    assert query.active_on == date(2026, 5, 12)
+    assert [definition.campaign_id for definition in query.definitions] == ["campaign-active"]

@@ -39,6 +39,9 @@ CONTRACT_GOVERNANCE_TOKENS = (
     "api_vocabulary",
     "no_alias",
     "test_family_inventory",
+    "methodology_docs",
+    "operations_runbook",
+    "runbook",
 )
 OBSERVABILITY_SECURITY_TOKENS = (
     "observability",
