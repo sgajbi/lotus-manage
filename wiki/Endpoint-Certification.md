@@ -53,8 +53,8 @@ Functional behavior:
 - `/health/live` returns `{ "status": "live" }` and deliberately does not touch persistence
   dependencies; use it for process liveness probes.
 - `/health/ready` returns `{ "status": "ready" }` only after persistence profile guardrails pass.
-- In production profile, readiness also validates required cutover migrations before reporting
-  ready.
+- In production profile, readiness also validates trusted write authorization posture and required
+  cutover migrations before reporting ready.
 - Health probes are infrastructure endpoints and intentionally remain unversioned.
 - `/metrics` exposes Prometheus metrics for platform scraping and runtime monitoring. It is an
   infrastructure endpoint, not a business-data API.

@@ -25,6 +25,7 @@ from src.api.enterprise_readiness import (
     is_feature_enabled,
     redact_sensitive,
     validate_enterprise_runtime_config,
+    write_authorization_required,
 )
 
 
@@ -294,8 +295,10 @@ def test_enterprise_middleware_helpers_parse_size_and_audit_identity(monkeypatch
     assert identity.tenant_id == "tenant"
     assert identity.role == "operator"
     assert identity.correlation_id == "corr"
+    assert write_authorization_required("POST") is False
     assert response.headers["X-Enterprise-Policy-Version"] == "2.1.0"
     assert denied_response.status_code == 403
+    assert denied_response.media_type == "application/problem+json"
 
 
 def test_enterprise_middleware_denies_and_audits_unauthorized_write(monkeypatch, caplog) -> None:
@@ -307,4 +310,6 @@ def test_enterprise_middleware_denies_and_audits_unauthorized_write(monkeypatch,
 
     assert response.status_code == 403
     assert response.json()["detail"] == "authorization_policy_denied"
+    assert response.json()["reasonCode"].startswith("missing_headers:")
+    assert response.headers["content-type"].startswith("application/problem+json")
     assert any(record.getMessage() == "enterprise_audit_event" for record in caplog.records)

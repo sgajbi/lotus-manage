@@ -62,6 +62,13 @@ def _pm_quality_problem_response(
 
 
 PM_QUALITY_PROBLEM_RESPONSES: dict[int, dict[str, object]] = {
+    403: _pm_quality_problem_response(
+        description="PM-quality request is not authorized for the trusted caller identity.",
+        status_code=403,
+        title="Forbidden",
+        reason_code="PM_QUALITY_TRUSTED_ACTOR_MISMATCH",
+        detail="PM-quality request is not authorized for the trusted caller identity.",
+    ),
     404: _pm_quality_problem_response(
         description="PM-quality resource was not found.",
         status_code=404,
@@ -140,6 +147,17 @@ def pm_quality_conflict_http_exception(
         status_code=status.HTTP_409_CONFLICT,
         reason_code=_reason_code(str(exc)),
         detail="PM-quality request conflicts with immutable persisted state.",
+    )
+
+
+def pm_quality_authorization_http_exception(
+    *,
+    reason_code: str,
+) -> PmQualityProblemDetailsException:
+    return _pm_quality_problem_details(
+        status_code=status.HTTP_403_FORBIDDEN,
+        reason_code=reason_code,
+        detail="PM-quality request is not authorized for the trusted caller identity.",
     )
 
 
