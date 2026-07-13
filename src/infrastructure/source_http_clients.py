@@ -60,7 +60,7 @@ def build_source_http_client_policy(
     )
     return SourceHttpClientPolicy(
         request_timeout_seconds=_bounded_float(
-            value=request_timeout_seconds,
+            seconds=request_timeout_seconds,
             default=2.0,
             minimum=0.1,
             maximum=60.0,
@@ -150,21 +150,26 @@ def _bounded_float_env(
     if raw is None or not raw.strip():
         return default
     try:
-        value = float(raw)
+        parsed_seconds = float(raw)
     except ValueError:
         return default
-    return _bounded_float(value=value, default=default, minimum=minimum, maximum=maximum)
+    return _bounded_float(
+        seconds=parsed_seconds,
+        default=default,
+        minimum=minimum,
+        maximum=maximum,
+    )
 
 
 def _bounded_float(
     *,
-    value: float,
+    seconds: float,
     default: float,
     minimum: float,
     maximum: float,
 ) -> float:
     try:
-        parsed = float(value)
+        parsed = float(seconds)
     except (TypeError, ValueError):
         parsed = default
     return min(max(parsed, minimum), maximum)

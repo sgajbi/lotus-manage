@@ -43,8 +43,7 @@ def validate_bulk_review_campaign_candidate_source_refs(
     source_refs: Sequence[DpmWaveSourceRef],
 ) -> None:
     batch_hash_available = any(
-        _source_contract_key(ref) in _BATCH_HASH_SOURCE_CONTRACTS
-        and _non_blank(ref.content_hash)
+        _source_contract_key(ref) in _BATCH_HASH_SOURCE_CONTRACTS and _non_blank(ref.content_hash)
         for ref in source_refs
     )
     for ref in source_refs:

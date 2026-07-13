@@ -14,12 +14,18 @@ from src.infrastructure.core_sourcing.client import (
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
 )
+from src.infrastructure.source_http_clients import (
+    build_source_http_client_policy,
+    get_shared_source_http_client,
+)
 
 __all__ = [
     "DpmCoreResolverClient",
     "DpmCoreResolverConfig",
     "DpmCoreResolverError",
     "DpmCoreResolverUnavailableError",
+    "build_source_http_client_policy",
+    "get_shared_source_http_client",
     "DpmCoreClientRestrictionProfileResponse",
     "DpmCoreExternalCurrencyExposureResponse",
     "DpmCoreExternalEligibleHedgeInstrumentResponse",

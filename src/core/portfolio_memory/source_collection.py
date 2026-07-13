@@ -61,12 +61,17 @@ def collect_portfolio_memory_events(
     )
 
     if repositories.campaign_definition_repository is not None:
+        campaign_tenant_id = require_campaign_definition_tenant_id(
+            tenant_id=tenant_id,
+            repositories=repositories,
+        )
+        if campaign_tenant_id is None:
+            raise ValueError(
+                "tenant_id is required when portfolio memory includes campaign-definition sources"
+            )
         events.extend(
             campaign_definition_memory_events(
-                tenant_id=require_campaign_definition_tenant_id(
-                    tenant_id=tenant_id,
-                    repositories=repositories,
-                ),
+                tenant_id=campaign_tenant_id,
                 portfolio_id=portfolio_id,
                 campaign_definition_repository=repositories.campaign_definition_repository,
                 limit=limit,

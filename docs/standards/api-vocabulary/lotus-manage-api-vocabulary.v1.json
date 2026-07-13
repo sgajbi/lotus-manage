@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-13T10:40:13.529469+00:00",
+  "generatedAt": "2026-07-13T13:28:57.073037+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -19445,6 +19445,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Trusted tenant id. Required when resolving persisted bulk-review campaign definitions.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "idempotency_key",
       "kind": "request_option",
       "location": "header",
@@ -19467,6 +19479,18 @@
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Trusted tenant id. Required when resolving persisted bulk-review campaign definitions.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "state",
@@ -68802,6 +68826,14 @@
             "attributeRef": "#/attributeCatalog/lotus.product_version"
           },
           {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "campaign_id",
             "location": "body",
             "required": true,
@@ -70223,6 +70255,14 @@
             "type": "string",
             "semanticId": "lotus.product_version",
             "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "campaign_id",
@@ -71678,6 +71718,14 @@
             "type": "string",
             "semanticId": "lotus.product_version",
             "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "items[].campaign_id",
@@ -73151,6 +73199,14 @@
             "attributeRef": "#/attributeCatalog/lotus.product_version"
           },
           {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "campaign_id",
             "location": "body",
             "required": true,
@@ -74604,6 +74660,14 @@
             "type": "string",
             "semanticId": "lotus.product_version",
             "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "campaign_id",
@@ -83007,6 +83071,14 @@
             "attributeRef": "#/attributeCatalog/lotus.product_version"
           },
           {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "campaign_id",
             "location": "body",
             "required": true,
@@ -84811,6 +84883,14 @@
             "type": "string",
             "semanticId": "lotus.product_version",
             "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "campaign_id",
@@ -86673,6 +86753,14 @@
             "type": "string",
             "semanticId": "lotus.product_version",
             "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "campaign_id",
@@ -88753,6 +88841,14 @@
             "attributeRef": "#/attributeCatalog/lotus.product_version"
           },
           {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "campaign_id",
             "location": "body",
             "required": true,
@@ -90310,6 +90406,14 @@
             "type": "string",
             "semanticId": "lotus.product_version",
             "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "campaign_id",
@@ -95316,6 +95420,14 @@
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "trigger_type",
             "location": "body",
             "required": true,
@@ -96713,6 +96825,14 @@
             "type": "object",
             "semanticId": "lotus.x_correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "trigger_type",

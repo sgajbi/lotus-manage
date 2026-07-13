@@ -226,7 +226,9 @@ def _validate_deferred_mesh_maturity_boundaries(
             issues.append(
                 f"{snapshot_path}: deferred mesh product {product_id} must publish certification_ready=false"
             )
-        if certification_limits.get("platform_maturity_state") != mesh_posture.get("maturity_state"):
+        if certification_limits.get("platform_maturity_state") != mesh_posture.get(
+            "maturity_state"
+        ):
             issues.append(
                 f"{snapshot_path}: platform_maturity_state must match {product_declaration_path}"
             )
@@ -261,12 +263,16 @@ def validate_repo_native_trust_telemetry(
             trust_metadata_registry_path=PLATFORM_TRUST_METADATA_REGISTRY_PATH,
             semantics_registry_path=PLATFORM_SEMANTICS_REGISTRY_PATH,
         )
-        return platform_issues + _validate_route_foundation_boundaries(
-            source_directory,
-            product_declaration_path=product_declaration_path,
-        ) + _validate_deferred_mesh_maturity_boundaries(
-            source_directory,
-            product_declaration_path=product_declaration_path,
+        return (
+            platform_issues
+            + _validate_route_foundation_boundaries(
+                source_directory,
+                product_declaration_path=product_declaration_path,
+            )
+            + _validate_deferred_mesh_maturity_boundaries(
+                source_directory,
+                product_declaration_path=product_declaration_path,
+            )
         )
 
 

@@ -109,7 +109,7 @@ def campaign_problem_details_exception(
     )
 
 
-def campaign_problem_responses(descriptions: dict[int, str]) -> dict[int, dict[str, object]]:
+def campaign_problem_responses(descriptions: dict[int, str]) -> dict[int | str, dict[str, Any]]:
     return {
         status_code: _campaign_problem_response(
             status_code=status_code,
@@ -150,7 +150,7 @@ def _campaign_problem_response(
     status_code: int,
     description: str,
     reason_code: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     return {
         "description": description,
         "content": {
@@ -165,8 +165,7 @@ def _campaign_problem_response(
                     "code": reason_code,
                     "correlationId": "corr_1234abcd",
                     "instance": (
-                        "/api/v1/rebalance/waves/campaign-definitions/example/"
-                        "versions/2026.05"
+                        "/api/v1/rebalance/waves/campaign-definitions/example/versions/2026.05"
                     ),
                 },
             }

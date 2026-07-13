@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.models import DpmWaveSourceRef
 
+CampaignDefinitionStatus = Literal["ACTIVE", "RETIRED", "SUPERSEDED"]
+
 
 class DpmBulkReviewCampaignDefinitionGovernance(BaseModel):
     """Governance evidence attached to an immutable bulk-review campaign definition."""
@@ -413,7 +415,7 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
     campaign_id: str = Field(examples=["campaign-holdings-apple-tesla-20260510"])
     campaign_version: str = Field(examples=["2026.05"])
     display_name: str = Field(examples=["Apple and Tesla holdings review"])
-    status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] = "ACTIVE"
+    status: CampaignDefinitionStatus = "ACTIVE"
     as_of_date: str = Field(examples=["2026-05-10"])
     rationale: str = Field(description="Business rationale for the persisted campaign definition.")
     eligible_portfolio_types: list[str] = Field(default_factory=lambda: ["DISCRETIONARY"])

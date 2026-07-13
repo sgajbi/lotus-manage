@@ -16,6 +16,7 @@ from src.core.waves.models import (
     WaveTriggerType,
 )
 from src.core.waves.campaign_definitions import (
+    CampaignDefinitionStatus,
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecision,
     DpmBulkReviewCampaignDefinitionAssignmentAction,
@@ -161,6 +162,7 @@ __all__ = [
     "CampaignApprovalDecisionType",
     "CampaignAssignmentActionType",
     "CampaignApprovalInboxStatus",
+    "CampaignDefinitionStatus",
     "CampaignAssignmentEscalationTier",
     "CampaignAssignmentSlaPosture",
     "CampaignAssignmentTaskStatus",
