@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from src.core.outcomes import DpmOutcomeSourceRef
 from src.core.pm_quality import (
@@ -17,6 +16,10 @@ from src.core.pm_quality import (
     PmQualityReviewActionTargetType,
     PmQualityReviewActionType,
     PmQualitySummaryInvocationState,
+)
+from src.core.pm_quality.temporal import (
+    canonical_optional_pm_quality_business_date,
+    canonical_pm_quality_business_date,
 )
 
 
@@ -135,6 +138,11 @@ class DpmPmOperatingQualityScorePreviewRequest(BaseModel):
             raise ValueError("Supply inline policy or both policy_id and policy_version")
         return self
 
+    @field_validator("as_of_date", mode="before")
+    @classmethod
+    def validate_as_of_date(cls, value: object) -> str:
+        return canonical_pm_quality_business_date(value, field_name="as_of_date")
+
 
 class DpmPmOperatingQualityScorePreviewResponse(BaseModel):
     score_run: DpmPmOperatingQualityScoreRun = Field(
@@ -224,6 +232,11 @@ class DpmPmQualityFairnessPreviewRequest(BaseModel):
             raise ValueError("segments.segment_id values must be unique")
         return self
 
+    @field_validator("as_of_date", mode="before")
+    @classmethod
+    def validate_as_of_date(cls, value: object) -> str:
+        return canonical_pm_quality_business_date(value, field_name="as_of_date")
+
 
 class DpmPmQualityFairnessPreviewResponse(BaseModel):
     fairness_analysis: DpmPmQualityFairnessAnalysis = Field(
@@ -276,14 +289,13 @@ class DpmPmQualityReviewActionRequest(BaseModel):
         description="Bank review-action source refs, such as committee minutes or tickets.",
     )
 
-    @model_validator(mode="after")
-    def validate_review_action_request(self) -> "DpmPmQualityReviewActionRequest":
-        if self.remediation_due_date is not None:
-            try:
-                date.fromisoformat(self.remediation_due_date)
-            except ValueError as exc:
-                raise ValueError("remediation_due_date must be an ISO date") from exc
-        return self
+    @field_validator("remediation_due_date", mode="before")
+    @classmethod
+    def validate_remediation_due_date(cls, value: object) -> str | None:
+        return canonical_optional_pm_quality_business_date(
+            value,
+            field_name="remediation_due_date",
+        )
 
 
 class DpmPmQualityReviewActionResponse(BaseModel):

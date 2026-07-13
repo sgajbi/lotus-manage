@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-13T07:16:04.264556+00:00",
+  "generatedAt": "2026-07-13T09:21:48.694865+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -20249,18 +20249,6 @@
       "attributeRef": "#/attributeCatalog/lotus.policy_id"
     },
     {
-      "name": "as_of_date",
-      "kind": "request_option",
-      "location": "query",
-      "required": false,
-      "type": "object",
-      "description": "Filter by business as-of date.",
-      "example": "2025-03-31",
-      "allowedValues": [],
-      "semanticId": "lotus.as_of_date",
-      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-    },
-    {
       "name": "state",
       "kind": "request_option",
       "location": "query",
@@ -20295,6 +20283,18 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by business as-of date in YYYY-MM-DD format.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
     },
     {
       "name": "x_correlation_id",
@@ -20345,18 +20345,6 @@
       "attributeRef": "#/attributeCatalog/lotus.policy_version"
     },
     {
-      "name": "as_of_date",
-      "kind": "request_option",
-      "location": "query",
-      "required": false,
-      "type": "object",
-      "description": "Filter by business as-of date.",
-      "example": "2025-03-31",
-      "allowedValues": [],
-      "semanticId": "lotus.as_of_date",
-      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-    },
-    {
       "name": "state",
       "kind": "request_option",
       "location": "query",
@@ -20391,6 +20379,18 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by business as-of date in YYYY-MM-DD format.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
     },
     {
       "name": "fairness_analysis_id",
@@ -20465,18 +20465,6 @@
       "attributeRef": "#/attributeCatalog/lotus.policy_id"
     },
     {
-      "name": "as_of_date",
-      "kind": "request_option",
-      "location": "query",
-      "required": false,
-      "type": "object",
-      "description": "Filter by business as-of date.",
-      "example": "2025-03-31",
-      "allowedValues": [],
-      "semanticId": "lotus.as_of_date",
-      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-    },
-    {
       "name": "action_state",
       "kind": "request_option",
       "location": "query",
@@ -20511,6 +20499,18 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by business as-of date in YYYY-MM-DD format.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
     },
     {
       "name": "review_action_id",
@@ -20585,18 +20585,6 @@
       "attributeRef": "#/attributeCatalog/lotus.policy_id"
     },
     {
-      "name": "as_of_date",
-      "kind": "request_option",
-      "location": "query",
-      "required": false,
-      "type": "object",
-      "description": "Filter by business as-of date.",
-      "example": "2025-03-31",
-      "allowedValues": [],
-      "semanticId": "lotus.as_of_date",
-      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-    },
-    {
       "name": "invocation_state",
       "kind": "request_option",
       "location": "query",
@@ -20631,6 +20619,18 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by business as-of date in YYYY-MM-DD format.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
     },
     {
       "name": "summary_invocation_id",
@@ -20717,18 +20717,6 @@
       "attributeRef": "#/attributeCatalog/lotus.enabled"
     },
     {
-      "name": "as_of_date",
-      "kind": "request_option",
-      "location": "query",
-      "required": false,
-      "type": "object",
-      "description": "Filter by policy as-of date.",
-      "example": "2025-03-31",
-      "allowedValues": [],
-      "semanticId": "lotus.as_of_date",
-      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-    },
-    {
       "name": "limit",
       "kind": "request_option",
       "location": "query",
@@ -20751,6 +20739,18 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by business as-of date in YYYY-MM-DD format.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
     },
     {
       "name": "score_run_id",
@@ -125518,14 +125518,6 @@
             "attributeRef": "#/attributeCatalog/lotus.policy_id"
           },
           {
-            "name": "as_of_date",
-            "location": "query",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.as_of_date",
-            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-          },
-          {
             "name": "state",
             "location": "query",
             "required": false,
@@ -125548,6 +125540,14 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           }
         ]
       },
@@ -127315,14 +127315,6 @@
             "attributeRef": "#/attributeCatalog/lotus.policy_version"
           },
           {
-            "name": "as_of_date",
-            "location": "query",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.as_of_date",
-            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-          },
-          {
             "name": "state",
             "location": "query",
             "required": false,
@@ -127345,6 +127337,14 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           }
         ]
       },
@@ -129127,14 +129127,6 @@
             "attributeRef": "#/attributeCatalog/lotus.policy_id"
           },
           {
-            "name": "as_of_date",
-            "location": "query",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.as_of_date",
-            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-          },
-          {
             "name": "action_state",
             "location": "query",
             "required": false,
@@ -129157,6 +129149,14 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           }
         ]
       },
@@ -131051,14 +131051,6 @@
             "attributeRef": "#/attributeCatalog/lotus.policy_id"
           },
           {
-            "name": "as_of_date",
-            "location": "query",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.as_of_date",
-            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-          },
-          {
             "name": "invocation_state",
             "location": "query",
             "required": false,
@@ -131081,6 +131073,14 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           }
         ]
       },
@@ -133167,14 +133167,6 @@
             "attributeRef": "#/attributeCatalog/lotus.enabled"
           },
           {
-            "name": "as_of_date",
-            "location": "query",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.as_of_date",
-            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
-          },
-          {
             "name": "limit",
             "location": "query",
             "required": false,
@@ -133189,6 +133181,14 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           }
         ]
       },

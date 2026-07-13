@@ -10,6 +10,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewResponse,
     DpmPmOperatingQualityScoreRunListResponse,
 )
+from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -34,10 +35,7 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
         pm_id: Annotated[str | None, Query(description="Filter by portfolio manager id.")] = None,
         book_id: Annotated[str | None, Query(description="Filter by PM book id.")] = None,
         policy_id: Annotated[str | None, Query(description="Filter by policy id.")] = None,
-        as_of_date: Annotated[
-            str | None,
-            Query(description="Filter by business as-of date."),
-        ] = None,
+        as_of_date: Annotated[str | None, Depends(pm_quality_as_of_date_filter)] = None,
         state: Annotated[str | None, Query(description="Filter by score-run state.")] = None,
         limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
         offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,

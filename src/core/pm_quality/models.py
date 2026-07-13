@@ -1,13 +1,19 @@
 """Configurable PM operating quality models for RFC42-WTBD-008."""
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.outcomes import DpmOutcomeSourceRef
+from src.core.pm_quality.temporal import (
+    canonical_optional_pm_quality_business_date,
+    canonical_pm_quality_business_date,
+    canonical_pm_quality_utc_datetime,
+    canonical_pm_quality_utc_timestamp,
+)
 
 PmQualityIndicator = Literal[
     "OUTCOME_DISCIPLINE",
@@ -159,6 +165,19 @@ class DpmPmQualityGovernanceApproval(BaseModel):
         description="Approval, entitlement, or fairness-review source refs.",
     )
 
+    @field_validator("approved_at", "fairness_reviewed_at", mode="before")
+    @classmethod
+    def validate_approval_timestamps(cls, value: object, info: ValidationInfo) -> str:
+        return canonical_pm_quality_utc_timestamp(
+            value,
+            field_name=info.field_name or "approval_timestamp",
+        )
+
+    @field_validator("expires_on", mode="before")
+    @classmethod
+    def validate_expiry_date(cls, value: object) -> str | None:
+        return canonical_optional_pm_quality_business_date(value, field_name="expires_on")
+
 
 class DpmPmQualityPeerGroupPolicy(BaseModel):
     """Bank-defined PM peer-group scope for governed score-run comparison."""
@@ -202,15 +221,20 @@ class DpmPmQualityLookbackWindowPolicy(BaseModel):
         description="Source refs proving approval or source ownership for the window.",
     )
 
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def validate_window_dates(cls, value: object, info: ValidationInfo) -> str:
+        return canonical_pm_quality_business_date(
+            value,
+            field_name=info.field_name or "lookback_date",
+        )
+
     @model_validator(mode="after")
     def validate_lookback_window(self) -> "DpmPmQualityLookbackWindowPolicy":
         if not self.window_id.strip():
             raise ValueError("PM_QUALITY_LOOKBACK_WINDOW_ID_REQUIRED")
-        try:
-            start = datetime.fromisoformat(self.start_date).date()
-            end = datetime.fromisoformat(self.end_date).date()
-        except ValueError as exc:
-            raise ValueError("PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID") from exc
+        start = date.fromisoformat(self.start_date)
+        end = date.fromisoformat(self.end_date)
         if start > end:
             raise ValueError("PM_QUALITY_LOOKBACK_WINDOW_RANGE_INVALID")
         if not self.source_refs:
@@ -283,6 +307,11 @@ class DpmPmOperatingQualityPolicy(BaseModel):
             "outside the window fails closed."
         ),
     )
+
+    @field_validator("as_of_date", mode="before")
+    @classmethod
+    def validate_policy_as_of_date(cls, value: object) -> str:
+        return canonical_pm_quality_business_date(value, field_name="as_of_date")
 
     @model_validator(mode="after")
     def validate_policy(self) -> "DpmPmOperatingQualityPolicy":
@@ -401,6 +430,19 @@ class DpmPmQualityGovernanceEvidence(BaseModel):
         description="Approval, entitlement, or fairness-review source refs."
     )
 
+    @field_validator("approved_at", "fairness_reviewed_at", mode="before")
+    @classmethod
+    def validate_governance_evidence_timestamps(cls, value: object, info: ValidationInfo) -> str:
+        return canonical_pm_quality_utc_timestamp(
+            value,
+            field_name=info.field_name or "governance_timestamp",
+        )
+
+    @field_validator("expires_on", mode="before")
+    @classmethod
+    def validate_governance_evidence_expiry(cls, value: object) -> str | None:
+        return canonical_optional_pm_quality_business_date(value, field_name="expires_on")
+
 
 class DpmPmQualityScopeEvidence(BaseModel):
     """Materialized PM-quality scope evidence attached to a score run."""
@@ -420,6 +462,14 @@ class DpmPmQualityScopeEvidence(BaseModel):
     source_refs: list[DpmOutcomeSourceRef] = Field(
         description="Peer-group and lookback-window source refs used by the run."
     )
+
+    @field_validator("lookback_start_date", "lookback_end_date", mode="before")
+    @classmethod
+    def validate_scope_evidence_dates(cls, value: object, info: ValidationInfo) -> str | None:
+        return canonical_optional_pm_quality_business_date(
+            value,
+            field_name=info.field_name or "lookback_date",
+        )
 
 
 class DpmPmOperatingQualityScoreRun(BaseModel):
@@ -474,6 +524,16 @@ class DpmPmOperatingQualityScoreRun(BaseModel):
     generated_at: datetime = Field(description="UTC generation timestamp.")
     generated_by: str = Field(description="Actor or service that generated the score run.")
     correlation_id: str = Field(description="Correlation identifier.")
+
+    @field_validator("as_of_date", mode="before")
+    @classmethod
+    def validate_score_run_as_of_date(cls, value: object) -> str:
+        return canonical_pm_quality_business_date(value, field_name="as_of_date")
+
+    @field_validator("generated_at", mode="before")
+    @classmethod
+    def validate_score_run_generated_at(cls, value: object) -> datetime:
+        return canonical_pm_quality_utc_datetime(value, field_name="generated_at")
 
 
 class DpmPmQualityFairnessSegmentResult(BaseModel):
@@ -559,6 +619,16 @@ class DpmPmQualityFairnessAnalysis(BaseModel):
     generated_at: datetime = Field(description="UTC generation timestamp.")
     generated_by: str = Field(description="Actor or service that generated the analysis.")
     correlation_id: str = Field(description="Correlation identifier.")
+
+    @field_validator("as_of_date", mode="before")
+    @classmethod
+    def validate_fairness_as_of_date(cls, value: object) -> str:
+        return canonical_pm_quality_business_date(value, field_name="as_of_date")
+
+    @field_validator("generated_at", mode="before")
+    @classmethod
+    def validate_fairness_generated_at(cls, value: object) -> datetime:
+        return canonical_pm_quality_utc_datetime(value, field_name="generated_at")
 
 
 class DpmPmQualityApprovalWorkflowBoundaryEvidence(BaseModel):
@@ -799,6 +869,24 @@ class DpmPmQualityReviewAction(BaseModel):
     generated_at: datetime = Field(description="UTC generation timestamp.")
     correlation_id: str = Field(description="Correlation identifier.")
 
+    @field_validator("as_of_date", mode="before")
+    @classmethod
+    def validate_review_action_as_of_date(cls, value: object) -> str:
+        return canonical_pm_quality_business_date(value, field_name="as_of_date")
+
+    @field_validator("remediation_due_date", mode="before")
+    @classmethod
+    def validate_review_action_due_date(cls, value: object) -> str | None:
+        return canonical_optional_pm_quality_business_date(
+            value,
+            field_name="remediation_due_date",
+        )
+
+    @field_validator("generated_at", mode="before")
+    @classmethod
+    def validate_review_action_generated_at(cls, value: object) -> datetime:
+        return canonical_pm_quality_utc_datetime(value, field_name="generated_at")
+
 
 class DpmPmQualitySummaryInvocation(BaseModel):
     """Append-only audit record for PM-quality support-summary invocation."""
@@ -902,6 +990,16 @@ class DpmPmQualitySummaryInvocation(BaseModel):
     content_hash: str = Field(description="Canonical summary-invocation content hash.")
     generated_at: datetime = Field(description="UTC generation timestamp.")
     correlation_id: str = Field(description="Correlation identifier.")
+
+    @field_validator("as_of_date", mode="before")
+    @classmethod
+    def validate_summary_invocation_as_of_date(cls, value: object) -> str:
+        return canonical_pm_quality_business_date(value, field_name="as_of_date")
+
+    @field_validator("generated_at", mode="before")
+    @classmethod
+    def validate_summary_invocation_generated_at(cls, value: object) -> datetime:
+        return canonical_pm_quality_utc_datetime(value, field_name="generated_at")
 
 
 def build_pm_quality_approval_workflow_boundary() -> DpmPmQualityApprovalWorkflowBoundaryEvidence:

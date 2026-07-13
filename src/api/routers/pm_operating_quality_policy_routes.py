@@ -10,6 +10,7 @@ from src.api.routers.pm_operating_quality_http import (
     pm_quality_service_http_exception,
 )
 from src.api.routers.pm_operating_quality_models import DpmPmOperatingQualityPolicyListResponse
+from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -74,7 +75,7 @@ def put_pm_operating_quality_policy_endpoint(
 def list_pm_operating_quality_policies_endpoint(
     policy_id: Annotated[str | None, Query(description="Filter by policy id.")] = None,
     enabled: Annotated[bool | None, Query(description="Filter by policy enabled flag.")] = None,
-    as_of_date: Annotated[str | None, Query(description="Filter by policy as-of date.")] = None,
+    as_of_date: Annotated[str | None, Depends(pm_quality_as_of_date_filter)] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
     offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
     application_service: DpmPmOperatingQualityApplicationService = Depends(

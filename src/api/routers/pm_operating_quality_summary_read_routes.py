@@ -10,6 +10,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationListResponse,
     DpmPmQualitySummaryInvocationResponse,
 )
+from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -44,7 +45,7 @@ def list_pm_quality_summary_invocations_endpoint(
         Query(description="Filter by review-action id."),
     ] = None,
     policy_id: Annotated[str | None, Query(description="Filter by policy id.")] = None,
-    as_of_date: Annotated[str | None, Query(description="Filter by business as-of date.")] = None,
+    as_of_date: Annotated[str | None, Depends(pm_quality_as_of_date_filter)] = None,
     invocation_state: Annotated[
         PmQualitySummaryInvocationState | None,
         Query(description="Filter by bounded summary-invocation state."),

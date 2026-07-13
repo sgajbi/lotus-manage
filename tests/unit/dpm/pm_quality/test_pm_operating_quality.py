@@ -1240,7 +1240,7 @@ def test_pm_quality_scope_policy_models_reject_unproven_or_invalid_scope() -> No
             end_date="2026-05-12",
             source_refs=[_source_ref()],
         )
-    with pytest.raises(ValueError, match="PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID"):
+    with pytest.raises(ValueError, match="INVALID_PM_QUALITY_BUSINESS_DATE:start_date"):
         DpmPmQualityLookbackWindowPolicy(
             window_id="pmq_30d_20260512",
             start_date="not-a-date",

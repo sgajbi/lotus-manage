@@ -10,6 +10,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityReviewActionListResponse,
     DpmPmQualityReviewActionResponse,
 )
+from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -45,10 +46,7 @@ def register_pm_quality_review_action_read_routes(router: APIRouter) -> None:
             Query(description="Filter by reviewed evidence id."),
         ] = None,
         policy_id: Annotated[str | None, Query(description="Filter by policy id.")] = None,
-        as_of_date: Annotated[
-            str | None,
-            Query(description="Filter by business as-of date."),
-        ] = None,
+        as_of_date: Annotated[str | None, Depends(pm_quality_as_of_date_filter)] = None,
         action_state: Annotated[
             PmQualityReviewActionState | None,
             Query(description="Filter by bounded review-action state."),

@@ -10,6 +10,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityFairnessAnalysisListResponse,
     DpmPmQualityFairnessPreviewResponse,
 )
+from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -36,7 +37,7 @@ router = APIRouter()
 def list_pm_quality_fairness_analyses_endpoint(
     policy_id: Annotated[str | None, Query(description="Filter by policy id.")] = None,
     policy_version: Annotated[str | None, Query(description="Filter by policy version.")] = None,
-    as_of_date: Annotated[str | None, Query(description="Filter by business as-of date.")] = None,
+    as_of_date: Annotated[str | None, Depends(pm_quality_as_of_date_filter)] = None,
     state: Annotated[str | None, Query(description="Filter by fairness-analysis state.")] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
     offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
