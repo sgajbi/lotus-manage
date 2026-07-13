@@ -11,6 +11,10 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScoreRunListResponse,
 )
 from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedIdentity,
+    pm_quality_trusted_identity_required,
+)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -42,8 +46,10 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
         application_service: DpmPmOperatingQualityApplicationService = Depends(
             get_pm_quality_score_run_application_service
         ),
+        identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
     ) -> DpmPmOperatingQualityScoreRunListResponse:
         score_runs = application_service.list_score_runs(
+            tenant_id=identity.tenant_id,
             pm_id=pm_id,
             book_id=book_id,
             policy_id=policy_id,
@@ -77,9 +83,13 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
         application_service: DpmPmOperatingQualityApplicationService = Depends(
             get_pm_quality_score_run_application_service
         ),
+        identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
     ) -> DpmPmOperatingQualityScorePreviewResponse:
         try:
-            score_run = application_service.get_score_run(score_run_id=score_run_id)
+            score_run = application_service.get_score_run(
+                tenant_id=identity.tenant_id,
+                score_run_id=score_run_id,
+            )
         except DpmPmOperatingQualityServiceError as exc:
             raise pm_quality_service_http_exception(exc) from exc
         return DpmPmOperatingQualityScorePreviewResponse(score_run=score_run)

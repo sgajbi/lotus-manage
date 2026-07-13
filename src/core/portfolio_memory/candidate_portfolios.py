@@ -7,6 +7,7 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories,
+    require_pm_quality_tenant_id,
 )
 from src.core.portfolio_memory.search_request import validate_portfolio_memory_source_scan_limit
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
@@ -15,6 +16,7 @@ from src.core.waves.repository import DpmWaveRepository
 
 def candidate_portfolio_ids(
     *,
+    tenant_id: str | None = None,
     proof_pack_repository: DpmProofPackRepository,
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
@@ -25,6 +27,7 @@ def candidate_portfolio_ids(
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
 ) -> list[str]:
     return candidate_portfolio_ids_from_sources(
+        tenant_id=tenant_id,
         repositories=build_portfolio_memory_source_repositories(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
@@ -40,6 +43,7 @@ def candidate_portfolio_ids(
 
 def candidate_portfolio_ids_from_sources(
     *,
+    tenant_id: str | None = None,
     repositories: PortfolioMemorySourceRepositories,
     portfolio_ids: list[str] | None,
     source_scan_limit: int,
@@ -53,7 +57,13 @@ def candidate_portfolio_ids_from_sources(
     candidates.update(_outcome_review_candidate_ids(repositories, source_scan_limit))
     candidates.update(_mandate_exception_candidate_ids(repositories, source_scan_limit))
     candidates.update(_campaign_definition_candidate_ids(repositories, source_scan_limit))
-    candidates.update(_pm_quality_candidate_ids(repositories, source_scan_limit))
+    candidates.update(
+        _pm_quality_candidate_ids(
+            require_pm_quality_tenant_id(tenant_id=tenant_id, repositories=repositories),
+            repositories,
+            source_scan_limit,
+        )
+    )
     return sorted(candidates)
 
 
@@ -129,15 +139,18 @@ def _campaign_definition_candidate_ids(
 
 
 def _pm_quality_candidate_ids(
+    tenant_id: str | None,
     repositories: PortfolioMemorySourceRepositories,
     source_scan_limit: int,
 ) -> set[str]:
     if repositories.pm_quality_score_run_repository is None:
         return set()
+    if tenant_id is None:
+        raise ValueError("tenant_id is required when portfolio memory includes PM-quality sources")
     return {
         portfolio_id
         for score_run in repositories.pm_quality_score_run_repository.list_score_runs(
-            limit=source_scan_limit
+            tenant_id=tenant_id, limit=source_scan_limit
         )
         if score_run.book_scope_evidence is not None
         for portfolio_id in score_run.book_scope_evidence.member_portfolio_ids

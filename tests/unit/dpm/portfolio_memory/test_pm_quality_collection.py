@@ -13,6 +13,7 @@ from src.infrastructure.pm_quality import (
 )
 from tests.unit.dpm.api.test_portfolio_memory_api import (
     PORTFOLIO_ID,
+    TENANT_ID,
     _pm_quality_review_action,
     _pm_quality_score_run,
     _pm_quality_summary_invocation,
@@ -23,10 +24,13 @@ def test_pm_quality_memory_events_reuses_one_score_run_scan_for_downstream_event
     score_run_repository = _CountingScoreRunRepository()
     review_action_repository = _CountingReviewActionRepository()
     summary_invocation_repository = _CountingSummaryInvocationRepository()
-    score_run_repository.save_score_run(score_run=_pm_quality_score_run())
-    review_action_repository.save_review_action(action=_pm_quality_review_action())
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
+    review_action_repository.save_review_action(
+        tenant_id=TENANT_ID,
+        action=_pm_quality_review_action(),
+    )
     summary_invocation_repository.save_summary_invocation(
-        invocation=_pm_quality_summary_invocation()
+        tenant_id=TENANT_ID, invocation=_pm_quality_summary_invocation()
     )
 
     events = pm_quality_memory_events(
@@ -35,6 +39,7 @@ def test_pm_quality_memory_events_reuses_one_score_run_scan_for_downstream_event
         review_action_repository=review_action_repository,
         summary_invocation_repository=summary_invocation_repository,
         limit=100,
+        tenant_id=TENANT_ID,
     )
 
     assert score_run_repository.list_score_runs_call_count == 1
@@ -57,13 +62,14 @@ def test_pm_quality_memory_events_skips_downstream_scans_without_portfolio_scope
     review_action_repository = _CountingReviewActionRepository()
     summary_invocation_repository = _CountingSummaryInvocationRepository()
     score_run_repository.save_score_run(
+        tenant_id=TENANT_ID,
         score_run=_pm_quality_score_run().model_copy(
             update={
                 "score_run_id": "pmq_score_run_out_of_scope",
                 "book_scope_evidence": None,
                 "content_hash": "sha256:pmq-score-run-out-of-scope",
             }
-        )
+        ),
     )
 
     events = pm_quality_memory_events(
@@ -72,6 +78,7 @@ def test_pm_quality_memory_events_skips_downstream_scans_without_portfolio_scope
         review_action_repository=review_action_repository,
         summary_invocation_repository=summary_invocation_repository,
         limit=100,
+        tenant_id=TENANT_ID,
     )
 
     assert events == []
@@ -83,15 +90,16 @@ def test_pm_quality_memory_events_skips_downstream_scans_without_portfolio_scope
 def test_pm_quality_memory_events_omits_unresolved_summary_lineage() -> None:
     score_run_repository = _CountingScoreRunRepository()
     summary_invocation_repository = _CountingSummaryInvocationRepository()
-    score_run_repository.save_score_run(score_run=_pm_quality_score_run())
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     summary_invocation_repository.save_summary_invocation(
+        tenant_id=TENANT_ID,
         invocation=_pm_quality_summary_invocation().model_copy(
             update={
                 "summary_invocation_id": "pmq_summary_orphan",
                 "score_run_id": "pmq_score_run_missing",
                 "content_hash": "sha256:pmq-summary-orphan",
             }
-        )
+        ),
     )
 
     events = pm_quality_memory_events(
@@ -99,6 +107,7 @@ def test_pm_quality_memory_events_omits_unresolved_summary_lineage() -> None:
         score_run_repository=score_run_repository,
         summary_invocation_repository=summary_invocation_repository,
         limit=100,
+        tenant_id=TENANT_ID,
     )
 
     assert [event.event_type for event in events] == ["PM_QUALITY_SCORE_RUN"]

@@ -46,7 +46,11 @@ def _has_complete_pm_quality_policy_reference(
 class DpmPmOperatingQualityPmBookScopeRequest(BaseModel):
     tenant_id: str | None = Field(
         default=None,
-        description="Optional tenant selector forwarded to lotus-core PM-book membership.",
+        description=(
+            "Optional compatibility tenant selector. When supplied it must match trusted "
+            "X-Tenant-Id; lotus-manage forwards the trusted tenant to lotus-core PM-book "
+            "membership."
+        ),
     )
     booking_center_code: str | None = Field(
         default=None,

@@ -28,6 +28,26 @@ class PortfolioMemorySourceRepositories:
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None
 
 
+def pm_quality_sources_present(repositories: PortfolioMemorySourceRepositories) -> bool:
+    return (
+        repositories.pm_quality_score_run_repository is not None
+        or repositories.pm_quality_review_action_repository is not None
+        or repositories.pm_quality_summary_invocation_repository is not None
+    )
+
+
+def require_pm_quality_tenant_id(
+    *,
+    tenant_id: str | None,
+    repositories: PortfolioMemorySourceRepositories,
+) -> str | None:
+    if not pm_quality_sources_present(repositories):
+        return None
+    if tenant_id is None or not tenant_id.strip():
+        raise ValueError("tenant_id is required when portfolio memory includes PM-quality sources")
+    return tenant_id.strip()
+
+
 def build_portfolio_memory_source_repositories(
     *,
     proof_pack_repository: DpmProofPackRepository,

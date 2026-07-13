@@ -11,6 +11,10 @@ from src.api.routers.pm_operating_quality_http import (
 )
 from src.api.routers.pm_operating_quality_models import DpmPmOperatingQualityPolicyListResponse
 from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedIdentity,
+    pm_quality_trusted_identity_required,
+)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -47,9 +51,11 @@ def put_pm_operating_quality_policy_endpoint(
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_policy_application_service
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPmOperatingQualityPolicy:
     try:
         return application_service.save_policy(
+            tenant_id=identity.tenant_id,
             policy_id=policy_id,
             policy_version=policy_version,
             policy=policy,
@@ -81,8 +87,10 @@ def list_pm_operating_quality_policies_endpoint(
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_policy_application_service
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPmOperatingQualityPolicyListResponse:
     policies = application_service.list_policies(
+        tenant_id=identity.tenant_id,
         policy_id=policy_id,
         enabled=enabled,
         as_of_date=as_of_date,
@@ -115,9 +123,11 @@ def get_pm_operating_quality_policy_endpoint(
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_policy_application_service
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPmOperatingQualityPolicy:
     try:
         return application_service.get_policy(
+            tenant_id=identity.tenant_id,
             policy_id=policy_id,
             policy_version=policy_version,
         )

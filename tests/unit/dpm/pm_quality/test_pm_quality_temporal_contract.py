@@ -19,6 +19,9 @@ from src.core.pm_quality.temporal import (
 )
 
 
+TENANT_ID = "tenant-sg"
+
+
 def _source_ref() -> DpmOutcomeSourceRef:
     return DpmOutcomeSourceRef(
         source_system="bank-governance",
@@ -72,6 +75,7 @@ def test_pm_quality_policy_temporal_fields_are_normalized_before_persistence() -
         source_refs=[_source_ref()],
     )
     policy = DpmPmOperatingQualityPolicy(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         enabled=True,
@@ -96,6 +100,7 @@ def test_pm_quality_policy_temporal_fields_are_normalized_before_persistence() -
 def test_pm_quality_domain_models_reject_malformed_temporal_fields() -> None:
     with pytest.raises(ValidationError, match="INVALID_PM_QUALITY_BUSINESS_DATE:as_of_date"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_sg_dpm",
             policy_version="2026.05",
             enabled=False,

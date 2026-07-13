@@ -40,6 +40,7 @@ def build_pm_quality_review_action(
     payload: dict[str, Any] = {
         "product_name": "PmOperatingQualityReviewAction",
         "product_version": "v1",
+        "tenant_id": target.tenant_id,
         "review_action_ref": review_action_ref.strip(),
         "target_type": target_type,
         "target_id": _target_id(target=target, target_type=target_type),

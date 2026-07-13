@@ -5,6 +5,10 @@ from typing import NoReturn
 from fastapi import Depends, HTTPException, Query, status
 
 from src.api.routers.portfolio_memory import get_portfolio_memory_source_repositories, router
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedIdentity,
+    pm_quality_trusted_identity_required,
+)
 from src.core.portfolio_memory import DpmPortfolioMemorySearchPage
 from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
@@ -133,6 +137,7 @@ def search_portfolio_memory_index(
     repositories: PortfolioMemorySourceRepositories = Depends(
         get_portfolio_memory_source_repositories
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPortfolioMemorySearchPage:
     try:
         normalized_event_type = normalize_portfolio_memory_event_type_filter(event_type)
@@ -143,6 +148,7 @@ def search_portfolio_memory_index(
         _raise_portfolio_memory_search_validation_error(exc)
     try:
         return search_portfolio_memory_from_sources(
+            tenant_id=identity.tenant_id,
             repositories=repositories,
             portfolio_ids=portfolio_ids,
             event_type=normalized_event_type,

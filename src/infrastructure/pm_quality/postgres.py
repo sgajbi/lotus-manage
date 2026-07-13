@@ -36,18 +36,20 @@ class PostgresDpmPmQualityScoreRunRepository:
         self._dsn = dsn
         self._init_db()
 
-    def save_score_run(self, *, score_run: DpmPmOperatingQualityScoreRun) -> None:
+    def save_score_run(self, *, tenant_id: str, score_run: DpmPmOperatingQualityScoreRun) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=score_run.tenant_id)
         with closing(self._connect()) as connection:
             connection.execute(
                 """
                 INSERT INTO dpm_pm_quality_score_runs (
-                    score_run_id, pm_id, book_id, policy_id, policy_version, as_of_date,
+                    tenant_id, score_run_id, pm_id, book_id, policy_id, policy_version, as_of_date,
                     state, score, content_hash, generated_at, generated_by, correlation_id,
                     payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (score_run_id) DO NOTHING
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (tenant_id, score_run_id) DO NOTHING
                 """,
                 (
+                    tenant_id,
                     score_run.score_run_id,
                     score_run.pm_id,
                     score_run.book_id,
@@ -67,9 +69,9 @@ class PostgresDpmPmQualityScoreRunRepository:
                 """
                 SELECT content_hash
                 FROM dpm_pm_quality_score_runs
-                WHERE score_run_id = %s
+                WHERE tenant_id = %s AND score_run_id = %s
                 """,
-                (score_run.score_run_id,),
+                (tenant_id, score_run.score_run_id),
             ).fetchone()
             if persisted is None or persisted["content_hash"] != score_run.content_hash:
                 connection.rollback()
@@ -79,6 +81,7 @@ class PostgresDpmPmQualityScoreRunRepository:
     def get_score_run(
         self,
         *,
+        tenant_id: str,
         score_run_id: str,
     ) -> DpmPmOperatingQualityScoreRun | None:
         with closing(self._connect()) as connection:
@@ -86,9 +89,9 @@ class PostgresDpmPmQualityScoreRunRepository:
                 """
                 SELECT payload_json
                 FROM dpm_pm_quality_score_runs
-                WHERE score_run_id = %s
+                WHERE tenant_id = %s AND score_run_id = %s
                 """,
-                (score_run_id,),
+                (tenant_id, score_run_id),
             ).fetchone()
         if row is None:
             return None
@@ -97,6 +100,7 @@ class PostgresDpmPmQualityScoreRunRepository:
     def list_score_runs(
         self,
         *,
+        tenant_id: str,
         pm_id: str | None = None,
         book_id: str | None = None,
         policy_id: str | None = None,
@@ -105,8 +109,8 @@ class PostgresDpmPmQualityScoreRunRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmPmOperatingQualityScoreRun]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         for column, value in (
             ("pm_id", pm_id),
             ("book_id", book_id),
@@ -152,19 +156,21 @@ class PostgresDpmPmQualityPolicyRepository:
         self._dsn = dsn
         self._init_db()
 
-    def save_policy(self, *, policy: DpmPmOperatingQualityPolicy) -> None:
+    def save_policy(self, *, tenant_id: str, policy: DpmPmOperatingQualityPolicy) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=policy.tenant_id)
         payload = dump_model_json(policy)
         content_hash = _content_hash(payload)
         with closing(self._connect()) as connection:
             connection.execute(
                 """
                 INSERT INTO dpm_pm_quality_policies (
-                    policy_id, policy_version, enabled, as_of_date, access_purpose,
+                    tenant_id, policy_id, policy_version, enabled, as_of_date, access_purpose,
                     content_hash, payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (policy_id, policy_version) DO NOTHING
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (tenant_id, policy_id, policy_version) DO NOTHING
                 """,
                 (
+                    tenant_id,
                     policy.policy_id,
                     policy.policy_version,
                     policy.enabled,
@@ -178,9 +184,9 @@ class PostgresDpmPmQualityPolicyRepository:
                 """
                 SELECT content_hash
                 FROM dpm_pm_quality_policies
-                WHERE policy_id = %s AND policy_version = %s
+                WHERE tenant_id = %s AND policy_id = %s AND policy_version = %s
                 """,
-                (policy.policy_id, policy.policy_version),
+                (tenant_id, policy.policy_id, policy.policy_version),
             ).fetchone()
             if persisted is None or persisted["content_hash"] != content_hash:
                 connection.rollback()
@@ -190,6 +196,7 @@ class PostgresDpmPmQualityPolicyRepository:
     def get_policy(
         self,
         *,
+        tenant_id: str,
         policy_id: str,
         policy_version: str,
     ) -> DpmPmOperatingQualityPolicy | None:
@@ -198,9 +205,9 @@ class PostgresDpmPmQualityPolicyRepository:
                 """
                 SELECT payload_json
                 FROM dpm_pm_quality_policies
-                WHERE policy_id = %s AND policy_version = %s
+                WHERE tenant_id = %s AND policy_id = %s AND policy_version = %s
                 """,
-                (policy_id, policy_version),
+                (tenant_id, policy_id, policy_version),
             ).fetchone()
         if row is None:
             return None
@@ -209,14 +216,15 @@ class PostgresDpmPmQualityPolicyRepository:
     def list_policies(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         enabled: bool | None = None,
         as_of_date: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmPmOperatingQualityPolicy]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         for column, value in (
             ("policy_id", policy_id),
             ("enabled", enabled),
@@ -260,18 +268,22 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
         self._dsn = dsn
         self._init_db()
 
-    def save_fairness_analysis(self, *, analysis: DpmPmQualityFairnessAnalysis) -> None:
+    def save_fairness_analysis(
+        self, *, tenant_id: str, analysis: DpmPmQualityFairnessAnalysis
+    ) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=analysis.tenant_id)
         with closing(self._connect()) as connection:
             connection.execute(
                 """
                 INSERT INTO dpm_pm_quality_fairness_analyses (
-                    fairness_analysis_id, policy_id, policy_version, as_of_date,
+                    tenant_id, fairness_analysis_id, policy_id, policy_version, as_of_date,
                     state, observed_average_score_spread, content_hash, generated_at,
                     generated_by, correlation_id, payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (fairness_analysis_id) DO NOTHING
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (tenant_id, fairness_analysis_id) DO NOTHING
                 """,
                 (
+                    tenant_id,
                     analysis.fairness_analysis_id,
                     analysis.policy_id,
                     analysis.policy_version,
@@ -291,9 +303,9 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
                 """
                 SELECT content_hash
                 FROM dpm_pm_quality_fairness_analyses
-                WHERE fairness_analysis_id = %s
+                WHERE tenant_id = %s AND fairness_analysis_id = %s
                 """,
-                (analysis.fairness_analysis_id,),
+                (tenant_id, analysis.fairness_analysis_id),
             ).fetchone()
             if persisted is None or persisted["content_hash"] != analysis.content_hash:
                 connection.rollback()
@@ -305,6 +317,7 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
     def get_fairness_analysis(
         self,
         *,
+        tenant_id: str,
         fairness_analysis_id: str,
     ) -> DpmPmQualityFairnessAnalysis | None:
         with closing(self._connect()) as connection:
@@ -312,9 +325,9 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
                 """
                 SELECT payload_json
                 FROM dpm_pm_quality_fairness_analyses
-                WHERE fairness_analysis_id = %s
+                WHERE tenant_id = %s AND fairness_analysis_id = %s
                 """,
-                (fairness_analysis_id,),
+                (tenant_id, fairness_analysis_id),
             ).fetchone()
         if row is None:
             return None
@@ -323,6 +336,7 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
     def list_fairness_analyses(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         policy_version: str | None = None,
         as_of_date: str | None = None,
@@ -330,8 +344,8 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmPmQualityFairnessAnalysis]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         for column, value in (
             ("policy_id", policy_id),
             ("policy_version", policy_version),
@@ -376,20 +390,26 @@ class PostgresDpmPmQualityReviewActionRepository:
         self._dsn = dsn
         self._init_db()
 
-    def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
+    def save_review_action(self, *, tenant_id: str, action: DpmPmQualityReviewAction) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=action.tenant_id)
         with closing(self._connect()) as connection:
-            _validate_postgres_review_action_parent(connection=connection, action=action)
+            _validate_postgres_review_action_parent(
+                connection=connection,
+                tenant_id=tenant_id,
+                action=action,
+            )
             connection.execute(
                 """
                 INSERT INTO dpm_pm_quality_review_actions (
-                    review_action_id, review_action_ref, target_type, target_id,
+                    tenant_id, review_action_id, review_action_ref, target_type, target_id,
                     policy_id, policy_version, as_of_date, target_state, action_type,
                     action_state, content_hash, generated_at, actor_id, correlation_id,
                     payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (review_action_id) DO NOTHING
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (tenant_id, review_action_id) DO NOTHING
                 """,
                 (
+                    tenant_id,
                     action.review_action_id,
                     action.review_action_ref,
                     action.target_type,
@@ -411,9 +431,9 @@ class PostgresDpmPmQualityReviewActionRepository:
                 """
                 SELECT content_hash
                 FROM dpm_pm_quality_review_actions
-                WHERE review_action_id = %s
+                WHERE tenant_id = %s AND review_action_id = %s
                 """,
-                (action.review_action_id,),
+                (tenant_id, action.review_action_id),
             ).fetchone()
             if persisted is None or persisted["content_hash"] != action.content_hash:
                 connection.rollback()
@@ -425,6 +445,7 @@ class PostgresDpmPmQualityReviewActionRepository:
     def get_review_action(
         self,
         *,
+        tenant_id: str,
         review_action_id: str,
     ) -> DpmPmQualityReviewAction | None:
         with closing(self._connect()) as connection:
@@ -432,9 +453,9 @@ class PostgresDpmPmQualityReviewActionRepository:
                 """
                 SELECT payload_json
                 FROM dpm_pm_quality_review_actions
-                WHERE review_action_id = %s
+                WHERE tenant_id = %s AND review_action_id = %s
                 """,
-                (review_action_id,),
+                (tenant_id, review_action_id),
             ).fetchone()
         if row is None:
             return None
@@ -443,6 +464,7 @@ class PostgresDpmPmQualityReviewActionRepository:
     def list_review_actions(
         self,
         *,
+        tenant_id: str,
         target_type: str | None = None,
         target_id: str | None = None,
         policy_id: str | None = None,
@@ -451,8 +473,8 @@ class PostgresDpmPmQualityReviewActionRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmPmQualityReviewAction]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         for column, value in (
             ("target_type", target_type),
             ("target_id", target_id),
@@ -498,25 +520,30 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
         self._dsn = dsn
         self._init_db()
 
-    def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
+    def save_summary_invocation(
+        self, *, tenant_id: str, invocation: DpmPmQualitySummaryInvocation
+    ) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=invocation.tenant_id)
         with closing(self._connect()) as connection:
             _validate_postgres_summary_invocation_parents(
                 connection=connection,
+                tenant_id=tenant_id,
                 invocation=invocation,
             )
             try:
                 connection.execute(
                     """
                     INSERT INTO dpm_pm_quality_summary_invocations (
-                        summary_invocation_id, score_run_id, review_action_id, policy_id,
+                        tenant_id, summary_invocation_id, score_run_id, review_action_id, policy_id,
                         policy_version, as_of_date, invocation_state, summary_ref,
                         workflow_pack_name, workflow_pack_version, workflow_run_id,
                         summary_artifact_ref, summary_content_hash, content_hash,
                         generated_at, requested_by, correlation_id, payload_json
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (summary_invocation_id) DO NOTHING
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (tenant_id, summary_invocation_id) DO NOTHING
                     """,
                     (
+                        tenant_id,
                         invocation.summary_invocation_id,
                         invocation.score_run_id,
                         invocation.review_action_id,
@@ -549,9 +576,9 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
                 """
                 SELECT content_hash
                 FROM dpm_pm_quality_summary_invocations
-                WHERE summary_invocation_id = %s
+                WHERE tenant_id = %s AND summary_invocation_id = %s
                 """,
-                (invocation.summary_invocation_id,),
+                (tenant_id, invocation.summary_invocation_id),
             ).fetchone()
             if persisted is None or persisted["content_hash"] != invocation.content_hash:
                 connection.rollback()
@@ -563,6 +590,7 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
     def get_summary_invocation(
         self,
         *,
+        tenant_id: str,
         summary_invocation_id: str,
     ) -> DpmPmQualitySummaryInvocation | None:
         with closing(self._connect()) as connection:
@@ -570,9 +598,9 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
                 """
                 SELECT payload_json
                 FROM dpm_pm_quality_summary_invocations
-                WHERE summary_invocation_id = %s
+                WHERE tenant_id = %s AND summary_invocation_id = %s
                 """,
-                (summary_invocation_id,),
+                (tenant_id, summary_invocation_id),
             ).fetchone()
         if row is None:
             return None
@@ -581,6 +609,7 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
     def list_summary_invocations(
         self,
         *,
+        tenant_id: str,
         score_run_id: str | None = None,
         review_action_id: str | None = None,
         policy_id: str | None = None,
@@ -589,8 +618,8 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmPmQualitySummaryInvocation]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         for column, value in (
             ("score_run_id", score_run_id),
             ("review_action_id", review_action_id),
@@ -630,6 +659,7 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
 def _validate_postgres_review_action_parent(
     *,
     connection: Any,
+    tenant_id: str,
     action: DpmPmQualityReviewAction,
 ) -> None:
     if action.target_type == "SCORE_RUN":
@@ -637,6 +667,7 @@ def _validate_postgres_review_action_parent(
             connection=connection,
             table="dpm_pm_quality_score_runs",
             id_column="score_run_id",
+            tenant_id=tenant_id,
             identifier=action.target_id,
         )
     elif action.target_type == "FAIRNESS_ANALYSIS":
@@ -644,6 +675,7 @@ def _validate_postgres_review_action_parent(
             connection=connection,
             table="dpm_pm_quality_fairness_analyses",
             id_column="fairness_analysis_id",
+            tenant_id=tenant_id,
             identifier=action.target_id,
         )
     else:
@@ -665,12 +697,14 @@ def _validate_postgres_review_action_parent(
 def _validate_postgres_summary_invocation_parents(
     *,
     connection: Any,
+    tenant_id: str,
     invocation: DpmPmQualitySummaryInvocation,
 ) -> None:
     score_run = _pm_quality_parent_row(
         connection=connection,
         table="dpm_pm_quality_score_runs",
         id_column="score_run_id",
+        tenant_id=tenant_id,
         identifier=invocation.score_run_id,
     )
     if score_run is None:
@@ -690,9 +724,9 @@ def _validate_postgres_summary_invocation_parents(
         """
         SELECT content_hash, target_type, target_id, policy_id, policy_version, as_of_date
         FROM dpm_pm_quality_review_actions
-        WHERE review_action_id = %s
+        WHERE tenant_id = %s AND review_action_id = %s
         """,
-        (invocation.review_action_id,),
+        (tenant_id, invocation.review_action_id),
     ).fetchone()
     if review_action is None:
         raise DpmPmQualitySummaryInvocationIntegrityError(
@@ -716,16 +750,24 @@ def _pm_quality_parent_row(
     connection: Any,
     table: str,
     id_column: str,
+    tenant_id: str,
     identifier: str,
 ) -> Any:
     return connection.execute(
         f"""
         SELECT content_hash, policy_id, policy_version, as_of_date, state
         FROM {table}
-        WHERE {id_column} = %s
+        WHERE tenant_id = %s AND {id_column} = %s
         """,
-        (identifier,),
+        (tenant_id, identifier),
     ).fetchone()
+
+
+def _ensure_record_tenant(*, tenant_id: str, record_tenant_id: str) -> None:
+    if not tenant_id.strip():
+        raise ValueError("PM_QUALITY_TENANT_REQUIRED")
+    if record_tenant_id != tenant_id:
+        raise ValueError("PM_QUALITY_TENANT_MISMATCH")
 
 
 def _raise_if_foreign_key_violation(exc: Exception, replacement: Exception) -> None:

@@ -77,6 +77,7 @@ def _pm_quality_policy_repository_override():
 
 def _policy(enabled: bool = True) -> dict:
     payload = {
+        "tenant_id": "tenant-sg",
         "policy_id": "pmq_sg_dpm",
         "policy_version": "2026.05",
         "enabled": enabled,
@@ -162,12 +163,13 @@ def _trusted_pm_quality_headers(
     actor_id: str = "ops",
     tenant_id: str = "tenant-sg",
     capabilities: str = "pm_quality.write",
+    correlation_id: str = "corr-trusted",
 ) -> dict[str, str]:
     return {
         "X-Actor-Id": actor_id,
         "X-Tenant-Id": tenant_id,
         "X-Role": "operator",
-        "X-Correlation-Id": "corr-trusted",
+        "X-Correlation-Id": correlation_id,
         "X-Service-Identity": "lotus-gateway",
         "X-Capabilities": capabilities,
     }
@@ -238,6 +240,7 @@ def _source_only_score_run(
     *, pm_id: str, score: Decimal, correlation_id: str = "corr"
 ) -> DpmPmOperatingQualityScoreRun:
     policy = DpmPmOperatingQualityPolicy(
+        tenant_id="tenant-sg",
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         enabled=True,
@@ -253,6 +256,7 @@ def _source_only_score_run(
         governance_approval=DpmPmQualityGovernanceApproval.model_validate(_governance_approval()),
     )
     return build_pm_operating_quality_score_run(
+        tenant_id="tenant-sg",
         pm_id=pm_id,
         book_id="sg_dpm_book",
         as_of_date="2026-05-12",
@@ -718,24 +722,24 @@ class _IncompletePmBookResolver:
 
 
 class _ConflictingScoreRunRepository(InMemoryDpmPmQualityScoreRunRepository):
-    def save_score_run(self, *, score_run: DpmPmOperatingQualityScoreRun) -> None:
+    def save_score_run(self, *, tenant_id: str, score_run: DpmPmOperatingQualityScoreRun) -> None:
         raise DpmPmQualityScoreRunConflictError("PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT")
 
 
 class _ConflictingFairnessAnalysisRepository(InMemoryDpmPmQualityFairnessAnalysisRepository):
-    def save_fairness_analysis(self, *, analysis: Any) -> None:
+    def save_fairness_analysis(self, *, tenant_id: str, analysis: Any) -> None:
         raise DpmPmQualityFairnessAnalysisConflictError(
             "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
         )
 
 
 class _ConflictingReviewActionRepository(InMemoryDpmPmQualityReviewActionRepository):
-    def save_review_action(self, *, action: Any) -> None:
+    def save_review_action(self, *, tenant_id: str, action: Any) -> None:
         raise DpmPmQualityReviewActionConflictError("PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT")
 
 
 class _ConflictingSummaryInvocationRepository(InMemoryDpmPmQualitySummaryInvocationRepository):
-    def save_summary_invocation(self, *, invocation: Any) -> None:
+    def save_summary_invocation(self, *, tenant_id: str, invocation: Any) -> None:
         raise DpmPmQualitySummaryInvocationConflictError(
             "PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT"
         )
@@ -750,7 +754,7 @@ def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> 
             response = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=_request(),
-                headers={"X-Correlation-Id": "corr-pmq-001"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-001"),
             )
     finally:
         app.dependency_overrides.clear()
@@ -796,7 +800,7 @@ def test_pm_operating_quality_api_materializes_pm_book_scope(
             response = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=payload,
-                headers={"X-Correlation-Id": "corr-pmq-book"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-book"),
             )
     finally:
         app.dependency_overrides.clear()
@@ -873,6 +877,7 @@ def test_pm_operating_quality_api_fails_closed_for_pm_book_scope(
             response = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=payload,
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -897,24 +902,30 @@ def test_pm_operating_quality_api_administers_policies_and_uses_policy_refs() ->
             saved = client.put(
                 "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
                 json=_policy(),
+                headers=_trusted_pm_quality_headers(),
             )
             fetched = client.get(
-                "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05"
+                "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             listed = client.get(
                 "/api/v1/rebalance/pm-operating-quality/policies",
                 params={"enabled": "true", "policy_id": "pmq_sg_dpm"},
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             preview = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=_request_with_policy_ref(),
+                headers=_trusted_pm_quality_headers(),
             )
             created = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs",
                 json=_request_with_policy_ref(),
+                headers=_trusted_pm_quality_headers(),
             )
             missing = client.get(
-                "/api/v1/rebalance/pm-operating-quality/policies/pmq_missing/versions/2026.05"
+                "/api/v1/rebalance/pm-operating-quality/policies/pmq_missing/versions/2026.05",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
     finally:
         app.dependency_overrides.clear()
@@ -948,6 +959,7 @@ def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
             saved = client.put(
                 "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
                 json=_scope_policy(),
+                headers=_trusted_pm_quality_headers(),
             )
             request = _scope_request()
             request.pop("policy")
@@ -956,18 +968,21 @@ def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
             preview = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=request,
+                headers=_trusted_pm_quality_headers(),
             )
             stale_request = _scope_request()
             stale_request["evidence_items"][0]["source_refs"][0]["source_version"] = "2026-04-01"
             stale = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=stale_request,
+                headers=_trusted_pm_quality_headers(),
             )
             mixed_undated_request = _scope_request()
             mixed_undated_request["evidence_items"][1]["source_refs"][0].pop("source_version")
             mixed_undated = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=mixed_undated_request,
+                headers=_trusted_pm_quality_headers(),
             )
             invalid_date_request = _scope_request()
             invalid_date_request["evidence_items"][0]["source_refs"][0]["source_version"] = (
@@ -976,6 +991,7 @@ def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
             invalid_date = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs",
                 json=invalid_date_request,
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1017,28 +1033,33 @@ def test_pm_operating_quality_api_rejects_policy_admin_conflicts_and_bad_refs() 
             saved = client.put(
                 "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
                 json=_policy(),
+                headers=_trusted_pm_quality_headers(),
             )
             changed_policy = _policy()
             changed_policy["ready_threshold"] = "90"
             conflict = client.put(
                 "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
                 json=changed_policy,
+                headers=_trusted_pm_quality_headers(),
             )
             mismatch_policy = _policy()
             mismatch_policy["policy_version"] = "2026.06"
             mismatch = client.put(
                 "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
                 json=mismatch_policy,
+                headers=_trusted_pm_quality_headers(),
             )
             missing_policy_payload = _request_with_policy_ref()
             missing_policy_payload["policy_id"] = "pmq_missing"
             missing_policy_ref = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=missing_policy_payload,
+                headers=_trusted_pm_quality_headers(),
             )
             missing_ref = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=_request_with_policy_ref(),
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1103,6 +1124,7 @@ def test_pm_operating_quality_api_fails_closed_for_invalid_governance(
             response = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=request,
+                headers=_trusted_pm_quality_headers(actor_id=actor_id),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1129,17 +1151,22 @@ def test_pm_operating_quality_api_creates_gets_and_lists_persisted_score_runs() 
             created = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs",
                 json=_request(),
-                headers={"X-Correlation-Id": "corr-pmq-create"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-create"),
             )
             score_run_id = created.json()["score_run"]["score_run_id"]
             fetched = client.get(
-                f"/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}"
+                f"/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             listed = client.get(
                 "/api/v1/rebalance/pm-operating-quality/score-runs",
                 params={"pm_id": "pm_001", "policy_id": "pmq_sg_dpm"},
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
-            missing = client.get("/api/v1/rebalance/pm-operating-quality/score-runs/missing")
+            missing = client.get(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/missing",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
+            )
     finally:
         app.dependency_overrides.clear()
 
@@ -1169,6 +1196,7 @@ def test_pm_operating_quality_api_maps_persistence_conflicts_to_409() -> None:
             response = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs",
                 json=_request(),
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1193,7 +1221,7 @@ def test_pm_operating_quality_api_previews_source_segment_fairness_analysis() ->
         pm_id="pm_inc_002", score=Decimal("58"), correlation_id="corr-income-2"
     )
     for score_run in [balanced_1, balanced_2, income_1, income_2]:
-        score_run_repository.save_score_run(score_run=score_run)
+        score_run_repository.save_score_run(tenant_id="tenant-sg", score_run=score_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
     try:
         with TestClient(app) as client:
@@ -1238,7 +1266,7 @@ def test_pm_operating_quality_api_previews_source_segment_fairness_analysis() ->
                         },
                     ],
                 },
-                headers={"X-Correlation-Id": "corr-pmq-fairness"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-fairness"),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1275,7 +1303,7 @@ def test_pm_operating_quality_api_creates_gets_and_lists_fairness_analyses() -> 
         pm_id="pm_inc_002", score=Decimal("58"), correlation_id="corr-income-2"
     )
     for score_run in [balanced_1, balanced_2, income_1, income_2]:
-        score_run_repository.save_score_run(score_run=score_run)
+        score_run_repository.save_score_run(tenant_id="tenant-sg", score_run=score_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
     app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
         fairness_repository
@@ -1321,17 +1349,22 @@ def test_pm_operating_quality_api_creates_gets_and_lists_fairness_analyses() -> 
             created = client.post(
                 "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
                 json=request,
-                headers={"X-Correlation-Id": "corr-pmq-fairness-create"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-fairness-create"),
             )
             fairness_analysis_id = created.json()["fairness_analysis"]["fairness_analysis_id"]
             fetched = client.get(
-                f"/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}"
+                f"/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             listed = client.get(
                 "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
                 params={"policy_id": "pmq_sg_dpm", "state": "PENDING_REVIEW"},
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
-            missing = client.get("/api/v1/rebalance/pm-operating-quality/fairness-analyses/missing")
+            missing = client.get(
+                "/api/v1/rebalance/pm-operating-quality/fairness-analyses/missing",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
+            )
     finally:
         app.dependency_overrides.clear()
 
@@ -1354,7 +1387,7 @@ def test_pm_operating_quality_api_creates_gets_and_lists_review_actions() -> Non
     fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
     review_repository = InMemoryDpmPmQualityReviewActionRepository()
     score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
-    score_repository.save_score_run(score_run=score_run)
+    score_repository.save_score_run(tenant_id="tenant-sg", score_run=score_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
     app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
         fairness_repository
@@ -1382,27 +1415,31 @@ def test_pm_operating_quality_api_creates_gets_and_lists_review_actions() -> Non
             preview = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
                 json=request,
-                headers={"X-Correlation-Id": "corr-pmq-review-preview"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-review-preview"),
             )
             created = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions",
                 json=request,
-                headers={"X-Correlation-Id": "corr-pmq-review-create"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-review-create"),
             )
             review_action_id = created.json()["review_action"]["review_action_id"]
             fetched = client.get(
-                f"/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}"
+                f"/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             listed = client.get(
                 "/api/v1/rebalance/pm-operating-quality/review-actions"
-                "?target_type=SCORE_RUN&action_state=REVIEW_REQUIRED"
+                "?target_type=SCORE_RUN&action_state=REVIEW_REQUIRED",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             missing_target = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
                 json={**request, "target_id": "missing"},
+                headers=_trusted_pm_quality_headers(),
             )
             missing_action = client.get(
-                "/api/v1/rebalance/pm-operating-quality/review-actions/missing"
+                "/api/v1/rebalance/pm-operating-quality/review-actions/missing",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1443,7 +1480,7 @@ def test_pm_operating_quality_api_review_action_validation_conflict_and_failure_
 ) -> None:
     score_repository = InMemoryDpmPmQualityScoreRunRepository()
     score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
-    score_repository.save_score_run(score_run=score_run)
+    score_repository.save_score_run(tenant_id="tenant-sg", score_run=score_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
     app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
         InMemoryDpmPmQualityFairnessAnalysisRepository()
@@ -1469,10 +1506,12 @@ def test_pm_operating_quality_api_review_action_validation_conflict_and_failure_
             missing_fairness_target = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
                 json={**request, "target_type": "FAIRNESS_ANALYSIS", "target_id": "missing"},
+                headers=_trusted_pm_quality_headers(),
             )
             conflict = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions",
                 json=request,
+                headers=_trusted_pm_quality_headers(),
             )
 
             def _raise_value_error(**_kwargs: object) -> None:
@@ -1488,6 +1527,7 @@ def test_pm_operating_quality_api_review_action_validation_conflict_and_failure_
             invalid_target = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
                 json=request,
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1515,7 +1555,7 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
     review_repository = InMemoryDpmPmQualityReviewActionRepository()
     summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
-    score_repository.save_score_run(score_run=score_run)
+    score_repository.save_score_run(tenant_id="tenant-sg", score_run=score_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
     app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
         InMemoryDpmPmQualityFairnessAnalysisRepository()
@@ -1560,7 +1600,7 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
             review_action = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions",
                 json=review_action_request,
-                headers={"X-Correlation-Id": "corr-review"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-review"),
             )
             assert review_action.status_code == 201
             review_action_id = review_action.json()["review_action"]["review_action_id"]
@@ -1568,29 +1608,33 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
             preview = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json=request,
-                headers={"X-Correlation-Id": "corr-pmq-summary-preview"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-summary-preview"),
             )
             created = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations",
                 json=request,
-                headers={"X-Correlation-Id": "corr-pmq-summary-create"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-pmq-summary-create"),
             )
             summary_invocation_id = created.json()["summary_invocation"]["summary_invocation_id"]
             fetched = client.get(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/"
-                f"{summary_invocation_id}"
+                f"{summary_invocation_id}",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             listed = client.get(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations",
                 params={"score_run_id": score_run.score_run_id, "invocation_state": "COMPLETED"},
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
             missing_score_run = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json={**request, "score_run_id": "missing"},
+                headers=_trusted_pm_quality_headers(),
             )
             requested_with_result = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json={**request, "invocation_state": "REQUESTED"},
+                headers=_trusted_pm_quality_headers(),
             )
             completed_without_artifact = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
@@ -1599,6 +1643,7 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
                     "summary_artifact_ref": None,
                     "summary_content_hash": "sha256:pmq-summary",
                 },
+                headers=_trusted_pm_quality_headers(),
             )
             failed_without_reason = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
@@ -1608,9 +1653,11 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
                     "summary_artifact_ref": None,
                     "summary_content_hash": None,
                 },
+                headers=_trusted_pm_quality_headers(),
             )
             missing_invocation = client.get(
-                "/api/v1/rebalance/pm-operating-quality/summary-invocations/missing"
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/missing",
+                headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1739,7 +1786,7 @@ def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and
     score_repository = InMemoryDpmPmQualityScoreRunRepository()
     review_repository = InMemoryDpmPmQualityReviewActionRepository()
     score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
-    score_repository.save_score_run(score_run=score_run)
+    score_repository.save_score_run(tenant_id="tenant-sg", score_run=score_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
     app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
         InMemoryDpmPmQualityFairnessAnalysisRepository()
@@ -1770,7 +1817,7 @@ def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and
             review_action = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions",
                 json=review_action_request,
-                headers={"X-Correlation-Id": "corr-review"},
+                headers=_trusted_pm_quality_headers(correlation_id="corr-review"),
             )
             assert review_action.status_code == 201
             review_action_payload = review_action.json()["review_action"]
@@ -1783,20 +1830,26 @@ def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and
                     "target_content_hash": "sha256:other",
                 }
             )
-            review_repository.save_review_action(action=mismatched_review_action)
+            review_repository.save_review_action(
+                tenant_id="tenant-sg",
+                action=mismatched_review_action,
+            )
 
             request["review_action_id"] = review_action_payload["review_action_id"]
             missing_review_action = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json={**request, "review_action_id": "missing"},
+                headers=_trusted_pm_quality_headers(),
             )
             mismatched_review_action_response = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json={**request, "review_action_id": mismatched_review_action.review_action_id},
+                headers=_trusted_pm_quality_headers(),
             )
             conflict = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations",
                 json=request,
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1831,7 +1884,7 @@ def test_pm_operating_quality_api_maps_fairness_persistence_conflicts_to_409() -
         pm_id="pm_inc_002", score=Decimal("58"), correlation_id="corr-income-2"
     )
     for score_run in [balanced_1, balanced_2, income_1, income_2]:
-        score_run_repository.save_score_run(score_run=score_run)
+        score_run_repository.save_score_run(tenant_id="tenant-sg", score_run=score_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
     app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
         _ConflictingFairnessAnalysisRepository()
@@ -1862,6 +1915,7 @@ def test_pm_operating_quality_api_maps_fairness_persistence_conflicts_to_409() -
                         },
                     ],
                 },
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1879,8 +1933,8 @@ def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_r
     mismatched_run = _source_only_score_run(pm_id="pm_mismatch", score=Decimal("91")).model_copy(
         update={"as_of_date": "2026-05-13"}
     )
-    score_run_repository.save_score_run(score_run=ready_run)
-    score_run_repository.save_score_run(score_run=mismatched_run)
+    score_run_repository.save_score_run(tenant_id="tenant-sg", score_run=ready_run)
+    score_run_repository.save_score_run(tenant_id="tenant-sg", score_run=mismatched_run)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
     try:
         with TestClient(app) as client:
@@ -1906,6 +1960,7 @@ def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_r
                         },
                     ],
                 },
+                headers=_trusted_pm_quality_headers(),
             )
             blocked = client.post(
                 "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
@@ -1930,6 +1985,7 @@ def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_r
                         },
                     ],
                 },
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1958,6 +2014,7 @@ def test_pm_operating_quality_api_returns_disabled_score_run_without_score() -> 
             response = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=payload,
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()
@@ -1977,6 +2034,7 @@ def test_pm_operating_quality_api_fails_closed_for_missing_review_and_policy_mis
             missing = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=_request("missing"),
+                headers=_trusted_pm_quality_headers(),
             )
             mismatched = _request()
             mismatched["outcome_review_ids"] = []
@@ -1984,6 +2042,7 @@ def test_pm_operating_quality_api_fails_closed_for_missing_review_and_policy_mis
             mismatch = client.post(
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=mismatched,
+                headers=_trusted_pm_quality_headers(),
             )
     finally:
         app.dependency_overrides.clear()

@@ -245,6 +245,11 @@ class DpmPmQualityLookbackWindowPolicy(BaseModel):
 class DpmPmOperatingQualityPolicy(BaseModel):
     """Bank-owned PM operating quality policy supplied to a score run."""
 
+    tenant_id: str = Field(
+        min_length=1,
+        description="Trusted tenant scope that owns this policy version.",
+        examples=["tenant-sg"],
+    )
     policy_id: str = Field(description="Bank-owned policy identifier.", examples=["pmq_sg_dpm"])
     policy_version: str = Field(description="Policy version.", examples=["2026.05"])
     enabled: bool = Field(
@@ -480,6 +485,11 @@ class DpmPmOperatingQualityScoreRun(BaseModel):
         description="Domain data product name emitted by lotus-manage.",
     )
     product_version: Literal["v1"] = Field(default="v1", description="Product version.")
+    tenant_id: str = Field(
+        min_length=1,
+        description="Trusted tenant scope that owns this score-run evidence.",
+        examples=["tenant-sg"],
+    )
     score_run_id: str = Field(description="Stable content-addressed score-run identifier.")
     pm_id: str = Field(description="Portfolio manager identifier.", examples=["pm_001"])
     book_id: str | None = Field(default=None, description="PM book identifier when available.")
@@ -578,6 +588,11 @@ class DpmPmQualityFairnessAnalysis(BaseModel):
         description="Domain data product name emitted by lotus-manage.",
     )
     product_version: Literal["v1"] = Field(default="v1", description="Product version.")
+    tenant_id: str = Field(
+        min_length=1,
+        description="Trusted tenant scope that owns this fairness-analysis evidence.",
+        examples=["tenant-sg"],
+    )
     fairness_analysis_id: str = Field(
         description="Stable content-addressed fairness-analysis identifier."
     )
@@ -794,6 +809,11 @@ class DpmPmQualityReviewAction(BaseModel):
         description="Domain data product name emitted by lotus-manage.",
     )
     product_version: Literal["v1"] = Field(default="v1", description="Product version.")
+    tenant_id: str = Field(
+        min_length=1,
+        description="Trusted tenant scope that owns this review-action evidence.",
+        examples=["tenant-sg"],
+    )
     review_action_id: str = Field(description="Stable content-addressed review-action identifier.")
     review_action_ref: str = Field(
         min_length=1,
@@ -896,6 +916,11 @@ class DpmPmQualitySummaryInvocation(BaseModel):
         description="Domain data product name emitted by lotus-manage.",
     )
     product_version: Literal["v1"] = Field(default="v1", description="Product version.")
+    tenant_id: str = Field(
+        min_length=1,
+        description="Trusted tenant scope that owns this summary-invocation history row.",
+        examples=["tenant-sg"],
+    )
     summary_invocation_id: str = Field(
         description="Stable content-addressed summary-invocation identifier."
     )

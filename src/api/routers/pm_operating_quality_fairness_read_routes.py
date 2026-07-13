@@ -11,6 +11,10 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityFairnessPreviewResponse,
 )
 from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedIdentity,
+    pm_quality_trusted_identity_required,
+)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -44,8 +48,10 @@ def list_pm_quality_fairness_analyses_endpoint(
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_fairness_application_service
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPmQualityFairnessAnalysisListResponse:
     fairness_analyses = application_service.list_fairness_analyses(
+        tenant_id=identity.tenant_id,
         policy_id=policy_id,
         policy_version=policy_version,
         as_of_date=as_of_date,
@@ -79,10 +85,11 @@ def get_pm_quality_fairness_analysis_endpoint(
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_fairness_application_service
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPmQualityFairnessPreviewResponse:
     try:
         fairness_analysis = application_service.get_fairness_analysis(
-            fairness_analysis_id=fairness_analysis_id
+            tenant_id=identity.tenant_id, fairness_analysis_id=fairness_analysis_id
         )
     except DpmPmOperatingQualityServiceError as exc:
         raise pm_quality_service_http_exception(exc) from exc

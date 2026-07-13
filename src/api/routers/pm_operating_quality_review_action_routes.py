@@ -10,7 +10,6 @@ from src.api.routers.pm_operating_quality_command_mapping import (
     review_action_command_from_request,
 )
 from src.api.routers.pm_operating_quality_models import (
-    DpmPmQualityReviewActionRequest,
     DpmPmQualityReviewActionResponse,
 )
 from src.api.routers.pm_operating_quality_http import (
@@ -22,6 +21,7 @@ from src.api.routers.pm_operating_quality_review_action_read_routes import (
     register_pm_quality_review_action_read_routes,
 )
 from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedReviewActionRequest,
     review_action_request_with_trusted_identity,
 )
 from src.api.services.pm_operating_quality_service import (
@@ -55,7 +55,7 @@ def register_pm_quality_review_action_routes(
         ),
     )
     def preview_pm_quality_review_action_endpoint(
-        request: DpmPmQualityReviewActionRequest = Depends(
+        trusted_request: PmQualityTrustedReviewActionRequest = Depends(
             review_action_request_with_trusted_identity
         ),
         x_correlation_id: PmQualityCorrelationIdHeader = None,
@@ -66,7 +66,8 @@ def register_pm_quality_review_action_routes(
         try:
             review_action = application_service.preview_review_action(
                 review_action_command_from_request(
-                    request=request,
+                    tenant_id=trusted_request.identity.tenant_id,
+                    request=trusted_request.request,
                     x_correlation_id=x_correlation_id,
                 )
             )
@@ -91,7 +92,7 @@ def register_pm_quality_review_action_routes(
         ),
     )
     def create_pm_quality_review_action_endpoint(
-        request: DpmPmQualityReviewActionRequest = Depends(
+        trusted_request: PmQualityTrustedReviewActionRequest = Depends(
             review_action_request_with_trusted_identity
         ),
         x_correlation_id: PmQualityCorrelationIdHeader = None,
@@ -102,7 +103,8 @@ def register_pm_quality_review_action_routes(
         try:
             review_action = application_service.create_review_action(
                 review_action_command_from_request(
-                    request=request,
+                    tenant_id=trusted_request.identity.tenant_id,
+                    request=trusted_request.request,
                     x_correlation_id=x_correlation_id,
                 )
             )

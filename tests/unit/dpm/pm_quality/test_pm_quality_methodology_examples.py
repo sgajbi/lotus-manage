@@ -16,8 +16,12 @@ from src.core.pm_quality.fairness_analysis import (
 )
 
 
+TENANT_ID = "tenant-sg"
+
+
 def test_pm_quality_methodology_score_run_worked_example_matches_document() -> None:
     score_run = build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id="pm_methodology",
         book_id="book_methodology",
         as_of_date="2026-05-12",
@@ -65,6 +69,7 @@ def test_pm_quality_methodology_score_run_worked_example_matches_document() -> N
 
 def test_pm_quality_methodology_score_run_rounds_half_up_at_two_decimals() -> None:
     score_run = build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id="pm_methodology_rounding",
         book_id="book_methodology",
         as_of_date="2026-05-12",
@@ -96,6 +101,7 @@ def test_pm_quality_methodology_score_run_rounds_half_up_at_two_decimals() -> No
 def test_pm_quality_methodology_fairness_worked_example_matches_document() -> None:
     policy = _policy(ready_threshold="90", watch_threshold="70")
     analysis = build_pm_operating_quality_fairness_analysis(
+        tenant_id=TENANT_ID,
         policy_id=policy.policy_id,
         policy_version=policy.policy_version,
         as_of_date="2026-05-12",
@@ -133,6 +139,7 @@ def test_pm_quality_methodology_fairness_worked_example_matches_document() -> No
 
 def _policy(*, ready_threshold: str, watch_threshold: str) -> DpmPmOperatingQualityPolicy:
     return DpmPmOperatingQualityPolicy(
+        tenant_id=TENANT_ID,
         policy_id="pmq_methodology",
         policy_version="2026.05",
         enabled=True,
@@ -178,6 +185,7 @@ def _segment(
         source_refs=[_source_ref(f"{segment_id}-source", "2026-05-12")],
         score_runs=[
             build_pm_operating_quality_score_run(
+                tenant_id=TENANT_ID,
                 pm_id=f"pm_{segment_id}_{index}",
                 book_id=f"book_{segment_id}",
                 as_of_date="2026-05-12",

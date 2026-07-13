@@ -5,6 +5,10 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Path, Query, status
 
 from src.api.routers.portfolio_memory import get_portfolio_memory_source_repositories, router
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedIdentity,
+    pm_quality_trusted_identity_required,
+)
 from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
 from src.core.portfolio_memory.models import DpmPortfolioMemoryEventLookup
 from src.core.portfolio_memory.read_request import (
@@ -62,8 +66,10 @@ def get_portfolio_memory_event(
     repositories: PortfolioMemorySourceRepositories = Depends(
         get_portfolio_memory_source_repositories
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPortfolioMemoryEventLookup:
     memory = build_portfolio_memory_from_sources(
+        tenant_id=identity.tenant_id,
         portfolio_id=portfolio_id,
         repositories=repositories,
         limit=limit,

@@ -79,21 +79,25 @@ class DpmPmOperatingQualityApplicationService:
     def save_policy(
         self,
         *,
+        tenant_id: str,
         policy_id: str,
         policy_version: str,
         policy: DpmPmOperatingQualityPolicy,
     ) -> DpmPmOperatingQualityPolicy:
         if policy.policy_id != policy_id or policy.policy_version != policy_version:
             raise DpmPmOperatingQualityServiceError("PM_QUALITY_POLICY_PATH_BODY_MISMATCH")
+        if policy.tenant_id != tenant_id:
+            raise DpmPmOperatingQualityServiceError("PM_QUALITY_POLICY_TENANT_MISMATCH")
         _required_repository(
             self.policy_repository,
             "PM_QUALITY_POLICY_REPOSITORY_NOT_CONFIGURED",
-        ).save_policy(policy=policy)
+        ).save_policy(tenant_id=tenant_id, policy=policy)
         return policy
 
     def list_policies(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         enabled: bool | None = None,
         as_of_date: str | None = None,
@@ -104,6 +108,7 @@ class DpmPmOperatingQualityApplicationService:
             self.policy_repository,
             "PM_QUALITY_POLICY_REPOSITORY_NOT_CONFIGURED",
         ).list_policies(
+            tenant_id=tenant_id,
             policy_id=policy_id,
             enabled=enabled,
             as_of_date=as_of_date,
@@ -114,13 +119,14 @@ class DpmPmOperatingQualityApplicationService:
     def get_policy(
         self,
         *,
+        tenant_id: str,
         policy_id: str,
         policy_version: str,
     ) -> DpmPmOperatingQualityPolicy:
         policy = _required_repository(
             self.policy_repository,
             "PM_QUALITY_POLICY_REPOSITORY_NOT_CONFIGURED",
-        ).get_policy(policy_id=policy_id, policy_version=policy_version)
+        ).get_policy(tenant_id=tenant_id, policy_id=policy_id, policy_version=policy_version)
         if policy is None:
             raise DpmPmOperatingQualityServiceError(
                 f"PM_QUALITY_POLICY_NOT_FOUND:{policy_id}:{policy_version}"
@@ -152,12 +158,13 @@ class DpmPmOperatingQualityApplicationService:
         _required_repository(
             self.score_run_repository,
             "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
-        ).save_score_run(score_run=score_run)
+        ).save_score_run(tenant_id=command.tenant_id, score_run=score_run)
         return score_run
 
     def list_score_runs(
         self,
         *,
+        tenant_id: str,
         pm_id: str | None = None,
         book_id: str | None = None,
         policy_id: str | None = None,
@@ -170,6 +177,7 @@ class DpmPmOperatingQualityApplicationService:
             self.score_run_repository,
             "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
         ).list_score_runs(
+            tenant_id=tenant_id,
             pm_id=pm_id,
             book_id=book_id,
             policy_id=policy_id,
@@ -179,11 +187,11 @@ class DpmPmOperatingQualityApplicationService:
             offset=offset,
         )
 
-    def get_score_run(self, *, score_run_id: str) -> DpmPmOperatingQualityScoreRun:
+    def get_score_run(self, *, tenant_id: str, score_run_id: str) -> DpmPmOperatingQualityScoreRun:
         score_run = _required_repository(
             self.score_run_repository,
             "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
-        ).get_score_run(score_run_id=score_run_id)
+        ).get_score_run(tenant_id=tenant_id, score_run_id=score_run_id)
         if score_run is None:
             raise DpmPmOperatingQualityServiceError(
                 f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{score_run_id}"
@@ -210,12 +218,13 @@ class DpmPmOperatingQualityApplicationService:
         _required_repository(
             self.fairness_repository,
             "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
-        ).save_fairness_analysis(analysis=fairness_analysis)
+        ).save_fairness_analysis(tenant_id=command.tenant_id, analysis=fairness_analysis)
         return fairness_analysis
 
     def list_fairness_analyses(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         policy_version: str | None = None,
         as_of_date: str | None = None,
@@ -227,6 +236,7 @@ class DpmPmOperatingQualityApplicationService:
             self.fairness_repository,
             "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
         ).list_fairness_analyses(
+            tenant_id=tenant_id,
             policy_id=policy_id,
             policy_version=policy_version,
             as_of_date=as_of_date,
@@ -238,12 +248,16 @@ class DpmPmOperatingQualityApplicationService:
     def get_fairness_analysis(
         self,
         *,
+        tenant_id: str,
         fairness_analysis_id: str,
     ) -> DpmPmQualityFairnessAnalysis:
         fairness_analysis = _required_repository(
             self.fairness_repository,
             "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
-        ).get_fairness_analysis(fairness_analysis_id=fairness_analysis_id)
+        ).get_fairness_analysis(
+            tenant_id=tenant_id,
+            fairness_analysis_id=fairness_analysis_id,
+        )
         if fairness_analysis is None:
             raise DpmPmOperatingQualityServiceError(
                 f"PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:{fairness_analysis_id}"
@@ -275,12 +289,13 @@ class DpmPmOperatingQualityApplicationService:
         _required_repository(
             self.review_action_repository,
             "PM_QUALITY_REVIEW_ACTION_REPOSITORY_NOT_CONFIGURED",
-        ).save_review_action(action=review_action)
+        ).save_review_action(tenant_id=command.tenant_id, action=review_action)
         return review_action
 
     def list_review_actions(
         self,
         *,
+        tenant_id: str,
         target_type: str | None = None,
         target_id: str | None = None,
         policy_id: str | None = None,
@@ -293,6 +308,7 @@ class DpmPmOperatingQualityApplicationService:
             self.review_action_repository,
             "PM_QUALITY_REVIEW_ACTION_REPOSITORY_NOT_CONFIGURED",
         ).list_review_actions(
+            tenant_id=tenant_id,
             target_type=target_type,
             target_id=target_id,
             policy_id=policy_id,
@@ -302,11 +318,13 @@ class DpmPmOperatingQualityApplicationService:
             offset=offset,
         )
 
-    def get_review_action(self, *, review_action_id: str) -> DpmPmQualityReviewAction:
+    def get_review_action(
+        self, *, tenant_id: str, review_action_id: str
+    ) -> DpmPmQualityReviewAction:
         review_action = _required_repository(
             self.review_action_repository,
             "PM_QUALITY_REVIEW_ACTION_REPOSITORY_NOT_CONFIGURED",
-        ).get_review_action(review_action_id=review_action_id)
+        ).get_review_action(tenant_id=tenant_id, review_action_id=review_action_id)
         if review_action is None:
             raise DpmPmOperatingQualityServiceError(
                 f"PM_QUALITY_REVIEW_ACTION_NOT_FOUND:{review_action_id}"
@@ -337,12 +355,16 @@ class DpmPmOperatingQualityApplicationService:
         _required_repository(
             self.summary_invocation_repository,
             "PM_QUALITY_SUMMARY_REPOSITORY_NOT_CONFIGURED",
-        ).save_summary_invocation(invocation=summary_invocation)
+        ).save_summary_invocation(
+            tenant_id=command.tenant_id,
+            invocation=summary_invocation,
+        )
         return summary_invocation
 
     def list_summary_invocations(
         self,
         *,
+        tenant_id: str,
         score_run_id: str | None = None,
         review_action_id: str | None = None,
         policy_id: str | None = None,
@@ -355,6 +377,7 @@ class DpmPmOperatingQualityApplicationService:
             self.summary_invocation_repository,
             "PM_QUALITY_SUMMARY_REPOSITORY_NOT_CONFIGURED",
         ).list_summary_invocations(
+            tenant_id=tenant_id,
             score_run_id=score_run_id,
             review_action_id=review_action_id,
             policy_id=policy_id,
@@ -367,12 +390,16 @@ class DpmPmOperatingQualityApplicationService:
     def get_summary_invocation(
         self,
         *,
+        tenant_id: str,
         summary_invocation_id: str,
     ) -> DpmPmQualitySummaryInvocation:
         summary_invocation = _required_repository(
             self.summary_invocation_repository,
             "PM_QUALITY_SUMMARY_REPOSITORY_NOT_CONFIGURED",
-        ).get_summary_invocation(summary_invocation_id=summary_invocation_id)
+        ).get_summary_invocation(
+            tenant_id=tenant_id,
+            summary_invocation_id=summary_invocation_id,
+        )
         if summary_invocation is None:
             raise DpmPmOperatingQualityServiceError(
                 f"PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND:{summary_invocation_id}"
@@ -396,6 +423,7 @@ class DpmPmQualityBookScopeCommand:
 
 @dataclass(frozen=True)
 class DpmPmQualityScoreRunCommand:
+    tenant_id: str
     pm_id: str
     book_id: str | None
     as_of_date: str
@@ -420,6 +448,7 @@ class DpmPmQualityFairnessSegmentCommand:
 
 @dataclass(frozen=True)
 class DpmPmQualityFairnessAnalysisCommand:
+    tenant_id: str
     policy_id: str
     policy_version: str
     as_of_date: str
@@ -432,6 +461,7 @@ class DpmPmQualityFairnessAnalysisCommand:
 
 @dataclass(frozen=True)
 class DpmPmQualityReviewActionCommand:
+    tenant_id: str
     target_type: PmQualityReviewActionTargetType
     target_id: str
     action_type: PmQualityReviewActionType
@@ -445,6 +475,7 @@ class DpmPmQualityReviewActionCommand:
 
 @dataclass(frozen=True)
 class DpmPmQualitySummaryInvocationCommand:
+    tenant_id: str
     score_run_id: str
     review_action_id: str
     invocation_state: PmQualitySummaryInvocationState
@@ -462,16 +493,23 @@ class DpmPmQualitySummaryInvocationCommand:
 
 def resolve_pm_quality_policy_from_command(
     *,
+    tenant_id: str,
     policy: DpmPmOperatingQualityPolicy | None,
     policy_id: str | None,
     policy_version: str | None,
     repository: DpmPmQualityPolicyRepository,
 ) -> DpmPmOperatingQualityPolicy:
     if policy is not None:
+        if policy.tenant_id != tenant_id:
+            raise DpmPmOperatingQualityServiceError("PM_QUALITY_POLICY_TENANT_MISMATCH")
         return policy
     if policy_id is None or policy_version is None:
         raise DpmPmOperatingQualityServiceError("PM_QUALITY_POLICY_REFERENCE_REQUIRED")
-    stored_policy = repository.get_policy(policy_id=policy_id, policy_version=policy_version)
+    stored_policy = repository.get_policy(
+        tenant_id=tenant_id,
+        policy_id=policy_id,
+        policy_version=policy_version,
+    )
     if stored_policy is None:
         raise DpmPmOperatingQualityServiceError(
             f"PM_QUALITY_POLICY_NOT_FOUND:{policy_id}:{policy_version}"
@@ -608,6 +646,7 @@ def build_pm_quality_score_run_from_command(
     core_resolver_factory: Callable[[], CoreResolverProtocol] = build_core_resolver_client,
 ) -> DpmPmOperatingQualityScoreRun:
     policy = resolve_pm_quality_policy_from_command(
+        tenant_id=command.tenant_id,
         policy=command.policy,
         policy_id=command.policy_id,
         policy_version=command.policy_version,
@@ -639,6 +678,7 @@ def build_pm_quality_score_run_from_command(
 
     try:
         return build_pm_operating_quality_score_run(
+            tenant_id=command.tenant_id,
             pm_id=command.pm_id,
             book_id=command.book_id,
             as_of_date=command.as_of_date,
@@ -662,7 +702,10 @@ def build_pm_quality_fairness_analysis_from_command(
     for segment in command.segments:
         score_runs = []
         for score_run_id in segment.score_run_ids:
-            score_run = score_run_repository.get_score_run(score_run_id=score_run_id)
+            score_run = score_run_repository.get_score_run(
+                tenant_id=command.tenant_id,
+                score_run_id=score_run_id,
+            )
             if score_run is None:
                 raise DpmPmOperatingQualityServiceError(
                     f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{score_run_id}"
@@ -679,6 +722,7 @@ def build_pm_quality_fairness_analysis_from_command(
         )
     try:
         return build_pm_operating_quality_fairness_analysis(
+            tenant_id=command.tenant_id,
             policy_id=command.policy_id,
             policy_version=command.policy_version,
             as_of_date=command.as_of_date,
@@ -701,13 +745,19 @@ def build_pm_quality_review_action_from_command(
 ) -> DpmPmQualityReviewAction:
     target: DpmPmOperatingQualityScoreRun | DpmPmQualityFairnessAnalysis | None = None
     if command.target_type == "SCORE_RUN":
-        target = score_run_repository.get_score_run(score_run_id=command.target_id)
+        target = score_run_repository.get_score_run(
+            tenant_id=command.tenant_id,
+            score_run_id=command.target_id,
+        )
         if target is None:
             raise DpmPmOperatingQualityServiceError(
                 f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{command.target_id}"
             )
     else:
-        target = fairness_repository.get_fairness_analysis(fairness_analysis_id=command.target_id)
+        target = fairness_repository.get_fairness_analysis(
+            tenant_id=command.tenant_id,
+            fairness_analysis_id=command.target_id,
+        )
         if target is None:
             raise DpmPmOperatingQualityServiceError(
                 f"PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:{command.target_id}"
@@ -734,13 +784,16 @@ def build_pm_quality_summary_invocation_from_command(
     score_run_repository: DpmPmQualityScoreRunRepository,
     review_action_repository: DpmPmQualityReviewActionRepository,
 ) -> DpmPmQualitySummaryInvocation:
-    score_run = score_run_repository.get_score_run(score_run_id=command.score_run_id)
+    score_run = score_run_repository.get_score_run(
+        tenant_id=command.tenant_id,
+        score_run_id=command.score_run_id,
+    )
     if score_run is None:
         raise DpmPmOperatingQualityServiceError(
             f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{command.score_run_id}"
         )
     review_action = review_action_repository.get_review_action(
-        review_action_id=command.review_action_id
+        tenant_id=command.tenant_id, review_action_id=command.review_action_id
     )
     if review_action is None:
         raise DpmPmOperatingQualityServiceError(

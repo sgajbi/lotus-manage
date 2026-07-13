@@ -17,6 +17,7 @@ from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
 from src.infrastructure.waves import InMemoryDpmBulkReviewCampaignDefinitionRepository
 from tests.unit.dpm.api.test_portfolio_memory_api import (
     PORTFOLIO_ID,
+    TENANT_ID,
     _campaign_definition,
     _pm_quality_score_run,
     _repositories,
@@ -28,7 +29,7 @@ def test_candidate_portfolio_ids_merge_explicit_and_source_backed_portfolios() -
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
 
     candidates = candidate_portfolio_ids_from_sources(
         repositories=PortfolioMemorySourceRepositories(
@@ -41,6 +42,7 @@ def test_candidate_portfolio_ids_merge_explicit_and_source_backed_portfolios() -
         ),
         portfolio_ids=[" PB_MANUAL_001 ", "", PORTFOLIO_ID],
         source_scan_limit=100,
+        tenant_id=TENANT_ID,
     )
 
     assert candidates == sorted({PORTFOLIO_ID, "PB_MANUAL_001", "PB_SG_GLOBAL_INC_002"})
@@ -86,7 +88,7 @@ def test_candidate_portfolio_source_helpers_preserve_family_boundaries() -> None
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     repositories = PortfolioMemorySourceRepositories(
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
@@ -102,7 +104,7 @@ def test_candidate_portfolio_source_helpers_preserve_family_boundaries() -> None
     }
     assert _mandate_exception_candidate_ids(repositories, 100) == {PORTFOLIO_ID}
     assert _campaign_definition_candidate_ids(repositories, 100) == {PORTFOLIO_ID}
-    assert _pm_quality_candidate_ids(repositories, 100) == {
+    assert _pm_quality_candidate_ids(TENANT_ID, repositories, 100) == {
         PORTFOLIO_ID,
         "PB_SG_GLOBAL_INC_002",
     }

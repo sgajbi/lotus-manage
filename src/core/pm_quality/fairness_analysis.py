@@ -54,6 +54,7 @@ class _FairnessSegmentEvaluation:
 
 def build_pm_operating_quality_fairness_analysis(
     *,
+    tenant_id: str,
     policy_id: str,
     policy_version: str,
     as_of_date: str,
@@ -66,6 +67,7 @@ def build_pm_operating_quality_fairness_analysis(
     """Build bounded cross-segment fairness posture from persisted PM-quality score runs."""
 
     _validate_fairness_analysis_inputs(
+        tenant_id=tenant_id,
         segments=segments,
         minimum_segment_score_run_count=minimum_segment_score_run_count,
         maximum_average_score_spread=maximum_average_score_spread,
@@ -88,6 +90,7 @@ def build_pm_operating_quality_fairness_analysis(
 
     return _fairness_analysis(
         policy_id=policy_id,
+        tenant_id=tenant_id,
         policy_version=policy_version,
         as_of_date=as_of_date,
         state=posture.state,
@@ -104,6 +107,7 @@ def build_pm_operating_quality_fairness_analysis(
 
 def _validate_fairness_analysis_inputs(
     *,
+    tenant_id: str,
     segments: list[DpmPmQualityFairnessSegmentInput],
     minimum_segment_score_run_count: int,
     maximum_average_score_spread: Decimal,
@@ -114,6 +118,10 @@ def _validate_fairness_analysis_inputs(
         raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID")
     if maximum_average_score_spread < 0 or maximum_average_score_spread > 100:
         raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_SPREAD_THRESHOLD_INVALID")
+    for segment in segments:
+        for score_run in segment.score_runs:
+            if score_run.tenant_id != tenant_id:
+                raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_TENANT_MISMATCH")
 
 
 def _fairness_analysis_posture(
@@ -360,6 +368,7 @@ def _score_run_not_scorable(score_run: DpmPmOperatingQualityScoreRun) -> bool:
 
 def _fairness_analysis(
     *,
+    tenant_id: str,
     policy_id: str,
     policy_version: str,
     as_of_date: str,
@@ -377,6 +386,7 @@ def _fairness_analysis(
     content_hash = _content_hash(
         _fairness_analysis_hash_payload(
             policy_id=policy_id,
+            tenant_id=tenant_id,
             policy_version=policy_version,
             as_of_date=as_of_date,
             state=state,
@@ -389,6 +399,7 @@ def _fairness_analysis(
         )
     )
     return DpmPmQualityFairnessAnalysis(
+        tenant_id=tenant_id,
         fairness_analysis_id=_fairness_analysis_id(content_hash),
         policy_id=policy_id,
         policy_version=policy_version,
@@ -418,6 +429,7 @@ def _fairness_analysis_source_refs(
 
 def _fairness_analysis_hash_payload(
     *,
+    tenant_id: str,
     policy_id: str,
     policy_version: str,
     as_of_date: str,
@@ -430,6 +442,7 @@ def _fairness_analysis_hash_payload(
     source_refs: list[DpmOutcomeSourceRef],
 ) -> dict[str, object]:
     return {
+        "tenant_id": tenant_id,
         "policy_id": policy_id,
         "policy_version": policy_version,
         "as_of_date": as_of_date,

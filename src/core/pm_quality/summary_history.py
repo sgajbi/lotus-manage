@@ -61,6 +61,7 @@ def build_pm_quality_summary_invocation(
     payload: dict[str, Any] = {
         "product_name": "PmOperatingQualitySummaryInvocation",
         "product_version": "v1",
+        "tenant_id": score_run.tenant_id,
         "score_run_id": score_run.score_run_id,
         "score_run_content_hash": score_run.content_hash,
         "review_action_id": review_action.review_action_id,
@@ -159,6 +160,10 @@ def _summary_invocation_validation_checks(
     source_refs: list[DpmOutcomeSourceRef],
 ) -> tuple[tuple[bool, str], ...]:
     return (
+        (
+            review_action.tenant_id != score_run.tenant_id,
+            "PM_QUALITY_SUMMARY_TENANT_MISMATCH",
+        ),
         (
             _summary_review_action_target_mismatched(
                 score_run=score_run,
