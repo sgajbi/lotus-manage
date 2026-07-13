@@ -1,22 +1,44 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from src.core.waves import (
+    CampaignApprovalDecisionType,
+    CampaignAssignmentActionType,
+    CampaignAssignmentEscalationTier,
+    CampaignAssignmentSlaPosture,
+    CampaignAssignmentTaskStatus,
+    CampaignAssignmentTaskTransitionType,
+    CampaignAssignmentTaskType,
+    CampaignMakerCheckerControlAction,
+    CampaignMakerCheckerControlOutcome,
     DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
+    DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
     DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
     DpmBulkReviewCampaignDefinitionLaunchPackage,
+    DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionRepository,
     DpmBulkReviewCampaignDefinitionWorkflowOverview,
     DpmWaveSourceRef,
+    build_bulk_review_campaign_definition_approval_decision_page,
+    build_bulk_review_campaign_definition_assignment_action_page,
+    build_bulk_review_campaign_definition_assignment_task_page,
     build_bulk_review_campaign_definition_launch_history_page,
     build_bulk_review_campaign_definition_launch_package,
+    build_bulk_review_campaign_definition_maker_checker_control_page,
     build_bulk_review_campaign_definition_preview_readiness,
     build_bulk_review_campaign_definition_workflow_overview,
+    open_bulk_review_campaign_definition_assignment_task,
+    record_bulk_review_campaign_definition_approval_decision,
+    record_bulk_review_campaign_definition_assignment_action,
+    record_bulk_review_campaign_definition_maker_checker_control,
+    transition_bulk_review_campaign_definition_assignment_task,
 )
 from src.core.waves.campaign_definition_events import (
     DpmBulkReviewCampaignDefinitionLifecycleEventPage,
@@ -77,10 +99,107 @@ class DpmBulkReviewCampaignReadModelQuery:
 
 
 @dataclass(frozen=True)
+class DpmCampaignDefinitionApprovalDecisionCommand:
+    tenant_id: str
+    campaign_id: str
+    campaign_version: str
+    decision_type: CampaignApprovalDecisionType
+    decision_ref: str
+    decided_by: str
+    decision_reason: str
+    correlation_id: str
+    source_refs: list[DpmWaveSourceRef]
+
+
+@dataclass(frozen=True)
+class DpmCampaignDefinitionAssignmentActionCommand:
+    tenant_id: str
+    campaign_id: str
+    campaign_version: str
+    action_type: CampaignAssignmentActionType
+    action_ref: str
+    recorded_by: str
+    action_reason: str
+    assigned_actor_ids: list[str]
+    escalation_tier: CampaignAssignmentEscalationTier
+    sla_posture: CampaignAssignmentSlaPosture
+    correlation_id: str
+    source_refs: list[DpmWaveSourceRef]
+
+
+@dataclass(frozen=True)
+class DpmCampaignDefinitionAssignmentTaskOpenCommand:
+    tenant_id: str
+    campaign_id: str
+    campaign_version: str
+    task_ref: str
+    task_type: CampaignAssignmentTaskType
+    opened_by: str
+    task_reason: str
+    assigned_actor_ids: list[str]
+    escalation_tier: CampaignAssignmentEscalationTier
+    sla_posture: CampaignAssignmentSlaPosture
+    due_at: datetime | None
+    correlation_id: str
+    source_refs: list[DpmWaveSourceRef]
+
+
+@dataclass(frozen=True)
+class DpmCampaignDefinitionAssignmentTaskTransitionCommand:
+    tenant_id: str
+    campaign_id: str
+    campaign_version: str
+    task_ref: str
+    transition_type: CampaignAssignmentTaskTransitionType
+    transition_ref: str
+    transitioned_by: str
+    transition_reason: str
+    assigned_actor_ids: list[str] | None
+    escalation_tier: CampaignAssignmentEscalationTier | None
+    sla_posture: CampaignAssignmentSlaPosture | None
+    due_at: datetime | None
+    correlation_id: str
+    source_refs: list[DpmWaveSourceRef]
+
+
+@dataclass(frozen=True)
+class DpmCampaignDefinitionMakerCheckerControlCommand:
+    tenant_id: str
+    campaign_id: str
+    campaign_version: str
+    control_action: CampaignMakerCheckerControlAction
+    control_ref: str
+    recorded_by: str
+    submitter_actor_id: str | None
+    reviewer_actor_id: str | None
+    required_reviewer_role: str | None
+    control_outcome: CampaignMakerCheckerControlOutcome
+    control_reason: str
+    correlation_id: str
+    source_refs: list[DpmWaveSourceRef]
+
+
+@dataclass(frozen=True)
+class DpmCampaignDefinitionWriteResult:
+    definition: DpmBulkReviewCampaignDefinition
+    replay: bool
+
+
+@dataclass(frozen=True)
 class DpmWaveCampaignApplicationService:
     """Campaign workflow use cases over repository ports."""
 
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository
+
+    def _persisted_campaign_definition(
+        self,
+        persisted: DpmBulkReviewCampaignDefinition | None,
+    ) -> DpmBulkReviewCampaignDefinition:
+        if persisted is None:
+            raise DpmWaveCampaignApplicationNotFoundError(
+                "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+            )
+        return persisted
 
     def create_campaign_definition(
         self,
@@ -326,6 +445,240 @@ class DpmWaveCampaignApplicationService:
         offset: int,
     ) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
         return build_bulk_review_campaign_definition_launch_history_page(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            ),
+            limit=limit,
+            offset=offset,
+        )
+
+    def record_campaign_definition_approval_decision(
+        self,
+        *,
+        command: DpmCampaignDefinitionApprovalDecisionCommand,
+    ) -> DpmCampaignDefinitionWriteResult:
+        definition = self.get_campaign_definition(
+            tenant_id=command.tenant_id,
+            campaign_id=command.campaign_id,
+            campaign_version=command.campaign_version,
+        )
+        updated = record_bulk_review_campaign_definition_approval_decision(
+            definition=definition,
+            decision_type=command.decision_type,
+            decision_ref=command.decision_ref,
+            decided_by=command.decided_by,
+            decision_reason=command.decision_reason,
+            correlation_id=command.correlation_id,
+            source_refs=command.source_refs,
+        )
+        persisted = self.campaign_definition_repository.record_definition_approval_decision(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
+        return DpmCampaignDefinitionWriteResult(
+            definition=self._persisted_campaign_definition(persisted),
+            replay=updated is definition,
+        )
+
+    def list_campaign_definition_approval_decisions(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+        limit: int,
+        offset: int,
+    ) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
+        return build_bulk_review_campaign_definition_approval_decision_page(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            ),
+            limit=limit,
+            offset=offset,
+        )
+
+    def record_campaign_definition_assignment_action(
+        self,
+        *,
+        command: DpmCampaignDefinitionAssignmentActionCommand,
+    ) -> DpmCampaignDefinitionWriteResult:
+        definition = self.get_campaign_definition(
+            tenant_id=command.tenant_id,
+            campaign_id=command.campaign_id,
+            campaign_version=command.campaign_version,
+        )
+        updated = record_bulk_review_campaign_definition_assignment_action(
+            definition=definition,
+            action_type=command.action_type,
+            action_ref=command.action_ref,
+            recorded_by=command.recorded_by,
+            action_reason=command.action_reason,
+            assigned_actor_ids=command.assigned_actor_ids,
+            escalation_tier=command.escalation_tier,
+            sla_posture=command.sla_posture,
+            correlation_id=command.correlation_id,
+            source_refs=command.source_refs,
+        )
+        persisted = self.campaign_definition_repository.record_definition_assignment_action(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
+        return DpmCampaignDefinitionWriteResult(
+            definition=self._persisted_campaign_definition(persisted),
+            replay=updated is definition,
+        )
+
+    def list_campaign_definition_assignment_actions(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+        limit: int,
+        offset: int,
+    ) -> DpmBulkReviewCampaignDefinitionAssignmentActionPage:
+        return build_bulk_review_campaign_definition_assignment_action_page(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            ),
+            limit=limit,
+            offset=offset,
+        )
+
+    def open_campaign_definition_assignment_task(
+        self,
+        *,
+        command: DpmCampaignDefinitionAssignmentTaskOpenCommand,
+    ) -> DpmCampaignDefinitionWriteResult:
+        definition = self.get_campaign_definition(
+            tenant_id=command.tenant_id,
+            campaign_id=command.campaign_id,
+            campaign_version=command.campaign_version,
+        )
+        updated = open_bulk_review_campaign_definition_assignment_task(
+            definition=definition,
+            task_ref=command.task_ref,
+            task_type=command.task_type,
+            opened_by=command.opened_by,
+            task_reason=command.task_reason,
+            assigned_actor_ids=command.assigned_actor_ids,
+            escalation_tier=command.escalation_tier,
+            sla_posture=command.sla_posture,
+            due_at=command.due_at,
+            correlation_id=command.correlation_id,
+            source_refs=command.source_refs,
+        )
+        persisted = self.campaign_definition_repository.record_definition_assignment_task(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
+        return DpmCampaignDefinitionWriteResult(
+            definition=self._persisted_campaign_definition(persisted),
+            replay=updated is definition,
+        )
+
+    def transition_campaign_definition_assignment_task(
+        self,
+        *,
+        command: DpmCampaignDefinitionAssignmentTaskTransitionCommand,
+    ) -> DpmCampaignDefinitionWriteResult:
+        definition = self.get_campaign_definition(
+            tenant_id=command.tenant_id,
+            campaign_id=command.campaign_id,
+            campaign_version=command.campaign_version,
+        )
+        updated = transition_bulk_review_campaign_definition_assignment_task(
+            definition=definition,
+            task_ref=command.task_ref,
+            transition_type=command.transition_type,
+            transition_ref=command.transition_ref,
+            transitioned_by=command.transitioned_by,
+            transition_reason=command.transition_reason,
+            assigned_actor_ids=command.assigned_actor_ids,
+            escalation_tier=command.escalation_tier,
+            sla_posture=command.sla_posture,
+            due_at=command.due_at,
+            correlation_id=command.correlation_id,
+            source_refs=command.source_refs,
+        )
+        persisted = self.campaign_definition_repository.record_definition_assignment_task(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
+        return DpmCampaignDefinitionWriteResult(
+            definition=self._persisted_campaign_definition(persisted),
+            replay=updated is definition,
+        )
+
+    def list_campaign_definition_assignment_tasks(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+        status: CampaignAssignmentTaskStatus | None,
+        limit: int,
+        offset: int,
+    ) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
+        return build_bulk_review_campaign_definition_assignment_task_page(
+            definition=self.get_campaign_definition(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+            ),
+            status_filter=status,
+            limit=limit,
+            offset=offset,
+        )
+
+    def record_campaign_definition_maker_checker_control(
+        self,
+        *,
+        command: DpmCampaignDefinitionMakerCheckerControlCommand,
+    ) -> DpmCampaignDefinitionWriteResult:
+        definition = self.get_campaign_definition(
+            tenant_id=command.tenant_id,
+            campaign_id=command.campaign_id,
+            campaign_version=command.campaign_version,
+        )
+        updated = record_bulk_review_campaign_definition_maker_checker_control(
+            definition=definition,
+            control_action=command.control_action,
+            control_ref=command.control_ref,
+            recorded_by=command.recorded_by,
+            submitter_actor_id=command.submitter_actor_id,
+            reviewer_actor_id=command.reviewer_actor_id,
+            required_reviewer_role=command.required_reviewer_role,
+            control_outcome=command.control_outcome,
+            control_reason=command.control_reason,
+            correlation_id=command.correlation_id,
+            source_refs=command.source_refs,
+        )
+        persisted = self.campaign_definition_repository.record_definition_maker_checker_control(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
+        return DpmCampaignDefinitionWriteResult(
+            definition=self._persisted_campaign_definition(persisted),
+            replay=updated is definition,
+        )
+
+    def list_campaign_definition_maker_checker_controls(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str,
+        campaign_version: str,
+        limit: int,
+        offset: int,
+    ) -> DpmBulkReviewCampaignDefinitionMakerCheckerControlPage:
+        return build_bulk_review_campaign_definition_maker_checker_control_page(
             definition=self.get_campaign_definition(
                 tenant_id=tenant_id,
                 campaign_id=campaign_id,
