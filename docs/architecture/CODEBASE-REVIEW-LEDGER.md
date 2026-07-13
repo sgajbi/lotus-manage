@@ -30433,3 +30433,36 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: README, repository context, and this ledger changed because
   current implementation truth changed. No wiki source change is needed; the existing backend
   delivery and CI skills already route this class of repo-local source-authority fix.
+
+## BACKEND-REVIEW-20260713-0615-C: Campaign workflow obsolete HTTP helpers
+
+- Date: 2026-07-13
+- GitHub issue: #615
+- Scope: stale bulk-review campaign HTTP helper modules, campaign workflow telemetry tests, campaign
+  read-model application-service tests, and route-boundary regression tests.
+- Bank-buyable control area: architecture boundaries, stale-code removal, test truth, and
+  application-layer ownership.
+- Finding: earlier #615 slices moved campaign definition, lifecycle, readiness, workflow read
+  models, audit reads, evidence mutations, launch-package reads, workflow-overview reads, and
+  launch orchestration onto `DpmWaveCampaignApplicationService`, but the old
+  `src/api/routers/wave_campaign_*_http.py` helper modules and
+  `src/api/routers/wave_campaign_read_model_query.py` still existed as test-only code carrying
+  repository-oriented orchestration patterns that routes no longer used.
+- Action: removed the obsolete campaign HTTP helper modules, moved useful telemetry assertions to
+  `tests/unit/dpm/api/test_campaign_workflow_telemetry.py`, moved read-model filter coverage onto
+  `tests/unit/dpm/api/test_wave_campaign_application_service.py`, and added a regression assertion
+  that the retired helper filenames stay absent.
+- Status: fixed locally.
+- Evidence: focused Ruff, unit, OpenAPI, service-boundary, dead-code, complexity, engineering
+  health, and whitespace validation is recorded in the #615 issue comment for the corresponding
+  commit on branch `fix/issue-600-pm-quality-application-boundary`.
+- Same-pattern scan: `rg` confirmed the removed helper modules were referenced only by their own
+  obsolete tests or by each other. Remaining campaign repository dependencies are either inside the
+  campaign application service/repository tests or in separately scoped generic wave
+  create/preview and portfolio-memory paths that are outside this stale-helper cleanup slice.
+- Design decision: this is internal design modularity inside the existing `lotus-manage`
+  deployable. No runtime service split is justified by this slice.
+- Docs/wiki/context/skill decision: this ledger changed because stale-code and application-boundary
+  review truth changed. README, repo context, central context, wiki source, and platform skills do
+  not need updates because public API behavior, route paths, operator workflow, commands, and skill
+  routing did not change.
