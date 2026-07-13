@@ -1099,6 +1099,10 @@ Most relevant current governance:
     indexes, and supported-feature ledgers must be referenced from stable navigation docs and pinned
     by `tests/unit/test_documentation_current_state.py` or an equivalent docs/current-state test
     whenever practical.
+13. Core and Risk source-product adapter mappings must fail closed on incomplete response payloads.
+    Do not reintroduce implicit `USD`, `v1`, empty-fingerprint, empty-section, or zero-metric
+    defaults for missing source facts. Valid zero values are allowed only when explicitly supplied
+    by the source response and must stay distinguishable from omission.
 
 ## Context Maintenance Rule
 

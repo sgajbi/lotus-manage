@@ -753,24 +753,32 @@ Operationally important truths:
    methodology, contribution rows, CIO approval evidence, effective-period exceptions, or
    portfolio/mandate applicability evidence locally. `lotus-risk` now owns the auditable
    scenario/contribution methodology for this source product through PR #140.
-7. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
+7. Core and Risk source-product adapters fail closed on incomplete response payloads. Manage
+   requires Core portfolio snapshots to carry portfolio identity, business date, valuation
+   currency, `positions_baseline`, `portfolio_totals`, row identifiers, explicit quantities,
+   row currencies, and position market values before constructing a `PortfolioSnapshot`. It
+   requires Risk concentration, regime-scenario, and risk-event cohort responses to carry source
+   metadata, product/version or methodology version, request fingerprint, supportability, and
+   required numeric measures before constructing authority context. Explicit source-supplied zero
+   remains valid; omitted values are not converted to `USD`, `v1`, empty lists, or zero metrics.
+8. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.
-8. source-owned cash methodology depth is consumed as evidence from `lotus-core`. Current Core
+9. source-owned cash methodology depth is consumed as evidence from `lotus-core`. Current Core
    products include `PortfolioCashflowProjection:v1`, `PortfolioLiquidityLadder:v1`, and
    `PortfolioCashMovementSummary:v1`; Manage does not forecast cashflows, issue funding or
    treasury instructions, or acknowledge OMS execution.
-9. source-owned external OMS acknowledgement posture is consumed as fail-closed evidence from
+10. source-owned external OMS acknowledgement posture is consumed as fail-closed evidence from
    `lotus-core` `ExternalOrderExecutionAcknowledgement:v1`; Manage records blocked diagnostics
    and exposes structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence on supportability,
    report-input, and AI-evidence handoffs only, including promotion requirements for certified
    OMS source ownership, reconciliation controls, consumer declaration, and downstream realization.
    Manage does not generate orders, route venues, certify best execution, ingest OMS
    acknowledgements, confirm fills, project settlement, or reconcile execution status.
-10. outcome-review search exposes bounded source-owner and source-type filters plus facets over
+11. outcome-review search exposes bounded source-owner and source-type filters plus facets over
     persisted review lineage only. It does not query source-owner stores, recalculate realized
     source truth, project OMS execution events, or create client-communication workflow evidence.
-11. outcome-review supportability, report-input, and AI-evidence handoffs also expose structured
+12. outcome-review supportability, report-input, and AI-evidence handoffs also expose structured
     `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage may support internal PM, CIO,
     compliance, operations, report, and AI review workflows, but it does not contact clients,
     generate client-ready messages, collect client approval, confirm delivery, or certify client
@@ -778,24 +786,24 @@ Operationally important truths:
     downstream realization requirements before promotion. AI-evidence handoff source refs are bounded to persisted
     outcome-review lineage and deduplicated review, snapshot, dimension-result, and metric-level
     evidence refs.
-12. wave proof-pack posture and report-input handoffs expose structured
+13. wave proof-pack posture and report-input handoffs expose structured
     `DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage wave evidence stops at internal
     operations handoff and does not contact clients, generate client-ready wave messages, collect
     client approval, confirm delivery, or certify communication audit truth.
-13. proof-pack report-input and AI-evidence handoffs expose structured
+14. proof-pack report-input and AI-evidence handoffs expose structured
     `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence with the same source-owner,
     delivery/audit, consent, and downstream-realization promotion bar.
-14. bulk-review campaign wave report-input handoffs expose structured
+15. bulk-review campaign wave report-input handoffs expose structured
     `DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY` evidence when the trigger is
     `BULK_REVIEW_CAMPAIGN`. Manage preserves persisted source-backed campaign-definition
     candidates only and does not discover the global portfolio universe, recalculate source facts,
     recompute membership, generate orders, or claim OMS execution.
-15. PM operating-quality review actions expose structured
+16. PM operating-quality review actions expose structured
     `PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence. Manage records immutable review-action
     ledger rows over existing score-run or fairness-analysis evidence only; it does not mutate
     approval workflow state, approve policies or trades, contact clients, create HR or conduct
     decisions, route orders, or claim OMS execution.
-16. PM operating-quality summary invocations expose structured
+17. PM operating-quality summary invocations expose structured
     `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence. Manage records score-run/review-action identity
     and state-specific workflow, artifact, hash, or bounded failure evidence only; it does not
     store or expose generated summary text, project downstream summary UX, reconstruct prompts or

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Optional
 
 import httpx
@@ -275,42 +275,45 @@ def _regime_scenario_payload(
 
 
 def _risk_context_from_concentration_response(body: dict[str, Any]) -> AuthoritativeRiskContext:
-    sections = _concentration_response_sections(body)
-    breach_inputs = _concentration_breach_inputs(
-        risk_proxy=sections.risk_proxy,
-        single_position=sections.single_position,
-        issuer=sections.issuer,
-    )
-    breaches = _concentration_breach_count(breach_inputs)
-    return AuthoritativeRiskContext(
-        supportability_status=_risk_status_from_supportability(sections.supportability_state),
-        source_system=_concentration_source_system(body),
-        source_product_name="ConcentrationAnalysis",
-        source_product_version=_concentration_source_product_version(sections.metadata),
-        source_id=_optional_text(sections.request_fingerprint),
-        content_hash=_optional_text(sections.request_fingerprint),
-        concentration_breaches=breaches,
-        concentration_hhi_delta=_concentration_hhi_delta(sections.risk_proxy),
-        top_position_weight_proposed=breach_inputs.top_position_weight_proposed,
-        issuer_coverage_status=_issuer_coverage_status_text(sections.issuer_coverage_status),
-        reason_codes=_concentration_reason_codes(
-            supportability_reason=sections.supportability_reason,
-            issuer_coverage_status=sections.issuer_coverage_status,
-            breaches=breaches,
-        ),
-    )
+    try:
+        sections = _concentration_response_sections(body)
+        breach_inputs = _concentration_breach_inputs(
+            risk_proxy=sections.risk_proxy,
+            single_position=sections.single_position,
+            issuer=sections.issuer,
+        )
+        breaches = _concentration_breach_count(breach_inputs)
+        return AuthoritativeRiskContext(
+            supportability_status=_risk_status_from_supportability(sections.supportability_state),
+            source_system=_concentration_source_system(body),
+            source_product_name="ConcentrationAnalysis",
+            source_product_version=_concentration_source_product_version(sections.metadata),
+            source_id=_optional_text(sections.request_fingerprint),
+            content_hash=_optional_text(sections.request_fingerprint),
+            concentration_breaches=breaches,
+            concentration_hhi_delta=_concentration_hhi_delta(sections.risk_proxy),
+            top_position_weight_proposed=breach_inputs.top_position_weight_proposed,
+            issuer_coverage_status=_issuer_coverage_status_text(sections.issuer_coverage_status),
+            reason_codes=_concentration_reason_codes(
+                supportability_reason=sections.supportability_reason,
+                issuer_coverage_status=sections.issuer_coverage_status,
+                breaches=breaches,
+            ),
+        )
+    except (KeyError, TypeError, ValueError, InvalidOperation) as exc:
+        raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
 
 
 def _concentration_source_system(body: dict[str, Any]) -> str:
-    return _optional_text(body.get("source_service")) or "lotus-risk"
+    return _required_text(body=body, key="source_service")
 
 
 def _concentration_source_product_version(metadata: dict[str, Any]) -> str:
-    return _optional_text(metadata.get("methodology_version")) or "v1"
+    return _required_text(body=metadata, key="methodology_version")
 
 
 def _concentration_hhi_delta(risk_proxy: dict[str, Any]) -> Decimal:
-    return Decimal(str(risk_proxy.get("hhi_delta", "0")))
+    return _required_decimal(body=risk_proxy, key="hhi_delta")
 
 
 def _issuer_coverage_status_text(value: Any) -> str | None:
@@ -326,12 +329,10 @@ def _concentration_response_sections(body: dict[str, Any]) -> _ConcentrationResp
         risk_proxy=_dict_section(body, "risk_proxy"),
         single_position=_dict_section(body, "single_position_concentration"),
         issuer=issuer,
-        supportability_state=str(supportability.get("state", "degraded")),
-        supportability_reason=str(
-            supportability.get("reason", "calculation_supportability_missing")
-        ),
-        request_fingerprint=str(metadata.get("request_fingerprint") or ""),
-        issuer_coverage_status=issuer.get("coverage_status"),
+        supportability_state=_required_text(body=supportability, key="state"),
+        supportability_reason=_required_text(body=supportability, key="reason"),
+        request_fingerprint=_required_text(body=metadata, key="request_fingerprint"),
+        issuer_coverage_status=_required_text(body=issuer, key="coverage_status"),
     )
 
 
@@ -342,11 +343,15 @@ def _concentration_breach_inputs(
     issuer: dict[str, Any],
 ) -> _ConcentrationBreachInputs:
     return _ConcentrationBreachInputs(
-        top_position_weight_proposed=Decimal(
-            str(single_position.get("top_position_weight_proposed", "0"))
+        top_position_weight_proposed=_required_decimal(
+            body=single_position,
+            key="top_position_weight_proposed",
         ),
-        top_issuer_weight_proposed=Decimal(str(issuer.get("top_issuer_weight_proposed", "0"))),
-        hhi_proposed=Decimal(str(risk_proxy.get("hhi_proposed", "0"))),
+        top_issuer_weight_proposed=_required_decimal(
+            body=issuer,
+            key="top_issuer_weight_proposed",
+        ),
+        hhi_proposed=_required_decimal(body=risk_proxy, key="hhi_proposed"),
     )
 
 
@@ -379,8 +384,10 @@ def _regime_context_from_scenario_response(
 ) -> AuthoritativeRegimeStressContext:
     try:
         metadata = _dict_section(body, "metadata")
+        _required_text(body=metadata, key="product_name")
+        _required_text(body=metadata, key="request_fingerprint")
         governance_evidence = _optional_dict_section(body, "governance_evidence")
-        supportability = str(metadata.get("calculation_supportability", "degraded"))
+        supportability = _required_text(body=metadata, key="calculation_supportability")
         portfolio_id = _optional_text(body.get("portfolio_id"))
         portfolio_applicability_ref = _optional_text(
             governance_evidence.get("portfolio_applicability_ref")
@@ -413,16 +420,16 @@ def _regime_context_from_scenario_response(
             applicable_mandate_ids=_text_list(body.get("applicable_mandate_ids")),
             reason_codes=_regime_reason_codes(body.get("reason_codes")),
         )
-    except (KeyError, TypeError, ValueError) as exc:
+    except (KeyError, TypeError, ValueError, InvalidOperation) as exc:
         raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
 
 
 def _regime_source_system(metadata: dict[str, Any]) -> str:
-    return str(metadata.get("source_service") or "lotus-risk")
+    return _required_text(body=metadata, key="source_service")
 
 
 def _regime_source_product_version(metadata: dict[str, Any]) -> str:
-    return str(metadata.get("product_version") or "v1")
+    return _required_text(body=metadata, key="product_version")
 
 
 def _regime_governance_text(
@@ -462,41 +469,38 @@ def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedC
             reason_codes=_risk_event_reason_codes(body.get("reason_codes")),
             affected_portfolios=_risk_event_affected_portfolios(body.get("affected_portfolios")),
         )
-    except (KeyError, TypeError, ValueError) as exc:
+    except (KeyError, TypeError, ValueError, InvalidOperation) as exc:
         raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
 
 
 def _risk_event_cohort_metadata(body: dict[str, Any]) -> _RiskEventCohortMetadata:
     metadata = _dict_section(body, "metadata")
     return _RiskEventCohortMetadata(
-        product_name=_metadata_text(
-            metadata=metadata,
-            key="product_name",
-            default="RiskEventAffectedCohort",
-        ),
-        product_version=_metadata_text(metadata=metadata, key="product_version", default="v1"),
-        source_service=_metadata_text(
-            metadata=metadata, key="source_service", default="lotus-risk"
-        ),
-        request_fingerprint=_metadata_text(
-            metadata=metadata,
-            key="request_fingerprint",
-            default="",
-        ),
-        calculation_supportability=_metadata_text(
-            metadata=metadata,
+        product_name=_required_text(body=metadata, key="product_name"),
+        product_version=_required_text(body=metadata, key="product_version"),
+        source_service=_required_text(body=metadata, key="source_service"),
+        request_fingerprint=_required_text(body=metadata, key="request_fingerprint"),
+        calculation_supportability=_required_text(
+            body=metadata,
             key="calculation_supportability",
-            default="blocked",
         ),
     )
 
 
-def _metadata_text(*, metadata: dict[str, Any], key: str, default: str) -> str:
-    return str(metadata.get(key) or default)
-
-
 def _required_text(*, body: dict[str, Any], key: str) -> str:
-    return str(body[key])
+    value = body[key]
+    if not isinstance(value, str):
+        raise TypeError(f"{key} must be a string")
+    text = value.strip()
+    if not text:
+        raise ValueError(f"{key} must not be blank")
+    return text
+
+
+def _required_decimal(*, body: dict[str, Any], key: str) -> Decimal:
+    if key not in body or body[key] is None:
+        raise ValueError(f"{key} is required")
+    return Decimal(str(body[key]))
 
 
 def _risk_event_reason_codes(reason_codes: Any) -> tuple[str, ...]:
@@ -561,7 +565,9 @@ def _scenario_bucket(asset_class: str) -> str:
 
 def _dict_section(body: dict[str, Any], key: str) -> dict[str, Any]:
     value = body.get(key)
-    return value if isinstance(value, dict) else {}
+    if not isinstance(value, dict):
+        raise ValueError(f"{key} must be an object")
+    return value
 
 
 def _optional_dict_section(body: dict[str, Any], key: str) -> dict[str, Any]:

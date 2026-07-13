@@ -84,11 +84,15 @@ def _risk_response(
             "coverage_status": coverage_status,
         },
         "metadata": {
+            "product_name": "ConcentrationAnalysis",
+            "methodology_version": "concentration.v1",
+            "source_service": "lotus-risk",
+            "request_fingerprint": "sha256:concentration-request",
             "calculation_supportability": {
                 "state": state,
                 "reason": reason,
                 "freshness_bucket": "current",
-            }
+            },
         },
     }
 
@@ -226,37 +230,41 @@ def test_concentration_response_sections_preserve_source_metadata() -> None:
     assert sections.risk_proxy["hhi_delta"] == 100.0
 
 
-def test_concentration_response_sections_default_missing_supportability() -> None:
+def test_concentration_response_sections_reject_missing_source_contract_fields() -> None:
     response = _risk_response()
     metadata = response["metadata"]
     assert isinstance(metadata, dict)
     metadata.pop("calculation_supportability")
+
+    with pytest.raises(ValueError, match="calculation_supportability"):
+        _concentration_response_sections(response)
+
+    response = _risk_response()
     issuer = response["issuer_concentration"]
     assert isinstance(issuer, dict)
     issuer.pop("coverage_status")
-
-    sections = _concentration_response_sections(response)
-
-    assert sections.supportability_state == "degraded"
-    assert sections.supportability_reason == "calculation_supportability_missing"
-    assert sections.request_fingerprint == ""
-    assert sections.issuer_coverage_status is None
+    with pytest.raises(KeyError, match="coverage_status"):
+        _concentration_response_sections(response)
 
 
-def test_concentration_source_identity_helpers_default_missing_metadata() -> None:
-    assert _concentration_source_system({}) == "lotus-risk"
+def test_concentration_source_identity_helpers_require_source_metadata() -> None:
+    with pytest.raises(KeyError, match="source_service"):
+        _concentration_source_system({})
     assert _concentration_source_system({"source_service": " lotus-risk-authority "}) == (
         "lotus-risk-authority"
     )
-    assert _concentration_source_product_version({}) == "v1"
+    with pytest.raises(KeyError, match="methodology_version"):
+        _concentration_source_product_version({})
     assert _concentration_source_product_version({"methodology_version": " concentration.v3 "}) == (
         "concentration.v3"
     )
 
 
-def test_concentration_metric_helpers_preserve_source_values() -> None:
+def test_concentration_metric_helpers_preserve_valid_zero_and_source_values() -> None:
     assert _concentration_hhi_delta({"hhi_delta": "125.50"}) == Decimal("125.50")
-    assert _concentration_hhi_delta({}) == Decimal("0")
+    assert _concentration_hhi_delta({"hhi_delta": "0"}) == Decimal("0")
+    with pytest.raises(ValueError, match="hhi_delta"):
+        _concentration_hhi_delta({})
     assert _issuer_coverage_status_text(" partial ") == "partial"
     assert _issuer_coverage_status_text(None) is None
 
@@ -381,17 +389,19 @@ def test_risk_event_cohort_helpers_project_reason_codes_and_affected_portfolios(
     assert _risk_event_reason_codes("not-a-list") == ("RISK_EVENT_COHORT_REASON_CODES_MISSING",)
 
 
-def test_risk_event_cohort_metadata_defaults_missing_source_metadata() -> None:
+def test_risk_event_cohort_metadata_requires_source_metadata() -> None:
     body = _risk_event_cohort_response()
     body.pop("metadata")
 
-    metadata = _risk_event_cohort_metadata(body)
+    with pytest.raises(ValueError, match="metadata"):
+        _risk_event_cohort_metadata(body)
 
-    assert metadata.product_name == "RiskEventAffectedCohort"
-    assert metadata.product_version == "v1"
-    assert metadata.source_service == "lotus-risk"
-    assert metadata.request_fingerprint == ""
-    assert metadata.calculation_supportability == "blocked"
+    body = _risk_event_cohort_response()
+    metadata = body["metadata"]
+    assert isinstance(metadata, dict)
+    metadata.pop("request_fingerprint")
+    with pytest.raises(KeyError, match="request_fingerprint"):
+        _risk_event_cohort_metadata(body)
 
 
 def test_required_text_projects_required_response_identifiers() -> None:
@@ -400,6 +410,8 @@ def test_required_text_projects_required_response_identifiers() -> None:
     assert _required_text(body=body, key="cohort_id") == "risk_event_cohort_test"
     with pytest.raises(KeyError):
         _required_text(body=body, key="missing")
+    with pytest.raises(TypeError, match="cohort_id"):
+        _required_text(body={"cohort_id": 123}, key="cohort_id")
 
 
 def test_risk_event_affected_portfolios_rejects_invalid_payload_shape() -> None:
@@ -698,9 +710,11 @@ def test_lotus_risk_authority_regime_response_edges_are_fail_closed() -> None:
         _regime_context_from_scenario_response({"metadata": {}})
 
 
-def test_lotus_risk_authority_regime_source_defaults_are_stable() -> None:
-    assert _regime_source_system({}) == "lotus-risk"
-    assert _regime_source_product_version({}) == "v1"
+def test_lotus_risk_authority_regime_source_metadata_is_required() -> None:
+    with pytest.raises(KeyError, match="source_service"):
+        _regime_source_system({})
+    with pytest.raises(KeyError, match="product_version"):
+        _regime_source_product_version({})
     assert _regime_source_system({"source_service": "risk-authority"}) == "risk-authority"
     assert _regime_source_product_version({"product_version": "v2"}) == "v2"
 
