@@ -217,6 +217,10 @@ python scripts/validate_observability_contracts.py
   campaign governance or actor-allow-list defect, `conflict` as a duplicate reference or
   idempotency mismatch, `not_found` as stale workflow references, `blocked` as readiness failure,
   and `error` as an implementation or infrastructure fault.
+- Handled campaign workflow errors return `application/problem+json`. Use Problem Details
+  `reasonCode`, compatibility `code`, `correlationId`, and `instance` for triage and support
+  tickets; do not rely on the old FastAPI nested `detail.code` shape. Launch-blocked responses
+  also carry top-level `reasonCodes` and `readiness` supportability evidence.
 - Campaign launch is intentionally recoverable across the durable wave write and the campaign
   launch-history write. If `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`
   returns HTTP 409 with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE` after wave creation, inspect

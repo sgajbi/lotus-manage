@@ -20,6 +20,7 @@ from src.app.main import app  # noqa: E402
 
 ALLOWED_METHODS = {"get", "post", "put", "patch", "delete"}
 JSON_MEDIA_TYPE = "application/json"
+PROBLEM_JSON_MEDIA_TYPE = "application/problem+json"
 
 
 def _has_success_response(operation: dict[str, Any]) -> bool:
@@ -41,6 +42,17 @@ def _is_ref_only(prop_schema: dict[str, Any]) -> bool:
 
 def _has_content_example(content: dict[str, Any]) -> bool:
     return bool(content.get("example") or content.get("examples"))
+
+
+def _documented_error_content(response: dict[str, Any]) -> dict[str, Any] | None:
+    content = response.get("content", {})
+    if not isinstance(content, dict):
+        return None
+    for media_type in (PROBLEM_JSON_MEDIA_TYPE, JSON_MEDIA_TYPE):
+        media_content = content.get(media_type)
+        if isinstance(media_content, dict):
+            return media_content
+    return None
 
 
 def _is_error_status(status_code: object) -> bool:
@@ -86,7 +98,8 @@ def evaluate_schema(schema: dict[str, Any], *, service_name: str) -> list[str]:
                     if not isinstance(response, dict):
                         continue
                     json_content = response.get("content", {}).get(JSON_MEDIA_TYPE)
-                    if _is_error_status(status_code) and not isinstance(json_content, dict):
+                    documented_error_content = _documented_error_content(response)
+                    if _is_error_status(status_code) and documented_error_content is None:
                         missing_docs.append(
                             (
                                 method_upper,
@@ -94,6 +107,8 @@ def evaluate_schema(schema: dict[str, Any], *, service_name: str) -> list[str]:
                                 f"{status_code} error response JSON content",
                             )
                         )
+                    if _is_error_status(status_code):
+                        json_content = documented_error_content
                     if isinstance(json_content, dict) and not _has_content_example(json_content):
                         missing_docs.append((method_upper, path, f"{status_code} response example"))
 

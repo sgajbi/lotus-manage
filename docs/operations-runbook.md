@@ -33,6 +33,13 @@ For full repo-native evidence in production-oriented work, run:
   responses. Use
   [docs/methodologies/pm-quality/scoring-and-fairness.md](methodologies/pm-quality/scoring-and-fairness.md)
   for score, fairness, lookback, and validation interpretation.
+- For campaign workflow incidents, use
+  [wiki/Operations-Runbook.md#campaign-workflow-operations](../wiki/Operations-Runbook.md#campaign-workflow-operations).
+  Handled campaign workflow errors return `application/problem+json`; triage by Problem Details
+  `reasonCode`, compatibility `code`, `correlationId`, route `instance`, content hash, and
+  `lotus_manage_campaign_workflow_total`. Do not paste raw campaign payloads, portfolio ids,
+  actor ids, idempotency keys, correlation ids, source hashes, or diagnostics payloads into
+  public incident notes.
 - For Core, Risk, or Advise source HTTP transport incidents, use
   [wiki/Operations-Runbook.md#source-http-transport-operations](../wiki/Operations-Runbook.md#source-http-transport-operations)
   and triage with `lotus_manage_source_http_request_total`,

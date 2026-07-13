@@ -84,6 +84,18 @@ MANDATE_ID = "MANDATE_PB_SG_GLOBAL_BAL_001"
 PORTFOLIO_ID = "PB_SG_GLOBAL_BAL_001"
 
 
+def _error_reason_code(response: Any) -> str:
+    payload = response.json()
+    content_type = response.headers.get("content-type", "")
+    if content_type.startswith("application/problem+json"):
+        assert payload["status"] == response.status_code
+        assert payload["code"] == payload["reasonCode"]
+        assert payload["correlationId"] == response.headers["X-Correlation-Id"]
+        assert isinstance(payload["detail"], str)
+        return cast(str, payload["reasonCode"])
+    return cast(str, payload["detail"]["code"])
+
+
 def _twin(
     *,
     mandate_id: str = MANDATE_ID,
@@ -1107,7 +1119,7 @@ def test_pm_book_wave_preview_rejects_invalid_selector(
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
     assert resolver.calls == []
 
 
@@ -1119,7 +1131,7 @@ def test_pm_book_wave_preview_reports_incomplete_source_dependency(monkeypatch) 
         response = client.post("/api/v1/rebalance/waves/preview", json=_pm_book_request())
 
     assert response.status_code == 424
-    assert response.json()["detail"]["code"] == "PM_BOOK_MEMBERSHIP_INCOMPLETE"
+    assert _error_reason_code(response) == "PM_BOOK_MEMBERSHIP_INCOMPLETE"
 
 
 @pytest.mark.parametrize(
@@ -1154,7 +1166,7 @@ def test_pm_book_wave_preview_maps_source_resolution_failures(
         response = client.post("/api/v1/rebalance/waves/preview", json=_pm_book_request())
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 def test_cio_model_change_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
@@ -1254,7 +1266,7 @@ def test_cio_model_change_wave_preview_rejects_invalid_selector(
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
     assert resolver.calls == []
 
 
@@ -1270,7 +1282,7 @@ def test_cio_model_change_wave_preview_reports_incomplete_source_dependency(
         response = client.post("/api/v1/rebalance/waves/preview", json=_cio_model_change_request())
 
     assert response.status_code == 424
-    assert response.json()["detail"]["code"] == "CIO_MODEL_CHANGE_COHORT_INCOMPLETE"
+    assert _error_reason_code(response) == "CIO_MODEL_CHANGE_COHORT_INCOMPLETE"
 
 
 @pytest.mark.parametrize(
@@ -1305,7 +1317,7 @@ def test_cio_model_change_wave_preview_maps_source_resolution_failures(
         response = client.post("/api/v1/rebalance/waves/preview", json=_cio_model_change_request())
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 def test_risk_event_wave_preview_resolves_source_owned_cohort() -> None:
@@ -1585,7 +1597,7 @@ def test_tactical_house_view_wave_preview_rejects_invalid_source_evidence(
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 def test_bulk_review_campaign_core_universe_rejects_caller_portfolios(monkeypatch) -> None:
@@ -1601,7 +1613,7 @@ def test_bulk_review_campaign_core_universe_rejects_caller_portfolios(monkeypatc
 
     assert response.status_code == 422
     assert (
-        response.json()["detail"]["code"]
+        _error_reason_code(response)
         == "BULK_REVIEW_CAMPAIGN_CORE_UNIVERSE_REJECTS_CALLER_PORTFOLIOS"
     )
     assert resolver.calls == []
@@ -1651,7 +1663,7 @@ def test_tactical_house_view_wave_preview_maps_advise_source_failures(
         )
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 @pytest.mark.parametrize(
@@ -1716,7 +1728,7 @@ def test_bulk_review_campaign_definition_reference_validation(
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == 422
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 def test_bulk_review_campaign_definition_replay_validates_candidate_source_contracts() -> None:
@@ -1760,7 +1772,7 @@ def test_bulk_review_campaign_definition_replay_validates_candidate_source_contr
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == 422
-    assert response.json()["detail"]["code"] == (
+    assert _error_reason_code(response) == (
         "BULK_REVIEW_CAMPAIGN_SOURCE_CONTRACT_UNSUPPORTED"
     )
 
@@ -1969,7 +1981,7 @@ def test_bulk_review_campaign_preview_fails_closed_for_duplicate_core_universe_c
         )
 
     assert response.status_code == 424
-    assert response.json()["detail"]["code"] == ("DPM_CORE_PORTFOLIO_UNIVERSE_DUPLICATE_CANDIDATE")
+    assert _error_reason_code(response) == ("DPM_CORE_PORTFOLIO_UNIVERSE_DUPLICATE_CANDIDATE")
 
 
 def test_bulk_review_campaign_preview_fails_closed_for_non_terminating_core_universe_pages(
@@ -1996,7 +2008,7 @@ def test_bulk_review_campaign_preview_fails_closed_for_non_terminating_core_univ
         )
 
     assert response.status_code == 424
-    assert response.json()["detail"]["code"] == "DPM_CORE_PORTFOLIO_UNIVERSE_NON_TERMINATING"
+    assert _error_reason_code(response) == "DPM_CORE_PORTFOLIO_UNIVERSE_NON_TERMINATING"
 
 
 @pytest.mark.parametrize(
@@ -2049,7 +2061,7 @@ def test_bulk_review_campaign_preview_fails_closed_for_core_universe_dependency_
         )
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 def test_bulk_review_campaign_preview_preserves_governance_evidence() -> None:
@@ -2151,7 +2163,7 @@ def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
 
     assert first.status_code == 200
     assert conflict.status_code == 409
-    assert conflict.json()["detail"]["code"] == (
+    assert _error_reason_code(conflict) == (
         "BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT"
     )
     assert listed.status_code == 200
@@ -2159,7 +2171,7 @@ def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
     assert fetched.status_code == 200
     assert fetched.json()["campaign_version"] == "2026.05"
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+    assert _error_reason_code(missing) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
 def test_bulk_review_campaign_definition_preview_readiness_is_ready_for_eligible_actor() -> None:
@@ -2232,7 +2244,7 @@ def test_bulk_review_campaign_definition_preview_readiness_fails_closed() -> Non
     assert payload["expiry_state"] == "EXPIRED"
     assert payload["actor_entitlement_state"] == "UNAUTHORIZED"
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+    assert _error_reason_code(missing) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
 def test_bulk_review_campaign_definition_launch_package_builds_preview_and_create_drafts() -> None:
@@ -2411,7 +2423,7 @@ def test_bulk_review_campaign_definition_approval_decisions_record_and_list() ->
     assert len(replay.json()["approval_decisions"]) == 1
     assert conflict.status_code == 409
     assert (
-        conflict.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT"
+        _error_reason_code(conflict) == "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT"
     )
     decision_payload = decision.json()
     assert len(decision_payload["approval_decisions"]) == 1
@@ -2459,7 +2471,7 @@ def test_bulk_review_campaign_definition_launch_package_fails_closed_when_not_re
     assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in payload["reason_codes"]
     assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in payload["reason_codes"]
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+    assert _error_reason_code(missing) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
 def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays() -> None:
@@ -2547,7 +2559,7 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
     assert empty_launch_history_page.json()["total_count"] == 1
     assert missing_launch_history.status_code == 404
     assert (
-        missing_launch_history.json()["detail"]["code"]
+        _error_reason_code(missing_launch_history)
         == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
     )
 
@@ -2584,10 +2596,11 @@ def test_bulk_review_campaign_definition_launch_retry_repairs_missing_audit() ->
 
     assert put_response.status_code == 200
     assert failed.status_code == 409
-    assert failed.json()["detail"] == {
-        "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
-        "message": "Bulk-review campaign definition launch audit could not be recorded.",
-    }
+    assert _error_reason_code(failed) == "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
+    assert (
+        failed.json()["detail"]
+        == "Bulk-review campaign definition launch audit could not be recorded."
+    )
     assert len(persisted_waves_after_failure) == 1
     durable_wave = persisted_waves_after_failure[0]
     assert durable_wave.trigger.trigger_type == "BULK_REVIEW_CAMPAIGN"
@@ -2643,14 +2656,14 @@ def test_bulk_review_campaign_definition_launch_fails_closed_when_readiness_bloc
 
     assert put_response.status_code == 200
     assert blocked.status_code == 422
-    blocked_detail = blocked.json()["detail"]
-    assert blocked_detail["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_LAUNCH_BLOCKED"
-    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in blocked_detail["reason_codes"]
-    assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in blocked_detail["reason_codes"]
-    assert blocked_detail["readiness"]["preview_create_allowed"] is False
+    blocked_payload = blocked.json()
+    assert _error_reason_code(blocked) == "BULK_REVIEW_CAMPAIGN_DEFINITION_LAUNCH_BLOCKED"
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in blocked_payload["reasonCodes"]
+    assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in blocked_payload["reasonCodes"]
+    assert blocked_payload["readiness"]["preview_create_allowed"] is False
     assert wave_repository.list_waves() == []
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+    assert _error_reason_code(missing) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
 def test_bulk_review_campaign_launch_and_readiness_telemetry_is_bounded(monkeypatch) -> None:
@@ -2828,7 +2841,7 @@ def test_bulk_review_campaign_discovery_filters_expired_campaigns() -> None:
     assert included.json()["count"] == 1
     assert included.json()["items"][0]["expiry_state"] == "EXPIRED"
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+    assert _error_reason_code(invalid) == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
 def test_bulk_review_campaign_operating_queue_summarizes_ready_attention_and_closed_rows() -> None:
@@ -2935,7 +2948,7 @@ def test_bulk_review_campaign_operating_queue_summarizes_ready_attention_and_clo
     assert limited_payload["items"][0]["campaign_id"] == "campaign-holdings-apple-tesla-20260510"
     assert limited_payload["status_counts"] == {"READY_TO_LAUNCH": 1}
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+    assert _error_reason_code(invalid) == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
 def test_bulk_review_campaign_approval_inbox_summarizes_governance_attention_rows() -> None:
@@ -3092,7 +3105,7 @@ def test_bulk_review_campaign_approval_inbox_summarizes_governance_attention_row
     }
 
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+    assert _error_reason_code(invalid) == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
 def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions() -> None:
@@ -3222,7 +3235,7 @@ def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions
     )
 
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+    assert _error_reason_code(invalid) == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
 def test_bulk_review_campaign_assignment_plan_summarizes_escalation_posture() -> None:
@@ -3312,7 +3325,7 @@ def test_bulk_review_campaign_assignment_plan_summarizes_escalation_posture() ->
     assert filtered.json()["items"][0]["escalation_tier"] == "GOVERNANCE"
 
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+    assert _error_reason_code(invalid) == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
 def test_bulk_review_campaign_workflow_automation_summarizes_manage_task_readiness() -> None:
@@ -3473,7 +3486,7 @@ def test_bulk_review_campaign_workflow_automation_summarizes_manage_task_readine
     assert filtered.json()["items"][0]["automation_action"] == "ESCALATE_ASSIGNMENT_TASK"
 
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+    assert _error_reason_code(invalid) == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
 def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> None:
@@ -3577,12 +3590,12 @@ def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> No
     assert len(replay.json()["assignment_actions"]) == 2
     assert conflicting.status_code == 409
     assert (
-        conflicting.json()["detail"]["code"]
+        _error_reason_code(conflicting)
         == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
     )
     assert missing_actor.status_code == 422
     assert (
-        missing_actor.json()["detail"]["code"]
+        _error_reason_code(missing_actor)
         == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTORS_REQUIRED"
     )
 
@@ -3712,7 +3725,7 @@ def test_bulk_review_campaign_assignment_tasks_open_transition_and_page_posture(
     assert opened.status_code == 201
     assert open_conflict.status_code == 409
     assert (
-        open_conflict.json()["detail"]["code"]
+        _error_reason_code(open_conflict)
         == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT"
     )
     assert acknowledged.status_code == 201
@@ -3721,14 +3734,14 @@ def test_bulk_review_campaign_assignment_tasks_open_transition_and_page_posture(
     assert len(replay.json()["assignment_tasks"][0]["transitions"]) == 3
     assert conflict.status_code == 409
     assert (
-        conflict.json()["detail"]["code"]
+        _error_reason_code(conflict)
         == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT"
     )
     assert missing_task.status_code == 404
-    assert missing_task.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND"
+    assert _error_reason_code(missing_task) == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND"
     assert missing_assignee.status_code == 422
     assert (
-        missing_assignee.json()["detail"]["code"]
+        _error_reason_code(missing_assignee)
         == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED"
     )
 
@@ -3848,12 +3861,12 @@ def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -
     assert len(replay.json()["maker_checker_controls"]) == 2
     assert conflict.status_code == 409
     assert (
-        conflict.json()["detail"]["code"]
+        _error_reason_code(conflict)
         == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_CONFLICT"
     )
     assert same_actor.status_code == 422
     assert (
-        same_actor.json()["detail"]["code"]
+        _error_reason_code(same_actor)
         == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTOR_SEPARATION_REQUIRED"
     )
 
@@ -3910,12 +3923,12 @@ def test_bulk_review_campaign_maker_checker_controls_reject_invalid_lifecycle_se
     assert put_response.status_code == 200
     assert invalid_completion.status_code == 422
     assert (
-        invalid_completion.json()["detail"]["code"]
+        _error_reason_code(invalid_completion)
         == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMISSION_REQUIRED"
     )
     assert invalid_resolution.status_code == 422
     assert (
-        invalid_resolution.json()["detail"]["code"]
+        _error_reason_code(invalid_resolution)
         == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_OPEN_EXCEPTION_REQUIRED"
     )
     assert listed.status_code == 200
@@ -4008,7 +4021,7 @@ def test_bulk_review_campaign_workflow_mutations_enforce_actor_entitlement() -> 
     assert put_response.status_code == 200
     for response in (assignment_action, task_open, task_transition, maker_checker):
         assert response.status_code == 422
-        assert response.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"
+        assert _error_reason_code(response) == "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"
 
     assert assignment_actions.status_code == 200
     assert assignment_actions.json()["count"] == 0
@@ -4226,15 +4239,15 @@ def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> Non
     assert retired_discovery.json()["count"] == 1
     assert retired_discovery.json()["items"][0]["campaign_status"] == "RETIRED"
     assert preview_response.status_code == 422
-    assert preview_response.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED"
+    assert _error_reason_code(preview_response) == "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED"
     assert create_response.status_code == 422
-    assert create_response.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED"
+    assert _error_reason_code(create_response) == "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED"
     assert idempotent_retire.status_code == 200
     assert idempotent_retire.json()["retirement_correlation_id"] == (
         "corr-campaign-definition-retire-001"
     )
     assert missing_retire.status_code == 404
-    assert missing_retire.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+    assert _error_reason_code(missing_retire) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
 def test_bulk_review_campaign_definition_supersession_blocks_old_version() -> None:
@@ -4345,14 +4358,14 @@ def test_bulk_review_campaign_definition_supersession_blocks_old_version() -> No
     assert superseded_discovery.json()["items"][0]["campaign_status"] == "SUPERSEDED"
     assert superseded_discovery.json()["items"][0]["superseded_by_campaign_version"] == "2026.06"
     assert old_preview.status_code == 422
-    assert old_preview.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED"
+    assert _error_reason_code(old_preview) == "BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED"
     assert replacement_preview.status_code == 200
     assert idempotent_supersede.status_code == 200
     assert idempotent_supersede.json()["supersession_correlation_id"] == (
         "corr-campaign-definition-supersede-001"
     )
     assert missing_replacement.status_code == 404
-    assert missing_replacement.json()["detail"]["code"] == (
+    assert _error_reason_code(missing_replacement) == (
         "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND"
     )
 
@@ -4400,7 +4413,7 @@ def test_bulk_review_campaign_definition_lifecycle_events_project_audit_posture(
     assert retired_payload["items"][1]["actor_id"] == "ops"
     assert retired_payload["items"][1]["reason"] == "Campaign completed and closed to new waves."
     assert missing_events.status_code == 404
-    assert missing_events.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+    assert _error_reason_code(missing_events) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
 def test_bulk_review_campaign_definition_lifecycle_events_include_supersession_lineage() -> None:
@@ -4469,7 +4482,7 @@ def test_bulk_review_campaign_definition_put_maps_domain_validation_errors() -> 
         )
 
     assert response.status_code == 422
-    assert "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED" in response.json()["detail"]["code"]
+    assert "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED" in _error_reason_code(response)
 
 
 def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
@@ -4720,7 +4733,7 @@ def test_bulk_review_campaign_preview_rejects_invalid_or_empty_membership(
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 @pytest.mark.parametrize(
@@ -4784,7 +4797,7 @@ def test_risk_event_wave_preview_rejects_invalid_selector(
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 @pytest.mark.parametrize(
@@ -4826,7 +4839,7 @@ def test_risk_event_wave_preview_maps_source_resolution_failures(
         response = client.post("/api/v1/rebalance/waves/preview", json=_risk_event_request())
 
     assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    assert _error_reason_code(response) == expected_code
 
 
 def test_wave_preview_rejects_empty_source_owned_portfolio_set() -> None:
@@ -4850,7 +4863,7 @@ def test_wave_report_input_returns_not_found_for_unknown_wave() -> None:
         response = client.get("/api/v1/rebalance/waves/dwv_missing/report-input")
 
     assert response.status_code == 404
-    assert response.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+    assert _error_reason_code(response) == "DPM_WAVE_NOT_FOUND"
 
 
 def test_wave_source_check_classifies_mixed_items_and_attaches_authoritative_refs() -> None:
@@ -4966,9 +4979,9 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
         )
 
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+    assert _error_reason_code(missing) == "DPM_WAVE_NOT_FOUND"
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "DPM_WAVE_SOURCE_CHECK_INVALID_STATE"
+    assert _error_reason_code(invalid) == "DPM_WAVE_SOURCE_CHECK_INVALID_STATE"
 
 
 def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -> None:
@@ -5266,7 +5279,7 @@ def test_wave_simulation_reports_invalid_state_and_partial_result() -> None:
         )
 
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "DPM_WAVE_SIMULATION_INVALID_STATE"
+    assert _error_reason_code(invalid) == "DPM_WAVE_SIMULATION_INVALID_STATE"
     assert partial.status_code == 200
     assert partial.json()["wave"]["state"] == "PARTIALLY_SIMULATED"
     assert partial.json()["wave"]["aggregate_metrics"]["state_counts"] == {
@@ -5451,11 +5464,11 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
         )
 
     assert invalid_state.status_code == 422
-    assert invalid_state.json()["detail"]["code"] == "DPM_WAVE_SELECTION_INVALID_STATE"
+    assert _error_reason_code(invalid_state) == "DPM_WAVE_SELECTION_INVALID_STATE"
     assert missing_item.status_code == 404
-    assert missing_item.json()["detail"]["code"] == "DPM_WAVE_ITEM_NOT_FOUND"
+    assert _error_reason_code(missing_item) == "DPM_WAVE_ITEM_NOT_FOUND"
     assert bad_alternative.status_code == 404
-    assert bad_alternative.json()["detail"]["code"] == "DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND"
+    assert _error_reason_code(bad_alternative) == "DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND"
 
 
 def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
@@ -5520,7 +5533,7 @@ def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
         )
 
     assert selected.status_code == 422
-    assert selected.json()["detail"]["code"] == "DPM_WAVE_ITEM_ALTERNATIVES_MISSING"
+    assert _error_reason_code(selected) == "DPM_WAVE_ITEM_ALTERNATIVES_MISSING"
 
 
 def test_wave_selection_degrades_when_proof_pack_generation_fails(
@@ -5807,7 +5820,7 @@ def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> 
     assert persisted is not None
     assert persisted.state == "CANCELLED"
     assert invalid.status_code == 422
-    assert invalid.json()["detail"]["code"] == "DPM_WAVE_CANCEL_INVALID_STATE"
+    assert _error_reason_code(invalid) == "DPM_WAVE_CANCEL_INVALID_STATE"
 
 
 def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -> None:
@@ -5932,11 +5945,11 @@ def test_wave_workflow_commands_reject_invalid_states_and_empty_eligibility() ->
         )
 
     assert approve_invalid.status_code == 422
-    assert approve_invalid.json()["detail"]["code"] == "DPM_WAVE_APPROVAL_INVALID_STATE"
+    assert _error_reason_code(approve_invalid) == "DPM_WAVE_APPROVAL_INVALID_STATE"
     assert stage_invalid.status_code == 422
-    assert stage_invalid.json()["detail"]["code"] == "DPM_WAVE_STAGE_INVALID_STATE"
+    assert _error_reason_code(stage_invalid) == "DPM_WAVE_STAGE_INVALID_STATE"
     assert handoff_invalid.status_code == 422
-    assert handoff_invalid.json()["detail"]["code"] == "DPM_WAVE_HANDOFF_INVALID_STATE"
+    assert _error_reason_code(handoff_invalid) == "DPM_WAVE_HANDOFF_INVALID_STATE"
 
 
 def test_wave_services_translate_durable_write_conflicts_to_governed_errors() -> None:
@@ -6166,7 +6179,7 @@ def test_wave_api_maps_missing_and_create_conflict_edges() -> None:
         )
 
     assert create_conflict.status_code == 409
-    assert create_conflict.json()["detail"]["code"] == "WAVE_CREATE_CONFLICT"
+    assert _error_reason_code(create_conflict) == "WAVE_CREATE_CONFLICT"
 
     with _client(
         InMemoryDpmMandateRepository(),
@@ -6216,7 +6229,7 @@ def test_wave_api_maps_missing_and_create_conflict_edges() -> None:
         missing_proof_pack,
     ]
     assert [response.status_code for response in responses] == [404] * len(responses)
-    assert {response.json()["detail"]["code"] for response in responses} == {"DPM_WAVE_NOT_FOUND"}
+    assert {_error_reason_code(response) for response in responses} == {"DPM_WAVE_NOT_FOUND"}
 
 
 def test_wave_supportability_filters_and_private_helper_edges() -> None:
@@ -6356,7 +6369,7 @@ def test_wave_supportability_reports_product_safe_operator_diagnostics() -> None
     assert "source_refs" not in payload
 
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+    assert _error_reason_code(missing) == "DPM_WAVE_NOT_FOUND"
     assert metrics.status_code == 200
     assert "lotus_manage_wave_supportability_total" in metrics.text
     assert 'surface="rebalance/waves/supportability"' in metrics.text
@@ -6747,7 +6760,7 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     )
 
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+    assert _error_reason_code(missing) == "DPM_WAVE_NOT_FOUND"
 
 
 def test_bulk_review_campaign_wave_report_input_carries_universe_boundary() -> None:
@@ -6908,7 +6921,7 @@ def test_wave_report_input_rejects_external_execution_claims() -> None:
     )
     assert proof_payload["external_execution_boundary"]["external_execution_claimed"] is True
     assert report_input.status_code == 422
-    assert report_input.json()["detail"]["code"] == "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY"
+    assert _error_reason_code(report_input) == "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY"
     assert "cannot propagate external execution claims" in report_input.json()["detail"]["message"]
 
 
@@ -7138,7 +7151,13 @@ def _json_response_schema_ref(operation: dict[str, Any], status_code: str) -> st
 
 def _json_response_example(operation: dict[str, Any], status_code: str) -> dict[str, Any]:
     response = operation["responses"][status_code]
-    content = response["content"]["application/json"]
+    content_by_media_type = response["content"]
+    if _is_error_status_code(status_code) and "application/problem+json" in content_by_media_type:
+        content = content_by_media_type["application/problem+json"]
+    else:
+        content = content_by_media_type.get("application/json") or content_by_media_type[
+            "application/problem+json"
+        ]
     examples = content.get("examples")
     if isinstance(examples, dict):
         return cast(dict[str, Any], examples["default"]["value"])
@@ -7147,6 +7166,10 @@ def _json_response_example(operation: dict[str, Any], status_code: str) -> dict[
         f"example drift: {status_code} response should expose a JSON object example"
     )
     return cast(dict[str, Any], example)
+
+
+def _is_error_status_code(status_code: str) -> bool:
+    return status_code.isdigit() and int(status_code) >= 400
 
 
 def _json_request_example(operation: dict[str, Any]) -> dict[str, Any]:
@@ -7197,11 +7220,13 @@ def _assert_mutation_problem_details(
         assert response["description"] == detail, (
             f"error-doc drift: {status_code} response description changed"
         )
+        assert "application/problem+json" in response["content"]
         example = _json_response_example(operation, status_code)
         assert example["title"] == title, f"error-example drift: {status_code} title"
         assert example["status"] == int(status_code), f"error-example drift: {status_code} status"
         assert example["detail"] == detail, f"error-example drift: {status_code} detail"
-        assert example.get("correlation_id", example.get("correlationId")) == "corr_1234abcd"
+        assert example["reasonCode"] == example["code"]
+        assert example["correlationId"] == "corr_1234abcd"
 
 
 def test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts() -> None:

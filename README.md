@@ -315,7 +315,10 @@ window posture so audit evidence cannot carry internally inconsistent summaries.
 evidence persistence uses the caller's base campaign-definition content hash as an optimistic
 compare-and-set guard; same-ref replay remains idempotent, while independently stale appends return
 HTTP 409 with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE` rather than overwriting newer audit
-evidence. PostgreSQL also maintains the derived
+evidence. Handled campaign workflow errors return `application/problem+json` with top-level
+Problem Details fields, bounded `reasonCode`, compatibility `code`, `correlationId`, and route
+`instance`; launch-blocked failures additionally expose top-level `reasonCodes` and `readiness`
+supportability evidence. PostgreSQL also maintains the derived
 `dpm_bulk_review_campaign_workflow_read_model` projection from the durable campaign definition
 payload. Campaign definitions and the workflow read-model projection are tenant-scoped by trusted
 `X-Tenant-Id`; repository keys, read predicates, lifecycle updates, launch audit writes, and

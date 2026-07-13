@@ -30534,3 +30534,39 @@ and improves internal transaction-cost source posture maintainability only.
   changed. README, repo context, central context, wiki source, and platform skills do not need
   updates because public route behavior, operator workflow, commands, and routing guidance did not
   change.
+
+## BACKEND-REVIEW-20260713-0616-A: Campaign workflow Problem Details runtime contract
+
+- Date: 2026-07-13
+- GitHub issue: #616
+- Scope: handled bulk-review campaign workflow errors, OpenAPI error examples, campaign telemetry,
+  runbook/operator guidance, and error contract regression tests.
+- Bank-buyable control area: API contract truth, supportability, correlation, safe diagnostics,
+  and downstream error handling.
+- Finding: campaign workflow routes documented Problem Details-style error examples but runtime
+  handled errors still returned FastAPI default JSON with nested `detail.code`, causing clients,
+  Gateway adapters, support tooling, and telemetry diagnostics to rely on different shapes.
+- Action: added `wave_campaign_problem_details.py` with a dedicated campaign Problem Details
+  exception, handler, and reusable OpenAPI response builder. Registered the handler in
+  `src/api/main.py`, migrated campaign error builders to return `application/problem+json`, kept
+  bounded machine-readable codes as `reasonCode` plus compatibility `code`, preserved launch
+  blocked `reasonCodes`/`readiness` supportability extensions, and prevented generic OpenAPI
+  enrichment from adding synthetic `application/json` examples when a Problem Details response is
+  explicitly declared.
+- Status: fixed locally.
+- Evidence: focused Ruff and API validation passed for OpenAPI enrichment helpers, campaign
+  workflow telemetry, and the full waves API suite. Full repository gates will be recorded in the
+  #616 issue comment for the corresponding commit on branch
+  `fix/issue-600-pm-quality-application-boundary`.
+- Same-pattern scan: direct nested `detail.code` assertions are now isolated behind a compatibility
+  test helper that enforces Problem Details metadata when the response media type is
+  `application/problem+json`. Campaign workflow telemetry still derives low-cardinality labels
+  from the same bounded code values and does not emit campaign ids, actor ids, portfolio ids,
+  idempotency keys, correlation ids, or diagnostics payloads.
+- Design decision: this changes the handled-error envelope for campaign workflow APIs without
+  changing route paths, status-code semantics, business rules, source ownership, or runtime service
+  boundaries. The top-level `code` alias is retained to reduce downstream migration risk while
+  `reasonCode` is the governed Problem Details field.
+- Docs/wiki/context/skill decision: README, repository context, operations runbook, wiki source,
+  and this ledger changed because operator-facing error triage fields changed. Central context and
+  platform skills do not need updates because this is a repository-local API contract alignment.
