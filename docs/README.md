@@ -25,3 +25,6 @@ python C:\Users\Sandeep\projects\lotus-platform\codex\skills\lotus-readme-wiki-g
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\Sandeep\projects\lotus-platform\automation\Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage
 ```
 
+When the branch intentionally changes repo-local `wiki/` source, run the same wiki check with
+`-AllowUnpublishedSourceChanges` before merge, then publish after merge and rerun the strict
+`-CheckOnly` command.
