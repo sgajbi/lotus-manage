@@ -14,7 +14,7 @@ to `main`.
 | Is the branch locally fit for PR? | `make check`, focused tests, targeted contract validators | Blocking local proof before push or PR updates. |
 | Is the PR mergeable? | Pull Request Merge Gate | Required GitHub checks must be green; solo development does not require a reviewer when CI and conversations are clean. |
 | Is main releasable after merge? | Main Releasability Gate | Post-merge proof must point to the merged `main` SHA when the workflow applies. |
-| Did docs or wiki truth change? | Repo docs tests; `Sync-RepoWikis.ps1 -CheckOnly` before merge; publish after merge | Repo-local `wiki/` is source truth; GitHub wiki is a publication target. |
+| Did docs or wiki truth change? | Repo docs tests; `Sync-RepoWikis.ps1 -CheckOnly -AllowUnpublishedSourceChanges` before merge when the branch intentionally changes `wiki/`; publish after merge; rerun strict `Sync-RepoWikis.ps1 -CheckOnly` after publication | Repo-local `wiki/` is source truth; GitHub wiki is a publication target. |
 | Is live source integration claimed? | `make live-api-validate-core`, `make demo-certify` where applicable | Live proof is required before claiming stateful Core-backed readiness or demo certification. |
 
 ## Lane model
