@@ -17,15 +17,15 @@ IDEA_ACTION_INTAKE_CAPABILITY_REQUIRED = "IDEA_ACTION_INTAKE_CAPABILITY_REQUIRED
 
 
 def require_idea_action_intake_principal(
-    x_actor_id: Annotated[str | None, Header(alias="X-Actor-Id")] = None,
-    x_role: Annotated[str | None, Header(alias="X-Role")] = None,
-    x_tenant_id: Annotated[str | None, Header(alias="X-Tenant-Id")] = None,
-    x_legal_entity_code: Annotated[str | None, Header(alias="X-Legal-Entity-Code")] = None,
-    x_correlation_id: Annotated[str | None, Header(alias="X-Correlation-Id")] = None,
-    x_service_identity: Annotated[str | None, Header(alias="X-Service-Identity")] = None,
-    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
-    x_capabilities: Annotated[str | None, Header(alias="X-Capabilities")] = None,
-    x_principal_status: Annotated[str | None, Header(alias="X-Principal-Status")] = None,
+    x_actor_id: Annotated[str | None, Header()] = None,
+    x_role: Annotated[str | None, Header()] = None,
+    x_tenant_id: Annotated[str | None, Header()] = None,
+    x_legal_entity_code: Annotated[str | None, Header()] = None,
+    x_correlation_id: Annotated[str | None, Header()] = None,
+    x_service_identity: Annotated[str | None, Header()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+    x_capabilities: Annotated[str | None, Header()] = None,
+    x_principal_status: Annotated[str | None, Header()] = None,
 ) -> IdeaActionIntakePrincipal:
     actor_id = _required_header(x_actor_id)
     role = _required_header(x_role).upper()
