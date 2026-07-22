@@ -24,6 +24,8 @@
       "supportability_status": "not_certified",
       "supported_feature_promoted": false,
       "route_existence_proven": true,
+      "runtime_action_receipt_proven": true,
+      "principal_capability": "manage.idea_action_intake.accept",
       "action_register_created": false,
       "rebalance_execution_authority_granted": false,
       "order_created": false,

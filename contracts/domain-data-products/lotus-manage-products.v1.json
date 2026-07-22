@@ -47,6 +47,8 @@
           "supportability_status": "not_certified",
           "supported_feature_promoted": false,
           "route_existence_proven": true,
+          "runtime_action_receipt_proven": true,
+          "principal_capability": "manage.idea_action_intake.accept",
           "action_register_created": false,
           "rebalance_execution_authority_granted": false,
           "order_created": false,
@@ -61,7 +63,7 @@
       ],
       "freshness_policy": {
         "freshness_class": "daily",
-        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs. Certified PortfolioActionRegister routes exclude the lotus-idea action-intake route foundation, which is tracked separately as a not-certified route foundation for source-safe conversion-intent handoff evidence only; it does not create action-register records, grant rebalance authority, create orders, authorize client publication, or promote a supported feature."
+        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs. Certified PortfolioActionRegister routes exclude the lotus-idea action-intake receipt, which is tracked separately as a not-certified route foundation for source-safe conversion-intent handoff receipt evidence only; it does not create action-register records, grant rebalance authority, create orders, bind production IdP claims, authorize client publication, or promote a supported feature."
       },
       "completeness_policy": {
         "default_status": "complete",
