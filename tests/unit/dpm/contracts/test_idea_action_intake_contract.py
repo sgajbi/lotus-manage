@@ -29,6 +29,7 @@ def test_idea_action_intake_contract_preserves_manage_authority_boundary() -> No
     assert contract["lifecycle_status"] == "implemented"
     assert contract["supportability_status"] == "not_certified"
     assert contract["route_existence_proven"] is True
+    assert contract["runtime_action_receipt_proven"] is True
     assert contract["downstream_execution_proven"] is False
     assert contract["supported_feature_promoted"] is False
 
@@ -37,7 +38,7 @@ def test_idea_action_intake_contract_keeps_non_proof_boundaries_and_blockers() -
     contract = _contract()
     boundaries = " ".join(contract["non_proof_boundaries"])
 
-    assert "Proves only a live route foundation" in boundaries
+    assert "Proves a live executable action-intake receipt" in boundaries
     assert "Does not grant suitability" in boundaries
     assert "Does not create orders" in boundaries
     assert "Does not promote a supported feature" in boundaries
@@ -45,6 +46,8 @@ def test_idea_action_intake_contract_keeps_non_proof_boundaries_and_blockers() -
     assert "manage_live_contract_proof_missing" not in contract["certification_blockers"]
     assert {
         "src/api/routers/rebalance_runs_idea_action_intake_routes.py",
+        "src/api/routers/rebalance_runs_idea_action_intake_principal.py",
+        "src/core/rebalance_runs/idea_action_intake_authority.py",
         "src/core/rebalance_runs/idea_action_intake.py",
         "tests/unit/dpm/api/test_idea_action_intake_api.py",
     }.issubset(set(contract["evidence_refs"]))

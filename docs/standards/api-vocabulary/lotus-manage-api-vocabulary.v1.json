@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-13T13:28:57.073037+00:00",
+  "generatedAt": "2026-07-22T08:25:04.283159+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -127,6 +127,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.action_receipt_accepted",
+      "canonicalTerm": "action_receipt_accepted",
+      "preferredName": "action_receipt_accepted",
+      "description": "True only when Manage accepted the handoff into its bounded action-intake receipt layer. This is not action-register persistence.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -1221,6 +1235,20 @@
       "type": "object",
       "locations": [
         "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.authorization",
+      "canonicalTerm": "authorization",
+      "preferredName": "authorization",
+      "description": "Canonical authorization used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "header"
       ],
       "observedTypes": [
         "object"
@@ -4552,7 +4580,7 @@
       "semanticId": "lotus.evidence_refs",
       "canonicalTerm": "evidence_refs",
       "preferredName": "evidence_refs",
-      "description": "Implementation and contract evidence references for the route foundation.",
+      "description": "Implementation and contract evidence references for the action-intake receipt.",
       "example": [
         "sample_evidence_refs_item"
       ],
@@ -6392,6 +6420,20 @@
       ]
     },
     {
+      "semanticId": "lotus.idempotency_key_hash",
+      "canonicalTerm": "idempotency_key_hash",
+      "preferredName": "idempotency_key_hash",
+      "description": "Hashed idempotency key reference; raw idempotency keys are not echoed.",
+      "example": "sample_idempotency_key_hash",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.idempotency_policy",
       "canonicalTerm": "idempotency_policy",
       "preferredName": "idempotency_policy",
@@ -6405,6 +6447,20 @@
       ],
       "observedTypes": [
         "DpmPolicyPackIdempotencyPolicy"
+      ]
+    },
+    {
+      "semanticId": "lotus.idempotency_replay",
+      "canonicalTerm": "idempotency_replay",
+      "preferredName": "idempotency_replay",
+      "description": "True when the response is a safe replay for the same idempotency key/request.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -6841,8 +6897,8 @@
       "semanticId": "lotus.intake_status",
       "canonicalTerm": "intake_status",
       "preferredName": "intake_status",
-      "description": "Bounded route-foundation status; not a management action or execution status.",
-      "example": "READY",
+      "description": "Bounded action-intake receipt status; not a management action or execution status.",
+      "example": "ACCEPTED",
       "type": "string",
       "locations": [
         "body"
@@ -9433,6 +9489,22 @@
       ]
     },
     {
+      "semanticId": "lotus.outcome_reason_codes",
+      "canonicalTerm": "outcome_reason_codes",
+      "preferredName": "outcome_reason_codes",
+      "description": "Machine-readable outcome reasons for accepted, replayed, or rejected intake.",
+      "example": [
+        "sample_outcome_reason_codes_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.outcome_review",
       "canonicalTerm": "outcome_review",
       "preferredName": "outcome_review",
@@ -11368,7 +11440,7 @@
       "semanticId": "lotus.request_fingerprint",
       "canonicalTerm": "request_fingerprint",
       "preferredName": "request_fingerprint",
-      "description": "dpm mandate source health context field: request fingerprint.",
+      "description": "Source-safe request fingerprint used for idempotency conflict detection.",
       "example": "sample_request_fingerprint",
       "type": "string",
       "locations": [
@@ -14468,7 +14540,7 @@
       "semanticId": "lotus.supportability_status",
       "canonicalTerm": "supportability_status",
       "preferredName": "supportability_status",
-      "description": "Certification posture for this route foundation.",
+      "description": "Certification posture for this action-intake receipt.",
       "example": "READY",
       "type": "string",
       "locations": [
@@ -15588,6 +15660,22 @@
       ]
     },
     {
+      "semanticId": "lotus.trusted_scope",
+      "canonicalTerm": "trusted_scope",
+      "preferredName": "trusted_scope",
+      "description": "Bounded trusted principal scope derived from local/dev headers. Production IdP integration remains external to this route until available.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.turnover_budget",
       "canonicalTerm": "turnover_budget",
       "preferredName": "turnover_budget",
@@ -16308,6 +16396,34 @@
       ]
     },
     {
+      "semanticId": "lotus.x_actor_id",
+      "canonicalTerm": "x_actor_id",
+      "preferredName": "x_actor_id",
+      "description": "Canonical x actor id used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "header"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.x_capabilities",
+      "canonicalTerm": "x_capabilities",
+      "preferredName": "x_capabilities",
+      "description": "Canonical x capabilities used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "header"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.x_correlation_id",
       "canonicalTerm": "x_correlation_id",
       "preferredName": "x_correlation_id",
@@ -16322,10 +16438,66 @@
       ]
     },
     {
+      "semanticId": "lotus.x_legal_entity_code",
+      "canonicalTerm": "x_legal_entity_code",
+      "preferredName": "x_legal_entity_code",
+      "description": "Canonical x legal entity code used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "header"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.x_policy_pack_id",
       "canonicalTerm": "x_policy_pack_id",
       "preferredName": "x_policy_pack_id",
       "description": "Canonical x policy pack id used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "header"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.x_principal_status",
+      "canonicalTerm": "x_principal_status",
+      "preferredName": "x_principal_status",
+      "description": "Canonical x principal status used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "header"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.x_role",
+      "canonicalTerm": "x_role",
+      "preferredName": "x_role",
+      "description": "Canonical x role used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "header"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.x_service_identity",
+      "canonicalTerm": "x_service_identity",
+      "preferredName": "x_service_identity",
+      "description": "Canonical x service identity used by lotus-manage APIs.",
       "example": null,
       "type": "object",
       "locations": [
@@ -17158,16 +17330,124 @@
       "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
     },
     {
+      "name": "idempotency_key",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required replay-safe key for lotus-idea conversion-intent action intake. Replays with the same source request return the original receipt posture; conflicting payloads with the same key are rejected.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.idempotency_key",
+      "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+    },
+    {
       "name": "x_correlation_id",
       "kind": "request_option",
       "location": "header",
       "required": false,
       "type": "object",
-      "description": "Optional source-safe correlation id supplied by lotus-idea.",
+      "description": "Canonical x correlation id used by lotus-manage APIs.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+    },
+    {
+      "name": "x_actor_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x actor id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_actor_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_actor_id"
+    },
+    {
+      "name": "x_role",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x role used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_role",
+      "attributeRef": "#/attributeCatalog/lotus.x_role"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x tenant id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "x_legal_entity_code",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x legal entity code used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_legal_entity_code",
+      "attributeRef": "#/attributeCatalog/lotus.x_legal_entity_code"
+    },
+    {
+      "name": "x_service_identity",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x service identity used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_service_identity",
+      "attributeRef": "#/attributeCatalog/lotus.x_service_identity"
+    },
+    {
+      "name": "authorization",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical authorization used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.authorization",
+      "attributeRef": "#/attributeCatalog/lotus.authorization"
+    },
+    {
+      "name": "x_capabilities",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x capabilities used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_capabilities",
+      "attributeRef": "#/attributeCatalog/lotus.x_capabilities"
+    },
+    {
+      "name": "x_principal_status",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x principal status used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_principal_status",
+      "attributeRef": "#/attributeCatalog/lotus.x_principal_status"
     },
     {
       "name": "x_policy_pack_id",
@@ -50581,16 +50861,88 @@
       "method": "POST",
       "path": "/api/v1/rebalance/idea-action-intake",
       "operationId": "accept_idea_action_intake_api_v1_rebalance_idea_action_intake_post",
-      "summary": "Accept lotus-idea Action Intake Foundation",
+      "summary": "Accept lotus-idea Action Intake Receipt",
       "request": {
         "fields": [
           {
-            "name": "x-correlation-id",
+            "name": "Idempotency-Key",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idempotency_key",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
+            "name": "X-Correlation-Id",
             "location": "header",
             "required": false,
             "type": "object",
             "semanticId": "lotus.x_correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+          },
+          {
+            "name": "X-Actor-Id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_actor_id"
+          },
+          {
+            "name": "X-Role",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_role",
+            "attributeRef": "#/attributeCatalog/lotus.x_role"
+          },
+          {
+            "name": "X-Tenant-Id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
+            "name": "X-Legal-Entity-Code",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_legal_entity_code",
+            "attributeRef": "#/attributeCatalog/lotus.x_legal_entity_code"
+          },
+          {
+            "name": "X-Service-Identity",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_service_identity",
+            "attributeRef": "#/attributeCatalog/lotus.x_service_identity"
+          },
+          {
+            "name": "Authorization",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.authorization",
+            "attributeRef": "#/attributeCatalog/lotus.authorization"
+          },
+          {
+            "name": "X-Capabilities",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.x_capabilities"
+          },
+          {
+            "name": "X-Principal-Status",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_principal_status",
+            "attributeRef": "#/attributeCatalog/lotus.x_principal_status"
           },
           {
             "name": "source_system",
@@ -50731,6 +51083,54 @@
             "type": "boolean",
             "semanticId": "lotus.route_existence_proven",
             "attributeRef": "#/attributeCatalog/lotus.route_existence_proven"
+          },
+          {
+            "name": "action_receipt_accepted",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.action_receipt_accepted",
+            "attributeRef": "#/attributeCatalog/lotus.action_receipt_accepted"
+          },
+          {
+            "name": "idempotency_replay",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.idempotency_replay",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_replay"
+          },
+          {
+            "name": "idempotency_key_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idempotency_key_hash",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key_hash"
+          },
+          {
+            "name": "request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
+            "name": "trusted_scope",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.trusted_scope",
+            "attributeRef": "#/attributeCatalog/lotus.trusted_scope"
+          },
+          {
+            "name": "outcome_reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.outcome_reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.outcome_reason_codes"
           },
           {
             "name": "action_register_created",

@@ -288,6 +288,8 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
             "supportability_status": "not_certified",
             "supported_feature_promoted": False,
             "route_existence_proven": True,
+            "runtime_action_receipt_proven": True,
+            "principal_capability": "manage.idea_action_intake.accept",
             "action_register_created": False,
             "rebalance_execution_authority_granted": False,
             "order_created": False,
@@ -310,6 +312,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     freshness_description = product["freshness_policy"]["max_allowed_age_description"]
     assert "Certified PortfolioActionRegister routes exclude" in freshness_description
     assert "not-certified route foundation" in freshness_description
+    assert "handoff receipt evidence" in freshness_description
     assert "does not create action-register records" in freshness_description
     assert "grant rebalance authority" in freshness_description
     assert "create orders" in freshness_description
