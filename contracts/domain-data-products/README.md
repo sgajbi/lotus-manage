@@ -49,7 +49,9 @@ Current declarations:
    mandate-health evidence as-of date when available, and a fail-closed temporal identity status so
    consumers such as `lotus-idea` do not substitute their own request dates or clocks. Trusted
    tenant/session scope remains blocked until an IdP-backed caller context exists and is tracked in
-   sgajbi/lotus-manage#624. The not-certified
+   sgajbi/lotus-manage#624. Current preserved Risk/Performance mandate-health refs do not include
+   source-owned as-of dates, so `missing_source_evidence` remains non-certifying until that owner
+   evidence is preserved. The not-certified
    `lotus-idea` action-intake route is tracked separately under `route_foundations`, not under
    certified `current_routes`, and
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded

@@ -724,7 +724,9 @@ Boundary:
 - Portfolio-scoped downstream proof requires `temporal_identity_status=available`.
 - Missing source evidence or mixed source as-of dates remain degraded/fail-closed; consumers must
   not substitute request dates, caller clocks, tenant assertions, action-register persistence, or
-  execution authority.
+  execution authority. Current preserved Risk/Performance mandate-health refs do not include
+  source-owned as-of dates, so they remain `missing_source_evidence` until that owner evidence is
+  preserved.
 - backend initialization failures return `503` with bounded supportability-store error codes.
 
 Non-functional posture:
