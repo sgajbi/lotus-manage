@@ -22,9 +22,12 @@ from src.core.rebalance_runs.idea_action_intake import (
     IDEA_ACTION_INTAKE_ERROR_EXAMPLE,
     IDEA_ACTION_INTAKE_REQUEST_EXAMPLE,
     IDEA_ACTION_INTAKE_RESPONSE_EXAMPLE,
+    IdeaActionIntakeIdempotencyConflictError,
     IdeaActionIntakeRequest,
     IdeaActionIntakeResponse,
     acknowledge_idea_action_intake,
+    process_idea_action_intake,
+    reset_idea_action_intake_idempotency_for_tests,
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 from src.core.rebalance_runs.service import (
@@ -55,9 +58,12 @@ __all__ = [
     "IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS",
     "IDEA_ACTION_INTAKE_REQUEST_EXAMPLE",
     "IDEA_ACTION_INTAKE_RESPONSE_EXAMPLE",
+    "IdeaActionIntakeIdempotencyConflictError",
     "IdeaActionIntakeRequest",
     "IdeaActionIntakeResponse",
     "acknowledge_idea_action_intake",
+    "process_idea_action_intake",
+    "reset_idea_action_intake_idempotency_for_tests",
     "DpmRunWorkflowHistoryResponse",
     "DpmRunWorkflowResponse",
     "DpmAsyncOperationConflictError",
