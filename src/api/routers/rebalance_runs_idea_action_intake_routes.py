@@ -16,6 +16,7 @@ from src.api.routers.rebalance_runs_idea_action_intake_responses import (
 from src.core.rebalance_runs import (
     IDEA_ACTION_INTAKE_REQUEST_EXAMPLE,
     IdeaActionIntakeIdempotencyConflictError,
+    IdeaActionIntakeInvalidIdempotencyKeyError,
     IdeaActionIntakeRequest,
     IdeaActionIntakeResponse,
     process_idea_action_intake,
@@ -62,5 +63,10 @@ def accept_idea_action_intake(
             idempotency_key=idempotency_key,
             principal=principal,
         )
+    except IdeaActionIntakeInvalidIdempotencyKeyError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
     except IdeaActionIntakeIdempotencyConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc

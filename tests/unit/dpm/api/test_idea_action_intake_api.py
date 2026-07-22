@@ -33,14 +33,18 @@ def _headers(
     idempotency_key: str = "idea-action-intake-idem-001",
     capabilities: str = "manage.idea_action_intake.accept",
     role: str = "SERVICE",
+    tenant_id: str = "tenant-private-bank-sg",
+    legal_entity_code: str = "SGPB",
+    actor_id: str = "svc-lotus-idea",
+    service_identity: str = "lotus-idea",
 ) -> dict[str, str]:
     headers = {
         "Idempotency-Key": idempotency_key,
-        "X-Actor-Id": "svc-lotus-idea",
+        "X-Actor-Id": actor_id,
         "X-Role": role,
-        "X-Tenant-Id": "tenant-private-bank-sg",
-        "X-Legal-Entity-Code": "SGPB",
-        "X-Service-Identity": "lotus-idea",
+        "X-Tenant-Id": tenant_id,
+        "X-Legal-Entity-Code": legal_entity_code,
+        "X-Service-Identity": service_identity,
         "X-Capabilities": capabilities,
     }
     if correlation_id is not None:
@@ -129,6 +133,35 @@ def test_idea_action_intake_route_replays_same_idempotency_key_and_payload() -> 
     assert second_body["correlation_id"] == "corr-second"
 
 
+def test_idea_action_intake_idempotency_key_is_scoped_to_trusted_principal() -> None:
+    with TestClient(app) as client:
+        first = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(correlation_id="corr-first"),
+        )
+        second = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(
+                correlation_id="corr-second",
+                tenant_id="tenant-private-bank-hk",
+                legal_entity_code="HKPB",
+                actor_id="svc-lotus-idea-hk",
+            ),
+        )
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    first_body = first.json()
+    second_body = second.json()
+    assert second_body["intake_id"] == first_body["intake_id"]
+    assert second_body["idempotency_key_hash"] == first_body["idempotency_key_hash"]
+    assert second_body["idempotency_replay"] is False
+    assert second_body["trusted_scope"]["tenant_id"] == "tenant-private-bank-hk"
+    assert second_body["trusted_scope"]["legal_entity_code"] == "HKPB"
+
+
 def test_idea_action_intake_route_rejects_conflicting_idempotency_replay() -> None:
     changed_payload = _payload()
     changed_payload["conversion_intent_id"] = "conversion_intent_changed"
@@ -148,6 +181,18 @@ def test_idea_action_intake_route_rejects_conflicting_idempotency_replay() -> No
     assert first.status_code == 202
     assert second.status_code == 409
     assert second.json()["detail"] == "IDEA_ACTION_INTAKE_IDEMPOTENCY_CONFLICT"
+
+
+def test_idea_action_intake_route_rejects_blank_idempotency_key_after_trimming() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(idempotency_key="   "),
+        )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "IDEA_ACTION_INTAKE_IDEMPOTENCY_KEY_REQUIRED"
 
 
 def test_idea_action_intake_route_returns_bounded_rejection_without_action_register() -> None:
@@ -179,6 +224,20 @@ def test_idea_action_intake_route_requires_trusted_local_dev_principal() -> None
             "/api/v1/rebalance/idea-action-intake",
             json=_payload(),
             headers={"Idempotency-Key": "idea-action-intake-idem-missing-principal"},
+        )
+
+    assert response.status_code == 422
+
+
+def test_idea_action_intake_route_rejects_blank_trusted_principal_header() -> None:
+    headers = _headers()
+    headers["X-Actor-Id"] = "   "
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=headers,
         )
 
     assert response.status_code == 401
@@ -234,3 +293,17 @@ def test_idea_action_intake_route_is_documented_in_openapi() -> None:
     assert "401" in operation["responses"]
     assert "403" in operation["responses"]
     assert "409" in operation["responses"]
+    required_headers = {
+        parameter["name"]
+        for parameter in operation["parameters"]
+        if parameter.get("in") == "header" and parameter.get("required") is True
+    }
+    assert {
+        "idempotency-key",
+        "x-actor-id",
+        "x-role",
+        "x-tenant-id",
+        "x-legal-entity-code",
+        "x-service-identity",
+        "x-capabilities",
+    }.issubset(required_headers)

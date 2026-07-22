@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-22T19:55:55.472420+00:00",
+  "generatedAt": "2026-07-22T20:28:00.268383+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1235,20 +1235,6 @@
       "type": "object",
       "locations": [
         "body"
-      ],
-      "observedTypes": [
-        "object"
-      ]
-    },
-    {
-      "semanticId": "lotus.authorization",
-      "canonicalTerm": "authorization",
-      "preferredName": "authorization",
-      "description": "Canonical authorization used by lotus-manage APIs.",
-      "example": null,
-      "type": "object",
-      "locations": [
-        "header"
       ],
       "observedTypes": [
         "object"
@@ -16443,12 +16429,12 @@
       "preferredName": "x_actor_id",
       "description": "Canonical x actor id used by lotus-manage APIs.",
       "example": null,
-      "type": "object",
+      "type": "string",
       "locations": [
         "header"
       ],
       "observedTypes": [
-        "object"
+        "string"
       ]
     },
     {
@@ -16457,12 +16443,12 @@
       "preferredName": "x_capabilities",
       "description": "Canonical x capabilities used by lotus-manage APIs.",
       "example": null,
-      "type": "object",
+      "type": "string",
       "locations": [
         "header"
       ],
       "observedTypes": [
-        "object"
+        "string"
       ]
     },
     {
@@ -16485,12 +16471,12 @@
       "preferredName": "x_legal_entity_code",
       "description": "Canonical x legal entity code used by lotus-manage APIs.",
       "example": null,
-      "type": "object",
+      "type": "string",
       "locations": [
         "header"
       ],
       "observedTypes": [
-        "object"
+        "string"
       ]
     },
     {
@@ -16527,12 +16513,12 @@
       "preferredName": "x_role",
       "description": "Canonical x role used by lotus-manage APIs.",
       "example": null,
-      "type": "object",
+      "type": "string",
       "locations": [
         "header"
       ],
       "observedTypes": [
-        "object"
+        "string"
       ]
     },
     {
@@ -16541,12 +16527,12 @@
       "preferredName": "x_service_identity",
       "description": "Canonical x service identity used by lotus-manage APIs.",
       "example": null,
-      "type": "object",
+      "type": "string",
       "locations": [
         "header"
       ],
       "observedTypes": [
-        "object"
+        "string"
       ]
     },
     {
@@ -16555,11 +16541,12 @@
       "preferredName": "x_tenant_id",
       "description": "Canonical x tenant id used by lotus-manage APIs.",
       "example": null,
-      "type": "object",
+      "type": "string",
       "locations": [
         "header"
       ],
       "observedTypes": [
+        "string",
         "object"
       ]
     },
@@ -17399,8 +17386,8 @@
       "name": "x_actor_id",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
+      "required": true,
+      "type": "string",
       "description": "Canonical x actor id used by lotus-manage APIs.",
       "example": "ENTITY_001",
       "allowedValues": [],
@@ -17411,8 +17398,8 @@
       "name": "x_role",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
+      "required": true,
+      "type": "string",
       "description": "Canonical x role used by lotus-manage APIs.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
@@ -17423,8 +17410,8 @@
       "name": "x_tenant_id",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
+      "required": true,
+      "type": "string",
       "description": "Canonical x tenant id used by lotus-manage APIs.",
       "example": "ENTITY_001",
       "allowedValues": [],
@@ -17435,8 +17422,8 @@
       "name": "x_legal_entity_code",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
+      "required": true,
+      "type": "string",
       "description": "Canonical x legal entity code used by lotus-manage APIs.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
@@ -17447,8 +17434,8 @@
       "name": "x_service_identity",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
+      "required": true,
+      "type": "string",
       "description": "Canonical x service identity used by lotus-manage APIs.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
@@ -17456,23 +17443,11 @@
       "attributeRef": "#/attributeCatalog/lotus.x_service_identity"
     },
     {
-      "name": "authorization",
-      "kind": "request_option",
-      "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Canonical authorization used by lotus-manage APIs.",
-      "example": "STANDARD_VALUE",
-      "allowedValues": [],
-      "semanticId": "lotus.authorization",
-      "attributeRef": "#/attributeCatalog/lotus.authorization"
-    },
-    {
       "name": "x_capabilities",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
+      "required": true,
+      "type": "string",
       "description": "Canonical x capabilities used by lotus-manage APIs.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
@@ -50973,56 +50948,48 @@
           {
             "name": "x-actor-id",
             "location": "header",
-            "required": false,
-            "type": "object",
+            "required": true,
+            "type": "string",
             "semanticId": "lotus.x_actor_id",
             "attributeRef": "#/attributeCatalog/lotus.x_actor_id"
           },
           {
             "name": "x-role",
             "location": "header",
-            "required": false,
-            "type": "object",
+            "required": true,
+            "type": "string",
             "semanticId": "lotus.x_role",
             "attributeRef": "#/attributeCatalog/lotus.x_role"
           },
           {
             "name": "x-tenant-id",
             "location": "header",
-            "required": false,
-            "type": "object",
+            "required": true,
+            "type": "string",
             "semanticId": "lotus.x_tenant_id",
             "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "x-legal-entity-code",
             "location": "header",
-            "required": false,
-            "type": "object",
+            "required": true,
+            "type": "string",
             "semanticId": "lotus.x_legal_entity_code",
             "attributeRef": "#/attributeCatalog/lotus.x_legal_entity_code"
           },
           {
             "name": "x-service-identity",
             "location": "header",
-            "required": false,
-            "type": "object",
+            "required": true,
+            "type": "string",
             "semanticId": "lotus.x_service_identity",
             "attributeRef": "#/attributeCatalog/lotus.x_service_identity"
           },
           {
-            "name": "authorization",
-            "location": "header",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.authorization",
-            "attributeRef": "#/attributeCatalog/lotus.authorization"
-          },
-          {
             "name": "x-capabilities",
             "location": "header",
-            "required": false,
-            "type": "object",
+            "required": true,
+            "type": "string",
             "semanticId": "lotus.x_capabilities",
             "attributeRef": "#/attributeCatalog/lotus.x_capabilities"
           },
