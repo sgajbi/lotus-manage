@@ -743,7 +743,7 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportabili
 LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
-## Documented not-certified route foundation: Idea action intake
+## Documented not-certified executable receipt: Idea action intake
 
 Route:
 
@@ -751,17 +751,19 @@ Route:
 
 Purpose:
 
-Source-safe handoff acknowledgement for `lotus-idea` conversion intents that may later become
-Manage-owned action-register work. This is route-existence proof for cross-repo readiness, not
-action-register persistence, rebalance approval, order creation, OMS routing, client contact,
-client publication, or supported-feature promotion.
+Source-safe handoff receipt for `lotus-idea` conversion intents that may later become Manage-owned
+action-register work. This is executable receipt proof for cross-repo readiness, including trusted
+local/dev caller scope, idempotency conflict detection, replay, and accepted/rejected outcomes. It
+is not production IdP binding, action-register persistence, rebalance approval, order creation, OMS
+routing, client contact, client publication, or supported-feature promotion.
 
 Functional coverage:
 
 - accepts only `lotus-idea:IdeaCandidate:v1` handoff envelopes,
 - requires at least one source-safe `source_refs` entry,
-- returns deterministic `intake_id` values from the source handoff identity,
-- returns `ROUTE_FOUNDATION_ACCEPTED_NOT_CERTIFIED`,
+- requires `Idempotency-Key` and trusted local/dev principal headers,
+- returns deterministic `intake_id` and request-fingerprint values from the source handoff identity,
+- returns bounded `ACCEPTED`, `ACCEPTED_REPLAYED`, or `REJECTED` receipt outcomes,
 - preserves `source_authority=lotus-idea` and `action_authority=lotus-manage`,
 - returns `action_register_created=false`,
 - returns `rebalance_execution_authority_granted=false`,
@@ -771,19 +773,20 @@ Functional coverage:
   `rebalance_execution_authority_remains_lotus_manage`,
   `action_register_persistence_not_certified`, `oms_execution_not_certified`, and
   `client_publication_authority_blocked`,
+- rejects conflicting idempotency replays with HTTP 409,
 - rejects unsupported query parameters.
 
 Certification posture:
 
 - `supportability_status=not_certified`.
-- This route is documented for OpenAPI and route-existence traceability only. It must not be
-  represented as certified endpoint support until a later realization slice persists
-  action-register records and clears all certification blockers.
+- This route is documented for OpenAPI and executable receipt traceability only. It must not be
+  represented as certified endpoint support until a later realization slice binds production IdP
+  claims, persists action-register records, and clears all certification blockers.
 
 Downstream consumers:
 
-- `lotus-idea` consumes the contract as Manage route-foundation evidence for RFC-0002 downstream
-  realization readiness.
+- `lotus-idea` consumes the contract as Manage not-certified receipt evidence for RFC-0002
+  downstream realization readiness.
 - Gateway and Workbench must not treat this route as a product-surface or client-demo support claim
   until a later certified realization slice persists action-register records and clears downstream
   blockers.

@@ -15,9 +15,9 @@ capabilities listed below, but full front-office product claims require the gove
 published.
 
 Current non-promotion boundary: `POST /api/v1/rebalance/idea-action-intake` exists only as a
-not-certified route foundation for `lotus-idea` conversion-intent handoff evidence. It is not a
+not-certified executable receipt for `lotus-idea` conversion-intent handoff evidence. It is not a
 supported feature and does not create action-register records, approve rebalances, create orders,
-authorize client publication, or prove downstream execution.
+bind production IdP claims, authorize client publication, or prove downstream execution.
 
 ```mermaid
 flowchart LR
