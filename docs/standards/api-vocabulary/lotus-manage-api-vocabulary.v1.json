@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-22T08:25:04.283159+00:00",
+  "generatedAt": "2026-07-22T08:34:37.606059+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -50865,7 +50865,7 @@
       "request": {
         "fields": [
           {
-            "name": "Idempotency-Key",
+            "name": "idempotency-key",
             "location": "header",
             "required": true,
             "type": "string",
@@ -50873,7 +50873,7 @@
             "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
           },
           {
-            "name": "X-Correlation-Id",
+            "name": "x-correlation-id",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50881,7 +50881,7 @@
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
           },
           {
-            "name": "X-Actor-Id",
+            "name": "x-actor-id",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50889,7 +50889,7 @@
             "attributeRef": "#/attributeCatalog/lotus.x_actor_id"
           },
           {
-            "name": "X-Role",
+            "name": "x-role",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50897,7 +50897,7 @@
             "attributeRef": "#/attributeCatalog/lotus.x_role"
           },
           {
-            "name": "X-Tenant-Id",
+            "name": "x-tenant-id",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50905,7 +50905,7 @@
             "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
-            "name": "X-Legal-Entity-Code",
+            "name": "x-legal-entity-code",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50913,7 +50913,7 @@
             "attributeRef": "#/attributeCatalog/lotus.x_legal_entity_code"
           },
           {
-            "name": "X-Service-Identity",
+            "name": "x-service-identity",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50921,7 +50921,7 @@
             "attributeRef": "#/attributeCatalog/lotus.x_service_identity"
           },
           {
-            "name": "Authorization",
+            "name": "authorization",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50929,7 +50929,7 @@
             "attributeRef": "#/attributeCatalog/lotus.authorization"
           },
           {
-            "name": "X-Capabilities",
+            "name": "x-capabilities",
             "location": "header",
             "required": false,
             "type": "object",
@@ -50937,7 +50937,7 @@
             "attributeRef": "#/attributeCatalog/lotus.x_capabilities"
           },
           {
-            "name": "X-Principal-Status",
+            "name": "x-principal-status",
             "location": "header",
             "required": false,
             "type": "object",
