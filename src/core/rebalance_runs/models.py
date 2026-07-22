@@ -29,6 +29,12 @@ DpmSupportabilityReason = Literal[
     "unsupported_surface",
 ]
 DpmFreshnessBucket = Literal["current", "same_day", "stale", "unknown"]
+DpmTemporalIdentityStatus = Literal[
+    "available",
+    "missing_source_evidence",
+    "mixed_source_as_of",
+    "store_wide",
+]
 
 
 class DpmRunRecord(BaseModel):
@@ -228,6 +234,26 @@ class DpmActionRegisterSupportability(BaseModel):
         description="Freshness bucket derived from the latest persisted run or operation timestamp.",
         examples=["current"],
     )
+    temporal_identity_status: DpmTemporalIdentityStatus = Field(
+        description=(
+            "Whether the returned action-register evidence has producer-owned temporal identity. "
+            "Portfolio-scoped downstream proof requires available evidence; store-wide summaries "
+            "remain operational posture only."
+        ),
+        examples=["available"],
+    )
+    evidence_as_of_date: Optional[str] = Field(
+        default=None,
+        description=(
+            "Authoritative business as-of date for preserved mandate-health evidence when the "
+            "response is portfolio scoped and source refs agree."
+        ),
+        examples=["2026-04-20"],
+    )
+    producer_generated_at: str = Field(
+        description="Timezone-aware UTC timestamp when lotus-manage generated this receipt.",
+        examples=["2026-04-20T12:00:00+00:00"],
+    )
     run_count: int = Field(
         ge=0,
         description="Total persisted run records considered for this posture.",
@@ -317,11 +343,32 @@ class DpmSupportabilitySummaryResponse(BaseModel):
         description="Deterministic fingerprint for the returned source batch.",
         examples=["sha256:lotus-manage-action-register"],
     )
+    evidence_as_of_date: Optional[str] = Field(
+        default=None,
+        description=(
+            "Authoritative business as-of date for preserved mandate-health evidence when the "
+            "response is portfolio scoped and source refs agree. Consumers must not substitute "
+            "their request date or wall clock when this is null."
+        ),
+        examples=["2026-04-20"],
+    )
+    producer_generated_at: str = Field(
+        description="Timezone-aware UTC timestamp when lotus-manage generated this receipt.",
+        examples=["2026-04-20T12:00:00+00:00"],
+    )
+    temporal_identity_status: DpmTemporalIdentityStatus = Field(
+        description=(
+            "Closed temporal identity posture for downstream evidence validation. Portfolio-scoped "
+            "runtime proof requires `available`; `missing_source_evidence` and `mixed_source_as_of` "
+            "are fail-closed evidence states."
+        ),
+        examples=["available"],
+    )
     source_refs: list[dict[str, object]] = Field(
         default_factory=list,
         description=(
             "Bounded source-product refs preserved from the latest mandate-health snapshot for "
-            "the scoped portfolio."
+            "the scoped portfolio, including producer-owned as-of and generated-at identity."
         ),
     )
     oldest_run_created_at: Optional[str] = Field(

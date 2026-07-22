@@ -146,6 +146,9 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _assert_property_has_docs(supportability_summary_schema, "workflow_action_counts")
     _assert_property_has_docs(supportability_summary_schema, "workflow_reason_code_counts")
     _assert_property_has_docs(supportability_summary_schema, "lineage_edge_count")
+    _assert_property_has_docs(supportability_summary_schema, "evidence_as_of_date")
+    _assert_property_has_docs(supportability_summary_schema, "producer_generated_at")
+    _assert_property_has_docs(supportability_summary_schema, "temporal_identity_status")
     _assert_property_has_docs(supportability_summary_schema, "oldest_run_created_at")
 
     integration_capabilities_schema = schemas["IntegrationCapabilitiesResponse"]
@@ -869,6 +872,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert "supportability storage summary metrics" in supportability_summary["description"]
     assert "optional `portfolio_id` query parameter" in supportability_summary["description"]
     assert "bounded action-register supportability state" in supportability_summary["description"]
+    assert "producer-owned temporal identity" in supportability_summary["description"]
     assert supportability_summary["responses"]["200"]["description"] == (
         "Store-wide supportability summary with counts, freshness, and bounded "
         "action-register posture."
