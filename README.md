@@ -555,6 +555,10 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
 - run supportability
   `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/operations/*`, `/api/v1/rebalance/supportability/summary`,
   `/api/v1/rebalance/lineage/*`, `/api/v1/rebalance/idempotency/*`
+  Portfolio-scoped supportability summary responses carry Manage-generated receipt time,
+  authoritative mandate-health evidence as-of date when available, and a closed temporal identity
+  status. Downstream consumers must fail closed rather than substitute request dates or caller
+  clocks when temporal identity is missing or mixed.
 - idea action-intake receipt
   `/api/v1/rebalance/idea-action-intake` accepts source-safe `lotus-idea`
   conversion-intent handoff evidence and returns a not-certified executable receipt with trusted

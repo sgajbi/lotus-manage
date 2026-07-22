@@ -38,6 +38,11 @@
    - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`
    - `/api/v1/rebalance/runs/{rebalance_run_id}/workflow`
    - `/api/v1/rebalance/workflow/decisions`
+- Temporal identity boundary: portfolio-scoped supportability summary receipts carry
+  `producer_generated_at`, source-owned `evidence_as_of_date` when preserved mandate-health refs
+  agree, and `temporal_identity_status`. Downstream proof requires `available`; missing source
+  evidence or mixed source as-of dates remain degraded/fail-closed and cannot be corrected by a
+  consumer request date or caller clock.
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Trust telemetry: `contracts/trust-telemetry/portfolio-action-register.telemetry.v1.json`
 

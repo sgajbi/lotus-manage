@@ -699,7 +699,8 @@ direct lookup endpoints when row-level run details are required.
 
 Request surface:
 
-- No query options.
+- Optional `portfolio_id` scopes run, operation, workflow, lineage, and preserved mandate-health
+  source-ref evidence for downstream proof.
 - Unsupported query parameters return `422`.
 - Feature gates: `DPM_SUPPORT_APIS_ENABLED` and `DPM_SUPPORTABILITY_SUMMARY_APIS_ENABLED`.
 
@@ -711,8 +712,19 @@ Functional coverage:
 - lineage edge totals,
 - oldest and newest run/operation timestamps,
 - bounded `supportability` state, reason, freshness bucket, and supporting counts,
+- producer-owned temporal identity through `producer_generated_at`, source-owned
+  `evidence_as_of_date` when available, and closed `temporal_identity_status`,
 - metrics emission through bounded action-register labels,
 - disabled feature gates and unsupported query parameters.
+
+Boundary:
+
+- Store-wide supportability is operational posture, not downstream proof of portfolio-scoped
+  evidence.
+- Portfolio-scoped downstream proof requires `temporal_identity_status=available`.
+- Missing source evidence or mixed source as-of dates remain degraded/fail-closed; consumers must
+  not substitute request dates, caller clocks, tenant assertions, action-register persistence, or
+  execution authority.
 - backend initialization failures return `503` with bounded supportability-store error codes.
 
 Non-functional posture:

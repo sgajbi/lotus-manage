@@ -194,18 +194,25 @@ Implementation scope:
   - run status distribution
   - async operation status distribution
   - oldest/newest created-at timestamps for runs and operations
-  - `supportability` posture with bounded `state`, `reason`, and `freshness_bucket`
+  - `supportability` posture with bounded `state`, `reason`, `freshness_bucket`,
+    `temporal_identity_status`, source-owned `evidence_as_of_date` when available, and
+    Manage-generated `producer_generated_at`
 - Supportability states:
   - `ready` when persisted supportability records are current and no failed async operation is present
   - `empty` when no run or operation records exist
   - `stale` when the newest run or operation timestamp is older than the freshness window
-  - `degraded` when failed async operation records are present
+  - `degraded` when failed async operation records are present or portfolio-scoped downstream
+    evidence has missing or mixed source as-of identity
+- Temporal identity: use `portfolio_id` when downstream evidence must prove scoped
+  action-register posture. `temporal_identity_status=available` is required before a consumer
+  can rely on the receipt as source-owned temporal evidence; consumers must not fill null
+  `evidence_as_of_date` from their own request date or clock.
 - Metrics: each successful summary read records
   `lotus_manage_action_register_supportability_total` with bounded `surface`,
   `supportability_state`, `reason`, and `freshness_bucket` labels only.
 - Persistent repositories aggregate run status counts in storage instead of loading every run
   result payload into application memory.
-- Unsupported query parameters return `422`; this endpoint has no query options.
+- Unsupported query parameters return `422`; `portfolio_id` is the only supported query option.
 
 ### `GET /api/v1/rebalance/policies/effective`
 - Purpose: resolve and return effective lotus-manage policy-pack selection for integration/support diagnostics.

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-22T08:34:37.606059+00:00",
+  "generatedAt": "2026-07-22T19:55:55.472420+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -4526,6 +4526,20 @@
       ],
       "observedTypes": [
         "DpmRunArtifactEvidence"
+      ]
+    },
+    {
+      "semanticId": "lotus.evidence_as_of_date",
+      "canonicalTerm": "evidence_as_of_date",
+      "preferredName": "evidence_as_of_date",
+      "description": "Authoritative business as-of date for preserved mandate-health evidence when the response is portfolio scoped and source refs agree. Consumers must not substitute their request date or wall clock when this is null.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -10422,6 +10436,20 @@
       ]
     },
     {
+      "semanticId": "lotus.producer_generated_at",
+      "canonicalTerm": "producer_generated_at",
+      "preferredName": "producer_generated_at",
+      "description": "Timezone-aware UTC timestamp when lotus-manage generated this receipt.",
+      "example": "sample_producer_generated_at",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.product_family",
       "canonicalTerm": "product_family",
       "preferredName": "product_family",
@@ -13700,7 +13728,7 @@
       "semanticId": "lotus.source_refs",
       "canonicalTerm": "source_refs",
       "preferredName": "source_refs",
-      "description": "Bounded source-product refs preserved from the latest mandate-health snapshot for the scoped portfolio.",
+      "description": "Bounded source-product refs preserved from the latest mandate-health snapshot for the scoped portfolio, including producer-owned as-of and generated-at identity.",
       "example": [
         {
           "sample_key": "sample_value"
@@ -15037,6 +15065,20 @@
       "observedTypes": [
         "DpmPolicyPackTaxPolicy-Output",
         "DpmPolicyPackTaxPolicy-Input"
+      ]
+    },
+    {
+      "semanticId": "lotus.temporal_identity_status",
+      "canonicalTerm": "temporal_identity_status",
+      "preferredName": "temporal_identity_status",
+      "description": "Closed temporal identity posture for downstream evidence validation. Portfolio-scoped runtime proof requires `available`; `missing_source_evidence` and `mixed_source_as_of` are fail-closed evidence states.",
+      "example": "available",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -21351,6 +21393,30 @@
             "attributeRef": "#/attributeCatalog/lotus.source_batch_fingerprint"
           },
           {
+            "name": "evidence_as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.evidence_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.evidence_as_of_date"
+          },
+          {
+            "name": "producer_generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.producer_generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.producer_generated_at"
+          },
+          {
+            "name": "temporal_identity_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.temporal_identity_status",
+            "attributeRef": "#/attributeCatalog/lotus.temporal_identity_status"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -21421,6 +21487,30 @@
             "type": "string",
             "semanticId": "lotus.freshness_bucket",
             "attributeRef": "#/attributeCatalog/lotus.freshness_bucket"
+          },
+          {
+            "name": "supportability.temporal_identity_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.temporal_identity_status",
+            "attributeRef": "#/attributeCatalog/lotus.temporal_identity_status"
+          },
+          {
+            "name": "supportability.evidence_as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.evidence_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.evidence_as_of_date"
+          },
+          {
+            "name": "supportability.producer_generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.producer_generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.producer_generated_at"
           },
           {
             "name": "supportability.run_count",
