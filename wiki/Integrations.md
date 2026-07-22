@@ -29,7 +29,7 @@ authority into Manage.
   `lotus-manage` must not reintroduce those concerns
 - `lotus-idea`
   source authority for opportunity candidates and conversion intents that may be handed to Manage
-  through a not-certified action-intake route foundation
+  through a not-certified action-intake receipt
 
 ## Boundary rules
 
@@ -150,7 +150,8 @@ Strategic downstream consumption should use:
 12. `/api/v1/construction/alternative-sets/*` construction alternative generate/read/selection
     routes
 13. `POST /api/v1/rebalance/idea-action-intake` for source-safe `lotus-idea` conversion-intent
-    handoff acknowledgement. This is a not-certified route foundation, not execution or
+    handoff receipt behavior. This is a not-certified executable receipt with trusted local/dev
+    caller scope and idempotency semantics, not production IdP binding, execution, or
     action-register creation proof.
 
 ## Construction Alternatives Upstream Authority

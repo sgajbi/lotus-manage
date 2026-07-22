@@ -19,9 +19,11 @@ explicitly excluded.
 
 ## Explicitly unsupported in `lotus-manage`
 
-- The `lotus-idea` action-intake route foundation is not a supported feature. It acknowledges
-  source-safe conversion-intent handoff evidence only and does not create action-register records,
-  approve rebalances, create orders, authorize client publication, or prove downstream execution.
+- The `lotus-idea` action-intake receipt is not a supported feature. It acknowledges source-safe
+  conversion-intent handoff evidence with trusted local/dev caller scope, idempotency conflict
+  detection, replay, and accepted/rejected outcomes only and does not create action-register
+  records, approve rebalances, create orders, bind production IdP claims, authorize client
+  publication, or prove downstream execution.
 - OMS execution instructions, best execution claims, and settlement lifecycle.
 - Client-ready communication, consent collection, or messaging.
 - External treasury advisory, order routing, or execution confirmation.

@@ -555,12 +555,14 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
 - run supportability
   `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/operations/*`, `/api/v1/rebalance/supportability/summary`,
   `/api/v1/rebalance/lineage/*`, `/api/v1/rebalance/idempotency/*`
-- idea action-intake route foundation
+- idea action-intake receipt
   `/api/v1/rebalance/idea-action-intake` accepts source-safe `lotus-idea`
-  conversion-intent handoff evidence and returns a not-certified acknowledgement. It does not
-  create action-register records, approve rebalances, create orders, route OMS instructions,
-  contact clients, authorize publication, or promote a supported feature. It is represented as
-  route-foundation evidence, not as a certified `PortfolioActionRegister:v1` serving route.
+  conversion-intent handoff evidence and returns a not-certified executable receipt with trusted
+  local/dev caller scope, idempotency conflict detection, replay, and accepted/rejected outcomes.
+  It does not create action-register records, approve rebalances, create orders, route OMS
+  instructions, contact clients, authorize publication, bind production IdP claims, or promote a
+  supported feature. It is represented as route-foundation evidence, not as a certified
+  `PortfolioActionRegister:v1` serving route.
 - policy-pack supportability
   `/api/v1/rebalance/policies/*`
 - mandate digital twin and health

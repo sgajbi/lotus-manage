@@ -40,13 +40,15 @@ Current repository posture:
    product used by management execution request contracts,
 6. it carries the RFC-0091 repo-native producer declaration and telemetry fixture for
    `PortfolioActionRegister`,
-   including a not-certified `lotus-idea` action-intake route foundation at
-   `POST /api/v1/rebalance/idea-action-intake`. The route proves only source-safe conversion-intent
-   handoff acknowledgement for cross-repo readiness; it does not persist action-register records,
-   grant rebalance authority, create orders, route OMS instructions, contact clients, authorize
-   publication, or promote a supported feature. It is represented as `route_foundations` evidence
-   and must stay outside certified domain-product `current_routes` and unblocked trust-telemetry
-   `serving_routes`; `make trust-telemetry-validate` enforces this boundary.
+   including a not-certified `lotus-idea` action-intake receipt at
+   `POST /api/v1/rebalance/idea-action-intake`. The route proves source-safe conversion-intent
+   handoff receipt behavior for cross-repo readiness, including trusted local/dev caller scope,
+   idempotency conflict detection, replay, and accepted/rejected outcomes; it does not persist
+   action-register records, grant rebalance authority, create orders, route OMS instructions,
+   contact clients, authorize publication, bind production IdP claims, or promote a supported
+   feature. It is represented as `route_foundations` evidence and must stay outside certified
+   domain-product `current_routes` and unblocked trust-telemetry `serving_routes`; `make
+   trust-telemetry-validate` enforces this boundary.
 7. the service remains part of the canonical front-office validation path through `lotus-gateway`,
 8. current execution APIs support explicit `input_mode=stateless` caller-supplied portfolio,
    market-data, model, shelf, and option bundles,
