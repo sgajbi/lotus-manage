@@ -47,12 +47,15 @@ def _source_context_ref_payload(
     content_hash = ":".join(parts[3:])
     if product_id not in _PRODUCT_ROUTES or not content_hash.startswith("sha256:"):
         return None
+    if getattr(snapshot, "as_of_date", None) is None:
+        return None
     return {
         "productId": product_id,
         "product_version": parts[2],
         "route": _PRODUCT_ROUTES[product_id],
         "content_hash": content_hash,
-        "generated_at": snapshot.calculated_at.isoformat(),
+        "as_of_date": snapshot.as_of_date.isoformat(),
+        "generated_at": _aware_utc(snapshot.calculated_at).isoformat(),
         "freshness": _freshness_bucket(snapshot.calculated_at, now),
         "source_ref_status": "available",
     }

@@ -1127,6 +1127,9 @@ def test_dpm_supportability_summary_endpoint(client):
     assert body["lineage_edge_count"] == 3
     assert body["portfolio_id"] is None
     assert body["portfolio_scope_confirmed"] is False
+    assert body["evidence_as_of_date"] is None
+    assert body["producer_generated_at"].endswith("+00:00")
+    assert body["temporal_identity_status"] == "store_wide"
     assert body["oldest_run_created_at"] is not None
     assert body["newest_run_created_at"] is not None
     assert body["oldest_operation_created_at"] is not None
@@ -1135,6 +1138,9 @@ def test_dpm_supportability_summary_endpoint(client):
         "state": "ready",
         "reason": "supportability_summary_ready",
         "freshness_bucket": "current",
+        "temporal_identity_status": "store_wide",
+        "evidence_as_of_date": None,
+        "producer_generated_at": body["producer_generated_at"],
         "run_count": 1,
         "operation_count": 1,
         "workflow_decision_count": 0,

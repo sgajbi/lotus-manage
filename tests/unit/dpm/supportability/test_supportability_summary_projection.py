@@ -60,6 +60,9 @@ def test_supportability_summary_response_projects_counts_timestamps_and_ready_po
     assert response.lineage_edge_count == 4
     assert response.newest_run_created_at == "2026-02-20T12:00:00+00:00"
     assert response.newest_operation_created_at == "2026-02-20T12:00:00+00:00"
+    assert response.producer_generated_at == "2026-02-20T12:00:00+00:00"
+    assert response.temporal_identity_status == "store_wide"
+    assert response.evidence_as_of_date is None
     assert response.supportability.state == "ready"
     assert response.supportability.reason == "supportability_summary_ready"
     assert response.supportability.freshness_bucket == "current"
@@ -80,7 +83,12 @@ def test_supportability_summary_fingerprint_includes_returned_source_refs():
         retention_days=7,
         now=now,
         portfolio_id="PB_SG_GLOBAL_BAL_001",
-        source_refs=[{"productId": "lotus-risk:MandateRiskHealthContext:v1"}],
+        source_refs=[
+            {
+                "productId": "lotus-risk:MandateRiskHealthContext:v1",
+                "as_of_date": "2026-02-20",
+            }
+        ],
     )
     second = build_supportability_summary_response(
         summary=summary,
@@ -88,7 +96,12 @@ def test_supportability_summary_fingerprint_includes_returned_source_refs():
         retention_days=7,
         now=now,
         portfolio_id="PB_SG_GLOBAL_BAL_001",
-        source_refs=[{"productId": "lotus-performance:MandatePerformanceHealthContext:v1"}],
+        source_refs=[
+            {
+                "productId": "lotus-performance:MandatePerformanceHealthContext:v1",
+                "as_of_date": "2026-02-20",
+            }
+        ],
     )
 
     assert first.source_batch_fingerprint.startswith("sha256:")
@@ -112,6 +125,81 @@ def test_supportability_summary_confirms_portfolio_scope_for_operation_only_batc
 
     assert response.portfolio_scope_confirmed is True
     assert response.supportability.portfolio_scope_confirmed is True
+    assert response.temporal_identity_status == "missing_source_evidence"
+    assert response.supportability.state == "degraded"
+
+
+def test_supportability_summary_binds_producer_temporal_identity_into_fingerprint():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    later = datetime(2026, 2, 20, 12, 1, tzinfo=timezone.utc)
+    summary = _summary(
+        run_count=1,
+        newest_run_created_at=now,
+    )
+    source_refs = [
+        {
+            "productId": "lotus-risk:MandateRiskHealthContext:v1",
+            "as_of_date": "2026-02-19",
+            "generated_at": "2026-02-20T09:00:00+00:00",
+            "content_hash": "sha256:risk",
+        },
+        {
+            "productId": "lotus-performance:MandatePerformanceHealthContext:v1",
+            "as_of_date": "2026-02-19",
+            "generated_at": "2026-02-20T09:00:00+00:00",
+            "content_hash": "sha256:performance",
+        },
+    ]
+
+    first = build_supportability_summary_response(
+        summary=summary,
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=now,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        source_refs=source_refs,
+    )
+    second = build_supportability_summary_response(
+        summary=summary,
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=later,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        source_refs=source_refs,
+    )
+
+    assert first.temporal_identity_status == "available"
+    assert first.evidence_as_of_date == "2026-02-19"
+    assert first.producer_generated_at == "2026-02-20T12:00:00+00:00"
+    assert first.supportability.temporal_identity_status == "available"
+    assert first.supportability.evidence_as_of_date == "2026-02-19"
+    assert first.source_batch_fingerprint != second.source_batch_fingerprint
+
+
+def test_supportability_summary_degrades_mixed_source_as_of_dates():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    response = build_supportability_summary_response(
+        summary=_summary(run_count=1, newest_run_created_at=now),
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=now,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        source_refs=[
+            {
+                "productId": "lotus-risk:MandateRiskHealthContext:v1",
+                "as_of_date": "2026-02-19",
+            },
+            {
+                "productId": "lotus-performance:MandatePerformanceHealthContext:v1",
+                "as_of_date": "2026-02-18",
+            },
+        ],
+    )
+
+    assert response.temporal_identity_status == "mixed_source_as_of"
+    assert response.evidence_as_of_date is None
+    assert response.supportability.state == "degraded"
+    assert response.supportability.reason == "supportability_summary_degraded"
 
 
 def test_supportability_summary_response_classifies_empty_stale_and_degraded_posture():

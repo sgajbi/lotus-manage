@@ -734,7 +734,9 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         "lotus-risk:MandateRiskHealthContext:v1",
         "lotus-performance:MandatePerformanceHealthContext:v1",
     }
+    assert {ref["as_of_date"] for ref in source_refs} == {"2026-05-03"}
     assert all(ref["freshness"] == "current" for ref in source_refs)
+    assert all(ref["generated_at"].endswith("+00:00") for ref in source_refs)
     assert all(str(ref["content_hash"]).startswith("sha256:") for ref in source_refs)
     assert latest.status_code == 200
     assert latest.json()["health_snapshot_id"] == recalculated.json()["health_snapshot_id"]
@@ -771,7 +773,10 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
         == []
     )
 
-    snapshot = SimpleNamespace(calculated_at=datetime(2026, 5, 3, 9, 0))
+    snapshot = SimpleNamespace(
+        as_of_date=date(2026, 5, 3),
+        calculated_at=datetime(2026, 5, 3, 9, 0),
+    )
     assert (
         _source_context_ref_payload(
             "malformed-ref",
@@ -796,7 +801,8 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
 
     assert stale is not None
     assert stale["freshness"] == "stale"
-    assert stale["generated_at"] == "2026-05-03T09:00:00"
+    assert stale["as_of_date"] == "2026-05-03"
+    assert stale["generated_at"] == "2026-05-03T09:00:00+00:00"
 
 
 def test_health_read_and_recalculate_error_mapping() -> None:

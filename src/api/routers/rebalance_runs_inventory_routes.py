@@ -133,7 +133,9 @@ def list_runs(
         "Use the optional `portfolio_id` query parameter when a downstream proof or operator "
         "review must confirm portfolio-scoped action-register posture. The response includes "
         "bounded action-register supportability state for Gateway, Workbench, and governed "
-        "opportunity-intelligence readiness surfaces."
+        "opportunity-intelligence readiness surfaces. Portfolio-scoped downstream evidence also "
+        "carries producer-owned temporal identity; consumers must not substitute request dates or "
+        "their own clocks when that identity is unavailable."
     ),
     responses={
         200: {
