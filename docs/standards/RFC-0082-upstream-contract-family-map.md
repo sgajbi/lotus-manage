@@ -145,8 +145,11 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
 `/api/v1/rebalance/supportability/summary` and capability discovery:
 
 1. `GET /api/v1/rebalance/supportability/summary` returns a `supportability` object with bounded
-   `state`, `reason`, `freshness_bucket`, and aggregate counts derived from persisted run,
-   operation, and workflow-decision records.
+   `state`, `reason`, `freshness_bucket`, closed `temporal_identity_status`, producer
+   `producer_generated_at`, optional source-owned `evidence_as_of_date`, and aggregate counts
+   derived from persisted run, operation, and workflow-decision records. Portfolio-scoped
+   downstream proof requires `temporal_identity_status=available`; missing or mixed source as-of
+   dates are degraded/fail-closed evidence, not consumer-fillable fields.
 2. `/api/v1/integration/capabilities` publishes
    `manage.observability.action_register_supportability` as the backend-owned feature key for
    Gateway and Workbench gating.

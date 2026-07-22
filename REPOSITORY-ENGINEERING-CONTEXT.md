@@ -40,7 +40,15 @@ Current repository posture:
    product used by management execution request contracts,
 6. it carries the RFC-0091 repo-native producer declaration and telemetry fixture for
    `PortfolioActionRegister`,
-   including a not-certified `lotus-idea` action-intake receipt at
+   including producer-owned temporal identity on portfolio-scoped
+   `/api/v1/rebalance/supportability/summary` receipts. Responses publish Manage-generated
+   `producer_generated_at`, source-owned `evidence_as_of_date` when preserved mandate-health
+   source refs agree, and a closed `temporal_identity_status`; downstream consumers must not
+   substitute request dates, caller clocks, or unsupported tenant claims when this status is not
+   `available`. Trusted tenant/session scope for this supportability summary remains outside the
+   current no-auth local/dev posture until an IdP-backed caller context exists; this production
+   scope-binding gap is tracked in sgajbi/lotus-manage#624. The declaration also
+   includes a not-certified `lotus-idea` action-intake receipt at
    `POST /api/v1/rebalance/idea-action-intake`. The route proves source-safe conversion-intent
    handoff receipt behavior for cross-repo readiness, including trusted local/dev caller scope,
    idempotency conflict detection, replay, and accepted/rejected outcomes; it does not persist

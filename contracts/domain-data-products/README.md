@@ -44,7 +44,12 @@ Current declarations:
    external OMS acknowledgement boundary evidence.
 2. `lotus-manage-products.v1.json`
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the
-   implemented rebalance supportability, artifact, and workflow route families. The not-certified
+   implemented rebalance supportability, artifact, and workflow route families. Portfolio-scoped
+   supportability summary receipts now publish Manage-generated receipt time, source-owned
+   mandate-health evidence as-of date when available, and a fail-closed temporal identity status so
+   consumers such as `lotus-idea` do not substitute their own request dates or clocks. Trusted
+   tenant/session scope remains blocked until an IdP-backed caller context exists and is tracked in
+   sgajbi/lotus-manage#624. The not-certified
    `lotus-idea` action-intake route is tracked separately under `route_foundations`, not under
    certified `current_routes`, and
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded

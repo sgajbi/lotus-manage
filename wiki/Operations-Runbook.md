@@ -367,6 +367,11 @@ python scripts/openapi_quality_gate.py
 - For canonical front-office proof, `GET /api/v1/rebalance/supportability/summary` should return HTTP
   `200`. An `empty` supportability state is acceptable for a freshly seeded stack with no recorded
   management actions; HTTP `503` is not acceptable demo evidence.
+- For portfolio-scoped downstream evidence, the same endpoint must also return
+  `temporal_identity_status=available`, `producer_generated_at`, and a source-owned
+  `evidence_as_of_date`. `missing_source_evidence` and `mixed_source_as_of` are fail-closed
+  evidence states; downstream consumers must not substitute their request date, local clock, or
+  unsupported tenant assertion.
 
 ## Key references
 
