@@ -18,6 +18,10 @@ class IdeaActionIntakeIdempotencyConflictError(Exception):
     """Raised when an Idea action-intake idempotency key is reused for a different request."""
 
 
+class IdeaActionIntakeInvalidIdempotencyKeyError(Exception):
+    """Raised when an Idea action-intake idempotency key is empty after normalization."""
+
+
 IdeaActionIntakeStatus = Literal["ACCEPTED", "ACCEPTED_REPLAYED", "REJECTED"]
 IdeaActionIntakeSupportabilityStatus = Literal["not_certified"]
 IdeaActionIntentType = Literal["REVIEW_FOR_REBALANCE", "CREATE_MANAGEMENT_ACTION_DRAFT"]
@@ -345,10 +349,14 @@ class _IdeaActionIntakeIdempotencyRegistry:
         response: IdeaActionIntakeResponse,
     ) -> IdeaActionIntakeResponse:
         idempotency_key_hash = _safe_key_hash(idempotency_key)
+        registry_key = _idempotency_registry_key(
+            idempotency_key_hash=idempotency_key_hash,
+            trusted_scope=response.trusted_scope,
+        )
         with self._lock:
-            existing = self._records.get(idempotency_key_hash)
+            existing = self._records.get(registry_key)
             if existing is None:
-                self._records[idempotency_key_hash] = (request_fingerprint, response)
+                self._records[registry_key] = (request_fingerprint, response)
                 return response
             existing_fingerprint, existing_response = existing
             if existing_fingerprint != request_fingerprint:
@@ -411,8 +419,41 @@ def _request_fingerprint(
 
 
 def _safe_key_hash(idempotency_key: str) -> str:
-    normalized = idempotency_key.strip()
+    normalized = _normalized_idempotency_key(idempotency_key)
     return f"sha256:{sha256(normalized.encode()).hexdigest()[:12]}"
+
+
+def _normalized_idempotency_key(idempotency_key: str) -> str:
+    normalized = idempotency_key.strip()
+    if not normalized:
+        raise IdeaActionIntakeInvalidIdempotencyKeyError(
+            "IDEA_ACTION_INTAKE_IDEMPOTENCY_KEY_REQUIRED"
+        )
+    return normalized
+
+
+def _idempotency_registry_key(
+    *,
+    idempotency_key_hash: str,
+    trusted_scope: dict[str, Any],
+) -> str:
+    canonical_scope = {
+        "subject": str(trusted_scope.get("subject") or ""),
+        "role": str(trusted_scope.get("role") or ""),
+        "tenant_id": str(trusted_scope.get("tenant_id") or ""),
+        "legal_entity_code": str(trusted_scope.get("legal_entity_code") or ""),
+        "service_identity": str(trusted_scope.get("service_identity") or ""),
+        "capability": str(trusted_scope.get("capability") or ""),
+    }
+    canonical_payload = json.dumps(
+        {
+            "idempotency_key_hash": idempotency_key_hash,
+            "trusted_scope": canonical_scope,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return f"sha256:{sha256(canonical_payload.encode()).hexdigest()[:12]}"
 
 
 def _trusted_scope(

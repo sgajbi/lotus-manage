@@ -17,14 +17,13 @@ IDEA_ACTION_INTAKE_CAPABILITY_REQUIRED = "IDEA_ACTION_INTAKE_CAPABILITY_REQUIRED
 
 
 def require_idea_action_intake_principal(
-    x_actor_id: Annotated[str | None, Header()] = None,
-    x_role: Annotated[str | None, Header()] = None,
-    x_tenant_id: Annotated[str | None, Header()] = None,
-    x_legal_entity_code: Annotated[str | None, Header()] = None,
+    x_actor_id: Annotated[str, Header(min_length=1)],
+    x_role: Annotated[str, Header(min_length=1)],
+    x_tenant_id: Annotated[str, Header(min_length=1)],
+    x_legal_entity_code: Annotated[str, Header(min_length=1)],
+    x_service_identity: Annotated[str, Header(min_length=1)],
+    x_capabilities: Annotated[str, Header(min_length=1)],
     x_correlation_id: Annotated[str | None, Header()] = None,
-    x_service_identity: Annotated[str | None, Header()] = None,
-    authorization: Annotated[str | None, Header()] = None,
-    x_capabilities: Annotated[str | None, Header()] = None,
     x_principal_status: Annotated[str | None, Header()] = None,
 ) -> IdeaActionIntakePrincipal:
     actor_id = _required_header(x_actor_id)
@@ -32,7 +31,7 @@ def require_idea_action_intake_principal(
     tenant_id = _required_header(x_tenant_id)
     legal_entity_code = _required_header(x_legal_entity_code).upper()
     correlation_id = _optional_header(x_correlation_id) or "route-correlation-pending"
-    service_identity = _service_identity(x_service_identity, authorization)
+    service_identity = _required_header(x_service_identity)
     capabilities = _capability_set(x_capabilities)
 
     if (x_principal_status or "ACTIVE").strip().upper() != "ACTIVE":
@@ -65,15 +64,6 @@ def _optional_header(value: str | None) -> str | None:
         return None
     normalized = value.strip()
     return normalized or None
-
-
-def _service_identity(x_service_identity: str | None, authorization: str | None) -> str:
-    service_identity = _optional_header(x_service_identity)
-    if service_identity is not None:
-        return service_identity
-    if _optional_header(authorization) is not None:
-        return "authorization"
-    _raise_authn(IDEA_ACTION_INTAKE_PRINCIPAL_REQUIRED)
 
 
 def _capability_set(value: str | None) -> set[str]:
