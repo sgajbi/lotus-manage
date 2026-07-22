@@ -45,7 +45,9 @@ Current repository posture:
    `producer_generated_at`, source-owned `evidence_as_of_date` when preserved mandate-health
    source refs agree, and a closed `temporal_identity_status`; downstream consumers must not
    substitute request dates, caller clocks, or unsupported tenant claims when this status is not
-   `available`. Trusted tenant/session scope for this supportability summary remains outside the
+   `available`. Current preserved Risk/Performance mandate-health refs do not carry source-owned
+   as-of dates, so `missing_source_evidence` remains non-certifying until that owner evidence is
+   preserved. Trusted tenant/session scope for this supportability summary remains outside the
    current no-auth local/dev posture until an IdP-backed caller context exists; this production
    scope-binding gap is tracked in sgajbi/lotus-manage#624. The declaration also
    includes a not-certified `lotus-idea` action-intake receipt at

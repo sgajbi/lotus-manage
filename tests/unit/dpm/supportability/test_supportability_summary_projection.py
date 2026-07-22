@@ -176,6 +176,34 @@ def test_supportability_summary_binds_producer_temporal_identity_into_fingerprin
     assert first.source_batch_fingerprint != second.source_batch_fingerprint
 
 
+def test_supportability_summary_degrades_missing_source_as_of_dates():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    response = build_supportability_summary_response(
+        summary=_summary(run_count=1, newest_run_created_at=now),
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=now,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        source_refs=[
+            {
+                "productId": "lotus-risk:MandateRiskHealthContext:v1",
+                "generated_at": "2026-02-20T09:00:00+00:00",
+                "content_hash": "sha256:risk",
+            },
+            {
+                "productId": "lotus-performance:MandatePerformanceHealthContext:v1",
+                "generated_at": "2026-02-20T09:00:00+00:00",
+                "content_hash": "sha256:performance",
+            },
+        ],
+    )
+
+    assert response.temporal_identity_status == "missing_source_evidence"
+    assert response.evidence_as_of_date is None
+    assert response.supportability.state == "degraded"
+    assert response.supportability.reason == "supportability_summary_degraded"
+
+
 def test_supportability_summary_degrades_mixed_source_as_of_dates():
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
     response = build_supportability_summary_response(

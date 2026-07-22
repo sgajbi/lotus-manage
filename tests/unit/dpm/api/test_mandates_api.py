@@ -734,7 +734,7 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         "lotus-risk:MandateRiskHealthContext:v1",
         "lotus-performance:MandatePerformanceHealthContext:v1",
     }
-    assert {ref["as_of_date"] for ref in source_refs} == {"2026-05-03"}
+    assert all("as_of_date" not in ref for ref in source_refs)
     assert all(ref["freshness"] == "current" for ref in source_refs)
     assert all(ref["generated_at"].endswith("+00:00") for ref in source_refs)
     assert all(str(ref["content_hash"]).startswith("sha256:") for ref in source_refs)
@@ -801,7 +801,7 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
 
     assert stale is not None
     assert stale["freshness"] == "stale"
-    assert stale["as_of_date"] == "2026-05-03"
+    assert "as_of_date" not in stale
     assert stale["generated_at"] == "2026-05-03T09:00:00+00:00"
 
 

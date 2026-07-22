@@ -42,7 +42,9 @@
   `producer_generated_at`, source-owned `evidence_as_of_date` when preserved mandate-health refs
   agree, and `temporal_identity_status`. Downstream proof requires `available`; missing source
   evidence or mixed source as-of dates remain degraded/fail-closed and cannot be corrected by a
-  consumer request date or caller clock.
+  consumer request date or caller clock. Current preserved Risk/Performance mandate-health refs do
+  not include source-owned as-of dates, so they remain `missing_source_evidence` until that owner
+  evidence is preserved.
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Trust telemetry: `contracts/trust-telemetry/portfolio-action-register.telemetry.v1.json`
 
