@@ -80,6 +80,12 @@ DigitalTwinLineageSourceProduct: TypeAlias = (
 SourceReadinessState: TypeAlias = Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"]
 
 
+def _validate_sha256_fingerprint(value: str, *, field_name: str) -> str:
+    if not value.startswith("sha256:") or not value.removeprefix("sha256:").strip():
+        raise ValueError(f"{field_name} must be a non-empty sha256 fingerprint")
+    return value
+
+
 @dataclass(frozen=True)
 class MandateSourceReadinessProjection:
     state: SourceReadinessState
@@ -233,8 +239,10 @@ class DpmMandateSourceHealthContext(BaseModel):
             raise ValueError(f"{self.source_system} context must use {expected_product}")
         if self.source_product_version != "v1":
             raise ValueError("source_product_version must be v1")
-        if not self.request_fingerprint.startswith("sha256:"):
-            raise ValueError("request_fingerprint must be a sha256 fingerprint")
+        _validate_sha256_fingerprint(
+            self.request_fingerprint,
+            field_name="request_fingerprint",
+        )
         return self
 
 
@@ -315,6 +323,11 @@ class DpmMandateHealthSourceContextMetadata(BaseModel):
             "Missing values are non-certifying for portfolio-scoped downstream proof."
         ),
     )
+
+    @field_validator("request_fingerprint")
+    @classmethod
+    def _validate_request_fingerprint(cls, value: str) -> str:
+        return _validate_sha256_fingerprint(value, field_name="request_fingerprint")
 
 
 class DpmMandateHealthSourceAnalyticsPosture(BaseModel):

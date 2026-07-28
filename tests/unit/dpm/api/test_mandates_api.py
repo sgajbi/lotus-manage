@@ -796,6 +796,14 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
         )
         is None
     )
+    assert (
+        _source_context_ref_payload(
+            "lotus-risk:MandateRiskHealthContext:v1:sha256:",
+            snapshot=snapshot,  # type: ignore[arg-type]
+            now=now,
+        )
+        is None
+    )
     stale = _source_context_ref_payload(
         "lotus-risk:MandateRiskHealthContext:v1:sha256:risk-context",
         snapshot=snapshot,  # type: ignore[arg-type]

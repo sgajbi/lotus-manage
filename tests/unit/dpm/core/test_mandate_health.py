@@ -1170,6 +1170,24 @@ def test_source_health_context_rejects_wrong_product_identity() -> None:
         )
 
 
+@pytest.mark.parametrize("request_fingerprint", ["sha256:", "sha256:   "])
+def test_source_health_context_rejects_empty_sha256_fingerprint(
+    request_fingerprint: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="request_fingerprint must be a non-empty sha256 fingerprint",
+    ):
+        DpmMandateSourceHealthContext.model_validate(
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "MandateRiskHealthContext",
+                "health_state": "ready",
+                "request_fingerprint": request_fingerprint,
+            }
+        )
+
+
 def test_mandate_health_input_rejects_source_context_in_wrong_slot() -> None:
     with pytest.raises(
         ValueError,
