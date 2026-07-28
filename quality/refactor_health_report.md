@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-07-22T20:33:15+00:00`
+- Generated at: `2026-07-28T19:58:32+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `04820f8e890170efaf6446a2fa47c1412ebd9584`
+- Baseline source snapshot: `98be0d9e9f7e07f1d790e95e56ab604baca6b8f3`
 
-- Report source snapshot: `84894c20+worktree`
+- Report source snapshot: `98be0d9e+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -14,9 +14,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 897 | 901 | +4 |
-| Total Python LOC | 203017 | 203984 | +967 |
-| Test functions | 2919 | 2931 | +12 |
+| Python files | 901 | 901 | +0 |
+| Total Python LOC | 203984 | 204081 | +97 |
+| Test functions | 2931 | 2931 | +0 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -38,7 +38,7 @@
 | Rank | File | Lines |
 | --- | --- | --- |
 | 1 | tests/unit/dpm/api/test_waves_api.py | 7505 |
-| 2 | tests/unit/dpm/api/test_api_rebalance.py | 3323 |
+| 2 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
 | 3 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
 | 4 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3283 |
 | 5 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
@@ -70,7 +70,7 @@
 | Rank | Function | File | Lines |
 | --- | --- | --- | --- |
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1549 |
-| 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 773 |
+| 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 774 |
 | 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 396 |
 | 4 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 380 |
 | 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
@@ -78,7 +78,7 @@
 | 7 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |
 | 8 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
 | 9 | test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts | tests/unit/dpm/api/test_waves_api.py | 268 |
-| 10 | test_rolling_and_historical_attribution_helper_edges_are_explicit | tests/unit/core/test_risk_realized_outcome_sources.py | 236 |
+| 10 | test_dpm_supportability_and_async_schemas_have_descriptions_and_examples | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 237 |
 
 ### current branch
 
@@ -102,7 +102,7 @@
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1066 | 1549 |
-| 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 274 | 773 |
+| 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 774 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
 | 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 107 | 396 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
