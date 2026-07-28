@@ -1066,6 +1066,10 @@ Important validation expectations:
    and dead-code gates are active in Remote Feature Lane, Pull Request Merge Gate, and Main
    Releasability; the separate Quality Baseline workflow remains report-only for expanded trend
    capture,
+   and static-analysis tool versions should retain bounded upper ranges until a branch intentionally
+   absorbs and fixes the new rule family. PR #625 pins Ruff below the next minor family after CI
+   resolved `ruff 0.16.0` and surfaced repository-wide pre-existing Linux executable-bit/import
+   findings unrelated to the RFC-0002 temporal-evidence change,
 4. PR-grade validation includes coverage-backed full test execution,
 5. `make static-quality-gates` includes `make test-family-inventory`, which blocks loss of the
    measured API/runtime, contract/governance, observability/security, domain/lifecycle/methodology,
