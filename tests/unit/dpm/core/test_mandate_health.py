@@ -1082,6 +1082,7 @@ def test_mandate_health_preserves_source_product_health_contexts() -> None:
                 "source_system": "lotus-risk",
                 "source_product_name": "MandateRiskHealthContext",
                 "source_product_version": "v1",
+                "as_of_date": "2026-05-03",
                 "health_state": "attention",
                 "threshold_breached": True,
                 "request_fingerprint": risk_fingerprint,
@@ -1097,6 +1098,7 @@ def test_mandate_health_preserves_source_product_health_contexts() -> None:
                 "source_system": "lotus-performance",
                 "source_product_name": "MandatePerformanceHealthContext",
                 "source_product_version": "v1",
+                "as_of_date": "2026-05-03",
                 "health_state": "attention",
                 "threshold_breached": True,
                 "request_fingerprint": performance_fingerprint,
@@ -1122,6 +1124,24 @@ def test_mandate_health_preserves_source_product_health_contexts() -> None:
     assert posture.risk_health_context_supplied is True
     assert posture.performance_health_context_supplied is True
     assert posture.source_context_refs == [risk_ref, performance_ref]
+    assert [metadata.model_dump(mode="json") for metadata in posture.source_context_metadata] == [
+        {
+            "source_ref": risk_ref,
+            "source_system": "lotus-risk",
+            "source_product_name": "MandateRiskHealthContext",
+            "source_product_version": "v1",
+            "request_fingerprint": risk_fingerprint,
+            "as_of_date": "2026-05-03",
+        },
+        {
+            "source_ref": performance_ref,
+            "source_system": "lotus-performance",
+            "source_product_name": "MandatePerformanceHealthContext",
+            "source_product_version": "v1",
+            "request_fingerprint": performance_fingerprint,
+            "as_of_date": "2026-05-03",
+        },
+    ]
     assert "MANDATE_RISK_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED" in posture.reason_codes
     assert "MANDATE_PERFORMANCE_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED" in posture.reason_codes
 

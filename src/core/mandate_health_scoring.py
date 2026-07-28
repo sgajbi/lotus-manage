@@ -10,6 +10,7 @@ from src.core.mandate_models import (
     DpmMandateHealthInput,
     DpmMandateHealthReason,
     DpmMandateHealthSnapshot,
+    DpmMandateHealthSourceContextMetadata,
     DpmMandateHealthSourceAnalyticsPosture,
     DpmMandateSourceHealthContext,
     MandateHealthDimension,
@@ -102,13 +103,25 @@ def _mandate_health_evidence_refs(input_: DpmMandateHealthInput) -> list[str]:
 def _source_analytics_posture(
     input_: DpmMandateHealthInput,
 ) -> DpmMandateHealthSourceAnalyticsPosture:
-    source_context_refs = []
+    source_context_refs: list[str] = []
+    source_context_metadata: list[DpmMandateHealthSourceContextMetadata] = []
     reason_codes = list(_default_source_analytics_posture().reason_codes)
     if input_.risk_health_context is not None:
-        source_context_refs.append(_source_health_context_ref(input_.risk_health_context))
+        risk_ref = _source_health_context_ref(input_.risk_health_context)
+        source_context_refs.append(risk_ref)
+        source_context_metadata.append(
+            _source_health_context_metadata(input_.risk_health_context, source_ref=risk_ref)
+        )
         reason_codes.append("MANDATE_RISK_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED")
     if input_.performance_health_context is not None:
-        source_context_refs.append(_source_health_context_ref(input_.performance_health_context))
+        performance_ref = _source_health_context_ref(input_.performance_health_context)
+        source_context_refs.append(performance_ref)
+        source_context_metadata.append(
+            _source_health_context_metadata(
+                input_.performance_health_context,
+                source_ref=performance_ref,
+            )
+        )
         reason_codes.append("MANDATE_PERFORMANCE_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED")
     return _default_source_analytics_posture().model_copy(
         update={
@@ -119,6 +132,7 @@ def _source_analytics_posture(
             "risk_health_context_supplied": input_.risk_health_context is not None,
             "performance_health_context_supplied": input_.performance_health_context is not None,
             "source_context_refs": source_context_refs,
+            "source_context_metadata": source_context_metadata,
             "reason_codes": reason_codes,
         }
     )
@@ -128,6 +142,21 @@ def _source_health_context_ref(context: DpmMandateSourceHealthContext) -> str:
     return (
         f"{context.source_system}:{context.source_product_name}:"
         f"{context.source_product_version}:{context.request_fingerprint}"
+    )
+
+
+def _source_health_context_metadata(
+    context: DpmMandateSourceHealthContext,
+    *,
+    source_ref: str,
+) -> DpmMandateHealthSourceContextMetadata:
+    return DpmMandateHealthSourceContextMetadata(
+        source_ref=source_ref,
+        source_system=context.source_system,
+        source_product_name=context.source_product_name,
+        source_product_version=context.source_product_version,
+        request_fingerprint=context.request_fingerprint,
+        as_of_date=context.as_of_date,
     )
 
 

@@ -695,6 +695,7 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         risk_health_context={
             "source_system": "lotus-risk",
             "source_product_name": "MandateRiskHealthContext",
+            "as_of_date": "2026-05-03",
             "health_state": "attention",
             "threshold_breached": True,
             "request_fingerprint": "sha256:risk-context",
@@ -702,6 +703,7 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         performance_health_context={
             "source_system": "lotus-performance",
             "source_product_name": "MandatePerformanceHealthContext",
+            "as_of_date": "2026-05-03",
             "health_state": "ready",
             "threshold_breached": False,
             "request_fingerprint": "sha256:performance-context",
@@ -734,7 +736,7 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         "lotus-risk:MandateRiskHealthContext:v1",
         "lotus-performance:MandatePerformanceHealthContext:v1",
     }
-    assert all("as_of_date" not in ref for ref in source_refs)
+    assert {ref["as_of_date"] for ref in source_refs} == {"2026-05-03"}
     assert all(ref["freshness"] == "current" for ref in source_refs)
     assert all(ref["generated_at"].endswith("+00:00") for ref in source_refs)
     assert all(str(ref["content_hash"]).startswith("sha256:") for ref in source_refs)
