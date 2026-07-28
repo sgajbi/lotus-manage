@@ -27,6 +27,7 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
+from src.core.mandate_health_scoring import calculate_mandate_health
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthInput
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
@@ -805,6 +806,46 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
     assert stale["freshness"] == "stale"
     assert "as_of_date" not in stale
     assert stale["generated_at"] == "2026-05-03T09:00:00+00:00"
+
+    health_snapshot = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=_twin(),
+            risk_health_context={
+                "source_system": "lotus-risk",
+                "source_product_name": "MandateRiskHealthContext",
+                "source_product_version": "v1",
+                "as_of_date": "2026-05-03",
+                "health_state": "ready",
+                "threshold_breached": False,
+                "request_fingerprint": "sha256:risk-context",
+            },
+        )
+    )
+    risk_ref = health_snapshot.source_analytics_posture.source_context_refs[0]
+    posture = health_snapshot.source_analytics_posture.model_copy(
+        update={"source_context_refs": [risk_ref, "malformed-ref"]}
+    )
+    repository.save_health_snapshot(
+        health_snapshot.model_copy(
+            update={
+                "calculated_at": datetime(2026, 5, 3, 9, 0),
+                "source_analytics_posture": posture,
+            }
+        )
+    )
+
+    mixed_refs = source_refs_for_portfolio_mandate_health(
+        repository=repository,
+        portfolio_id=PORTFOLIO_ID,
+        now=now,
+    )
+
+    assert [ref["source_ref_status"] for ref in mixed_refs] == ["available", "unavailable"]
+    assert mixed_refs[0]["as_of_date"] == "2026-05-03"
+    assert "as_of_date" not in mixed_refs[1]
+    assert mixed_refs[1]["productId"] == "unavailable"
+    assert mixed_refs[1]["reason"] == "malformed_or_unsupported_source_ref"
+    assert str(mixed_refs[1]["source_ref_fingerprint"]).startswith("sha256:")
 
 
 def test_health_read_and_recalculate_error_mapping() -> None:

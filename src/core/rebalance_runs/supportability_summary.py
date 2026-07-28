@@ -199,7 +199,9 @@ def _evidence_as_of_date(source_refs: list[dict[str, object]]) -> str | None:
         for source_ref in source_refs
         if source_ref.get("as_of_date") is not None and str(source_ref["as_of_date"]).strip()
     }
-    if len(dates) == 1:
+    if len(dates) == 1 and len(dates) == len(
+        {str(source_ref.get("as_of_date", "")).strip() for source_ref in source_refs}
+    ):
         return next(iter(dates))
     return None
 
