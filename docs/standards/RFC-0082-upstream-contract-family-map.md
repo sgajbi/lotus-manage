@@ -149,9 +149,9 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
    `producer_generated_at`, optional source-owned `evidence_as_of_date`, and aggregate counts
    derived from persisted run, operation, and workflow-decision records. Portfolio-scoped
    downstream proof requires `temporal_identity_status=available`; missing or mixed source as-of
-   dates are degraded/fail-closed evidence, not consumer-fillable fields. Current preserved
-   Risk/Performance mandate-health refs do not include source-owned as-of dates, so they remain
-   `missing_source_evidence` until that owner evidence is preserved.
+   dates are degraded/fail-closed evidence, not consumer-fillable fields. Source-owned
+   Risk/Performance mandate-health `as_of_date` metadata is preserved when supplied by the
+   producer; older, missing, or inconsistent source evidence remains non-certifying.
 2. `/api/v1/integration/capabilities` publishes
    `manage.observability.action_register_supportability` as the backend-owned feature key for
    Gateway and Workbench gating.
