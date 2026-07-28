@@ -206,9 +206,9 @@ Implementation scope:
 - Temporal identity: use `portfolio_id` when downstream evidence must prove scoped
   action-register posture. `temporal_identity_status=available` is required before a consumer
   can rely on the receipt as source-owned temporal evidence; consumers must not fill null
-  `evidence_as_of_date` from their own request date or clock. Current preserved Risk/Performance
-  mandate-health refs lack source-owned as-of dates and therefore remain
-  `missing_source_evidence` until that owner evidence is preserved.
+  `evidence_as_of_date` from their own request date or clock. Manage preserves source-owned
+  Risk/Performance mandate-health `as_of_date` metadata when supplied; older, missing, or mixed
+  source evidence remains non-certifying.
 - Metrics: each successful summary read records
   `lotus_manage_action_register_supportability_total` with bounded `surface`,
   `supportability_state`, `reason`, and `freshness_bucket` labels only.

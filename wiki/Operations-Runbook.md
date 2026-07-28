@@ -371,9 +371,9 @@ python scripts/openapi_quality_gate.py
   `temporal_identity_status=available`, `producer_generated_at`, and a source-owned
   `evidence_as_of_date`. `missing_source_evidence` and `mixed_source_as_of` are fail-closed
   evidence states; downstream consumers must not substitute their request date, local clock, or
-  unsupported tenant assertion. Current preserved Risk/Performance mandate-health refs do not carry
-  source-owned as-of dates, so `missing_source_evidence` is the expected non-certifying posture
-  until source-owned temporal fields are preserved.
+  unsupported tenant assertion. Manage preserves source-owned Risk/Performance mandate-health
+  `as_of_date` metadata when supplied; older, missing, or inconsistent source evidence remains
+  non-certifying.
 
 ## Key references
 
