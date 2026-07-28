@@ -204,6 +204,38 @@ def test_supportability_summary_degrades_missing_source_as_of_dates():
     assert response.supportability.reason == "supportability_summary_degraded"
 
 
+def test_supportability_summary_degrades_unavailable_source_ref_placeholders():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    response = build_supportability_summary_response(
+        summary=_summary(run_count=1, newest_run_created_at=now),
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=now,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        source_refs=[
+            {
+                "productId": "lotus-risk:MandateRiskHealthContext:v1",
+                "as_of_date": "2026-02-19",
+                "generated_at": "2026-02-20T09:00:00+00:00",
+                "content_hash": "sha256:risk",
+                "source_ref_status": "available",
+            },
+            {
+                "productId": "unavailable",
+                "generated_at": "2026-02-20T09:00:00+00:00",
+                "content_hash": "unavailable",
+                "source_ref_status": "unavailable",
+                "reason": "malformed_or_unsupported_source_ref",
+            },
+        ],
+    )
+
+    assert response.temporal_identity_status == "missing_source_evidence"
+    assert response.evidence_as_of_date is None
+    assert response.supportability.state == "degraded"
+    assert response.supportability.reason == "supportability_summary_degraded"
+
+
 def test_supportability_summary_degrades_mixed_source_as_of_dates():
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
     response = build_supportability_summary_response(

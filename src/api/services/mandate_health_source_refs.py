@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
 
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
@@ -33,19 +34,22 @@ def source_refs_for_portfolio_mandate_health(
         metadata.source_ref: metadata
         for metadata in snapshot.source_analytics_posture.source_context_metadata
     }
-    return [
-        payload
-        for source_ref in snapshot.source_analytics_posture.source_context_refs
-        if (
-            payload := _source_context_ref_payload(
+    payloads: list[dict[str, object]] = []
+    for source_ref in snapshot.source_analytics_posture.source_context_refs:
+        payload = _source_context_ref_payload(
+            source_ref,
+            snapshot=snapshot,
+            now=now,
+            metadata=metadata_by_ref.get(source_ref),
+        )
+        if payload is None:
+            payload = _unavailable_source_context_ref_payload(
                 source_ref,
                 snapshot=snapshot,
                 now=now,
-                metadata=metadata_by_ref.get(source_ref),
             )
-        )
-        is not None
-    ]
+        payloads.append(payload)
+    return payloads
 
 
 def _source_context_ref_payload(
@@ -74,6 +78,37 @@ def _source_context_ref_payload(
     if metadata is not None and metadata.as_of_date is not None:
         payload["as_of_date"] = metadata.as_of_date.isoformat()
     return payload
+
+
+def _unavailable_source_context_ref_payload(
+    source_ref: str,
+    *,
+    snapshot: DpmMandateHealthSnapshot,
+    now: datetime,
+) -> dict[str, object]:
+    product_id = "unavailable"
+    product_version = "unavailable"
+    parts = source_ref.split(":")
+    if len(parts) >= 3:
+        candidate_product_id = ":".join(parts[:3])
+        if candidate_product_id in _PRODUCT_ROUTES:
+            product_id = candidate_product_id
+            product_version = parts[2]
+    return {
+        "productId": product_id,
+        "product_version": product_version,
+        "route": _PRODUCT_ROUTES.get(product_id, "unavailable"),
+        "content_hash": "unavailable",
+        "generated_at": _aware_utc(snapshot.calculated_at).isoformat(),
+        "freshness": _freshness_bucket(snapshot.calculated_at, now),
+        "source_ref_status": "unavailable",
+        "reason": "malformed_or_unsupported_source_ref",
+        "source_ref_fingerprint": _source_ref_fingerprint(source_ref),
+    }
+
+
+def _source_ref_fingerprint(source_ref: str) -> str:
+    return f"sha256:{hashlib.sha256(source_ref.encode('utf-8')).hexdigest()}"
 
 
 def _freshness_bucket(calculated_at: datetime, now: datetime) -> str:
