@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-22T20:28:00.268383+00:00",
+  "generatedAt": "2026-07-28T19:57:37.103659+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -13351,6 +13351,22 @@
       ]
     },
     {
+      "semanticId": "lotus.source_context_metadata",
+      "canonicalTerm": "source_context_metadata",
+      "preferredName": "source_context_metadata",
+      "description": "dpm mandate health source analytics posture field: source context metadata.",
+      "example": [
+        "source_context_metadata_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.source_context_preservation",
       "canonicalTerm": "source_context_preservation",
       "preferredName": "source_context_preservation",
@@ -13694,6 +13710,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_ref",
+      "canonicalTerm": "source_ref",
+      "preferredName": "source_ref",
+      "description": "dpm mandate health source context metadata field: source ref.",
+      "example": "sample_source_ref",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -58173,6 +58203,62 @@
             "attributeRef": "#/attributeCatalog/lotus.source_context_refs"
           },
           {
+            "name": "health_snapshot.source_analytics_posture.source_context_metadata",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_context_metadata",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_metadata"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_metadata[].source_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_metadata[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_metadata[].source_product_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_metadata[].source_product_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_metadata[].request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_metadata[].as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
             "name": "health_snapshot.source_analytics_posture.blocked_capabilities",
             "location": "body",
             "required": false,
@@ -58730,6 +58816,62 @@
             "type": "array",
             "semanticId": "lotus.source_context_refs",
             "attributeRef": "#/attributeCatalog/lotus.source_context_refs"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_context_metadata",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_metadata"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_product_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_product_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           },
           {
             "name": "source_analytics_posture.blocked_capabilities",
@@ -59327,6 +59469,14 @@
             "attributeRef": "#/attributeCatalog/lotus.source_product_version"
           },
           {
+            "name": "risk_health_context.as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
             "name": "risk_health_context.health_state",
             "location": "body",
             "required": true,
@@ -59413,6 +59563,14 @@
             "type": "string",
             "semanticId": "lotus.source_product_version",
             "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "performance_health_context.as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           },
           {
             "name": "performance_health_context.health_state",
@@ -59817,6 +59975,62 @@
             "type": "array",
             "semanticId": "lotus.source_context_refs",
             "attributeRef": "#/attributeCatalog/lotus.source_context_refs"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_context_metadata",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_metadata"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_product_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].source_product_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
+            "name": "source_analytics_posture.source_context_metadata[].as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           },
           {
             "name": "source_analytics_posture.blocked_capabilities",

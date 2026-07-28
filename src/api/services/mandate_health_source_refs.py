@@ -3,7 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from src.core.mandate_repository import DpmMandateRepository
-from src.core.mandates import DpmMandateHealthSnapshot
+from src.core.mandates import (
+    DpmMandateHealthSnapshot,
+    DpmMandateHealthSourceContextMetadata,
+)
 
 
 _PRODUCT_ROUTES = {
@@ -26,10 +29,21 @@ def source_refs_for_portfolio_mandate_health(
     snapshot = repository.get_latest_health_snapshot(mandate_id=mandate.mandate_id)
     if snapshot is None:
         return []
+    metadata_by_ref = {
+        metadata.source_ref: metadata
+        for metadata in snapshot.source_analytics_posture.source_context_metadata
+    }
     return [
         payload
         for source_ref in snapshot.source_analytics_posture.source_context_refs
-        if (payload := _source_context_ref_payload(source_ref, snapshot=snapshot, now=now))
+        if (
+            payload := _source_context_ref_payload(
+                source_ref,
+                snapshot=snapshot,
+                now=now,
+                metadata=metadata_by_ref.get(source_ref),
+            )
+        )
         is not None
     ]
 
@@ -39,6 +53,7 @@ def _source_context_ref_payload(
     *,
     snapshot: DpmMandateHealthSnapshot,
     now: datetime,
+    metadata: DpmMandateHealthSourceContextMetadata | None = None,
 ) -> dict[str, object] | None:
     parts = source_ref.split(":")
     if len(parts) < 4:
@@ -47,7 +62,7 @@ def _source_context_ref_payload(
     content_hash = ":".join(parts[3:])
     if product_id not in _PRODUCT_ROUTES or not content_hash.startswith("sha256:"):
         return None
-    return {
+    payload: dict[str, object] = {
         "productId": product_id,
         "product_version": parts[2],
         "route": _PRODUCT_ROUTES[product_id],
@@ -56,6 +71,9 @@ def _source_context_ref_payload(
         "freshness": _freshness_bucket(snapshot.calculated_at, now),
         "source_ref_status": "available",
     }
+    if metadata is not None and metadata.as_of_date is not None:
+        payload["as_of_date"] = metadata.as_of_date.isoformat()
+    return payload
 
 
 def _freshness_bucket(calculated_at: datetime, now: datetime) -> str:

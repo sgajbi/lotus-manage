@@ -206,6 +206,14 @@ class DpmMandateSourceHealthContext(BaseModel):
     source_system: Literal["lotus-risk", "lotus-performance"]
     source_product_name: str
     source_product_version: str = "v1"
+    as_of_date: Optional[date] = Field(
+        default=None,
+        description=(
+            "Source-owned business date from the upstream mandate health context. Manage "
+            "preserves this only when the producer supplied it; it must not be inferred "
+            "from the local mandate snapshot or request clock."
+        ),
+    )
     health_state: Literal["ready", "attention", "unavailable"]
     threshold_breached: Optional[bool] = None
     request_fingerprint: str
@@ -294,6 +302,21 @@ class DpmMandateHealthSourceProductRequirement(BaseModel):
     required_for_ready: bool = False
 
 
+class DpmMandateHealthSourceContextMetadata(BaseModel):
+    source_ref: str
+    source_system: Literal["lotus-risk", "lotus-performance"]
+    source_product_name: str
+    source_product_version: str
+    request_fingerprint: str
+    as_of_date: Optional[date] = Field(
+        default=None,
+        description=(
+            "Source-owned business date preserved from the upstream health-context product. "
+            "Missing values are non-certifying for portfolio-scoped downstream proof."
+        ),
+    )
+
+
 class DpmMandateHealthSourceAnalyticsPosture(BaseModel):
     product_family: Literal["MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"] = (
         "MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"
@@ -309,6 +332,9 @@ class DpmMandateHealthSourceAnalyticsPosture(BaseModel):
     )
     required_source_products: list[DpmMandateHealthSourceProductRequirement]
     source_context_refs: list[str] = Field(default_factory=list)
+    source_context_metadata: list[DpmMandateHealthSourceContextMetadata] = Field(
+        default_factory=list
+    )
     blocked_capabilities: list[str] = Field(
         default_factory=lambda: [
             "LOCAL_TRACKING_ERROR_CALCULATION",
