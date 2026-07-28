@@ -64,7 +64,7 @@ def _source_context_ref_payload(
         return None
     product_id = ":".join(parts[:3])
     content_hash = ":".join(parts[3:])
-    if product_id not in _PRODUCT_ROUTES or not content_hash.startswith("sha256:"):
+    if product_id not in _PRODUCT_ROUTES or not _is_non_empty_sha256_ref(content_hash):
         return None
     payload: dict[str, object] = {
         "productId": product_id,
@@ -109,6 +109,10 @@ def _unavailable_source_context_ref_payload(
 
 def _source_ref_fingerprint(source_ref: str) -> str:
     return f"sha256:{hashlib.sha256(source_ref.encode('utf-8')).hexdigest()}"
+
+
+def _is_non_empty_sha256_ref(value: str) -> bool:
+    return value.startswith("sha256:") and bool(value.removeprefix("sha256:").strip())
 
 
 def _freshness_bucket(calculated_at: datetime, now: datetime) -> str:
