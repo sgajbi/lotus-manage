@@ -576,7 +576,7 @@ def _core_tax_lot_payload(**overrides: object) -> dict:
             {
                 "portfolio_id": "PB_SG_GLOBAL_BAL_001",
                 "security_id": "EQ_US_AAPL",
-                "instrument_id": "EQ_US_AAPL",
+                "instrument_id": "AAPL",
                 "lot_id": "LOT-AAPL-001",
                 "open_quantity": "60.0000000000",
                 "original_quantity": "60.0000000000",
@@ -594,7 +594,7 @@ def _core_tax_lot_payload(**overrides: object) -> dict:
             {
                 "portfolio_id": "PB_SG_GLOBAL_BAL_001",
                 "security_id": "EQ_US_AAPL",
-                "instrument_id": "EQ_US_AAPL",
+                "instrument_id": "AAPL",
                 "lot_id": "LOT-AAPL-002",
                 "open_quantity": "40.0000000000",
                 "original_quantity": "40.0000000000",
