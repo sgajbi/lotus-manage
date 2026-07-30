@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from typing import Any, Literal, Optional
@@ -537,18 +538,18 @@ def build_portfolio_snapshot_with_core_tax_lots(
     if response.portfolio_id != portfolio_snapshot.portfolio_id:
         raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOT_PORTFOLIO_MISMATCH")
 
-    lots_by_instrument = _open_core_tax_lots_by_instrument(
+    tax_lot_index = _index_open_core_tax_lots(
         response=response,
         base_currency=portfolio_snapshot.base_currency,
     )
     _validate_core_tax_lot_coverage(
         portfolio_snapshot=portfolio_snapshot,
-        lots_by_instrument=lots_by_instrument,
+        tax_lot_index=tax_lot_index,
     )
     positions = [
         _portfolio_position_with_tax_lots(
             position=position,
-            lots_by_instrument=lots_by_instrument,
+            tax_lot_index=tax_lot_index,
         )
         for position in portfolio_snapshot.positions
     ]
@@ -560,12 +561,12 @@ def build_portfolio_snapshot_with_core_tax_lots(
 def _validate_core_tax_lot_coverage(
     *,
     portfolio_snapshot: PortfolioSnapshot,
-    lots_by_instrument: dict[str, list[TaxLot]],
+    tax_lot_index: "_CoreTaxLotIndex",
 ) -> None:
     for position in portfolio_snapshot.positions:
         if position.quantity <= Decimal("0"):
             continue
-        lots = lots_by_instrument.get(position.instrument_id, [])
+        lots = tax_lot_index.for_position(position.instrument_id)
         if not lots:
             raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOTS_INCOMPLETE")
         lot_quantity = sum((lot.quantity for lot in lots), Decimal("0"))
@@ -573,22 +574,35 @@ def _validate_core_tax_lot_coverage(
             raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOT_QUANTITY_MISMATCH")
 
 
-def _open_core_tax_lots_by_instrument(
+@dataclass(frozen=True)
+class _CoreTaxLotIndex:
+    by_security_id: dict[str, list[TaxLot]]
+    by_instrument_id: dict[str, list[TaxLot]]
+
+    def for_position(self, position_identity: str) -> list[TaxLot]:
+        security_lots = self.by_security_id.get(position_identity)
+        if security_lots is not None:
+            return security_lots
+        return self.by_instrument_id.get(position_identity, [])
+
+
+def _index_open_core_tax_lots(
     *,
     response: DpmCorePortfolioTaxLotWindowResponse,
     base_currency: str,
-) -> dict[str, list[TaxLot]]:
-    lots_by_instrument: dict[str, list[TaxLot]] = {}
+) -> _CoreTaxLotIndex:
+    lots_by_security_id: dict[str, list[TaxLot]] = {}
+    lots_by_instrument_id: dict[str, list[TaxLot]] = {}
     for lot in response.lots:
         if lot.tax_lot_status != "OPEN" or lot.open_quantity <= Decimal("0"):
             continue
         engine_lot = _core_tax_lot_to_engine_lot(lot=lot, base_currency=base_currency)
-        # Core snapshots normally key positions by security_id, but the accepted legacy shape
-        # falls back to instrument_id when security_id is absent. Index both distinct identities
-        # without duplicating a lot when the source uses the same value for both.
-        for identity in dict.fromkeys((lot.security_id, lot.instrument_id)):
-            lots_by_instrument.setdefault(identity, []).append(engine_lot)
-    return lots_by_instrument
+        lots_by_security_id.setdefault(lot.security_id, []).append(engine_lot)
+        lots_by_instrument_id.setdefault(lot.instrument_id, []).append(engine_lot)
+    return _CoreTaxLotIndex(
+        by_security_id=lots_by_security_id,
+        by_instrument_id=lots_by_instrument_id,
+    )
 
 
 def _core_tax_lot_to_engine_lot(
@@ -612,10 +626,10 @@ def _core_tax_lot_to_engine_lot(
 def _portfolio_position_with_tax_lots(
     *,
     position: Position,
-    lots_by_instrument: dict[str, list[TaxLot]],
+    tax_lot_index: _CoreTaxLotIndex,
 ) -> Position:
     position_payload = position.model_dump(mode="python")
-    position_payload["lots"] = lots_by_instrument.get(position.instrument_id, [])
+    position_payload["lots"] = tax_lot_index.for_position(position.instrument_id)
     return type(position).model_validate(position_payload)
 
 

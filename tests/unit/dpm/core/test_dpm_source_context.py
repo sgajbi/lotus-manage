@@ -9,6 +9,7 @@ from src.core.dpm_source_context import (
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
     DpmCorePortfolioTaxLotWindowResponse,
+    _CoreTaxLotIndex,
     _core_coverage_fx_rates,
     _core_coverage_prices,
     _core_tax_lot_to_engine_lot,
@@ -691,6 +692,52 @@ def test_core_tax_lots_preserve_snapshot_instrument_identity_fallback():
     )
 
 
+def test_core_tax_lots_keep_security_and_instrument_identity_namespaces_separate():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [
+                {
+                    "instrument_id": "EQ_US_AAPL",
+                    "quantity": "100.0000000000",
+                },
+                {
+                    "instrument_id": "AAPL",
+                    "quantity": "50.0000000000",
+                },
+            ],
+        }
+    )
+    payload = _core_tax_lot_payload()
+    payload["lots"].append(
+        {
+            **payload["lots"][0],
+            "security_id": "AAPL",
+            "instrument_id": "OTHER_REFERENCE",
+            "lot_id": "LOT-SECURITY-ID-COLLISION",
+            "open_quantity": "50.0000000000",
+            "original_quantity": "50.0000000000",
+            "cost_basis_base": "7500.0000000000",
+            "cost_basis_local": "7500.0000000000",
+            "source_transaction_id": "TXN-SECURITY-ID-COLLISION",
+        }
+    )
+    payload["supportability"]["requested_security_count"] = 2
+    payload["supportability"]["returned_lot_count"] = 3
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(payload)
+
+    enriched = build_portfolio_snapshot_with_core_tax_lots(
+        portfolio_snapshot=portfolio,
+        response=response,
+    )
+
+    assert [lot.lot_id for lot in enriched.positions[0].lots] == [
+        "LOT-AAPL-001",
+        "LOT-AAPL-002",
+    ]
+    assert [lot.lot_id for lot in enriched.positions[1].lots] == ["LOT-SECURITY-ID-COLLISION"]
+
+
 def test_core_tax_lots_reject_closed_or_depleted_lots_for_positive_position():
     portfolio = PortfolioSnapshot.model_validate(
         {
@@ -771,7 +818,10 @@ def test_portfolio_position_tax_lot_helper_attaches_grouped_lots_by_instrument()
 
     position = _portfolio_position_with_tax_lots(
         position=portfolio.positions[0],
-        lots_by_instrument={"EQ_US_AAPL": [tax_lot]},
+        tax_lot_index=_CoreTaxLotIndex(
+            by_security_id={"EQ_US_AAPL": [tax_lot]},
+            by_instrument_id={},
+        ),
     )
 
     assert [lot.lot_id for lot in position.lots] == ["LOT-AAPL-001"]
