@@ -582,7 +582,9 @@ def _open_core_tax_lots_by_instrument(
     for lot in response.lots:
         if lot.tax_lot_status != "OPEN" or lot.open_quantity <= Decimal("0"):
             continue
-        lots_by_instrument.setdefault(lot.instrument_id, []).append(
+        # PortfolioSnapshot positions are keyed by Core's security_id. The separate
+        # instrument_id is reference/vendor identity and must not be used for lot attachment.
+        lots_by_instrument.setdefault(lot.security_id, []).append(
             _core_tax_lot_to_engine_lot(lot=lot, base_currency=base_currency)
         )
     return lots_by_instrument
