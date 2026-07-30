@@ -663,6 +663,34 @@ def test_core_tax_lots_attach_to_portfolio_snapshot_for_tax_aware_engine():
     assert enriched.positions[0].lots[1].purchase_date == "2026-03-28"
 
 
+def test_core_tax_lots_preserve_snapshot_instrument_identity_fallback():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [
+                {
+                    "instrument_id": "AAPL",
+                    "quantity": "100.0000000000",
+                }
+            ],
+        }
+    )
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(_core_tax_lot_payload())
+
+    enriched = build_portfolio_snapshot_with_core_tax_lots(
+        portfolio_snapshot=portfolio,
+        response=response,
+    )
+
+    assert [lot.lot_id for lot in enriched.positions[0].lots] == [
+        "LOT-AAPL-001",
+        "LOT-AAPL-002",
+    ]
+    assert sum((lot.quantity for lot in enriched.positions[0].lots), Decimal("0")) == Decimal(
+        "100.0000000000"
+    )
+
+
 def test_core_tax_lots_reject_closed_or_depleted_lots_for_positive_position():
     portfolio = PortfolioSnapshot.model_validate(
         {
