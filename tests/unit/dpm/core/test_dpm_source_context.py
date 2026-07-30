@@ -730,6 +730,37 @@ def test_core_tax_lots_reject_ambiguous_identity_without_core_snapshot_provenanc
         )
 
 
+def test_core_tax_lots_accept_identical_security_and_instrument_identity_groups():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [
+                {
+                    "instrument_id": "EQ_US_AAPL",
+                    "quantity": "100.0000000000",
+                }
+            ],
+        }
+    )
+    payload = _core_tax_lot_payload()
+    for lot in payload["lots"]:
+        lot["instrument_id"] = lot["security_id"]
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(payload)
+
+    enriched = build_portfolio_snapshot_with_core_tax_lots(
+        portfolio_snapshot=portfolio,
+        response=response,
+    )
+
+    assert [lot.lot_id for lot in enriched.positions[0].lots] == [
+        "LOT-AAPL-001",
+        "LOT-AAPL-002",
+    ]
+    assert sum((lot.quantity for lot in enriched.positions[0].lots), Decimal("0")) == Decimal(
+        "100.0000000000"
+    )
+
+
 def test_core_tax_lots_preserve_core_snapshot_fallback_instrument_provenance():
     portfolio = portfolio_snapshot_from_core_snapshot(
         {
