@@ -29,6 +29,7 @@ from src.core.dpm_source_context import (
     DpmStatefulInput,
 )
 from src.core.models import PortfolioSnapshot, SimulationScenario
+from src.infrastructure.core_sourcing.snapshot_mapping import portfolio_snapshot_from_core_snapshot
 
 
 def _core_context(*, supportability_state: str = "READY") -> DpmCoreExecutionContext:
@@ -692,19 +693,15 @@ def test_core_tax_lots_preserve_snapshot_instrument_identity_fallback():
     )
 
 
-def test_core_tax_lots_keep_security_and_instrument_identity_namespaces_separate():
+def test_core_tax_lots_reject_ambiguous_identity_without_core_snapshot_provenance():
     portfolio = PortfolioSnapshot.model_validate(
         {
             **_core_context().portfolio_snapshot.model_dump(mode="python"),
             "positions": [
                 {
-                    "instrument_id": "EQ_US_AAPL",
-                    "quantity": "100.0000000000",
-                },
-                {
                     "instrument_id": "AAPL",
-                    "quantity": "50.0000000000",
-                },
+                    "quantity": "100.0000000000",
+                }
             ],
         }
     )
@@ -726,6 +723,51 @@ def test_core_tax_lots_keep_security_and_instrument_identity_namespaces_separate
     payload["supportability"]["returned_lot_count"] = 3
     response = DpmCorePortfolioTaxLotWindowResponse.model_validate(payload)
 
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_TAX_LOT_IDENTITY_AMBIGUOUS"):
+        build_portfolio_snapshot_with_core_tax_lots(
+            portfolio_snapshot=portfolio,
+            response=response,
+        )
+
+
+def test_core_tax_lots_preserve_core_snapshot_fallback_instrument_provenance():
+    portfolio = portfolio_snapshot_from_core_snapshot(
+        {
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-04-10",
+            "snapshot_id": "core-pf-snap-001",
+            "valuation_context": {"portfolio_currency": "SGD"},
+            "sections": {
+                "positions_baseline": [
+                    {
+                        "instrument_id": "AAPL",
+                        "quantity": "100.0000000000",
+                        "market_value_local": "18712",
+                        "currency": "USD",
+                    }
+                ],
+                "portfolio_totals": {"baseline_total_market_value_base": "18712"},
+            },
+        }
+    )
+    payload = _core_tax_lot_payload()
+    payload["lots"].append(
+        {
+            **payload["lots"][0],
+            "security_id": "AAPL",
+            "instrument_id": "OTHER_REFERENCE",
+            "lot_id": "LOT-SECURITY-ID-COLLISION",
+            "open_quantity": "100.0000000000",
+            "original_quantity": "100.0000000000",
+            "cost_basis_base": "7500.0000000000",
+            "cost_basis_local": "7500.0000000000",
+            "source_transaction_id": "TXN-SECURITY-ID-COLLISION",
+        }
+    )
+    payload["supportability"]["requested_security_count"] = 2
+    payload["supportability"]["returned_lot_count"] = 3
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(payload)
+
     enriched = build_portfolio_snapshot_with_core_tax_lots(
         portfolio_snapshot=portfolio,
         response=response,
@@ -735,7 +777,56 @@ def test_core_tax_lots_keep_security_and_instrument_identity_namespaces_separate
         "LOT-AAPL-001",
         "LOT-AAPL-002",
     ]
-    assert [lot.lot_id for lot in enriched.positions[1].lots] == ["LOT-SECURITY-ID-COLLISION"]
+    assert "LOT-SECURITY-ID-COLLISION" not in [lot.lot_id for lot in enriched.positions[0].lots]
+
+
+def test_core_tax_lots_do_not_fallback_for_security_position_with_no_open_lots():
+    portfolio = portfolio_snapshot_from_core_snapshot(
+        {
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-04-10",
+            "snapshot_id": "core-pf-snap-001",
+            "valuation_context": {"portfolio_currency": "SGD"},
+            "sections": {
+                "positions_baseline": [
+                    {
+                        "security_id": "EQ_US_AAPL",
+                        "instrument_id": "AAPL",
+                        "quantity": "100.0000000000",
+                        "market_value_local": "18712",
+                        "currency": "USD",
+                    }
+                ],
+                "portfolio_totals": {"baseline_total_market_value_base": "18712"},
+            },
+        }
+    )
+    payload = _core_tax_lot_payload()
+    payload["lots"][0]["tax_lot_status"] = "CLOSED"
+    payload["lots"][1]["open_quantity"] = "0.0000000000"
+    payload["lots"].append(
+        {
+            **payload["lots"][0],
+            "security_id": "OTHER_SECURITY",
+            "instrument_id": "EQ_US_AAPL",
+            "lot_id": "LOT-INSTRUMENT-ALIAS-COLLISION",
+            "open_quantity": "100.0000000000",
+            "original_quantity": "100.0000000000",
+            "tax_lot_status": "OPEN",
+            "cost_basis_base": "7500.0000000000",
+            "cost_basis_local": "7500.0000000000",
+            "source_transaction_id": "TXN-INSTRUMENT-ALIAS-COLLISION",
+        }
+    )
+    payload["supportability"]["requested_security_count"] = 2
+    payload["supportability"]["returned_lot_count"] = 3
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(payload)
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_TAX_LOTS_INCOMPLETE"):
+        build_portfolio_snapshot_with_core_tax_lots(
+            portfolio_snapshot=portfolio,
+            response=response,
+        )
 
 
 def test_core_tax_lots_reject_closed_or_depleted_lots_for_positive_position():
@@ -821,6 +912,8 @@ def test_portfolio_position_tax_lot_helper_attaches_grouped_lots_by_instrument()
         tax_lot_index=_CoreTaxLotIndex(
             by_security_id={"EQ_US_AAPL": [tax_lot]},
             by_instrument_id={},
+            security_identities={"EQ_US_AAPL"},
+            instrument_identities={"AAPL"},
         ),
     )
 

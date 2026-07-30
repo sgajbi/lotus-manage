@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 
 from src.core.models import CashBalance, Money, PortfolioSnapshot, Position
 from src.infrastructure.core_sourcing.errors import DpmCoreResolverError
 
 
 CORE_SNAPSHOT_INCOMPLETE = "DPM_CORE_PORTFOLIO_SNAPSHOT_INCOMPLETE"
+CoreSnapshotIdentityNamespace = Literal["security_id", "instrument_id", "unknown"]
 
 
 @dataclass(frozen=True)
@@ -25,11 +26,21 @@ def core_snapshot_base_currency(payload: Mapping[str, Any]) -> str:
     )
 
 
-def core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
-    return _required_text(
-        row.get("security_id") or row.get("instrument_id"),
-        field="positions_baseline[].instrument_id",
+def core_snapshot_row_identity(row: Mapping[str, Any]) -> tuple[str, CoreSnapshotIdentityNamespace]:
+    if row.get("security_id") is not None:
+        return (
+            _required_text(row.get("security_id"), field="positions_baseline[].security_id"),
+            "security_id",
+        )
+    return (
+        _required_text(row.get("instrument_id"), field="positions_baseline[].instrument_id"),
+        "instrument_id",
     )
+
+
+def core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
+    instrument_id, _namespace = core_snapshot_row_identity(row)
+    return instrument_id
 
 
 def core_snapshot_row_quantity(row: Mapping[str, Any]) -> Decimal:
@@ -67,16 +78,17 @@ def position_core_snapshot_row(
     quantity: Decimal,
     currency: str,
     market_value: Decimal | None,
+    identity_namespace: CoreSnapshotIdentityNamespace = "unknown",
 ) -> CoreSnapshotMappedRow:
-    return CoreSnapshotMappedRow(
-        position=Position(
-            instrument_id=instrument_id,
-            quantity=quantity,
-            market_value=(
-                Money(amount=market_value, currency=currency) if market_value is not None else None
-            ),
-        )
+    position = Position(
+        instrument_id=instrument_id,
+        quantity=quantity,
+        market_value=(
+            Money(amount=market_value, currency=currency) if market_value is not None else None
+        ),
     )
+    position._core_source_identity_namespace = identity_namespace
+    return CoreSnapshotMappedRow(position=position)
 
 
 def held_instrument_ids(portfolio_snapshot: PortfolioSnapshot) -> list[str]:
@@ -88,7 +100,7 @@ def map_core_snapshot_row(
     *,
     base_currency: str,
 ) -> CoreSnapshotMappedRow | None:
-    instrument_id = core_snapshot_row_instrument_id(row)
+    instrument_id, identity_namespace = core_snapshot_row_identity(row)
     if not instrument_id:
         return None
 
@@ -105,6 +117,7 @@ def map_core_snapshot_row(
         quantity=quantity,
         currency=currency,
         market_value=market_value,
+        identity_namespace=identity_namespace,
     )
 
 

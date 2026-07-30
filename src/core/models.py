@@ -7,7 +7,14 @@ from decimal import Decimal
 from enum import Enum
 from typing import Annotated, Any, ClassVar, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 
 class ValuationMode(str, Enum):
@@ -85,6 +92,10 @@ class FxRate(BaseModel):
 
 
 class Position(BaseModel):
+    _core_source_identity_namespace: Literal["security_id", "instrument_id", "unknown"] = (
+        PrivateAttr(default="unknown")
+    )
+
     instrument_id: str = Field(description="Unique instrument identifier.", examples=["AAPL"])
     quantity: Decimal = Field(description="Held quantity before simulation.", examples=["100"])
     market_value: Optional[Money] = Field(

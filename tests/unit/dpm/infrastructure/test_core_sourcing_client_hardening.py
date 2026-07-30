@@ -512,6 +512,24 @@ def test_core_snapshot_row_mapper_preserves_position_market_value_currency() -> 
     assert mapped_row.position.market_value is not None
     assert mapped_row.position.market_value.amount == Decimal("1234.56")
     assert mapped_row.position.market_value.currency == "USD"
+    assert mapped_row.position._core_source_identity_namespace == "security_id"
+
+
+def test_core_snapshot_row_mapper_marks_instrument_fallback_identity_namespace() -> None:
+    mapped_row = _map_core_snapshot_row(
+        {
+            "instrument_id": "AAPL",
+            "quantity": "12.5",
+            "currency": "usd",
+            "market_value_local": "1234.56",
+        },
+        base_currency="SGD",
+    )
+
+    assert mapped_row is not None
+    assert mapped_row.position is not None
+    assert mapped_row.position.instrument_id == "AAPL"
+    assert mapped_row.position._core_source_identity_namespace == "instrument_id"
 
 
 def test_core_snapshot_row_currency_normalizes_and_rejects_missing_currency() -> None:

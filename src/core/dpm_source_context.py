@@ -566,7 +566,7 @@ def _validate_core_tax_lot_coverage(
     for position in portfolio_snapshot.positions:
         if position.quantity <= Decimal("0"):
             continue
-        lots = tax_lot_index.for_position(position.instrument_id)
+        lots = tax_lot_index.for_position(position)
         if not lots:
             raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOTS_INCOMPLETE")
         lot_quantity = sum((lot.quantity for lot in lots), Decimal("0"))
@@ -578,8 +578,21 @@ def _validate_core_tax_lot_coverage(
 class _CoreTaxLotIndex:
     by_security_id: dict[str, list[TaxLot]]
     by_instrument_id: dict[str, list[TaxLot]]
+    security_identities: set[str]
+    instrument_identities: set[str]
 
-    def for_position(self, position_identity: str) -> list[TaxLot]:
+    def for_position(self, position: Position) -> list[TaxLot]:
+        position_identity = position.instrument_id
+        identity_namespace = getattr(position, "_core_source_identity_namespace", "unknown")
+        if identity_namespace == "security_id":
+            return self.by_security_id.get(position_identity, [])
+        if identity_namespace == "instrument_id":
+            return self.by_instrument_id.get(position_identity, [])
+        if (
+            position_identity in self.security_identities
+            and position_identity in self.instrument_identities
+        ):
+            raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOT_IDENTITY_AMBIGUOUS")
         security_lots = self.by_security_id.get(position_identity)
         if security_lots is not None:
             return security_lots
@@ -593,7 +606,11 @@ def _index_open_core_tax_lots(
 ) -> _CoreTaxLotIndex:
     lots_by_security_id: dict[str, list[TaxLot]] = {}
     lots_by_instrument_id: dict[str, list[TaxLot]] = {}
+    security_identities: set[str] = set()
+    instrument_identities: set[str] = set()
     for lot in response.lots:
+        security_identities.add(lot.security_id)
+        instrument_identities.add(lot.instrument_id)
         if lot.tax_lot_status != "OPEN" or lot.open_quantity <= Decimal("0"):
             continue
         engine_lot = _core_tax_lot_to_engine_lot(lot=lot, base_currency=base_currency)
@@ -602,6 +619,8 @@ def _index_open_core_tax_lots(
     return _CoreTaxLotIndex(
         by_security_id=lots_by_security_id,
         by_instrument_id=lots_by_instrument_id,
+        security_identities=security_identities,
+        instrument_identities=instrument_identities,
     )
 
 
@@ -629,8 +648,14 @@ def _portfolio_position_with_tax_lots(
     tax_lot_index: _CoreTaxLotIndex,
 ) -> Position:
     position_payload = position.model_dump(mode="python")
-    position_payload["lots"] = tax_lot_index.for_position(position.instrument_id)
-    return type(position).model_validate(position_payload)
+    position_payload["lots"] = tax_lot_index.for_position(position)
+    enriched_position = type(position).model_validate(position_payload)
+    enriched_position._core_source_identity_namespace = getattr(
+        position,
+        "_core_source_identity_namespace",
+        "unknown",
+    )
+    return enriched_position
 
 
 def build_market_data_snapshot_from_core_coverage(
