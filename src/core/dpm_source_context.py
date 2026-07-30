@@ -582,11 +582,12 @@ def _open_core_tax_lots_by_instrument(
     for lot in response.lots:
         if lot.tax_lot_status != "OPEN" or lot.open_quantity <= Decimal("0"):
             continue
-        # PortfolioSnapshot positions are keyed by Core's security_id. The separate
-        # instrument_id is reference/vendor identity and must not be used for lot attachment.
-        lots_by_instrument.setdefault(lot.security_id, []).append(
-            _core_tax_lot_to_engine_lot(lot=lot, base_currency=base_currency)
-        )
+        engine_lot = _core_tax_lot_to_engine_lot(lot=lot, base_currency=base_currency)
+        # Core snapshots normally key positions by security_id, but the accepted legacy shape
+        # falls back to instrument_id when security_id is absent. Index both distinct identities
+        # without duplicating a lot when the source uses the same value for both.
+        for identity in dict.fromkeys((lot.security_id, lot.instrument_id)):
+            lots_by_instrument.setdefault(identity, []).append(engine_lot)
     return lots_by_instrument
 
 
