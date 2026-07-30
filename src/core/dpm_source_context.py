@@ -588,15 +588,18 @@ class _CoreTaxLotIndex:
             return self.by_security_id.get(position_identity, [])
         if identity_namespace == "instrument_id":
             return self.by_instrument_id.get(position_identity, [])
+        security_lots = self.by_security_id.get(position_identity, [])
+        instrument_lots = self.by_instrument_id.get(position_identity, [])
         if (
             position_identity in self.security_identities
             and position_identity in self.instrument_identities
         ):
+            if security_lots == instrument_lots:
+                return security_lots
             raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOT_IDENTITY_AMBIGUOUS")
-        security_lots = self.by_security_id.get(position_identity)
-        if security_lots is not None:
+        if position_identity in self.security_identities:
             return security_lots
-        return self.by_instrument_id.get(position_identity, [])
+        return instrument_lots
 
 
 def _index_open_core_tax_lots(
