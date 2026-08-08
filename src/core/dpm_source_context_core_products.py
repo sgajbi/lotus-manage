@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class DpmCoreModelPortfolioTargetRow(BaseModel):
@@ -458,9 +458,33 @@ class DpmCorePortfolioUniverseCandidateResponse(BaseModel):
     latest_evidence_timestamp: Optional[datetime] = Field(default=None)
     source_batch_fingerprint: Optional[str] = Field(
         default=None,
-        description="Core source-batch fingerprint for replay and evidence tie-out.",
+        description=(
+            "Core upstream source-batch lineage fingerprint when persisted source-batch lineage "
+            "exists. This is distinct from the deterministic product content identity."
+        ),
+    )
+    content_hash: Optional[str] = Field(
+        default=None,
+        description="Core deterministic content identity for this source-data product response.",
+    )
+    source_digest: Optional[str] = Field(
+        default=None,
+        description="Alias for the Core deterministic source-data product content identity.",
     )
     snapshot_id: Optional[str] = Field(
         default=None,
         description="Core snapshot identifier for the resolved candidate page.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_content_hash_alias(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        content_hash = data.get("content_hash")
+        source_digest = data.get("source_digest")
+        if content_hash is None and source_digest is not None:
+            normalized = dict(data)
+            normalized["content_hash"] = source_digest
+            return normalized
+        return data

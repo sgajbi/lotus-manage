@@ -559,7 +559,7 @@
         "product_name",
         "product_version",
         "as_of_date",
-        "source_batch_fingerprint",
+        "content_hash",
         "snapshot_id",
         "correlation_id"
       ],

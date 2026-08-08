@@ -7,7 +7,10 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.models import (
+    DpmWaveSourceRef,
+    normalize_dpm_wave_source_ref_collections_for_hash,
+)
 
 CampaignDefinitionStatus = Literal["ACTIVE", "RETIRED", "SUPERSEDED"]
 
@@ -641,6 +644,7 @@ def _campaign_definition_hash_payload(
 ) -> dict[str, object]:
     payload = definition.model_dump(mode="json")
     _normalize_campaign_definition_hash_fields(payload, include_hash=include_hash)
+    normalize_dpm_wave_source_ref_collections_for_hash(payload)
     _drop_empty_campaign_definition_evidence_collections(payload)
     return payload
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -22,6 +23,7 @@ from src.core.waves import DpmWaveSourceRef
 CoreResolverFactory = Callable[[], Any]
 
 MAX_CORE_DPM_PORTFOLIO_UNIVERSE_PAGES = 10
+_SHA256_IDENTITY_PATTERN = re.compile(r"^sha256:[0-9a-fA-F]{64}$")
 
 
 @dataclass(frozen=True)
@@ -33,6 +35,13 @@ class _PortfolioUniverseResolutionRequest:
     include_inactive_mandates: bool
     campaign_candidate_page_size: int
     correlation_id: str
+
+
+@dataclass(frozen=True)
+class _CandidateSourceRow:
+    candidate: DpmCorePortfolioUniverseCandidate
+    universe_ref: dict[str, object]
+    selection_basis: dict[str, object] | None
 
 
 def _selection_basis_payload(
@@ -61,14 +70,61 @@ def _portfolio_universe_candidate_ref(
 def _portfolio_universe_candidate_page_ref(
     *, page: DpmCorePortfolioUniverseCandidateResponse
 ) -> dict[str, object]:
+    content_hash = _portfolio_universe_candidate_content_hash(page)
     return DpmWaveSourceRef(
         source_system="lotus-core",
         source_type="DpmPortfolioUniverseCandidate",
         source_id=page.snapshot_id or page.page.request_scope_fingerprint,
         source_version=page.product_version,
         supportability_state=page.supportability.state,
-        content_hash=page.source_batch_fingerprint,
+        content_hash=content_hash,
+        source_batch_fingerprint=_clean_optional_text(page.source_batch_fingerprint),
     ).model_dump(mode="json", exclude_none=True)
+
+
+def _portfolio_universe_candidate_content_hash(
+    page: DpmCorePortfolioUniverseCandidateResponse,
+) -> str:
+    content_hash = _clean_optional_text(page.content_hash)
+    source_digest = _clean_optional_text(page.source_digest)
+    if content_hash is not None and source_digest is not None and content_hash != source_digest:
+        raise DpmWaveDependencyFailedError(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_IDENTITY_CONFLICT",
+            message=(
+                "Core DPM portfolio-universe candidates returned conflicting content_hash and "
+                "source_digest identities."
+            ),
+        )
+
+    resolved_hash = content_hash or source_digest
+    if resolved_hash is None:
+        raise DpmWaveDependencyFailedError(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_REQUIRED",
+            message=(
+                "Core DPM portfolio-universe candidates must publish a canonical content_hash "
+                "or source_digest before Manage can publish campaign membership as READY."
+            ),
+        )
+    if not _is_sha256_identity(resolved_hash):
+        raise DpmWaveDependencyFailedError(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID",
+            message=(
+                "Core DPM portfolio-universe candidates returned a malformed canonical content "
+                "identity."
+            ),
+        )
+    return resolved_hash
+
+
+def _clean_optional_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+def _is_sha256_identity(value: str) -> bool:
+    return _SHA256_IDENTITY_PATTERN.fullmatch(value) is not None
 
 
 def resolve_core_dpm_portfolio_universe_candidates(
@@ -159,26 +215,31 @@ def _portfolio_payloads_from_candidate_pages(
             ),
         )
 
-    candidates = _candidate_rows(candidate_pages)
-    if not candidates:
+    candidate_rows = _candidate_source_rows(candidate_pages)
+    if not candidate_rows:
         raise DpmWaveDependencyFailedError(
             code="DPM_CORE_PORTFOLIO_UNIVERSE_EMPTY",
             message="Core DPM portfolio-universe discovery returned no candidate portfolios.",
         )
-    first_page = candidate_pages[0]
-    selection_basis = _selection_basis_payload(first_page)
-    universe_ref = _portfolio_universe_candidate_page_ref(page=first_page)
-    return _candidate_portfolio_payloads(
-        candidates=candidates,
-        universe_ref=universe_ref,
-        selection_basis=selection_basis,
-    )
+    return _candidate_portfolio_payloads(candidate_rows=candidate_rows)
 
 
-def _candidate_rows(
+def _candidate_source_rows(
     candidate_pages: list[DpmCorePortfolioUniverseCandidateResponse],
-) -> list[DpmCorePortfolioUniverseCandidate]:
-    return [candidate for page in candidate_pages for candidate in page.candidates]
+) -> list[_CandidateSourceRow]:
+    rows: list[_CandidateSourceRow] = []
+    for page in candidate_pages:
+        universe_ref = _portfolio_universe_candidate_page_ref(page=page)
+        selection_basis = _selection_basis_payload(page)
+        rows.extend(
+            _CandidateSourceRow(
+                candidate=candidate,
+                universe_ref=universe_ref,
+                selection_basis=selection_basis,
+            )
+            for candidate in page.candidates
+        )
+    return rows
 
 
 def _candidate_key(
@@ -193,14 +254,13 @@ def _candidate_key(
 
 def _candidate_portfolio_payloads(
     *,
-    candidates: list[DpmCorePortfolioUniverseCandidate],
-    universe_ref: dict[str, object],
-    selection_basis: dict[str, object] | None,
+    candidate_rows: list[_CandidateSourceRow],
 ) -> list[dict[str, object]]:
     candidate_keys: set[tuple[str, str | None, str | None]] = set()
     portfolios: list[dict[str, object]] = []
 
-    for candidate in candidates:
+    for row in candidate_rows:
+        candidate = row.candidate
         candidate_key = _candidate_key(candidate)
         if candidate_key in candidate_keys:
             raise DpmWaveDependencyFailedError(
@@ -214,9 +274,10 @@ def _candidate_portfolio_payloads(
                 "mandate_id": candidate.mandate_id,
                 "portfolio_type": "DISCRETIONARY",
                 "source_refs": [
-                    universe_ref,
+                    row.universe_ref,
                     _portfolio_universe_candidate_ref(
-                        candidate=candidate, selection_basis=selection_basis
+                        candidate=candidate,
+                        selection_basis=row.selection_basis,
                     ),
                 ],
             }

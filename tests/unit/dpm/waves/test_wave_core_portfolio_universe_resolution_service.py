@@ -5,6 +5,7 @@ from datetime import date
 import pytest
 
 from src.api.services.wave_core_portfolio_universe_resolution import (
+    _CandidateSourceRow,
     _PortfolioUniverseResolutionRequest,
     _candidate_portfolio_payloads,
     _portfolio_universe_candidate_page_ref,
@@ -27,6 +28,17 @@ from src.infrastructure.core_sourcing import (
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
 )
+
+PORTFOLIO_UNIVERSE_CONTENT_HASH = "sha256:" + ("1" * 64)
+CORE_CANDIDATE_PAGE_HASH = "sha256:" + ("2" * 64)
+CORE_CONTENT_HASH = "sha256:" + ("3" * 64)
+CORE_SOURCE_DIGEST_HASH = "sha256:" + ("4" * 64)
+CORE_CONFLICTING_CONTENT_HASH = "sha256:" + ("5" * 64)
+FIRST_PAGE_CONTENT_HASH = "sha256:" + ("6" * 64)
+SECOND_PAGE_CONTENT_HASH = "sha256:" + ("7" * 64)
+SECOND_PAGE_CONFLICTING_HASH = "sha256:" + ("8" * 64)
+SOURCE_BATCH_FINGERPRINT = "sha256:core-source-batch"
+SECOND_PAGE_BATCH_FINGERPRINT = "sha256:second-page-batch"
 
 
 def _candidate_row(
@@ -61,6 +73,10 @@ def _candidate_page(
     next_page_token: str | None = None,
     returned_candidate_count: int = 1,
     candidates: list[dict[str, object]] | None = None,
+    content_hash: str | None = PORTFOLIO_UNIVERSE_CONTENT_HASH,
+    source_digest: str | None = PORTFOLIO_UNIVERSE_CONTENT_HASH,
+    source_batch_fingerprint: str | None = None,
+    snapshot_id: str = "snapshot-001",
 ) -> DpmCorePortfolioUniverseCandidateResponse:
     resolved_candidates = (
         [DpmCorePortfolioUniverseCandidate.model_validate(candidate) for candidate in candidates]
@@ -111,8 +127,10 @@ def _candidate_page(
             downstream_boundary="Candidate membership is not execution authority.",
         ),
         lineage={},
-        source_batch_fingerprint="sha256:portfolio-universe",
-        snapshot_id="snapshot-001",
+        source_batch_fingerprint=source_batch_fingerprint,
+        content_hash=content_hash,
+        source_digest=source_digest,
+        snapshot_id=snapshot_id,
         data_quality_status="ACCEPTED",
         latest_evidence_timestamp="2026-05-10T09:00:00Z",
     )
@@ -217,9 +235,13 @@ def test_candidate_portfolio_payloads_preserve_page_and_candidate_source_refs() 
     candidate = page.candidates[0]
 
     payloads = _candidate_portfolio_payloads(
-        candidates=[candidate],
-        universe_ref=_portfolio_universe_candidate_page_ref(page=page),
-        selection_basis=_selection_basis_payload(page),
+        candidate_rows=[
+            _CandidateSourceRow(
+                candidate=candidate,
+                universe_ref=_portfolio_universe_candidate_page_ref(page=page),
+                selection_basis=_selection_basis_payload(page),
+            )
+        ],
     )
 
     assert len(payloads) == 1
@@ -233,7 +255,7 @@ def test_candidate_portfolio_payloads_preserve_page_and_candidate_source_refs() 
         "source_type": "DpmPortfolioUniverseCandidate",
         "source_id": "snapshot-001",
         "source_version": "v1",
-        "content_hash": "sha256:portfolio-universe",
+        "content_hash": PORTFOLIO_UNIVERSE_CONTENT_HASH,
         "supportability_state": "READY",
     }
     assert candidate_ref["source_type"] == "DPM_PORTFOLIO_UNIVERSE_CANDIDATE"
@@ -245,6 +267,170 @@ def test_candidate_portfolio_payloads_preserve_page_and_candidate_source_refs() 
         "included_when": [],
         "downstream_boundary": "Candidate membership is not execution authority.",
     }
+
+
+def test_candidate_page_ref_accepts_no_batch_core_content_identity() -> None:
+    page_ref = _portfolio_universe_candidate_page_ref(
+        page=_candidate_page(
+            content_hash=CORE_CANDIDATE_PAGE_HASH,
+            source_digest=CORE_CANDIDATE_PAGE_HASH,
+            source_batch_fingerprint=None,
+        )
+    )
+
+    assert page_ref["content_hash"] == CORE_CANDIDATE_PAGE_HASH
+    assert "source_batch_fingerprint" not in page_ref
+
+
+def test_candidate_page_ref_preserves_batch_lineage_without_using_it_as_content_hash() -> None:
+    page_ref = _portfolio_universe_candidate_page_ref(
+        page=_candidate_page(
+            content_hash=CORE_CONTENT_HASH,
+            source_digest=CORE_CONTENT_HASH,
+            source_batch_fingerprint=SOURCE_BATCH_FINGERPRINT,
+        )
+    )
+
+    assert page_ref["content_hash"] == CORE_CONTENT_HASH
+    assert page_ref["source_batch_fingerprint"] == SOURCE_BATCH_FINGERPRINT
+
+
+def test_candidate_page_ref_accepts_source_digest_alias_when_content_hash_absent() -> None:
+    page = _candidate_page(
+        content_hash=None,
+        source_digest=CORE_SOURCE_DIGEST_HASH,
+        source_batch_fingerprint=None,
+    )
+    page_ref = _portfolio_universe_candidate_page_ref(page=page)
+
+    assert page.content_hash == CORE_SOURCE_DIGEST_HASH
+    assert page_ref["content_hash"] == CORE_SOURCE_DIGEST_HASH
+
+
+def test_candidate_page_ref_rejects_conflicting_core_content_identities() -> None:
+    with pytest.raises(DpmWaveDependencyFailedError) as exc_info:
+        _portfolio_universe_candidate_page_ref(
+            page=_candidate_page(
+                content_hash=CORE_CONTENT_HASH,
+                source_digest=CORE_CONFLICTING_CONTENT_HASH,
+            )
+        )
+
+    assert exc_info.value.code == "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_IDENTITY_CONFLICT"
+
+
+@pytest.mark.parametrize(
+    ("content_hash", "source_digest", "expected_code"),
+    [
+        (None, None, "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_REQUIRED"),
+        ("", " ", "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_REQUIRED"),
+        ("not-a-sha256-digest", None, "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID"),
+        (None, "not-a-sha256-digest", "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID"),
+        ("sha256:x", None, "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID"),
+        ("sha256:not-hex", None, "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID"),
+        (None, "sha256:" + ("a" * 63), "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID"),
+    ],
+)
+def test_candidate_page_ref_rejects_missing_or_malformed_core_content_identity(
+    content_hash: str | None,
+    source_digest: str | None,
+    expected_code: str,
+) -> None:
+    with pytest.raises(DpmWaveDependencyFailedError) as exc_info:
+        _portfolio_universe_candidate_page_ref(
+            page=_candidate_page(content_hash=content_hash, source_digest=source_digest)
+        )
+
+    assert exc_info.value.code == expected_code
+
+
+def test_resolve_core_dpm_portfolio_universe_candidates_validates_later_page_identity() -> None:
+    first_page = _candidate_page(
+        next_page_token="page-2",
+        returned_candidate_count=1,
+        content_hash=FIRST_PAGE_CONTENT_HASH,
+        source_digest=FIRST_PAGE_CONTENT_HASH,
+        snapshot_id="snapshot-page-1",
+    )
+    second_page = _candidate_page(
+        next_page_token=None,
+        returned_candidate_count=1,
+        content_hash=SECOND_PAGE_CONTENT_HASH,
+        source_digest=SECOND_PAGE_CONFLICTING_HASH,
+        snapshot_id="snapshot-page-2",
+        candidates=[
+            _candidate_row(
+                portfolio_id="PB_SG_GLOBAL_BAL_002",
+                mandate_id="MANDATE_PB_SG_GLOBAL_BAL_002",
+                binding_version=4,
+                source_record_id="mandate-binding-002",
+            )
+        ],
+    )
+
+    with pytest.raises(DpmWaveDependencyFailedError) as exc_info:
+        _resolve(pages=[first_page, second_page], campaign_candidate_page_size=1)
+
+    assert exc_info.value.code == "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_IDENTITY_CONFLICT"
+
+
+def test_resolve_core_dpm_portfolio_universe_candidates_preserves_page_specific_refs() -> None:
+    first_page = _candidate_page(
+        next_page_token="page-2",
+        returned_candidate_count=1,
+        content_hash=FIRST_PAGE_CONTENT_HASH,
+        source_digest=FIRST_PAGE_CONTENT_HASH,
+        snapshot_id="snapshot-page-1",
+    )
+    second_page = _candidate_page(
+        next_page_token=None,
+        returned_candidate_count=1,
+        content_hash=SECOND_PAGE_CONTENT_HASH,
+        source_digest=SECOND_PAGE_CONTENT_HASH,
+        source_batch_fingerprint=SECOND_PAGE_BATCH_FINGERPRINT,
+        snapshot_id="snapshot-page-2",
+        candidates=[
+            _candidate_row(
+                portfolio_id="PB_SG_GLOBAL_BAL_002",
+                mandate_id="MANDATE_PB_SG_GLOBAL_BAL_002",
+                binding_version=4,
+                source_record_id="mandate-binding-002",
+            )
+        ],
+    )
+
+    payloads, _resolver = _resolve(
+        pages=[first_page, second_page],
+        campaign_candidate_page_size=1,
+    )
+
+    page_refs = [
+        next(
+            ref
+            for ref in payload["source_refs"]
+            if ref["source_type"] == "DpmPortfolioUniverseCandidate"
+        )
+        for payload in payloads
+    ]
+    assert page_refs == [
+        {
+            "source_system": "lotus-core",
+            "source_type": "DpmPortfolioUniverseCandidate",
+            "source_id": "snapshot-page-1",
+            "source_version": "v1",
+            "supportability_state": "READY",
+            "content_hash": FIRST_PAGE_CONTENT_HASH,
+        },
+        {
+            "source_system": "lotus-core",
+            "source_type": "DpmPortfolioUniverseCandidate",
+            "source_id": "snapshot-page-2",
+            "source_version": "v1",
+            "supportability_state": "READY",
+            "content_hash": SECOND_PAGE_CONTENT_HASH,
+            "source_batch_fingerprint": SECOND_PAGE_BATCH_FINGERPRINT,
+        },
+    ]
 
 
 def test_resolve_core_dpm_portfolio_universe_candidates_rejects_duplicate_candidates() -> None:

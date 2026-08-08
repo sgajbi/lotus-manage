@@ -10,7 +10,10 @@ from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     build_bulk_review_campaign_definition_preview_readiness,
 )
-from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinition,
+    _campaign_definition_hash_payload,
+)
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_LAUNCH_PACKAGE_OPERATING_BOUNDARIES,
 )
@@ -140,9 +143,7 @@ def _idempotency_key(
 
 
 def _launch_basis_hash(definition: DpmBulkReviewCampaignDefinition) -> str:
-    payload = definition.model_dump(mode="json")
-    payload["content_hash"] = ""
-    payload["created_at"] = ""
+    payload = _campaign_definition_hash_payload(definition, include_hash=False)
     payload["launch_history"] = []
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()

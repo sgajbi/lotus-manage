@@ -345,7 +345,9 @@ def _dpm_portfolio_universe_candidate_payload() -> dict:
         },
         "data_quality_status": "ACCEPTED",
         "latest_evidence_timestamp": "2026-05-10T09:00:00Z",
-        "source_batch_fingerprint": "sha256:dpm-portfolio-universe",
+        "source_batch_fingerprint": None,
+        "content_hash": "sha256:dpm-portfolio-universe-content",
+        "source_digest": "sha256:dpm-portfolio-universe-content",
         "snapshot_id": "dpm_portfolio_universe:sha256:dpm-portfolio-universe",
     }
 
@@ -1720,6 +1722,9 @@ def test_core_resolver_fetches_dpm_portfolio_universe_candidates_source_product(
     assert response.selection_basis.basis_type == "EFFECTIVE_DISCRETIONARY_MANDATE_BINDING"
     assert response.selection_basis.source_table == "portfolio_mandate_bindings"
     assert "relationship householding" in response.selection_basis.downstream_boundary
+    assert response.source_batch_fingerprint is None
+    assert response.content_hash == "sha256:dpm-portfolio-universe-content"
+    assert response.source_digest == "sha256:dpm-portfolio-universe-content"
 
 
 def test_core_resolver_fetches_cio_model_change_affected_cohort_source_product():

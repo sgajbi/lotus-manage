@@ -12,7 +12,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecision,
 )
-from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.models import DpmWaveSourceRef, dpm_wave_source_ref_hash_payload
 from src.core.waves.campaign_page_validation import validate_page_count
 
 CampaignApprovalDecisionType = Literal["APPROVED", "REJECTED", "REQUIRES_REMEDIATION"]
@@ -206,7 +206,7 @@ def _build_decision(
         "decided_by": decided_by,
         "decision_reason": decision_reason,
         "correlation_id": correlation_id,
-        "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
+        "source_refs": [dpm_wave_source_ref_hash_payload(ref) for ref in source_refs],
     }
     content_hash = (
         "sha256:"

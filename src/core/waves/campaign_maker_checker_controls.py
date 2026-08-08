@@ -12,7 +12,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionMakerCheckerControl,
 )
-from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.models import DpmWaveSourceRef, dpm_wave_source_ref_hash_payload
 from src.core.waves.campaign_page_validation import validate_page_count
 
 CampaignMakerCheckerControlAction = Literal[
@@ -462,7 +462,7 @@ def _build_control(
         "control_outcome": control_outcome,
         "control_reason": control_reason,
         "correlation_id": correlation_id,
-        "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
+        "source_refs": [dpm_wave_source_ref_hash_payload(ref) for ref in source_refs],
     }
     content_hash = (
         "sha256:"
