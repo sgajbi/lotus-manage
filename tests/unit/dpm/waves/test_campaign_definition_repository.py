@@ -326,6 +326,9 @@ def test_campaign_definition_hash_preserves_source_owned_selection_basis_metadat
         source_id="holdings-asof-pb-sg-global-bal-001",
         selection_basis={
             "basis_type": "SOURCE_OWNED_CANDIDATE_SELECTION",
+            "source_system": "producer-system",
+            "source_type": "PRODUCER_SELECTION_METADATA",
+            "source_id": "producer-selection-001",
             "source_batch_fingerprint": None,
             "source_refs": [
                 {
@@ -353,6 +356,9 @@ def test_campaign_definition_hash_preserves_source_owned_selection_basis_metadat
 
     assert "source_batch_fingerprint" not in candidate_source_ref
     assert candidate_source_ref["selection_basis"]["source_batch_fingerprint"] is None
+    assert candidate_source_ref["selection_basis"]["source_system"] == "producer-system"
+    assert candidate_source_ref["selection_basis"]["source_type"] == "PRODUCER_SELECTION_METADATA"
+    assert candidate_source_ref["selection_basis"]["source_id"] == "producer-selection-001"
     assert candidate_source_ref["selection_basis"]["source_refs"] == [
         {
             "source_batch_fingerprint": None,

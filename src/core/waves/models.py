@@ -123,10 +123,6 @@ def normalize_dpm_wave_source_ref_collections_for_hash(payload: object) -> None:
     if not isinstance(payload, dict):
         return
 
-    if _is_dpm_wave_source_ref_payload(payload):
-        _normalize_dpm_wave_source_ref_for_hash(payload)
-        return
-
     _normalize_dpm_wave_source_ref_collection_for_hash(payload.get("source_refs"))
     for key, value in payload.items():
         if key == "source_refs":
