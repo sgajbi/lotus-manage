@@ -327,6 +327,12 @@ def test_campaign_definition_hash_preserves_source_owned_selection_basis_metadat
         selection_basis={
             "basis_type": "SOURCE_OWNED_CANDIDATE_SELECTION",
             "source_batch_fingerprint": None,
+            "source_refs": [
+                {
+                    "source_batch_fingerprint": None,
+                    "producer_field": "kept",
+                }
+            ],
         },
     )
     definition_with_metadata = DpmBulkReviewCampaignDefinition.model_validate(
@@ -347,6 +353,12 @@ def test_campaign_definition_hash_preserves_source_owned_selection_basis_metadat
 
     assert "source_batch_fingerprint" not in candidate_source_ref
     assert candidate_source_ref["selection_basis"]["source_batch_fingerprint"] is None
+    assert candidate_source_ref["selection_basis"]["source_refs"] == [
+        {
+            "source_batch_fingerprint": None,
+            "producer_field": "kept",
+        }
+    ]
 
 
 def test_campaign_launch_basis_hash_preserves_absent_source_batch_lineage() -> None:

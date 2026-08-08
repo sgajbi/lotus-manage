@@ -256,9 +256,12 @@ def build_wave_report_input(
         ),
         content_hash="",
     ).model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(
-        strip_keys(payload, exclude={"content_hash", "portfolio_memory_context"})
+    report_hash_payload = strip_keys(
+        payload,
+        exclude={"content_hash", "portfolio_memory_context"},
     )
+    normalize_dpm_wave_source_ref_collections_for_hash(report_hash_payload)
+    payload["content_hash"] = hash_canonical_payload(report_hash_payload)
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmWaveReportInput.model_validate(payload)
 

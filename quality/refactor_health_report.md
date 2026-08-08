@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-08-08T16:03:10+00:00`
+- Generated at: `2026-08-08T16:40:56+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `5ba2757c1235ce3e28c630afd44257327c91edf3`
+- Baseline source snapshot: `4638650e5544900f571303c4767c520f1f28f610`
 
-- Report source snapshot: `db3f6218+worktree`
+- Report source snapshot: `4638650e+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,8 +15,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 901 | 901 | +0 |
-| Total Python LOC | 204523 | 205328 | +805 |
-| Test functions | 2939 | 2953 | +14 |
+| Total Python LOC | 205328 | 205366 | +38 |
+| Test functions | 2953 | 2953 | +0 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -37,14 +37,14 @@
 
 | Rank | File | Lines |
 | --- | --- | --- |
-| 1 | tests/unit/dpm/api/test_waves_api.py | 7505 |
-| 2 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
-| 3 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
-| 4 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3283 |
+| 1 | tests/unit/dpm/api/test_waves_api.py | 7624 |
+| 2 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3591 |
+| 3 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
+| 4 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
 | 5 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
 | 6 | tests/unit/test_documentation_current_state.py | 2774 |
 | 7 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2689 |
-| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2665 |
+| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2670 |
 | 9 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
 | 10 | tests/unit/dpm/pm_quality/test_pm_operating_quality.py | 1996 |
 
@@ -53,7 +53,7 @@
 | Rank | File | Lines |
 | --- | --- | --- |
 | 1 | tests/unit/dpm/api/test_waves_api.py | 7624 |
-| 2 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3591 |
+| 2 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3603 |
 | 3 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
 | 4 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
 | 5 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
@@ -106,7 +106,7 @@
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
 | 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 107 | 396 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
-| 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 87 | 148 |
+| 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
 | 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 78 | 140 |
 | 9 | test_pm_operating_quality_openapi_contract_is_documented | tests/unit/api/test_pm_operating_quality_api.py | 73 | 142 |
