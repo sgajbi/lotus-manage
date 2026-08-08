@@ -21,6 +21,7 @@ from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveHandoffRef,
     DpmWaveSourceRef,
+    normalize_dpm_wave_source_ref_collections_for_hash,
 )
 
 WAVE_REPORT_INPUT_CONTRACT_VERSION = "1.0"
@@ -210,6 +211,7 @@ def build_wave_report_input(
             "lotus-manage only owns internal operations handoff evidence."
         )
     wave_payload = wave.model_dump(mode="json")
+    normalize_dpm_wave_source_ref_collections_for_hash(wave_payload)
     wave_content_hash = hash_canonical_payload(wave_payload)
     payload = DpmWaveReportInput(
         contract_version=WAVE_REPORT_INPUT_CONTRACT_VERSION,

@@ -154,6 +154,11 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["DpmPortfolioUniverseCandidate"]["producer_repository"] == "lotus-core"
     assert by_name["DpmPortfolioUniverseCandidate"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["DpmPortfolioUniverseCandidate"]["failure_posture"] == "fail_closed"
+    assert "content_hash" in by_name["DpmPortfolioUniverseCandidate"]["required_trust_metadata"]
+    assert (
+        "source_batch_fingerprint"
+        not in by_name["DpmPortfolioUniverseCandidate"]["required_trust_metadata"]
+    )
     assert (
         "relationship householding" in by_name["DpmPortfolioUniverseCandidate"]["business_purpose"]
     )

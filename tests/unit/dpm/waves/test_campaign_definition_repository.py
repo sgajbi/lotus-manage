@@ -31,6 +31,7 @@ from src.core.waves.campaign_definition_launch_execution import (
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
     build_bulk_review_campaign_definition_launch_command,
 )
+from src.core.waves.campaign_definition_launch_package import _launch_basis_hash
 from src.core.waves.campaign_definition_approval_decisions import (
     _append_approval_decision,
     _approval_decision_input,
@@ -41,15 +42,20 @@ from src.core.waves.campaign_definition_approval_decisions import (
     record_bulk_review_campaign_definition_approval_decision,
 )
 from src.core.waves.campaign_assignment_actions import (
+    _build_action,
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
 from src.core.waves.campaign_assignment_tasks import (
+    _build_task,
+    _build_transition,
+    _task_hash,
     build_bulk_review_campaign_definition_assignment_task_page,
     open_bulk_review_campaign_definition_assignment_task,
     transition_bulk_review_campaign_definition_assignment_task,
 )
 from src.core.waves.campaign_maker_checker_controls import (
+    _build_control,
     build_bulk_review_campaign_definition_maker_checker_control_page,
     record_bulk_review_campaign_definition_maker_checker_control,
 )
@@ -58,6 +64,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
     _apply_campaign_definition_content_hash,
+    _campaign_definition_hash_payload,
     _has_eligible_portfolio_type,
     _validate_campaign_definition_structure,
     _validate_lifecycle_fields_absent,
@@ -274,6 +281,307 @@ def test_campaign_definition_hash_preserves_legacy_empty_evidence_collections(
 
     assert getattr(reloaded, collection_field) == []
     assert bulk_review_campaign_definition_hash(reloaded) == definition.content_hash
+
+
+def test_campaign_definition_hash_preserves_absent_source_batch_lineage() -> None:
+    definition = _definition()
+    hash_payload = _campaign_definition_hash_payload(definition, include_hash=False)
+    candidate_source_ref = hash_payload["candidates"][0]["source_refs"][0]
+
+    assert "source_batch_fingerprint" not in candidate_source_ref
+    assert bulk_review_campaign_definition_hash(definition) == definition.content_hash
+
+    source_ref_with_batch = DpmWaveSourceRef(
+        source_system="lotus-core",
+        source_type="HoldingsAsOf",
+        source_id="holdings-asof-pb-sg-global-bal-001",
+        source_batch_fingerprint="sha256:holdings-source-batch",
+    )
+    definition_with_batch = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "content_hash": "",
+            "candidates": [
+                {
+                    **definition.candidates[0].model_dump(mode="python"),
+                    "source_refs": [source_ref_with_batch],
+                }
+            ],
+        }
+    )
+    batch_hash_payload = _campaign_definition_hash_payload(
+        definition_with_batch, include_hash=False
+    )
+    batch_source_ref = batch_hash_payload["candidates"][0]["source_refs"][0]
+
+    assert batch_source_ref["source_batch_fingerprint"] == "sha256:holdings-source-batch"
+    assert bulk_review_campaign_definition_hash(definition_with_batch) != definition.content_hash
+
+
+def test_campaign_definition_hash_preserves_source_owned_selection_basis_metadata() -> None:
+    definition = _definition()
+    source_ref_with_source_owned_metadata = DpmWaveSourceRef(
+        source_system="lotus-core",
+        source_type="HoldingsAsOf",
+        source_id="holdings-asof-pb-sg-global-bal-001",
+        selection_basis={
+            "basis_type": "SOURCE_OWNED_CANDIDATE_SELECTION",
+            "source_batch_fingerprint": None,
+        },
+    )
+    definition_with_metadata = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "content_hash": "",
+            "candidates": [
+                {
+                    **definition.candidates[0].model_dump(mode="python"),
+                    "source_refs": [source_ref_with_source_owned_metadata],
+                }
+            ],
+        }
+    )
+
+    hash_payload = _campaign_definition_hash_payload(definition_with_metadata, include_hash=False)
+    candidate_source_ref = hash_payload["candidates"][0]["source_refs"][0]
+
+    assert "source_batch_fingerprint" not in candidate_source_ref
+    assert candidate_source_ref["selection_basis"]["source_batch_fingerprint"] is None
+
+
+def test_campaign_launch_basis_hash_preserves_absent_source_batch_lineage() -> None:
+    definition = _definition()
+    source_ref = definition.candidates[0].source_refs[0]
+    explicit_none_ref = DpmWaveSourceRef.model_validate(source_ref.model_dump(mode="json"))
+    explicit_none_definition = definition.model_copy(
+        deep=True,
+        update={
+            "candidates": [
+                definition.candidates[0].model_copy(
+                    deep=True,
+                    update={"source_refs": [explicit_none_ref]},
+                )
+            ]
+        },
+    )
+    batch_ref = source_ref.model_copy(
+        update={"source_batch_fingerprint": "sha256:holdings-source-batch"}
+    )
+    batch_definition = definition.model_copy(
+        deep=True,
+        update={
+            "candidates": [
+                definition.candidates[0].model_copy(
+                    deep=True,
+                    update={"source_refs": [batch_ref]},
+                )
+            ]
+        },
+    )
+
+    assert _launch_basis_hash(definition) == _launch_basis_hash(explicit_none_definition)
+    assert _launch_basis_hash(batch_definition) != _launch_basis_hash(definition)
+
+
+def test_campaign_workflow_evidence_hashes_preserve_absent_source_batch_lineage() -> None:
+    definition = _definition()
+    source_ref = DpmWaveSourceRef(
+        source_system="lotus-core",
+        source_type="DpmPortfolioUniverseCandidate",
+        source_id="dpm-universe-page-001",
+        content_hash="sha256:" + ("1" * 64),
+    )
+    explicit_none_ref = DpmWaveSourceRef.model_validate(source_ref.model_dump(mode="json"))
+    batch_ref = source_ref.model_copy(
+        update={"source_batch_fingerprint": "sha256:dpm-universe-source-batch"}
+    )
+
+    base_decision = _build_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+        source_refs=[source_ref],
+    )
+    explicit_none_decision = _build_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+        source_refs=[explicit_none_ref],
+    )
+    batch_decision = _build_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+        source_refs=[batch_ref],
+    )
+
+    assert explicit_none_decision.content_hash == base_decision.content_hash
+    assert batch_decision.content_hash != base_decision.content_hash
+
+    base_action = _build_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="campaign_owner",
+        action_reason="Assign portfolios for review.",
+        assigned_actor_ids=["rm_sg_001"],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+        source_refs=[source_ref],
+    )
+    explicit_none_action = _build_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="campaign_owner",
+        action_reason="Assign portfolios for review.",
+        assigned_actor_ids=["rm_sg_001"],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+        source_refs=[explicit_none_ref],
+    )
+    batch_action = _build_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="campaign_owner",
+        action_reason="Assign portfolios for review.",
+        assigned_actor_ids=["rm_sg_001"],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+        source_refs=[batch_ref],
+    )
+
+    assert explicit_none_action.content_hash == base_action.content_hash
+    assert batch_action.content_hash != base_action.content_hash
+
+    base_transition = _build_transition(
+        definition=definition,
+        task_id="brc_assignment_task_001",
+        transition_type="OPENED",
+        transition_ref="BRC-TASK-001:opened",
+        transitioned_by="campaign_owner",
+        from_status=None,
+        to_status="OPEN",
+        transition_reason="Open review task.",
+        assigned_actor_ids=["rm_sg_001"],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        due_at=None,
+        correlation_id="corr-campaign-assignment-task-001",
+        source_refs=[source_ref],
+    )
+    explicit_none_transition = _build_transition(
+        definition=definition,
+        task_id="brc_assignment_task_001",
+        transition_type="OPENED",
+        transition_ref="BRC-TASK-001:opened",
+        transitioned_by="campaign_owner",
+        from_status=None,
+        to_status="OPEN",
+        transition_reason="Open review task.",
+        assigned_actor_ids=["rm_sg_001"],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        due_at=None,
+        correlation_id="corr-campaign-assignment-task-001",
+        source_refs=[explicit_none_ref],
+    )
+    batch_transition = _build_transition(
+        definition=definition,
+        task_id="brc_assignment_task_001",
+        transition_type="OPENED",
+        transition_ref="BRC-TASK-001:opened",
+        transitioned_by="campaign_owner",
+        from_status=None,
+        to_status="OPEN",
+        transition_reason="Open review task.",
+        assigned_actor_ids=["rm_sg_001"],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        due_at=None,
+        correlation_id="corr-campaign-assignment-task-001",
+        source_refs=[batch_ref],
+    )
+
+    assert explicit_none_transition.content_hash == base_transition.content_hash
+    assert batch_transition.content_hash != base_transition.content_hash
+
+    base_task = _build_task(
+        definition=definition,
+        task_ref="BRC-TASK-001",
+        task_type="ASSIGNMENT",
+        opened_by="campaign_owner",
+        task_reason="Open review task.",
+        assigned_actor_ids=["rm_sg_001"],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        due_at=None,
+        correlation_id="corr-campaign-assignment-task-001",
+        source_refs=[source_ref],
+    )
+    explicit_none_task = base_task.model_copy(
+        update={"source_refs": [explicit_none_ref], "content_hash": ""}
+    )
+    batch_task = base_task.model_copy(update={"source_refs": [batch_ref], "content_hash": ""})
+
+    assert _task_hash(explicit_none_task) == base_task.content_hash
+    assert _task_hash(batch_task) != base_task.content_hash
+
+    base_control = _build_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-001",
+        recorded_by="campaign_owner",
+        submitter_actor_id="campaign_owner",
+        reviewer_actor_id=None,
+        required_reviewer_role="cio_approver",
+        control_outcome="PENDING",
+        control_reason="Submit campaign for maker-checker review.",
+        correlation_id="corr-campaign-maker-checker-001",
+        source_refs=[source_ref],
+    )
+    explicit_none_control = _build_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-001",
+        recorded_by="campaign_owner",
+        submitter_actor_id="campaign_owner",
+        reviewer_actor_id=None,
+        required_reviewer_role="cio_approver",
+        control_outcome="PENDING",
+        control_reason="Submit campaign for maker-checker review.",
+        correlation_id="corr-campaign-maker-checker-001",
+        source_refs=[explicit_none_ref],
+    )
+    batch_control = _build_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-001",
+        recorded_by="campaign_owner",
+        submitter_actor_id="campaign_owner",
+        reviewer_actor_id=None,
+        required_reviewer_role="cio_approver",
+        control_outcome="PENDING",
+        control_reason="Submit campaign for maker-checker review.",
+        correlation_id="corr-campaign-maker-checker-001",
+        source_refs=[batch_ref],
+    )
+
+    assert explicit_none_control.content_hash == base_control.content_hash
+    assert batch_control.content_hash != base_control.content_hash
 
 
 def test_campaign_definition_retired_and_superseded_validation_edges() -> None:

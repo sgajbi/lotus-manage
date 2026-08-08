@@ -262,6 +262,7 @@ def test_source_analytics_from_alternative_uses_enrichment_fallbacks() -> None:
                 "source_version": None,
                 "supportability_state": "DEGRADED",
                 "content_hash": None,
+                "source_batch_fingerprint": None,
                 "selection_basis": None,
             }
         ],

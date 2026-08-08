@@ -82,6 +82,11 @@ from src.core.waves import (
 
 MANDATE_ID = "MANDATE_PB_SG_GLOBAL_BAL_001"
 PORTFOLIO_ID = "PB_SG_GLOBAL_BAL_001"
+DPM_PORTFOLIO_UNIVERSE_CONTENT_HASH = "sha256:" + ("1" * 64)
+DPM_PORTFOLIO_UNIVERSE_CURRENT_CONTENT_HASH = "sha256:" + ("2" * 64)
+DPM_PORTFOLIO_UNIVERSE_CONFLICT_HASH = "sha256:" + ("3" * 64)
+DPM_PORTFOLIO_UNIVERSE_PAGE_1_HASH = "sha256:" + ("4" * 64)
+DPM_PORTFOLIO_UNIVERSE_PAGE_2_HASH = "sha256:" + ("5" * 64)
 
 
 def _error_reason_code(response: Any) -> str:
@@ -484,7 +489,9 @@ def _dpm_portfolio_universe_candidate_payload(
     supportability_state: str = "READY",
     page_truncated: bool = False,
     next_page_token: str | None = None,
-    source_batch_fingerprint: str = "sha256:dpm-portfolio-universe",
+    source_batch_fingerprint: str | None = None,
+    content_hash: str | None = DPM_PORTFOLIO_UNIVERSE_CONTENT_HASH,
+    source_digest: str | None = DPM_PORTFOLIO_UNIVERSE_CONTENT_HASH,
     snapshot_id: str = "dpm_portfolio_universe:sha256:dpm-portfolio-universe",
     candidates: list[dict[str, object]] | None = None,
 ) -> dict[str, object]:
@@ -563,6 +570,8 @@ def _dpm_portfolio_universe_candidate_payload(
         "data_quality_status": "ACCEPTED",
         "latest_evidence_timestamp": "2026-05-10T09:00:00Z",
         "source_batch_fingerprint": source_batch_fingerprint,
+        "content_hash": content_hash,
+        "source_digest": source_digest,
         "snapshot_id": snapshot_id,
     }
 
@@ -1838,6 +1847,11 @@ def test_bulk_review_campaign_preview_can_resolve_core_portfolio_universe_candid
         "DPM_PORTFOLIO_UNIVERSE_CANDIDATE",
         "MANDATE_DIGITAL_TWIN",
     }
+    page_ref = next(
+        ref for ref in item["source_refs"] if ref["source_type"] == "DpmPortfolioUniverseCandidate"
+    )
+    assert page_ref["content_hash"] == DPM_PORTFOLIO_UNIVERSE_CONTENT_HASH
+    assert page_ref["source_batch_fingerprint"] is None
     candidate_ref = next(
         ref
         for ref in item["source_refs"]
@@ -1906,8 +1920,17 @@ def test_bulk_review_campaign_preview_exhausts_core_portfolio_universe_candidate
             _dpm_portfolio_universe_candidate_payload(
                 page_truncated=True,
                 next_page_token="page-2",
+                content_hash=DPM_PORTFOLIO_UNIVERSE_PAGE_1_HASH,
+                source_digest=DPM_PORTFOLIO_UNIVERSE_PAGE_1_HASH,
+                snapshot_id="dpm_portfolio_universe:page-1",
             ),
-            _dpm_portfolio_universe_candidate_payload(candidates=[second_candidate]),
+            _dpm_portfolio_universe_candidate_payload(
+                candidates=[second_candidate],
+                content_hash=DPM_PORTFOLIO_UNIVERSE_PAGE_2_HASH,
+                source_digest=DPM_PORTFOLIO_UNIVERSE_PAGE_2_HASH,
+                source_batch_fingerprint="sha256:dpm-portfolio-universe-page-2-batch",
+                snapshot_id="dpm_portfolio_universe:page-2",
+            ),
         ]
     )
     monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
@@ -1929,6 +1952,27 @@ def test_bulk_review_campaign_preview_exhausts_core_portfolio_universe_candidate
     assert all(
         "DpmPortfolioUniverseCandidate" in {ref["source_type"] for ref in item["source_refs"]}
         for item in payload["wave"]["items"]
+    )
+    page_refs_by_portfolio = {
+        item["portfolio_id"]: next(
+            ref
+            for ref in item["source_refs"]
+            if ref["source_type"] == "DpmPortfolioUniverseCandidate"
+        )
+        for item in payload["wave"]["items"]
+    }
+    assert page_refs_by_portfolio[PORTFOLIO_ID]["source_id"] == "dpm_portfolio_universe:page-1"
+    assert page_refs_by_portfolio[PORTFOLIO_ID]["content_hash"] == (
+        DPM_PORTFOLIO_UNIVERSE_PAGE_1_HASH
+    )
+    assert page_refs_by_portfolio[second_portfolio_id]["source_id"] == (
+        "dpm_portfolio_universe:page-2"
+    )
+    assert page_refs_by_portfolio[second_portfolio_id]["content_hash"] == (
+        DPM_PORTFOLIO_UNIVERSE_PAGE_2_HASH
+    )
+    assert page_refs_by_portfolio[second_portfolio_id]["source_batch_fingerprint"] == (
+        "sha256:dpm-portfolio-universe-page-2-batch"
     )
 
 
@@ -1953,7 +1997,82 @@ def test_bulk_review_campaign_create_persists_core_portfolio_universe_candidates
     assert payload["durable"] is True
     assert payload["wave"]["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
-    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+    persisted_wave = wave_repository.get_wave(wave_id=payload["wave"]["wave_id"])
+    assert persisted_wave is not None
+    page_ref = next(
+        ref
+        for ref in persisted_wave.items[0].source_refs
+        if ref.source_type == "DpmPortfolioUniverseCandidate"
+    )
+    assert page_ref.content_hash == DPM_PORTFOLIO_UNIVERSE_CONTENT_HASH
+    assert page_ref.source_batch_fingerprint is None
+
+
+def test_bulk_review_campaign_preview_preserves_core_universe_batch_lineage(
+    monkeypatch,
+) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    resolver = _DpmPortfolioUniverseResolver(
+        _dpm_portfolio_universe_candidate_payload(
+            content_hash=DPM_PORTFOLIO_UNIVERSE_CURRENT_CONTENT_HASH,
+            source_digest=DPM_PORTFOLIO_UNIVERSE_CURRENT_CONTENT_HASH,
+            source_batch_fingerprint="sha256:dpm-portfolio-universe-source-batch",
+        )
+    )
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(mandate_repository, InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_core_universe_bulk_review_campaign_request(),
+        )
+
+    assert response.status_code == 200
+    item = response.json()["wave"]["items"][0]
+    page_ref = next(
+        ref for ref in item["source_refs"] if ref["source_type"] == "DpmPortfolioUniverseCandidate"
+    )
+    assert page_ref["content_hash"] == DPM_PORTFOLIO_UNIVERSE_CURRENT_CONTENT_HASH
+    assert page_ref["source_batch_fingerprint"] == "sha256:dpm-portfolio-universe-source-batch"
+
+
+@pytest.mark.parametrize(
+    ("content_hash", "source_digest", "expected_code"),
+    [
+        (None, None, "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_REQUIRED"),
+        (
+            DPM_PORTFOLIO_UNIVERSE_CONTENT_HASH,
+            DPM_PORTFOLIO_UNIVERSE_CONFLICT_HASH,
+            "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_IDENTITY_CONFLICT",
+        ),
+        ("malformed-content-identity", None, "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID"),
+        ("sha256:x", None, "DPM_CORE_PORTFOLIO_UNIVERSE_CONTENT_HASH_INVALID"),
+    ],
+)
+def test_bulk_review_campaign_preview_fails_closed_for_invalid_core_universe_content_identity(
+    monkeypatch,
+    content_hash: str | None,
+    source_digest: str | None,
+    expected_code: str,
+) -> None:
+    resolver = _DpmPortfolioUniverseResolver(
+        _dpm_portfolio_universe_candidate_payload(
+            content_hash=content_hash,
+            source_digest=source_digest,
+            source_batch_fingerprint="sha256:dpm-portfolio-universe-source-batch",
+        )
+    )
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_core_universe_bulk_review_campaign_request(),
+        )
+
+    assert response.status_code == 424
+    assert _error_reason_code(response) == expected_code
 
 
 def test_bulk_review_campaign_preview_fails_closed_for_duplicate_core_universe_candidates(

@@ -13,7 +13,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionAssignmentTask,
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
 )
-from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.models import DpmWaveSourceRef, dpm_wave_source_ref_hash_payload
 from src.core.waves.campaign_page_validation import (
     validate_count_map_covers,
     validate_page_count,
@@ -742,7 +742,7 @@ def _build_transition(
         "sla_posture": sla_posture,
         "due_at": due_at.isoformat() if due_at else None,
         "correlation_id": correlation_id,
-        "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
+        "source_refs": [dpm_wave_source_ref_hash_payload(ref) for ref in source_refs],
     }
     content_hash = (
         "sha256:"
@@ -777,8 +777,13 @@ def _task_hash(task: DpmBulkReviewCampaignDefinitionAssignmentTask) -> str:
     payload = task.model_dump(mode="json")
     payload["content_hash"] = ""
     payload["opened_at"] = ""
+    payload["source_refs"] = [dpm_wave_source_ref_hash_payload(ref) for ref in task.source_refs]
     for transition in payload["transitions"]:
         transition["transitioned_at"] = ""
+    for transition, transition_model in zip(payload["transitions"], task.transitions, strict=True):
+        transition["source_refs"] = [
+            dpm_wave_source_ref_hash_payload(ref) for ref in transition_model.source_refs
+        ]
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -903,4 +908,4 @@ def _transition_due_at_replay_match(
 
 
 def _source_ref_payloads(source_refs: list[DpmWaveSourceRef]) -> list[dict[str, object]]:
-    return [ref.model_dump(mode="json") for ref in source_refs]
+    return [dpm_wave_source_ref_hash_payload(ref) for ref in source_refs]

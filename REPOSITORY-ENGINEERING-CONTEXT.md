@@ -1157,6 +1157,12 @@ Most relevant current governance:
     require complete open-lot coverage from `PortfolioTaxLotWindow:v1` and lot-cost FX where
     needed; missing lots, partial lots, closed/depleted-only lots, or missing lot-cost FX must block
     tax-aware output rather than falling back to a normal non-tax-aware sell.
+15. Core `DpmPortfolioUniverseCandidate:v1` campaign-wave sourcing must consume the producer's
+    canonical `content_hash`/`source_digest` identity for page-level campaign source refs.
+    `source_batch_fingerprint` is optional upstream source-batch lineage and must not be required or
+    silently reused as the canonical content hash when Core returns a valid no-batch response. Manage
+    must fail closed on missing, blank, malformed, or conflicting content identity before publishing
+    Core-sourced bulk-review campaign membership as READY.
 
 ## Context Maintenance Rule
 

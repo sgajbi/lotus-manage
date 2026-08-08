@@ -13,7 +13,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionAssignmentAction,
 )
-from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.models import DpmWaveSourceRef, dpm_wave_source_ref_hash_payload
 from src.core.waves.campaign_page_validation import validate_page_count
 
 CampaignAssignmentActionType = Literal[
@@ -292,7 +292,7 @@ def _build_action(
         "escalation_tier": escalation_tier,
         "sla_posture": sla_posture,
         "correlation_id": correlation_id,
-        "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
+        "source_refs": [dpm_wave_source_ref_hash_payload(ref) for ref in source_refs],
     }
     content_hash = (
         "sha256:"

@@ -5,10 +5,12 @@ import pytest
 from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_report_input import build_report_input_for_wave
 from src.api.services.wave_aggregate_metrics import aggregate_wave_items
+from src.core.common.canonical import hash_canonical_payload
 from src.core.waves import (
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
     DpmWaveHandoffRef,
+    DpmWaveSourceRef,
     DpmWaveTrigger,
 )
 
@@ -25,7 +27,11 @@ def _item() -> DpmRebalanceWaveItem:
     )
 
 
-def _wave(*, handoff_refs: list[DpmWaveHandoffRef] | None = None) -> DpmRebalanceWave:
+def _wave(
+    *,
+    handoff_refs: list[DpmWaveHandoffRef] | None = None,
+    trigger_source_refs: list[DpmWaveSourceRef] | None = None,
+) -> DpmRebalanceWave:
     items = [_item()]
     return DpmRebalanceWave(
         wave_id="dwv_report_input",
@@ -34,6 +40,7 @@ def _wave(*, handoff_refs: list[DpmWaveHandoffRef] | None = None) -> DpmRebalanc
             trigger_type="EXPLICIT_PORTFOLIO_LIST",
             trigger_id="manual-report",
             rationale="Build report input for a governed wave.",
+            source_refs=trigger_source_refs or [],
         ),
         as_of_date="2026-05-03",
         created_at=datetime(2026, 5, 3, tzinfo=timezone.utc),
@@ -61,6 +68,39 @@ def test_build_report_input_for_wave_assembles_supportability_and_proof_pack_pos
         == "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY"
     )
     assert report_input.portfolio_memory_context is None
+
+
+def test_build_report_input_preserves_legacy_wave_content_hash_for_absent_batch_lineage() -> None:
+    source_ref = DpmWaveSourceRef(
+        source_system="lotus-core",
+        source_type="DpmPortfolioUniverseCandidate",
+        source_id="candidate-page-001",
+        content_hash="sha256:" + ("1" * 64),
+    )
+    wave = _wave(trigger_source_refs=[source_ref])
+    legacy_wave_payload = wave.model_dump(mode="json")
+    legacy_wave_payload["trigger"]["source_refs"][0].pop("source_batch_fingerprint")
+
+    report_input = build_report_input_for_wave(
+        wave=wave,
+        wave_repository=object(),  # type: ignore[arg-type]
+    )
+
+    assert report_input.wave_content_hash == hash_canonical_payload(legacy_wave_payload)
+
+    batch_wave = _wave(
+        trigger_source_refs=[
+            source_ref.model_copy(
+                update={"source_batch_fingerprint": "sha256:source-batch-20260503"}
+            )
+        ]
+    )
+    batch_report_input = build_report_input_for_wave(
+        wave=batch_wave,
+        wave_repository=object(),  # type: ignore[arg-type]
+    )
+
+    assert batch_report_input.wave_content_hash != report_input.wave_content_hash
 
 
 def test_build_report_input_for_wave_maps_external_execution_boundary_error() -> None:

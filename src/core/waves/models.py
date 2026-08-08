@@ -78,6 +78,14 @@ class DpmWaveSourceRef(BaseModel):
         description="Canonical content hash when available.",
         examples=["sha256:manifest-example"],
     )
+    source_batch_fingerprint: str | None = Field(
+        default=None,
+        description=(
+            "Optional upstream source-batch lineage fingerprint. This must remain distinct from "
+            "content_hash because not every source product has persisted batch lineage."
+        ),
+        examples=["sha256:source-batch-example"],
+    )
     selection_basis: dict[str, object] | None = Field(
         default=None,
         description=(
@@ -91,6 +99,42 @@ class DpmWaveSourceRef(BaseModel):
             }
         ],
     )
+
+
+def dpm_wave_source_ref_hash_payload(ref: DpmWaveSourceRef) -> dict[str, object]:
+    payload = ref.model_dump(mode="json")
+    if payload.get("source_batch_fingerprint") is None:
+        payload.pop("source_batch_fingerprint", None)
+    return payload
+
+
+def normalize_dpm_wave_source_ref_collections_for_hash(payload: object) -> None:
+    """Preserve legacy hashes by omitting absent batch lineage only on source refs.
+
+    Source-owned selection metadata is intentionally unrestricted. Do not recursively remove
+    ``source_batch_fingerprint`` from arbitrary nested dictionaries because the same field name can
+    be legitimate producer metadata inside ``selection_basis``.
+    """
+    if isinstance(payload, list):
+        for item in payload:
+            normalize_dpm_wave_source_ref_collections_for_hash(item)
+        return
+
+    if not isinstance(payload, dict):
+        return
+
+    _normalize_dpm_wave_source_ref_collection_for_hash(payload.get("source_refs"))
+    for value in payload.values():
+        normalize_dpm_wave_source_ref_collections_for_hash(value)
+
+
+def _normalize_dpm_wave_source_ref_collection_for_hash(source_refs: object) -> None:
+    if not isinstance(source_refs, list):
+        return
+
+    for source_ref in source_refs:
+        if isinstance(source_ref, dict) and source_ref.get("source_batch_fingerprint") is None:
+            source_ref.pop("source_batch_fingerprint", None)
 
 
 class DpmWaveTrigger(BaseModel):
