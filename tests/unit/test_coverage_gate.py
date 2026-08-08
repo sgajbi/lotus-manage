@@ -4,7 +4,8 @@ from pathlib import Path
 
 from pytest import CaptureFixture
 
-from scripts.coverage_gate import DEFAULT_COVERAGE_FILES, enforce_coverage_gate
+from scripts.coverage_gate import DEFAULT_COVERAGE_FILES, REPORT_PRECISION, enforce_coverage_gate
+from coverage.results import should_fail_under
 
 
 def test_coverage_gate_reports_missing_default_files(
@@ -32,3 +33,11 @@ def test_coverage_gate_reports_missing_custom_artifact_files(
     assert (tmp_path / ".coverage.unit").as_posix() in output
     assert (tmp_path / ".coverage.integration").as_posix() in output
     assert (tmp_path / ".coverage.e2e").as_posix() not in output
+
+
+def test_coverage_gate_uses_report_precision_for_threshold_boundary() -> None:
+    assert not should_fail_under(98.999, 99.0, REPORT_PRECISION)
+
+
+def test_coverage_gate_still_fails_materially_below_threshold() -> None:
+    assert should_fail_under(98.994, 99.0, REPORT_PRECISION)

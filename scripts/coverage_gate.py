@@ -6,9 +6,11 @@ import sys
 from pathlib import Path
 
 import coverage
+from coverage.results import should_fail_under
 
 DEFAULT_COVERAGE_FILES = (".coverage.unit", ".coverage.integration", ".coverage.e2e")
 DEFAULT_FAIL_UNDER = 99.0
+REPORT_PRECISION = 2
 
 
 def _parse_args() -> argparse.Namespace:
@@ -57,7 +59,7 @@ def enforce_coverage_gate(
     cov.combine([path.as_posix() for path in files])
     cov.save()
     total = cov.report()
-    if total < fail_under:
+    if should_fail_under(total, fail_under, REPORT_PRECISION):
         print(f"Coverage gate failed: {total:.2f} < {fail_under:.2f}")
         return 1
     print(f"Coverage gate passed: {total:.2f}")
