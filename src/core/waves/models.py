@@ -123,8 +123,14 @@ def normalize_dpm_wave_source_ref_collections_for_hash(payload: object) -> None:
     if not isinstance(payload, dict):
         return
 
+    if _is_dpm_wave_source_ref_payload(payload):
+        _normalize_dpm_wave_source_ref_for_hash(payload)
+        return
+
     _normalize_dpm_wave_source_ref_collection_for_hash(payload.get("source_refs"))
-    for value in payload.values():
+    for key, value in payload.items():
+        if key == "source_refs":
+            continue
         normalize_dpm_wave_source_ref_collections_for_hash(value)
 
 
@@ -133,8 +139,17 @@ def _normalize_dpm_wave_source_ref_collection_for_hash(source_refs: object) -> N
         return
 
     for source_ref in source_refs:
-        if isinstance(source_ref, dict) and source_ref.get("source_batch_fingerprint") is None:
-            source_ref.pop("source_batch_fingerprint", None)
+        if isinstance(source_ref, dict) and _is_dpm_wave_source_ref_payload(source_ref):
+            _normalize_dpm_wave_source_ref_for_hash(source_ref)
+
+
+def _normalize_dpm_wave_source_ref_for_hash(source_ref: dict[str, object]) -> None:
+    if source_ref.get("source_batch_fingerprint") is None:
+        source_ref.pop("source_batch_fingerprint", None)
+
+
+def _is_dpm_wave_source_ref_payload(payload: dict[str, object]) -> bool:
+    return all(key in payload for key in ("source_system", "source_type", "source_id"))
 
 
 class DpmWaveTrigger(BaseModel):

@@ -5,7 +5,7 @@ import pytest
 from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_report_input import build_report_input_for_wave
 from src.api.services.wave_aggregate_metrics import aggregate_wave_items
-from src.core.common.canonical import hash_canonical_payload
+from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.waves import (
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
@@ -87,6 +87,13 @@ def test_build_report_input_preserves_legacy_wave_content_hash_for_absent_batch_
     )
 
     assert report_input.wave_content_hash == hash_canonical_payload(legacy_wave_payload)
+    legacy_report_payload = report_input.model_dump(mode="json")
+    legacy_report_payload["evidence_ref"]["content_hash"] = None
+    legacy_report_payload["source_refs"][0].pop("source_batch_fingerprint")
+
+    assert report_input.content_hash == hash_canonical_payload(
+        strip_keys(legacy_report_payload, exclude={"content_hash", "portfolio_memory_context"})
+    )
 
     batch_wave = _wave(
         trigger_source_refs=[
@@ -101,6 +108,7 @@ def test_build_report_input_preserves_legacy_wave_content_hash_for_absent_batch_
     )
 
     assert batch_report_input.wave_content_hash != report_input.wave_content_hash
+    assert batch_report_input.content_hash != report_input.content_hash
 
 
 def test_build_report_input_for_wave_maps_external_execution_boundary_error() -> None:
