@@ -1103,6 +1103,13 @@ Important validation expectations:
     uses `LOTUS_AUTOMERGE_TOKEN`, queues `gh pr merge --auto --rebase --delete-branch`, skips
     cleanly with a warning when the token is absent, and is protected by `make workflow-policy-gate`.
     The helper must not authenticate with `GITHUB_TOKEN` or queue merge commits.
+11. Exact-main releasability follows the governed merged-PR dispatcher posture:
+    `.github/workflows/merged-pr-main-releasability.yml` listens for merged `main` pull requests
+    and dispatches `.github/workflows/main-releasability.yml` against `main`. The main
+    releasability workflow keeps manual `workflow_dispatch` support but must not also carry a
+    direct `push` trigger, because that creates duplicate automatic proof runs for the same merged
+    SHA. `make workflow-policy-gate` enforces both the dispatcher contract and the duplicate-trigger
+    prohibition.
 
 ## Standards And RFCs That Govern This Repository
 

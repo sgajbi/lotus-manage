@@ -21,6 +21,7 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
     "feature-lane.yml": {"contents": "read"},
     "pr-merge-gate.yml": {"contents": "read"},
     "main-releasability.yml": {"contents": "read"},
+    "merged-pr-main-releasability.yml": {"actions": "write", "contents": "read"},
     "quality-baseline.yml": {"contents": "read"},
     "demo-certification.yml": {"contents": "read"},
     "pr-auto-merge.yml": {"contents": "read"},
@@ -282,6 +283,51 @@ def auto_merge_workflow_violations(workflow_path: Path) -> list[str]:
     return violations
 
 
+def merged_pr_main_releasability_dispatch_violations(
+    workflow_dir: Path = WORKFLOW_DIR,
+) -> list[str]:
+    main_releasability = workflow_dir / "main-releasability.yml"
+    dispatcher = workflow_dir / "merged-pr-main-releasability.yml"
+    violations: list[str] = []
+
+    if not dispatcher.exists():
+        violations.append(
+            f"{dispatcher.as_posix()}: merged PR dispatcher is required so main releasability "
+            "runs for the exact post-merge main SHA"
+        )
+    else:
+        dispatcher_text = dispatcher.read_text(encoding="utf-8")
+        required_tokens = {
+            "pull_request_target:": "dispatcher must run from pull_request_target close events",
+            "types: [closed]": "dispatcher must be limited to closed pull request events",
+            "github.event.pull_request.merged == true": "dispatcher must require a merged PR",
+            "github.event.pull_request.base.ref == 'main'": "dispatcher must target main merges only",
+            "gh workflow run main-releasability.yml": (
+                "dispatcher must start the governed main releasability workflow"
+            ),
+            "--ref main": "dispatcher must dispatch against main",
+        }
+        for token, reason in required_tokens.items():
+            if token not in dispatcher_text:
+                violations.append(f"{dispatcher.as_posix()}: {reason}")
+
+    if main_releasability.exists():
+        main_text = main_releasability.read_text(encoding="utf-8")
+        trigger_section = main_text.split("\nconcurrency:", maxsplit=1)[0]
+        if "workflow_dispatch:" not in trigger_section:
+            violations.append(
+                f"{main_releasability.as_posix()}: main releasability must keep manual "
+                "workflow_dispatch support"
+            )
+        if "push:" in trigger_section:
+            violations.append(
+                f"{main_releasability.as_posix()}: direct push trigger must not coexist with "
+                "merged-pr-main-releasability.yml because it creates duplicate automatic "
+                "mainline proof runs"
+            )
+    return violations
+
+
 def pr_template_policy_violations(template_path: Path = PR_TEMPLATE_PATH) -> list[str]:
     if not template_path.exists():
         return [f"{template_path.as_posix()}: PR template is missing"]
@@ -308,6 +354,7 @@ def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
         violations.extend(coverage_gate_violations(workflow_path))
         violations.extend(docker_image_evidence_violations(workflow_path))
         violations.extend(auto_merge_workflow_violations(workflow_path))
+    violations.extend(merged_pr_main_releasability_dispatch_violations(workflow_dir))
     violations.extend(pr_template_policy_violations())
     return violations
 
