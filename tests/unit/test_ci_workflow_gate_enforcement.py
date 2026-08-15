@@ -8,6 +8,7 @@ from scripts.workflow_policy_gate import (
     coverage_gate_violations,
     docker_image_evidence_violations,
     evaluate_workflow_policy,
+    merged_pr_main_releasability_dispatch_violations,
     permission_violations,
     pr_template_policy_violations,
     quality_report_gate_violations,
@@ -28,6 +29,8 @@ ARTIFACT_WORKFLOWS = [
     Path(".github/workflows/quality-baseline.yml"),
     Path(".github/workflows/demo-certification.yml"),
 ]
+
+MERGED_PR_DISPATCHER = Path(".github/workflows/merged-pr-main-releasability.yml")
 
 QUALITY_GATE_NAMES = [
     "Architecture Gate",
@@ -270,6 +273,65 @@ def test_pr_auto_merge_uses_governed_rebase_actor() -> None:
     assert "timeout-minutes: 10" in workflow_text
     assert "github.token" not in workflow_text
     assert "--auto --merge" not in workflow_text
+
+
+def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
+    dispatcher_text = MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
+    main_text = Path(".github/workflows/main-releasability.yml").read_text(encoding="utf-8")
+    main_trigger_section = main_text.split("\nconcurrency:", maxsplit=1)[0]
+
+    assert merged_pr_main_releasability_dispatch_violations() == []
+    assert "pull_request_target:" in dispatcher_text
+    assert "types: [closed]" in dispatcher_text
+    assert "github.event.pull_request.merged == true" in dispatcher_text
+    assert "github.event.pull_request.base.ref == 'main'" in dispatcher_text
+    assert "gh workflow run main-releasability.yml" in dispatcher_text
+    assert "--ref main" in dispatcher_text
+    assert "workflow_dispatch:" in main_trigger_section
+    assert "push:" not in main_trigger_section
+
+
+def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  pull_request_target:",
+                "    types: [closed]",
+                "jobs:",
+                "  dispatch:",
+                "    if: >",
+                "      github.event.pull_request.merged == true &&",
+                "      github.event.pull_request.base.ref == 'main'",
+                "    steps:",
+                "      - run: gh workflow run main-releasability.yml --ref main",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (workflow_dir / "main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  push:",
+                '    branches: ["main"]',
+                "  workflow_dispatch:",
+                "concurrency:",
+                "  group: test",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert (
+        f"{(workflow_dir / 'main-releasability.yml').as_posix()}: direct push trigger must not "
+        "coexist with merged-pr-main-releasability.yml because it creates duplicate automatic "
+        "mainline proof runs"
+    ) in violations
 
 
 def test_pr_template_policy_gate_passes_current_template() -> None:
