@@ -478,17 +478,18 @@ def _main_releasability_dispatch_commands(text: str) -> list[tuple[int, str]]:
 
 
 def _is_exact_main_releasability_dispatch_command(command: str) -> bool:
+    normalized_command = " ".join(command.split())
     return (
         (
-            command == MAIN_RELEASABILITY_DISPATCH_COMMAND
-            or command.startswith(f"{MAIN_RELEASABILITY_DISPATCH_COMMAND} ")
+            normalized_command == MAIN_RELEASABILITY_DISPATCH_COMMAND
+            or normalized_command.startswith(f"{MAIN_RELEASABILITY_DISPATCH_COMMAND} ")
         )
-        and "||" not in command
-        and "&&" not in command
-        and ";" not in command
-        and not command.rstrip().endswith("&")
-        and '--ref "$dispatch_ref"' in command
-        and "-f expected_sha=" in command
+        and "||" not in normalized_command
+        and "&&" not in normalized_command
+        and ";" not in normalized_command
+        and not normalized_command.rstrip().endswith("&")
+        and '--ref "$dispatch_ref"' in normalized_command
+        and '-f expected_sha="$MERGE_COMMIT_SHA"' in normalized_command
     )
 
 
