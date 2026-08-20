@@ -302,10 +302,16 @@ def merged_pr_main_releasability_dispatch_violations(
             "types: [closed]": "dispatcher must be limited to closed pull request events",
             "github.event.pull_request.merged == true": "dispatcher must require a merged PR",
             "github.event.pull_request.base.ref == 'main'": "dispatcher must target main merges only",
+            "github.event.pull_request.merge_commit_sha": (
+                "dispatcher must bind dispatch evidence to the merged PR SHA"
+            ),
             "gh workflow run main-releasability.yml": (
                 "dispatcher must start the governed main releasability workflow"
             ),
             "--ref main": "dispatcher must dispatch against main",
+            "-f expected_sha=": (
+                "dispatcher must pass the merged PR SHA as an expected mainline SHA"
+            ),
         }
         for token, reason in required_tokens.items():
             if token not in dispatcher_text:
@@ -318,6 +324,11 @@ def merged_pr_main_releasability_dispatch_violations(
             violations.append(
                 f"{main_releasability.as_posix()}: main releasability must keep manual "
                 "workflow_dispatch support"
+            )
+        if "expected_sha:" not in trigger_section or "git rev-parse HEAD" not in main_text:
+            violations.append(
+                f"{main_releasability.as_posix()}: main releasability must assert "
+                "expected_sha against the checked-out main commit when dispatched by a merged PR"
             )
         if "push:" in trigger_section:
             violations.append(
