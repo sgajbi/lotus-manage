@@ -161,12 +161,43 @@ def _immutable_ref_lookup_guard_blocks(text: str) -> list[str]:
     return blocks
 
 
+def _outer_lookup_else_arm(block: str) -> str:
+    lines = block.splitlines()
+    else_index: int | None = None
+    depth = 1
+    for index, line in enumerate(lines[1:], start=1):
+        stripped = line.strip()
+        if stripped == "else" and depth == 1:
+            else_index = index
+            break
+        if stripped.startswith("if "):
+            depth += 1
+        if stripped == "fi":
+            depth -= 1
+
+    if else_index is None:
+        return ""
+
+    else_lines: list[str] = []
+    depth = 1
+    for line in lines[else_index + 1 :]:
+        stripped = line.strip()
+        if stripped.startswith("if "):
+            depth += 1
+        if stripped == "fi":
+            depth -= 1
+            if depth == 0:
+                break
+        else_lines.append(line)
+    return "\n".join(else_lines)
+
+
 def _has_conditionally_guarded_immutable_ref_lookup(text: str) -> bool:
     return any(
         "git/ref/tags/$dispatch_ref" in block
         and "\n" in block
         and "else" in block
-        and 'existing_ref_sha=""' in block
+        and 'existing_ref_sha=""' in _outer_lookup_else_arm(block)
         and block.strip().endswith("fi")
         for block in _immutable_ref_lookup_guard_blocks(text)
     )
