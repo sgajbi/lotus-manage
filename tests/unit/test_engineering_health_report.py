@@ -2,6 +2,8 @@ import io
 import tarfile
 from types import SimpleNamespace
 
+import pytest
+
 from scripts import engineering_health_report as ehr
 from scripts.engineering_health_report import (
     ComplexityMetric,
@@ -15,6 +17,12 @@ from scripts.engineering_health_report import (
     build_complexity_report,
     build_quality_scorecard,
 )
+
+
+@pytest.fixture(autouse=True)
+def _clear_quality_ref_environment(monkeypatch) -> None:
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.delenv("LOTUS_QUALITY_REF_NAME", raising=False)
 
 
 def _tar_bytes(files: dict[str, str]) -> bytes:
