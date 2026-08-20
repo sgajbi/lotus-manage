@@ -588,6 +588,59 @@ def _is_exact_main_releasability_dispatch_command(command: str) -> bool:
     )
 
 
+def _disables_shell_errexit(stripped_line: str) -> bool:
+    try:
+        tokens = shlex.split(stripped_line)
+    except ValueError:
+        return False
+    if not tokens or tokens[0] != "set":
+        return False
+    if "+e" in tokens:
+        return True
+    return any(
+        token.startswith("+") and "e" in token[1:] for token in tokens if token not in {"+o"}
+    ) or any(tokens[index : index + 2] == ["+o", "errexit"] for index in range(len(tokens) - 1))
+
+
+def _dispatch_preserves_step_failure_status(
+    text: str,
+    *,
+    dispatch_command_end_index: int,
+) -> bool:
+    lines = text.splitlines()
+    depth = 0
+    for line in lines[: dispatch_command_end_index + 1]:
+        stripped_line = line.strip()
+        if not stripped_line or _is_shell_comment(stripped_line):
+            continue
+        if depth == 0 and _disables_shell_errexit(stripped_line):
+            return False
+        if _opens_nested_shell_scope(stripped_line):
+            depth += 1
+        if _closes_nested_shell_scope(stripped_line):
+            depth -= 1
+
+    for line in lines[dispatch_command_end_index + 1 :]:
+        stripped_line = line.strip()
+        if not stripped_line or _is_shell_comment(stripped_line):
+            continue
+        if depth == 0:
+            return False
+        if _opens_nested_shell_scope(stripped_line):
+            depth += 1
+        if _closes_nested_shell_scope(stripped_line):
+            depth -= 1
+    return True
+
+
+def _main_releasability_dispatch_failure_status_is_preserved(text: str) -> bool:
+    dispatch_commands = _main_releasability_dispatch_commands(text)
+    return len(dispatch_commands) == 1 and _dispatch_preserves_step_failure_status(
+        text,
+        dispatch_command_end_index=dispatch_commands[0][0],
+    )
+
+
 def _absent_ref_creation_block_end_index(text: str) -> int | None:
     lines = text.splitlines()
     depth = 0
@@ -976,6 +1029,12 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must run the main releasability dispatch "
                 "only after the absent immutable-ref creation branch has completed, using the "
                 "exact same-repository command without repository overrides"
+            )
+        elif not _main_releasability_dispatch_failure_status_is_preserved(dispatch_contract_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must preserve the main releasability "
+                "dispatch command failure as the step status; do not disable errexit before "
+                "dispatch or run trailing success commands after dispatch"
             )
 
     if main_releasability.exists():
