@@ -31,6 +31,7 @@ USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILI
 VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
 HERE_DOCUMENT_START_PATTERN = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+SHELL_TIME_PREFIX_PATTERN = re.compile(r"^time(?:\s+-p)?\s+(.+)$")
 IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
     (
         'if existing_ref_sha="$(gh api '
@@ -105,15 +106,16 @@ PR_TEMPLATE_REQUIRED_TOKENS = {
 
 
 def _opens_nested_shell_scope(stripped_line: str) -> bool:
+    scope_line = _strip_shell_time_prefix(stripped_line)
     return (
-        stripped_line == "("
-        or stripped_line.startswith("(")
-        or re.search(r"(?:^|[;&|]\s*)\(", stripped_line) is not None
-        or stripped_line.startswith(("if ", "for ", "while ", "until ", "case ", "select "))
-        or stripped_line.startswith("function ")
-        or stripped_line.endswith("() {")
-        or stripped_line.endswith("(){")
-        or stripped_line.endswith(" {")
+        scope_line == "("
+        or scope_line.startswith("(")
+        or re.search(r"(?:^|[;&|]\s*)\(", scope_line) is not None
+        or scope_line.startswith(("if ", "for ", "while ", "until ", "case ", "select "))
+        or scope_line.startswith("function ")
+        or scope_line.endswith("() {")
+        or scope_line.endswith("(){")
+        or scope_line.endswith(" {")
     )
 
 
@@ -123,6 +125,11 @@ def _closes_nested_shell_scope(stripped_line: str) -> bool:
 
 def _is_shell_comment(stripped_line: str) -> bool:
     return stripped_line.startswith("#")
+
+
+def _strip_shell_time_prefix(stripped_line: str) -> str:
+    match = SHELL_TIME_PREFIX_PATTERN.match(stripped_line)
+    return match.group(1) if match else stripped_line
 
 
 def _workflow_files(workflow_dir: Path = WORKFLOW_DIR) -> list[Path]:
@@ -214,6 +221,17 @@ def _has_compound_prefixed_subshell_scope(text: str) -> bool:
         re.search(r"(?:&&|\|\|)\s*\(", _strip_shell_inline_comment(line.strip())) is not None
         for line in text.splitlines()
     )
+
+
+def _has_time_prefixed_compound_scope(text: str) -> bool:
+    for line in text.splitlines():
+        stripped_line = _strip_shell_inline_comment(line.strip())
+        if not stripped_line:
+            continue
+        unprefixed_line = _strip_shell_time_prefix(stripped_line)
+        if unprefixed_line != stripped_line and _opens_nested_shell_scope(unprefixed_line):
+            return True
+    return False
 
 
 def _strip_shell_inline_comment(stripped_line: str) -> str:
@@ -923,6 +941,12 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must not place the governed lookup, "
                 "creation, and dispatch body behind a compound-prefixed subshell such as "
                 "`false && (...) || true`"
+            )
+        if _has_time_prefixed_compound_scope(dispatch_contract_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must not place the governed lookup, "
+                "creation, and dispatch body behind a time-prefixed compound command such as "
+                "`time if ...; then`"
             )
         if not _has_conditionally_guarded_immutable_ref_lookup(dispatch_contract_text):
             violations.append(
