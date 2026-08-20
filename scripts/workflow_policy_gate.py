@@ -109,6 +109,33 @@ def _step_block(text: str, step_name: str) -> str:
     return text[start:end]
 
 
+def _immutable_ref_lookup_blocks(text: str) -> list[str]:
+    lines = text.splitlines()
+    blocks: list[str] = []
+    for index, line in enumerate(lines):
+        if "git/ref/tags/$dispatch_ref" not in line:
+            continue
+
+        block_lines = [line]
+        stripped_line = line.strip()
+        if (
+            stripped_line == "then"
+            or stripped_line.endswith("; then")
+            or stripped_line.endswith(')"')
+        ):
+            blocks.append("\n".join(block_lines))
+            continue
+        for follow in lines[index + 1 :]:
+            block_lines.append(follow)
+            stripped = follow.strip()
+            if stripped == "then" or stripped.endswith("; then"):
+                break
+            if not follow.rstrip().endswith("\\") and stripped.endswith(')"'):
+                break
+        blocks.append("\n".join(block_lines))
+    return blocks
+
+
 def permission_violations(workflow_path: Path) -> list[str]:
     expected = EXPECTED_WORKFLOW_PERMISSIONS.get(workflow_path.name)
     if expected is None:
@@ -342,7 +369,7 @@ def merged_pr_main_releasability_dispatch_violations(
         for token, reason in required_tokens.items():
             if token not in dispatcher_text:
                 violations.append(f"{dispatcher.as_posix()}: {reason}")
-        if "git/ref/tags/$dispatch_ref" in dispatcher_text and "|| true" in dispatcher_text:
+        if any("|| true" in block for block in _immutable_ref_lookup_blocks(dispatcher_text)):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must not mask immutable-ref lookup "
                 "failures with `|| true` because GitHub 404 response bodies can be captured as "
