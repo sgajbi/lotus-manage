@@ -345,6 +345,8 @@ def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
     condition_depth = 1
     for index, line in enumerate(then_arm):
         stripped_line = line.strip()
+        if condition_depth == 1 and stripped_line.startswith("existing_ref_sha="):
+            return False
         if stripped_line != IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION or condition_depth != 1:
             if _opens_nested_shell_scope(stripped_line):
                 condition_depth += 1
@@ -437,7 +439,8 @@ def _conditionally_creates_absent_immutable_ref(text: str) -> bool:
         if _closes_nested_shell_scope(stripped_line):
             depth -= 1
     return (
-        bool(guarded_creation_commands)
+        len(creation_commands) == 1
+        and len(guarded_creation_commands) == 1
         and len(guarded_creation_commands) == len(creation_commands)
         and all(
             _is_exact_immutable_ref_creation_command(command)
