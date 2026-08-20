@@ -205,6 +205,7 @@ def _is_exact_immutable_ref_creation_command(command: str) -> bool:
             or command.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
         )
         and "||" not in command
+        and not command.rstrip().endswith("&")
         and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in command
         and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in command
     )
