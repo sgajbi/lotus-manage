@@ -29,6 +29,11 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)
 VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
+IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITION = (
+    'if existing_ref_sha="$(gh api '
+    '"repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" '
+    '--jq .object.sha 2>/dev/null)"; then'
+)
 PR_TEMPLATE_REQUIRED_TOKENS = {
     "summary": "## Summary",
     "risk": "## Risk / Rollback",
@@ -141,9 +146,7 @@ def _immutable_ref_lookup_guard_blocks(text: str) -> list[str]:
     blocks: list[str] = []
     for index, line in enumerate(lines):
         stripped_line = line.strip()
-        if "git/ref/tags/$dispatch_ref" not in line or not stripped_line.startswith(
-            'if existing_ref_sha="$(gh api '
-        ):
+        if stripped_line != IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITION:
             continue
 
         block_lines = [line]
