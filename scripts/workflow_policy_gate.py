@@ -305,6 +305,12 @@ def merged_pr_main_releasability_dispatch_violations(
             "github.event.pull_request.merge_commit_sha": (
                 "dispatcher must bind dispatch evidence to the merged PR SHA"
             ),
+            'gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha': (
+                "dispatcher must resolve current main before dispatching"
+            ),
+            'if [ "$current_main_sha" != "$MERGE_COMMIT_SHA" ]; then': (
+                "dispatcher must skip stale pull-request close events after main advances"
+            ),
             "gh workflow run main-releasability.yml": (
                 "dispatcher must start the governed main releasability workflow"
             ),
@@ -325,10 +331,28 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{main_releasability.as_posix()}: main releasability must keep manual "
                 "workflow_dispatch support"
             )
-        if "expected_sha:" not in trigger_section or "git rev-parse HEAD" not in main_text:
+        required_assertion_tokens = {
+            "expected_sha:": trigger_section,
+            'actual_sha="$(git rev-parse HEAD)"': main_text,
+            'if [ "$actual_sha" != "$EXPECTED_SHA" ]; then': main_text,
+            "does not match expected merged PR SHA": main_text,
+            "exit 1": main_text,
+        }
+        missing_assertion_tokens = [
+            token
+            for token, search_text in required_assertion_tokens.items()
+            if token not in search_text
+        ]
+        if missing_assertion_tokens:
             violations.append(
                 f"{main_releasability.as_posix()}: main releasability must assert "
-                "expected_sha against the checked-out main commit when dispatched by a merged PR"
+                "expected_sha against the checked-out main commit and fail on mismatch when "
+                f"dispatched by a merged PR; missing {', '.join(missing_assertion_tokens)}"
+            )
+        if "${{ inputs.expected_sha || github.sha }}" not in main_text:
+            violations.append(
+                f"{main_releasability.as_posix()}: main releasability concurrency must be "
+                "revision-aware so stale merged-PR dispatches cannot cancel newer validation"
             )
         if "push:" in trigger_section:
             violations.append(

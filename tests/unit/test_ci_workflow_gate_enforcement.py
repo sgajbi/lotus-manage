@@ -286,6 +286,9 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "github.event.pull_request.merged == true" in dispatcher_text
     assert "github.event.pull_request.base.ref == 'main'" in dispatcher_text
     assert "github.event.pull_request.merge_commit_sha" in dispatcher_text
+    assert 'gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha' in dispatcher_text
+    assert 'if [ "$current_main_sha" != "$MERGE_COMMIT_SHA" ]; then' in dispatcher_text
+    assert "Skipping stale main releasability dispatch" in dispatcher_text
     assert "gh workflow run main-releasability.yml" in dispatcher_text
     assert "--ref main" in dispatcher_text
     assert '-f expected_sha="$MERGE_COMMIT_SHA"' in dispatcher_text
@@ -293,7 +296,10 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "workflow_dispatch:" in main_trigger_section
     assert "expected_sha:" in main_trigger_section
     assert "triggering_pr:" in main_trigger_section
-    assert "git rev-parse HEAD" in main_text
+    assert "${{ inputs.expected_sha || github.sha }}" in main_text
+    assert 'actual_sha="$(git rev-parse HEAD)"' in main_text
+    assert 'if [ "$actual_sha" != "$EXPECTED_SHA" ]; then' in main_text
+    assert "does not match expected merged PR SHA" in main_text
     assert "push:" not in main_trigger_section
 
 
@@ -314,7 +320,12 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: P
                 "    steps:",
                 "      - env:",
                 "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
-                "        run: gh workflow run main-releasability.yml --ref main -f expected_sha=$MERGE_COMMIT_SHA",
+                "        run: |",
+                '          current_main_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"',
+                '          if [ "$current_main_sha" != "$MERGE_COMMIT_SHA" ]; then',
+                "            exit 0",
+                "          fi",
+                "          gh workflow run main-releasability.yml --ref main -f expected_sha=$MERGE_COMMIT_SHA",
             ]
         ),
         encoding="utf-8",
@@ -330,11 +341,16 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: P
                 "      expected_sha:",
                 "        required: false",
                 "concurrency:",
-                "  group: test",
+                "  group: ${{ github.workflow }}-${{ inputs.expected_sha || github.sha }}",
                 "jobs:",
                 "  exact-revision-assertion:",
                 "    steps:",
-                "      - run: git rev-parse HEAD",
+                "      - run: |",
+                '          actual_sha="$(git rev-parse HEAD)"',
+                '          if [ "$actual_sha" != "$EXPECTED_SHA" ]; then',
+                '            echo "does not match expected merged PR SHA"',
+                "            exit 1",
+                "          fi",
             ]
         ),
         encoding="utf-8",
@@ -347,6 +363,61 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: P
         "coexist with merged-pr-main-releasability.yml because it creates duplicate automatic "
         "mainline proof runs"
     ) in violations
+
+
+def test_merged_pr_dispatch_gate_rejects_token_only_revision_assertion(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  pull_request_target:",
+                "    types: [closed]",
+                "jobs:",
+                "  dispatch:",
+                "    if: >",
+                "      github.event.pull_request.merged == true &&",
+                "      github.event.pull_request.base.ref == 'main'",
+                "    steps:",
+                "      - env:",
+                "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
+                "        run: |",
+                '          current_main_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"',
+                '          if [ "$current_main_sha" != "$MERGE_COMMIT_SHA" ]; then',
+                "            exit 0",
+                "          fi",
+                "          gh workflow run main-releasability.yml --ref main -f expected_sha=$MERGE_COMMIT_SHA",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (workflow_dir / "main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  workflow_dispatch:",
+                "    inputs:",
+                "      expected_sha:",
+                "        required: false",
+                "concurrency:",
+                "  group: ${{ github.workflow }}-${{ inputs.expected_sha || github.sha }}",
+                "jobs:",
+                "  exact-revision-assertion:",
+                "    steps:",
+                "      - run: git rev-parse HEAD",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "main releasability must assert expected_sha against the checked-out main commit and fail on mismatch"
+        in violation
+        for violation in violations
+    )
 
 
 def test_pr_template_policy_gate_passes_current_template() -> None:
