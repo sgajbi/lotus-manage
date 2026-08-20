@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-08-20T17:55:26+00:00`
+- Generated at: `2026-08-20T18:20:11+00:00`
 
 - Baseline ref: `origin/main`
 
 - Baseline source snapshot: `58cf058954a35c1e73450aabe5d7ae095a20d497`
 
-- Report source snapshot: `7bd5e1d4+worktree`
+- Report source snapshot: `3e70fedd`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,8 +15,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 901 | 901 | +0 |
-| Total Python LOC | 205709 | 207666 | +1957 |
-| Test functions | 2960 | 2994 | +34 |
+| Total Python LOC | 205709 | 207767 | +2058 |
+| Test functions | 2960 | 2996 | +36 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -60,8 +60,8 @@
 | 6 | tests/unit/test_documentation_current_state.py | 2774 |
 | 7 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2689 |
 | 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2670 |
-| 9 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
-| 10 | tests/unit/test_ci_workflow_gate_enforcement.py | 2287 |
+| 9 | tests/unit/test_ci_workflow_gate_enforcement.py | 2385 |
+| 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
 
 ## Largest Functions
 
