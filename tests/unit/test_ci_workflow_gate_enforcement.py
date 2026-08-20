@@ -698,6 +698,48 @@ def test_merged_pr_dispatch_gate_rejects_function_body_else_reset(
     )
 
 
+def test_merged_pr_dispatch_gate_rejects_trailing_else_command(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  pull_request_target:",
+                "    types: [closed]",
+                "jobs:",
+                "  dispatch:",
+                "    if: >",
+                "      github.event.pull_request.merged == true &&",
+                "      github.event.pull_request.base.ref == 'main'",
+                "    steps:",
+                "      - env:",
+                "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
+                "        run: |",
+                '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+                '          if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null)"; then',
+                '            echo "Dispatch ref $dispatch_ref points to $existing_ref_sha"',
+                "          else",
+                '            existing_ref_sha=""',
+                '            gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=1" >/dev/null',
+                "          fi",
+                '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must guard immutable-ref lookup with an if/else reset" in violation
+        for violation in violations
+    )
+
+
 def test_merged_pr_dispatch_gate_allows_unrelated_best_effort_commands(
     tmp_path: Path,
 ) -> None:

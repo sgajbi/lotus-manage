@@ -178,14 +178,20 @@ def _outer_lookup_else_arm_has_unconditional_reset(block: str) -> bool:
     if else_index is None:
         return False
 
+    executable_commands: list[str] = []
+    depth = 1
     for line in lines[else_index + 1 :]:
         stripped = line.strip()
-        if stripped == "fi":
+        if stripped == "fi" and depth == 1:
             break
         if not stripped or stripped.startswith("#"):
             continue
-        return stripped == 'existing_ref_sha=""'
-    return False
+        executable_commands.append(stripped)
+        if stripped.startswith("if "):
+            depth += 1
+        if stripped == "fi":
+            depth -= 1
+    return executable_commands == ['existing_ref_sha=""']
 
 
 def _is_conditionally_guarded_immutable_ref_lookup_block(block: str) -> bool:
