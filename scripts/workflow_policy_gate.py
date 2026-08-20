@@ -69,6 +69,20 @@ PR_TEMPLATE_REQUIRED_TOKENS = {
 }
 
 
+def _opens_nested_shell_scope(stripped_line: str) -> bool:
+    return (
+        stripped_line.startswith(("if ", "for ", "while ", "until ", "case "))
+        or stripped_line.startswith("function ")
+        or stripped_line.endswith("() {")
+        or stripped_line.endswith("(){")
+        or stripped_line.endswith(" {")
+    )
+
+
+def _closes_nested_shell_scope(stripped_line: str) -> bool:
+    return stripped_line in {"fi", "done", "esac", "}"}
+
+
 def _workflow_files(workflow_dir: Path = WORKFLOW_DIR) -> list[Path]:
     return sorted(workflow_dir.glob("*.yml")) + sorted(workflow_dir.glob("*.yaml"))
 
@@ -168,9 +182,9 @@ def _immutable_ref_lookup_guard_blocks(text: str) -> list[str]:
         for follow in lines[index + 1 :]:
             block_lines.append(follow)
             stripped_follow = follow.strip()
-            if stripped_follow.startswith("if "):
+            if _opens_nested_shell_scope(stripped_follow):
                 depth += 1
-            if stripped_follow == "fi":
+            if _closes_nested_shell_scope(stripped_follow):
                 depth -= 1
             if depth == 0:
                 break
@@ -239,9 +253,9 @@ def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
                 continue
             if depth == 1:
                 direct_executable_commands.append(stripped_follow)
-            if stripped_follow.startswith("if "):
+            if _opens_nested_shell_scope(stripped_follow):
                 depth += 1
-            if stripped_follow == "fi":
+            if _closes_nested_shell_scope(stripped_follow):
                 depth -= 1
         return "exit 1" in direct_executable_commands
     return False
