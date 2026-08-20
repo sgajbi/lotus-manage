@@ -141,18 +141,34 @@ def _step_block(text: str, step_name: str) -> str:
     start = text.find(f"- name: {step_name}")
     if start == -1:
         return ""
-    next_step = text.find("\n      - name:", start + 1)
-    next_uses = text.find("\n      - uses:", start + 1)
-    candidates = [index for index in (next_step, next_uses) if index != -1]
-    end = min(candidates) if candidates else len(text)
+    next_step = text.find("\n      - ", start + 1)
+    end = next_step if next_step != -1 else len(text)
     return text[start:end]
+
+
+def _strip_shell_inline_comment(stripped_line: str) -> str:
+    in_single_quote = False
+    in_double_quote = False
+    for index, character in enumerate(stripped_line):
+        if character == "'" and not in_double_quote:
+            in_single_quote = not in_single_quote
+        elif character == '"' and not in_single_quote:
+            in_double_quote = not in_double_quote
+        elif (
+            character == "#"
+            and not in_single_quote
+            and not in_double_quote
+            and (index == 0 or stripped_line[index - 1].isspace())
+        ):
+            return stripped_line[:index].rstrip()
+    return stripped_line
 
 
 def _continued_shell_command(lines: list[str], start_index: int) -> tuple[str, int]:
     command_parts: list[str] = []
     index = start_index
     while index < len(lines):
-        stripped = lines[index].strip()
+        stripped = _strip_shell_inline_comment(lines[index].strip())
         if stripped.endswith("\\"):
             command_parts.append(stripped[:-1].rstrip())
             index += 1
