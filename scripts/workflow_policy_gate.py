@@ -204,6 +204,7 @@ def _is_exact_immutable_ref_creation_command(command: str) -> bool:
             command == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
             or command.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
         )
+        and "||" not in command
         and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in command
         and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in command
     )
@@ -239,9 +240,16 @@ def _immutable_ref_lookup_blocks(text: str) -> list[str]:
 def _immutable_ref_lookup_guard_blocks(text: str) -> list[str]:
     lines = text.splitlines()
     blocks: list[str] = []
+    outer_depth = 0
     for index, line in enumerate(lines):
         stripped_line = line.strip()
-        if stripped_line not in IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS:
+        if stripped_line not in IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS or outer_depth != 0:
+            if not stripped_line or _is_shell_comment(stripped_line):
+                continue
+            if _opens_nested_shell_scope(stripped_line):
+                outer_depth += 1
+            if _closes_nested_shell_scope(stripped_line):
+                outer_depth -= 1
             continue
 
         block_lines = [line]
@@ -256,6 +264,10 @@ def _immutable_ref_lookup_guard_blocks(text: str) -> list[str]:
             if depth == 0:
                 break
         blocks.append("\n".join(block_lines))
+        if _opens_nested_shell_scope(stripped_line):
+            outer_depth += 1
+        if _closes_nested_shell_scope(stripped_line):
+            outer_depth -= 1
     return blocks
 
 
