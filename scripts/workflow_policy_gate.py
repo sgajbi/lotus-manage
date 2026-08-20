@@ -32,6 +32,7 @@ VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
 HERE_DOCUMENT_START_PATTERN = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 SHELL_TIME_PREFIX_PATTERN = re.compile(r"^time(?:\s+-p)?\s+(.+)$")
+SHELL_NEGATION_PREFIX_PATTERN = re.compile(r"^!\s+(.+)$")
 IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
     (
         'if existing_ref_sha="$(gh api '
@@ -106,7 +107,7 @@ PR_TEMPLATE_REQUIRED_TOKENS = {
 
 
 def _opens_nested_shell_scope(stripped_line: str) -> bool:
-    scope_line = _strip_shell_time_prefix(stripped_line)
+    scope_line = _strip_shell_command_prefixes(stripped_line)
     return (
         scope_line == "("
         or scope_line.startswith("(")
@@ -130,6 +131,20 @@ def _is_shell_comment(stripped_line: str) -> bool:
 def _strip_shell_time_prefix(stripped_line: str) -> str:
     match = SHELL_TIME_PREFIX_PATTERN.match(stripped_line)
     return match.group(1) if match else stripped_line
+
+
+def _strip_shell_negation_prefix(stripped_line: str) -> str:
+    match = SHELL_NEGATION_PREFIX_PATTERN.match(stripped_line)
+    return match.group(1) if match else stripped_line
+
+
+def _strip_shell_command_prefixes(stripped_line: str) -> str:
+    previous_line = stripped_line
+    while True:
+        current_line = _strip_shell_negation_prefix(_strip_shell_time_prefix(previous_line))
+        if current_line == previous_line:
+            return current_line
+        previous_line = current_line
 
 
 def _workflow_files(workflow_dir: Path = WORKFLOW_DIR) -> list[Path]:

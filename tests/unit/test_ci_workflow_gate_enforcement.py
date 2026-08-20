@@ -2241,6 +2241,46 @@ def test_merged_pr_dispatch_gate_rejects_time_prefixed_compound_scope(
     )
 
 
+def test_merged_pr_dispatch_gate_rejects_negated_lookup_scope(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    workflow_text = (
+        MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
+        .replace(
+            (
+                '          if existing_ref_sha="$(gh api '
+                '"repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" '
+                '--jq .object.sha 2>/dev/null)"; then'
+            ),
+            (
+                "          ! if false; then\n"
+                '          if existing_ref_sha="$(gh api '
+                '"repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" '
+                '--jq .object.sha 2>/dev/null)"; then'
+            ),
+            1,
+        )
+        .replace(
+            '          if [ -z "$existing_ref_sha" ]; then',
+            '          # fi\n          if [ -z "$existing_ref_sha" ]; then',
+            1,
+        )
+    )
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        workflow_text,
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must guard immutable-ref lookup with an if/else reset" in violation
+        for violation in violations
+    )
+
+
 def test_merged_pr_dispatch_gate_rejects_masked_dispatch_failure_status(
     tmp_path: Path,
 ) -> None:
