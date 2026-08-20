@@ -229,7 +229,7 @@ def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
         if line.strip() != IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION:
             continue
 
-        executable_commands: list[str] = []
+        direct_executable_commands: list[str] = []
         depth = 1
         for follow in then_arm[index + 1 :]:
             stripped_follow = follow.strip()
@@ -237,12 +237,13 @@ def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
                 break
             if not stripped_follow or stripped_follow.startswith("#"):
                 continue
-            executable_commands.append(stripped_follow)
+            if depth == 1:
+                direct_executable_commands.append(stripped_follow)
             if stripped_follow.startswith("if "):
                 depth += 1
             if stripped_follow == "fi":
                 depth -= 1
-        return "exit 1" in executable_commands
+        return "exit 1" in direct_executable_commands
     return False
 
 
