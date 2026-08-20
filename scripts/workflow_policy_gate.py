@@ -48,6 +48,7 @@ IMMUTABLE_DISPATCH_REF_CREATION_CONDITION = 'if [ -z "$existing_ref_sha" ]; then
 IMMUTABLE_DISPATCH_REF_CREATION_COMMAND = 'gh api "repos/$GITHUB_REPOSITORY/git/refs"'
 IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD = '-f ref="refs/tags/$dispatch_ref"'
 IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD = '-f sha="$MERGE_COMMIT_SHA"'
+MAIN_RELEASABILITY_DISPATCH_COMMAND = "gh workflow run main-releasability.yml"
 PR_TEMPLATE_REQUIRED_TOKENS = {
     "summary": "## Summary",
     "risk": "## Risk / Rollback",
@@ -199,7 +200,6 @@ def _immutable_ref_creation_commands(text: str) -> list[str]:
 
 
 def _is_exact_immutable_ref_creation_command(command: str) -> bool:
-    padded_command = f" {command} "
     return (
         (
             command == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
@@ -207,12 +207,26 @@ def _is_exact_immutable_ref_creation_command(command: str) -> bool:
         )
         and "||" not in command
         and not command.rstrip().endswith("&")
-        and "--method" not in padded_command
-        and " -X" not in padded_command
-        and "--input" not in padded_command
+        and not _has_disallowed_immutable_ref_creation_override(command)
         and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in command
         and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in command
     )
+
+
+def _has_disallowed_immutable_ref_creation_override(command: str) -> bool:
+    tokens = command.split()
+    for index, token in enumerate(tokens):
+        if token == "--input" or token.startswith("--input="):
+            return True
+        if token == "--method":
+            return index + 1 >= len(tokens) or tokens[index + 1].upper() != "POST"
+        if token.startswith("--method="):
+            return token.partition("=")[2].upper() != "POST"
+        if token == "-X":
+            return index + 1 >= len(tokens) or tokens[index + 1].upper() != "POST"
+        if token.startswith("-X") and len(token) > 2:
+            return token[2:].upper() != "POST"
+    return False
 
 
 def _immutable_ref_lookup_blocks(text: str) -> list[str]:
@@ -424,6 +438,71 @@ def _conditionally_creates_absent_immutable_ref(text: str) -> bool:
             _is_exact_immutable_ref_creation_command(command)
             for command in guarded_creation_commands
         )
+    )
+
+
+def _main_releasability_dispatch_command_indices(text: str) -> list[int]:
+    lines = text.splitlines()
+    indices: list[int] = []
+    index = 0
+    while index < len(lines):
+        stripped_line = lines[index].strip()
+        if not _is_shell_comment(stripped_line) and (
+            stripped_line == MAIN_RELEASABILITY_DISPATCH_COMMAND
+            or stripped_line.startswith(f"{MAIN_RELEASABILITY_DISPATCH_COMMAND} ")
+        ):
+            _, index = _continued_shell_command(lines, index)
+            indices.append(index)
+        index += 1
+    return indices
+
+
+def _absent_ref_creation_block_end_index(text: str) -> int | None:
+    lines = text.splitlines()
+    depth = 0
+    for index, line in enumerate(lines):
+        stripped_line = line.strip()
+        if stripped_line == IMMUTABLE_DISPATCH_REF_CREATION_CONDITION and depth == 0:
+            saw_creation_command = False
+            creation_depth = 1
+            follow_index = index + 1
+            while follow_index < len(lines):
+                follow = lines[follow_index]
+                stripped_follow = follow.strip()
+                if stripped_follow == "fi" and creation_depth == 1:
+                    return follow_index if saw_creation_command else None
+                if not stripped_follow or _is_shell_comment(stripped_follow):
+                    follow_index += 1
+                    continue
+                if creation_depth == 1 and (
+                    stripped_follow == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
+                    or stripped_follow.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
+                ):
+                    command, follow_index = _continued_shell_command(lines, follow_index)
+                    saw_creation_command = _is_exact_immutable_ref_creation_command(command)
+                    follow_index += 1
+                    continue
+                if _opens_nested_shell_scope(stripped_follow):
+                    creation_depth += 1
+                if _closes_nested_shell_scope(stripped_follow):
+                    creation_depth -= 1
+                follow_index += 1
+        if not stripped_line or _is_shell_comment(stripped_line):
+            continue
+        if _opens_nested_shell_scope(stripped_line):
+            depth += 1
+        if _closes_nested_shell_scope(stripped_line):
+            depth -= 1
+    return None
+
+
+def _dispatches_after_absent_ref_creation(text: str) -> bool:
+    dispatch_indices = _main_releasability_dispatch_command_indices(text)
+    creation_block_end_index = _absent_ref_creation_block_end_index(text)
+    return (
+        len(dispatch_indices) == 1
+        and creation_block_end_index is not None
+        and dispatch_indices[0] > creation_block_end_index
     )
 
 
@@ -696,6 +775,11 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must create the immutable dispatch ref only "
                 "inside the empty existing-ref branch with exact ref and SHA fields so reruns do "
                 "not recreate an existing tag or dispatch the wrong revision"
+            )
+        elif not _dispatches_after_absent_ref_creation(dispatch_contract_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must run the main releasability dispatch "
+                "only after the absent immutable-ref creation branch has completed"
             )
 
     if main_releasability.exists():
