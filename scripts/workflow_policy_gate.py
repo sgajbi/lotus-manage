@@ -207,10 +207,15 @@ def _is_exact_immutable_ref_creation_command(command: str) -> bool:
         )
         and "||" not in command
         and not command.rstrip().endswith("&")
+        and not _has_disallowed_immutable_ref_creation_shell_control(command)
         and not _has_disallowed_immutable_ref_creation_override(command)
         and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in command
         and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in command
     )
+
+
+def _has_disallowed_immutable_ref_creation_shell_control(command: str) -> bool:
+    return ";" in command or "&&" in command
 
 
 def _has_disallowed_immutable_ref_creation_override(command: str) -> bool:
