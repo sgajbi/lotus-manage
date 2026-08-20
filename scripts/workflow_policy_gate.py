@@ -319,6 +319,13 @@ def merged_pr_main_releasability_dispatch_violations(
             'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"': (
                 "dispatcher must create an immutable dispatch ref for the merged PR SHA"
             ),
+            'existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref"': (
+                "dispatcher must treat a missing immutable ref as absent without capturing the "
+                "404 response body as a ref SHA"
+            ),
+            "Dispatch ref $dispatch_ref points to $existing_ref_sha": (
+                "dispatcher must fail closed if an existing dispatch ref points to a different SHA"
+            ),
             'gh api "repos/$GITHUB_REPOSITORY/git/refs"': (
                 "dispatcher must create the immutable dispatch ref before workflow dispatch"
             ),
@@ -335,6 +342,12 @@ def merged_pr_main_releasability_dispatch_violations(
         for token, reason in required_tokens.items():
             if token not in dispatcher_text:
                 violations.append(f"{dispatcher.as_posix()}: {reason}")
+        if "git/ref/tags/$dispatch_ref" in dispatcher_text and "|| true" in dispatcher_text:
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must not mask immutable-ref lookup "
+                "failures with `|| true` because GitHub 404 response bodies can be captured as "
+                "existing ref SHAs"
+            )
 
     if main_releasability.exists():
         main_text = main_releasability.read_text(encoding="utf-8")
