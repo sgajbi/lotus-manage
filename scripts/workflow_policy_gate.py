@@ -178,17 +178,13 @@ def _outer_lookup_else_arm_has_unconditional_reset(block: str) -> bool:
     if else_index is None:
         return False
 
-    depth = 1
     for line in lines[else_index + 1 :]:
         stripped = line.strip()
         if stripped == "fi":
-            depth -= 1
-            if depth == 0:
-                break
-        if depth == 1 and stripped == 'existing_ref_sha=""':
-            return True
-        if stripped.startswith("if "):
-            depth += 1
+            break
+        if not stripped or stripped.startswith("#"):
+            continue
+        return stripped == 'existing_ref_sha=""'
     return False
 
 
