@@ -239,8 +239,14 @@ def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
         if stripped == "fi":
             depth -= 1
 
+    condition_depth = 1
     for index, line in enumerate(then_arm):
-        if line.strip() != IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION:
+        stripped_line = line.strip()
+        if stripped_line != IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION or condition_depth != 1:
+            if _opens_nested_shell_scope(stripped_line):
+                condition_depth += 1
+            if _closes_nested_shell_scope(stripped_line):
+                condition_depth -= 1
             continue
 
         direct_executable_commands: list[str] = []
