@@ -44,6 +44,8 @@ IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
 IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION = (
     'if [ "$existing_ref_sha" != "$MERGE_COMMIT_SHA" ]; then'
 )
+IMMUTABLE_DISPATCH_REF_CREATION_CONDITION = 'if [ -z "$existing_ref_sha" ]; then'
+IMMUTABLE_DISPATCH_REF_CREATION_COMMAND = 'gh api "repos/$GITHUB_REPOSITORY/git/refs"'
 PR_TEMPLATE_REQUIRED_TOKENS = {
     "summary": "## Summary",
     "risk": "## Risk / Rollback",
@@ -302,6 +304,40 @@ def _guarded_lookup_success_arms_fail_on_ref_mismatch(text: str) -> bool:
     )
 
 
+def _conditionally_creates_absent_immutable_ref(text: str) -> bool:
+    lines = text.splitlines()
+    depth = 0
+    for index, line in enumerate(lines):
+        stripped_line = line.strip()
+        if stripped_line == IMMUTABLE_DISPATCH_REF_CREATION_CONDITION and depth == 0:
+            direct_executable_commands: list[str] = []
+            creation_depth = 1
+            for follow in lines[index + 1 :]:
+                stripped_follow = follow.strip()
+                if stripped_follow == "fi" and creation_depth == 1:
+                    break
+                if not stripped_follow or _is_shell_comment(stripped_follow):
+                    continue
+                if creation_depth == 1:
+                    direct_executable_commands.append(stripped_follow)
+                if _opens_nested_shell_scope(stripped_follow):
+                    creation_depth += 1
+                if _closes_nested_shell_scope(stripped_follow):
+                    creation_depth -= 1
+            return any(
+                command == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
+                or command.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
+                for command in direct_executable_commands
+            )
+        if not stripped_line or _is_shell_comment(stripped_line):
+            continue
+        if _opens_nested_shell_scope(stripped_line):
+            depth += 1
+        if _closes_nested_shell_scope(stripped_line):
+            depth -= 1
+    return False
+
+
 def permission_violations(workflow_path: Path) -> list[str]:
     expected = EXPECTED_WORKFLOW_PERMISSIONS.get(workflow_path.name)
     if expected is None:
@@ -547,6 +583,11 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must not mask immutable-ref lookup "
                 "failures with shell OR fallbacks because GitHub 404 response bodies can be "
                 "captured as existing ref SHAs"
+            )
+        if not _conditionally_creates_absent_immutable_ref(dispatcher_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must create the immutable dispatch ref only "
+                "inside the empty existing-ref branch so reruns do not recreate an existing tag"
             )
 
     if main_releasability.exists():
