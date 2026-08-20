@@ -56,6 +56,8 @@ MAIN_RELEASABILITY_DISPATCH_TOKENS = (
         "workflow",
         "run",
         "main-releasability.yml",
+        "--repo",
+        "$GITHUB_REPOSITORY",
         "--ref",
         "$dispatch_ref",
         "-f",
@@ -66,6 +68,8 @@ MAIN_RELEASABILITY_DISPATCH_TOKENS = (
         "workflow",
         "run",
         "main-releasability.yml",
+        "--repo",
+        "$GITHUB_REPOSITORY",
         "--ref",
         "$dispatch_ref",
         "-f",
@@ -517,6 +521,7 @@ def _is_exact_main_releasability_dispatch_command(command: str) -> bool:
         and "&&" not in normalized_command
         and ";" not in normalized_command
         and not normalized_command.rstrip().endswith("&")
+        and '--repo "$GITHUB_REPOSITORY"' in normalized_command
         and '--ref "$dispatch_ref"' in normalized_command
         and '-f expected_sha="$MERGE_COMMIT_SHA"' in normalized_command
         and tuple(command_tokens) in MAIN_RELEASABILITY_DISPATCH_TOKENS
