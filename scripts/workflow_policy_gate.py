@@ -821,6 +821,11 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must keep lookup, conditional ref "
                 "creation, and workflow dispatch in one named run step"
             )
+        elif "continue-on-error: true" in dispatch_step_text:
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must not set continue-on-error on "
+                "the governed main releasability dispatch step"
+            )
         dispatch_contract_text = dispatch_step_text or dispatcher_text
         required_tokens = {
             "pull_request_target:": "dispatcher must run from pull_request_target close events",
