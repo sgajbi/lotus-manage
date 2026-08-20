@@ -179,16 +179,16 @@ def _step_block(text: str, step_name: str) -> str:
 
 def _strip_shell_here_document_bodies(text: str) -> str:
     executable_lines: list[str] = []
-    active_delimiter: str | None = None
+    active_delimiters: list[str] = []
     for line in text.splitlines():
-        if active_delimiter is not None:
-            if line.strip() == active_delimiter:
-                active_delimiter = None
+        if active_delimiters:
+            if line.strip() == active_delimiters[0]:
+                active_delimiters.pop(0)
             continue
         executable_lines.append(line)
-        heredoc_match = HERE_DOCUMENT_START_PATTERN.search(line)
-        if heredoc_match:
-            active_delimiter = heredoc_match.group(2)
+        active_delimiters.extend(
+            match.group(2) for match in HERE_DOCUMENT_START_PATTERN.finditer(line)
+        )
     return "\n".join(executable_lines)
 
 
@@ -267,6 +267,8 @@ def _has_disallowed_immutable_ref_creation_override(command: str) -> bool:
     tokens = command.split()
     for index, token in enumerate(tokens):
         if token == "--input" or token.startswith("--input="):
+            return True
+        if token == "--hostname" or token.startswith("--hostname="):
             return True
         if token == "--method":
             return index + 1 >= len(tokens) or tokens[index + 1].upper() != "POST"
