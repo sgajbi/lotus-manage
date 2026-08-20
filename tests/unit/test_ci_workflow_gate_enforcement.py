@@ -744,6 +744,53 @@ def test_merged_pr_dispatch_gate_rejects_nested_ref_mismatch_exit(
     )
 
 
+def test_merged_pr_dispatch_gate_rejects_function_body_ref_mismatch_exit(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  pull_request_target:",
+                "    types: [closed]",
+                "jobs:",
+                "  dispatch:",
+                "    if: >",
+                "      github.event.pull_request.merged == true &&",
+                "      github.event.pull_request.base.ref == 'main'",
+                "    steps:",
+                "      - env:",
+                "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
+                "        run: |",
+                '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+                '          if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null)"; then',
+                '            if [ "$existing_ref_sha" != "$MERGE_COMMIT_SHA" ]; then',
+                '              echo "::error::Dispatch ref $dispatch_ref points to $existing_ref_sha, expected $MERGE_COMMIT_SHA"',
+                "              collision_failure() {",
+                "                exit 1",
+                "              }",
+                "            fi",
+                "          else",
+                '            existing_ref_sha=""',
+                "          fi",
+                '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must fail closed with exit 1 when an existing immutable dispatch ref points to a different SHA"
+        in violation
+        for violation in violations
+    )
+
+
 def test_merged_pr_dispatch_gate_rejects_commented_else_reset(
     tmp_path: Path,
 ) -> None:
