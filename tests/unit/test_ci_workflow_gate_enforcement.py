@@ -288,6 +288,11 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "github.event.pull_request.merge_commit_sha" in dispatcher_text
     assert "contents: write" in dispatcher_text
     assert 'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"' in dispatcher_text
+    assert (
+        'existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref"'
+        in dispatcher_text
+    )
+    assert "Dispatch ref $dispatch_ref points to $existing_ref_sha" in dispatcher_text
     assert 'gh api "repos/$GITHUB_REPOSITORY/git/refs"' in dispatcher_text
     assert "gh workflow run main-releasability.yml" in dispatcher_text
     assert '--ref "$dispatch_ref"' in dispatcher_text
@@ -368,6 +373,41 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: P
         "coexist with merged-pr-main-releasability.yml because it creates duplicate automatic "
         "mainline proof runs"
     ) in violations
+
+
+def test_merged_pr_dispatch_gate_rejects_masked_dispatch_ref_lookup(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  pull_request_target:",
+                "    types: [closed]",
+                "jobs:",
+                "  dispatch:",
+                "    if: >",
+                "      github.event.pull_request.merged == true &&",
+                "      github.event.pull_request.base.ref == 'main'",
+                "    steps:",
+                "      - env:",
+                "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
+                "        run: |",
+                '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+                '          existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null || true)"',
+                '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must not mask immutable-ref lookup failures with `|| true`" in violation
+        for violation in violations
+    )
 
 
 def test_merged_pr_dispatch_gate_rejects_token_only_revision_assertion(tmp_path: Path) -> None:
