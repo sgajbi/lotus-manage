@@ -297,6 +297,7 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "Dispatch ref $dispatch_ref points to $existing_ref_sha" in dispatcher_text
     assert 'gh api "repos/$GITHUB_REPOSITORY/git/refs"' in dispatcher_text
     assert "gh workflow run main-releasability.yml" in dispatcher_text
+    assert '--repo "$GITHUB_REPOSITORY"' in dispatcher_text
     assert '--ref "$dispatch_ref"' in dispatcher_text
     assert '-f expected_sha="$MERGE_COMMIT_SHA"' in dispatcher_text
     assert '-f triggering_pr="$PR_NUMBER"' in dispatcher_text
@@ -350,7 +351,7 @@ def test_merged_pr_dispatch_gate_accepts_guarded_braced_lookup(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -395,7 +396,7 @@ def test_merged_pr_dispatch_gate_rejects_repository_override(
                     '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                     "          fi",
                     (
-                        '          gh workflow run main-releasability.yml --ref "$dispatch_ref" '
+                        '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" '
                         f'-f expected_sha="$MERGE_COMMIT_SHA" {override}'
                     ),
                 ]
@@ -411,6 +412,54 @@ def test_merged_pr_dispatch_gate_rejects_repository_override(
             "repository overrides" in violation
             for violation in violations
         )
+
+
+def test_merged_pr_dispatch_gate_rejects_missing_repository_pin(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  pull_request_target:",
+                "    types: [closed]",
+                "jobs:",
+                "  dispatch:",
+                "    if: >",
+                "      github.event.pull_request.merged == true &&",
+                "      github.event.pull_request.base.ref == 'main'",
+                "    steps:",
+                "      - name: Dispatch main releasability gate",
+                "        env:",
+                "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
+                "        run: |",
+                '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+                '          if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/${dispatch_ref}" --jq .object.sha 2>/dev/null)"; then',
+                '            if [ "$existing_ref_sha" != "$MERGE_COMMIT_SHA" ]; then',
+                '              echo "::error::Dispatch ref $dispatch_ref points to $existing_ref_sha, expected $MERGE_COMMIT_SHA"',
+                "              exit 1",
+                "            fi",
+                "          else",
+                '            existing_ref_sha=""',
+                "          fi",
+                '          if [ -z "$existing_ref_sha" ]; then',
+                '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
+                "          fi",
+                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must run the main releasability dispatch only after the absent immutable-ref creation "
+        "branch has completed" in violation
+        for violation in violations
+    )
 
 
 def test_merged_pr_dispatch_gate_ignores_commented_ref_lookup(
@@ -447,7 +496,7 @@ def test_merged_pr_dispatch_gate_ignores_commented_ref_lookup(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -476,7 +525,7 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: P
                 "        run: |",
                 '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
             ]
         ),
         encoding="utf-8",
@@ -537,7 +586,7 @@ def test_merged_pr_dispatch_gate_rejects_masked_dispatch_ref_lookup(tmp_path: Pa
                 '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
                 '          existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null || true)"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
             ]
         ),
         encoding="utf-8",
@@ -574,7 +623,7 @@ def test_merged_pr_dispatch_gate_rejects_equivalent_masked_dispatch_ref_lookup(
                 '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
                 '          existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null || :)"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
             ]
         ),
         encoding="utf-8",
@@ -612,7 +661,7 @@ def test_merged_pr_dispatch_gate_rejects_unguarded_dispatch_ref_lookup(
                 '          existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null)"',
                 '          echo "Dispatch ref $dispatch_ref points to $existing_ref_sha"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -654,7 +703,7 @@ def test_merged_pr_dispatch_gate_rejects_lookup_reset_in_success_branch(
                 "          fi",
                 '          echo "Dispatch ref $dispatch_ref points to $existing_ref_sha"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -696,7 +745,7 @@ def test_merged_pr_dispatch_gate_rejects_later_unguarded_lookup(
                 "          fi",
                 '          existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null)"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -738,7 +787,7 @@ def test_merged_pr_dispatch_gate_rejects_later_braced_unguarded_lookup(
                 "          fi",
                 '          existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/${dispatch_ref}" --jq .object.sha 2>/dev/null)"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -782,7 +831,7 @@ def test_merged_pr_dispatch_gate_rejects_non_failing_ref_mismatch_branch(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -829,7 +878,7 @@ def test_merged_pr_dispatch_gate_rejects_nested_ref_mismatch_exit(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -876,7 +925,7 @@ def test_merged_pr_dispatch_gate_rejects_function_body_ref_mismatch_exit(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -923,7 +972,7 @@ def test_merged_pr_dispatch_gate_rejects_nested_ref_mismatch_condition(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -972,7 +1021,7 @@ def test_merged_pr_dispatch_gate_rejects_ref_sha_mutation_before_mismatch_check(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1019,7 +1068,7 @@ def test_merged_pr_dispatch_gate_rejects_subshell_masked_ref_mismatch_exit(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1064,7 +1113,7 @@ def test_merged_pr_dispatch_gate_rejects_unconditional_ref_creation(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1111,7 +1160,7 @@ def test_merged_pr_dispatch_gate_rejects_wrong_ref_creation_payload(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$WRONG_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1161,7 +1210,7 @@ def test_merged_pr_dispatch_gate_rejects_split_dispatch_run_steps(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1209,7 +1258,7 @@ def test_merged_pr_dispatch_gate_rejects_split_unnamed_run_step(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1256,7 +1305,7 @@ def test_merged_pr_dispatch_gate_rejects_masked_dispatch_failure(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA" || true',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA" || true',
             ]
         ),
         encoding="utf-8",
@@ -1304,7 +1353,7 @@ def test_merged_pr_dispatch_gate_rejects_wrong_expected_sha_binding(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$WRONG_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$WRONG_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1352,7 +1401,7 @@ def test_merged_pr_dispatch_gate_rejects_empty_expected_sha_binding(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha=',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha=',
             ]
         ),
         encoding="utf-8",
@@ -1401,7 +1450,7 @@ def test_merged_pr_dispatch_gate_rejects_nested_dispatch_command(
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
                 "          if false; then",
-                '            gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '            gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
                 "          fi",
             ]
         ),
@@ -1451,7 +1500,7 @@ def test_merged_pr_dispatch_gate_rejects_select_scoped_dispatch_body(
                 '            if [ -z "$existing_ref_sha" ]; then',
                 '              gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "            fi",
-                '            gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '            gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
                 "          done < /dev/null || true",
             ]
         ),
@@ -1500,7 +1549,7 @@ def test_merged_pr_dispatch_gate_rejects_dispatch_ref_reassignment_before_dispat
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
                 "          dispatch_ref=main",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1549,7 +1598,7 @@ def test_merged_pr_dispatch_gate_rejects_merge_sha_reassignment_before_dispatch(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1598,7 +1647,7 @@ def test_merged_pr_dispatch_gate_rejects_trailing_ref_creation_after_guard(
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1647,7 +1696,7 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_guarded_ref_creation(
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1695,7 +1744,7 @@ def test_merged_pr_dispatch_gate_rejects_payload_fields_in_inline_comment(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" # -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1743,7 +1792,7 @@ def test_merged_pr_dispatch_gate_rejects_masked_ref_creation_failure(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA" || true',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1791,7 +1840,7 @@ def test_merged_pr_dispatch_gate_rejects_backgrounded_ref_creation(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA" &',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1839,7 +1888,7 @@ def test_merged_pr_dispatch_gate_rejects_chained_ref_creation_command(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA" ; exit 0',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1887,7 +1936,7 @@ def test_merged_pr_dispatch_gate_rejects_non_post_ref_creation_override(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" --method GET -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -1955,7 +2004,7 @@ def test_merged_pr_dispatch_gate_rejects_dispatch_before_ref_creation(
                 "          else",
                 '            existing_ref_sha=""',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
@@ -2008,7 +2057,7 @@ def test_merged_pr_dispatch_gate_rejects_function_scoped_lookup_guard(
                 '          if [ -z "$existing_ref_sha" ]; then',
                 '            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2057,7 +2106,7 @@ def test_merged_pr_dispatch_gate_binds_payload_fields_to_creation_command(
                 '            printf "%s" \'-f ref="refs/tags/$dispatch_ref"\'',
                 '            printf "%s" \'-f sha="$MERGE_COMMIT_SHA"\'',
                 "          fi",
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2099,7 +2148,7 @@ def test_merged_pr_dispatch_gate_rejects_commented_else_reset(
                 '            # existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2142,7 +2191,7 @@ def test_merged_pr_dispatch_gate_rejects_nested_else_reset(
                 "            fi",
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2185,7 +2234,7 @@ def test_merged_pr_dispatch_gate_rejects_function_body_else_reset(
                 "            }",
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2227,7 +2276,7 @@ def test_merged_pr_dispatch_gate_rejects_trailing_else_command(
                 '            gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=1" >/dev/null',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2268,7 +2317,7 @@ def test_merged_pr_dispatch_gate_rejects_lookup_condition_and_false(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2309,7 +2358,7 @@ def test_merged_pr_dispatch_gate_rejects_lookup_condition_sequence_false(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
             ]
         ),
         encoding="utf-8",
@@ -2350,7 +2399,7 @@ def test_merged_pr_dispatch_gate_allows_unrelated_best_effort_commands(
                 '            existing_ref_sha=""',
                 "          fi",
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
                 '          gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=1" >/dev/null || true',
             ]
         ),
@@ -2389,7 +2438,7 @@ def test_merged_pr_dispatch_gate_rejects_token_only_revision_assertion(tmp_path:
                 "        run: |",
                 '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
             ]
         ),
         encoding="utf-8",
@@ -2442,7 +2491,7 @@ def test_merged_pr_dispatch_gate_rejects_non_failing_mismatch_branch(tmp_path: P
                 "        run: |",
                 '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
-                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
+                '          gh workflow run main-releasability.yml --repo "$GITHUB_REPOSITORY" --ref "$dispatch_ref" -f expected_sha=$MERGE_COMMIT_SHA',
             ]
         ),
         encoding="utf-8",
