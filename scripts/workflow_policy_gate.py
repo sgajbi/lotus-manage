@@ -108,6 +108,7 @@ def _opens_nested_shell_scope(stripped_line: str) -> bool:
     return (
         stripped_line == "("
         or stripped_line.startswith("(")
+        or re.search(r"(?:^|[;&|]\s*)\(", stripped_line) is not None
         or stripped_line.startswith(("if ", "for ", "while ", "until ", "case ", "select "))
         or stripped_line.startswith("function ")
         or stripped_line.endswith("() {")
@@ -206,6 +207,13 @@ def _has_failure_masked_outer_brace_group(text: str) -> bool:
                 return True
             brace_depth -= 1
     return False
+
+
+def _has_compound_prefixed_subshell_scope(text: str) -> bool:
+    return any(
+        re.search(r"(?:&&|\|\|)\s*\(", _strip_shell_inline_comment(line.strip())) is not None
+        for line in text.splitlines()
+    )
 
 
 def _strip_shell_inline_comment(stripped_line: str) -> str:
@@ -909,6 +917,12 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must not wrap the governed "
                 "lookup, creation, and dispatch commands in a brace group whose failure is "
                 "masked by a shell OR fallback"
+            )
+        if _has_compound_prefixed_subshell_scope(dispatch_contract_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must not place the governed lookup, "
+                "creation, and dispatch body behind a compound-prefixed subshell such as "
+                "`false && (...) || true`"
             )
         if not _has_conditionally_guarded_immutable_ref_lookup(dispatch_contract_text):
             violations.append(
