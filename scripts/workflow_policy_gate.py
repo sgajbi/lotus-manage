@@ -143,11 +143,11 @@ def _without_shell_quoted_regions(stripped_line: str) -> str:
     escaped = False
     for character in stripped_line:
         if escaped:
-            output.append(" " if quote else character)
+            output.append(" ")
             escaped = False
             continue
         if character == "\\" and quote != "'":
-            output.append(" " if quote else character)
+            output.append(" ")
             escaped = True
             continue
         if quote:

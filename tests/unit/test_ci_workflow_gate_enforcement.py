@@ -1791,6 +1791,27 @@ def test_merged_pr_dispatch_gate_ignores_quoted_dispatch_ref_diagnostics(
     assert merged_pr_main_releasability_dispatch_violations(workflow_dir) == []
 
 
+def test_merged_pr_dispatch_gate_ignores_escaped_separator_diagnostics(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    workflow_text = MERGED_PR_DISPATCHER.read_text(encoding="utf-8").replace(
+        "          gh workflow run main-releasability.yml \\",
+        "          echo diagnostic \\; dispatch_ref=unchanged\n"
+        "          echo diagnostic \\&\\& MERGE_COMMIT_SHA=unchanged\n"
+        "          echo diagnostic \\|\\| GITHUB_REPOSITORY=unchanged\n"
+        "          gh workflow run main-releasability.yml \\",
+        1,
+    )
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        workflow_text,
+        encoding="utf-8",
+    )
+
+    assert merged_pr_main_releasability_dispatch_violations(workflow_dir) == []
+
+
 def test_merged_pr_dispatch_gate_rejects_merge_sha_reassignment_before_dispatch(
     tmp_path: Path,
 ) -> None:
