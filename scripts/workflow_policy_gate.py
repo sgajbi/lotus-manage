@@ -137,17 +137,44 @@ def _closes_isolating_shell_scope(stripped_line: str) -> bool:
     return stripped_line.startswith(")")
 
 
+def _without_shell_quoted_regions(stripped_line: str) -> str:
+    output: list[str] = []
+    quote: str | None = None
+    escaped = False
+    for character in stripped_line:
+        if escaped:
+            output.append(" " if quote else character)
+            escaped = False
+            continue
+        if character == "\\" and quote != "'":
+            output.append(" " if quote else character)
+            escaped = True
+            continue
+        if quote:
+            if character == quote:
+                quote = None
+            output.append(" ")
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            output.append(" ")
+            continue
+        output.append(character)
+    return "".join(output)
+
+
 def _contains_protected_assignment_command(
     stripped_line: str,
     *,
     protected_variables: set[str],
 ) -> bool:
+    executable_line = _without_shell_quoted_regions(stripped_line)
     variable_alternation = "|".join(re.escape(variable) for variable in protected_variables)
     assignment_pattern = re.compile(
         rf"(?:^|[;&|]|\bthen\b|\bdo\b)\s*(?:export\s+)?"
         rf"(?:{variable_alternation})="
     )
-    return assignment_pattern.search(stripped_line) is not None
+    return assignment_pattern.search(executable_line) is not None
 
 
 def _is_shell_comment(stripped_line: str) -> bool:
