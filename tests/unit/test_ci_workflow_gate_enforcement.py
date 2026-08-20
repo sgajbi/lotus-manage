@@ -289,9 +289,11 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "contents: write" in dispatcher_text
     assert 'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"' in dispatcher_text
     assert (
-        'existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref"'
+        'if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref"'
         in dispatcher_text
     )
+    assert "else" in dispatcher_text
+    assert 'existing_ref_sha=""' in dispatcher_text
     assert "Dispatch ref $dispatch_ref points to $existing_ref_sha" in dispatcher_text
     assert 'gh api "repos/$GITHUB_REPOSITORY/git/refs"' in dispatcher_text
     assert "gh workflow run main-releasability.yml" in dispatcher_text
@@ -447,7 +449,7 @@ def test_merged_pr_dispatch_gate_rejects_equivalent_masked_dispatch_ref_lookup(
     )
 
 
-def test_merged_pr_dispatch_gate_allows_unrelated_best_effort_commands(
+def test_merged_pr_dispatch_gate_rejects_unguarded_dispatch_ref_lookup(
     tmp_path: Path,
 ) -> None:
     workflow_dir = tmp_path / "workflows"
@@ -472,6 +474,47 @@ def test_merged_pr_dispatch_gate_allows_unrelated_best_effort_commands(
                 '          echo "Dispatch ref $dispatch_ref points to $existing_ref_sha"',
                 '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
                 '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must guard immutable-ref lookup with an if/else reset" in violation
+        for violation in violations
+    )
+
+
+def test_merged_pr_dispatch_gate_allows_unrelated_best_effort_commands(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        "\n".join(
+            [
+                "on:",
+                "  pull_request_target:",
+                "    types: [closed]",
+                "jobs:",
+                "  dispatch:",
+                "    if: >",
+                "      github.event.pull_request.merged == true &&",
+                "      github.event.pull_request.base.ref == 'main'",
+                "    steps:",
+                "      - env:",
+                "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
+                "        run: |",
+                '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+                '          if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null)"; then',
+                '            echo "Dispatch ref $dispatch_ref points to $existing_ref_sha"',
+                "          else",
+                '            existing_ref_sha=""',
+                "          fi",
+                '          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$dispatch_ref" -f sha="$MERGE_COMMIT_SHA"',
+                '          gh workflow run main-releasability.yml --ref "$dispatch_ref" -f expected_sha="$MERGE_COMMIT_SHA"',
                 '          gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=1" >/dev/null || true',
             ]
         ),
@@ -482,6 +525,10 @@ def test_merged_pr_dispatch_gate_allows_unrelated_best_effort_commands(
 
     assert not any(
         "must not mask immutable-ref lookup failures with shell OR fallbacks" in violation
+        for violation in violations
+    )
+    assert not any(
+        "must guard immutable-ref lookup with an if/else reset" in violation
         for violation in violations
     )
 
