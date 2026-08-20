@@ -285,9 +285,15 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "types: [closed]" in dispatcher_text
     assert "github.event.pull_request.merged == true" in dispatcher_text
     assert "github.event.pull_request.base.ref == 'main'" in dispatcher_text
+    assert "github.event.pull_request.merge_commit_sha" in dispatcher_text
     assert "gh workflow run main-releasability.yml" in dispatcher_text
     assert "--ref main" in dispatcher_text
+    assert '-f expected_sha="$MERGE_COMMIT_SHA"' in dispatcher_text
+    assert '-f triggering_pr="$PR_NUMBER"' in dispatcher_text
     assert "workflow_dispatch:" in main_trigger_section
+    assert "expected_sha:" in main_trigger_section
+    assert "triggering_pr:" in main_trigger_section
+    assert "git rev-parse HEAD" in main_text
     assert "push:" not in main_trigger_section
 
 
@@ -306,7 +312,9 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: P
                 "      github.event.pull_request.merged == true &&",
                 "      github.event.pull_request.base.ref == 'main'",
                 "    steps:",
-                "      - run: gh workflow run main-releasability.yml --ref main",
+                "      - env:",
+                "          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}",
+                "        run: gh workflow run main-releasability.yml --ref main -f expected_sha=$MERGE_COMMIT_SHA",
             ]
         ),
         encoding="utf-8",
@@ -318,8 +326,15 @@ def test_merged_pr_dispatch_gate_rejects_duplicate_main_push_trigger(tmp_path: P
                 "  push:",
                 '    branches: ["main"]',
                 "  workflow_dispatch:",
+                "    inputs:",
+                "      expected_sha:",
+                "        required: false",
                 "concurrency:",
                 "  group: test",
+                "jobs:",
+                "  exact-revision-assertion:",
+                "    steps:",
+                "      - run: git rev-parse HEAD",
             ]
         ),
         encoding="utf-8",
