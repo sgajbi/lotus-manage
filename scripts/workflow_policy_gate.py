@@ -71,7 +71,9 @@ PR_TEMPLATE_REQUIRED_TOKENS = {
 
 def _opens_nested_shell_scope(stripped_line: str) -> bool:
     return (
-        stripped_line.startswith(("if ", "for ", "while ", "until ", "case "))
+        stripped_line == "("
+        or stripped_line.startswith("(")
+        or stripped_line.startswith(("if ", "for ", "while ", "until ", "case "))
         or stripped_line.startswith("function ")
         or stripped_line.endswith("() {")
         or stripped_line.endswith("(){")
@@ -80,7 +82,11 @@ def _opens_nested_shell_scope(stripped_line: str) -> bool:
 
 
 def _closes_nested_shell_scope(stripped_line: str) -> bool:
-    return stripped_line in {"fi", "done", "esac", "}"}
+    return stripped_line in {"fi", "done", "esac", "}"} or stripped_line.startswith(")")
+
+
+def _is_shell_comment(stripped_line: str) -> bool:
+    return stripped_line.startswith("#")
 
 
 def _workflow_files(workflow_dir: Path = WORKFLOW_DIR) -> list[Path]:
@@ -146,11 +152,11 @@ def _immutable_ref_lookup_blocks(text: str) -> list[str]:
     lines = text.splitlines()
     blocks: list[str] = []
     for index, line in enumerate(lines):
-        if not _contains_immutable_dispatch_ref_lookup(line):
+        stripped_line = line.strip()
+        if _is_shell_comment(stripped_line) or not _contains_immutable_dispatch_ref_lookup(line):
             continue
 
         block_lines = [line]
-        stripped_line = line.strip()
         if (
             stripped_line == "then"
             or stripped_line.endswith("; then")
