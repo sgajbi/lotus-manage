@@ -150,6 +150,21 @@ def test_quality_report_check_uses_github_ref_name_for_mainline(monkeypatch) -> 
     assert ehr._base_ref_for_quality_check() == ("HEAD^", "origin/main")
 
 
+def test_quality_report_check_preserves_mainline_context_for_exact_sha_dispatch(
+    monkeypatch,
+) -> None:
+    def fake_git(*args: str) -> str:
+        raise AssertionError(args)
+
+    monkeypatch.setenv("GITHUB_REF_NAME", "main-releasability-abc123")
+    monkeypatch.setenv("LOTUS_QUALITY_REF_NAME", "main")
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref in {"HEAD^", "base1234"})
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: "base1234")
+
+    assert ehr._base_ref_for_quality_check() == ("base1234", "origin/main")
+
+
 def test_quality_report_check_uses_recorded_baseline_for_clean_mainline(
     monkeypatch,
 ) -> None:

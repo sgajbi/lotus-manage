@@ -297,9 +297,16 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "expected_sha:" in main_trigger_section
     assert "triggering_pr:" in main_trigger_section
     assert "${{ inputs.expected_sha || github.sha }}" in main_text
+    assert "LOTUS_RELEASE_GIT_REF: ${{ inputs.expected_sha && 'main' || github.ref_name }}" in (
+        main_text
+    )
+    assert "LOTUS_QUALITY_REF_NAME: ${{ inputs.expected_sha && 'main' || github.ref_name }}" in (
+        main_text
+    )
     assert 'actual_sha="$(git rev-parse HEAD)"' in main_text
     assert 'if [ "$actual_sha" != "$EXPECTED_SHA" ]; then' in main_text
     assert "does not match expected merged PR SHA" in main_text
+    assert "GIT_BRANCH: ${{ env.LOTUS_RELEASE_GIT_REF }}" in main_text
     assert "push:" not in main_trigger_section
 
 
