@@ -2241,6 +2241,38 @@ def test_merged_pr_dispatch_gate_rejects_time_prefixed_compound_scope(
     )
 
 
+def test_merged_pr_dispatch_gate_rejects_masked_dispatch_failure_status(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    workflow_text = (
+        MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
+        .replace(
+            "          gh workflow run main-releasability.yml \\",
+            "          set +e\n          gh workflow run main-releasability.yml \\",
+            1,
+        )
+        .replace(
+            '            -f triggering_pr="$PR_NUMBER"',
+            '            -f triggering_pr="$PR_NUMBER"\n          echo "dispatch attempted"',
+            1,
+        )
+    )
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        workflow_text,
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must preserve the main releasability dispatch command failure as the step status"
+        in violation
+        for violation in violations
+    )
+
+
 def test_merged_pr_dispatch_gate_rejects_repository_variable_reassignment(
     tmp_path: Path,
 ) -> None:
