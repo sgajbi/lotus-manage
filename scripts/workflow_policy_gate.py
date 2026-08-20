@@ -30,6 +30,7 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)
 VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
+HERE_DOCUMENT_START_PATTERN = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
     (
         'if existing_ref_sha="$(gh api '
@@ -174,6 +175,21 @@ def _step_block(text: str, step_name: str) -> str:
     next_step = text.find("\n      - ", start + 1)
     end = next_step if next_step != -1 else len(text)
     return text[start:end]
+
+
+def _strip_shell_here_document_bodies(text: str) -> str:
+    executable_lines: list[str] = []
+    active_delimiter: str | None = None
+    for line in text.splitlines():
+        if active_delimiter is not None:
+            if line.strip() == active_delimiter:
+                active_delimiter = None
+            continue
+        executable_lines.append(line)
+        heredoc_match = HERE_DOCUMENT_START_PATTERN.search(line)
+        if heredoc_match:
+            active_delimiter = heredoc_match.group(2)
+    return "\n".join(executable_lines)
 
 
 def _strip_shell_inline_comment(stripped_line: str) -> str:
@@ -826,7 +842,9 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must not set continue-on-error on "
                 "the governed main releasability dispatch step"
             )
-        dispatch_contract_text = dispatch_step_text or dispatcher_text
+        dispatch_contract_text = _strip_shell_here_document_bodies(
+            dispatch_step_text or dispatcher_text
+        )
         required_tokens = {
             "pull_request_target:": "dispatcher must run from pull_request_target close events",
             "types: [closed]": "dispatcher must be limited to closed pull request events",
