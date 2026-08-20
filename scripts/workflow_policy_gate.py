@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 from pathlib import Path
 
 
@@ -49,6 +50,30 @@ IMMUTABLE_DISPATCH_REF_CREATION_COMMAND = 'gh api "repos/$GITHUB_REPOSITORY/git/
 IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD = '-f ref="refs/tags/$dispatch_ref"'
 IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD = '-f sha="$MERGE_COMMIT_SHA"'
 MAIN_RELEASABILITY_DISPATCH_COMMAND = "gh workflow run main-releasability.yml"
+MAIN_RELEASABILITY_DISPATCH_TOKENS = (
+    (
+        "gh",
+        "workflow",
+        "run",
+        "main-releasability.yml",
+        "--ref",
+        "$dispatch_ref",
+        "-f",
+        "expected_sha=$MERGE_COMMIT_SHA",
+    ),
+    (
+        "gh",
+        "workflow",
+        "run",
+        "main-releasability.yml",
+        "--ref",
+        "$dispatch_ref",
+        "-f",
+        "expected_sha=$MERGE_COMMIT_SHA",
+        "-f",
+        "triggering_pr=$PR_NUMBER",
+    ),
+)
 PR_TEMPLATE_REQUIRED_TOKENS = {
     "summary": "## Summary",
     "risk": "## Risk / Rollback",
@@ -479,6 +504,10 @@ def _main_releasability_dispatch_commands(text: str) -> list[tuple[int, str]]:
 
 def _is_exact_main_releasability_dispatch_command(command: str) -> bool:
     normalized_command = " ".join(command.split())
+    try:
+        command_tokens = shlex.split(normalized_command)
+    except ValueError:
+        return False
     return (
         (
             normalized_command == MAIN_RELEASABILITY_DISPATCH_COMMAND
@@ -490,6 +519,7 @@ def _is_exact_main_releasability_dispatch_command(command: str) -> bool:
         and not normalized_command.rstrip().endswith("&")
         and '--ref "$dispatch_ref"' in normalized_command
         and '-f expected_sha="$MERGE_COMMIT_SHA"' in normalized_command
+        and tuple(command_tokens) in MAIN_RELEASABILITY_DISPATCH_TOKENS
     )
 
 
@@ -837,7 +867,8 @@ def merged_pr_main_releasability_dispatch_violations(
         elif not _dispatches_after_absent_ref_creation(dispatch_contract_text):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must run the main releasability dispatch "
-                "only after the absent immutable-ref creation branch has completed"
+                "only after the absent immutable-ref creation branch has completed, using the "
+                "exact same-repository command without repository overrides"
             )
 
     if main_releasability.exists():
