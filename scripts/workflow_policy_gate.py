@@ -103,7 +103,7 @@ def _opens_nested_shell_scope(stripped_line: str) -> bool:
     return (
         stripped_line == "("
         or stripped_line.startswith("(")
-        or stripped_line.startswith(("if ", "for ", "while ", "until ", "case "))
+        or stripped_line.startswith(("if ", "for ", "while ", "until ", "case ", "select "))
         or stripped_line.startswith("function ")
         or stripped_line.endswith("() {")
         or stripped_line.endswith("(){")
@@ -562,14 +562,24 @@ def _absent_ref_creation_block_end_index(text: str) -> int | None:
     return None
 
 
-def _has_dispatch_ref_reassignment_between(text: str, *, start_index: int, end_index: int) -> bool:
+def _has_protected_variable_reassignment_between(
+    text: str,
+    *,
+    start_index: int,
+    end_index: int,
+    protected_variables: set[str],
+) -> bool:
     lines = text.splitlines()
     depth = 0
     for line in lines[start_index + 1 : end_index + 1]:
         stripped_line = line.strip()
         if not stripped_line or _is_shell_comment(stripped_line):
             continue
-        if depth == 0 and stripped_line.startswith("dispatch_ref="):
+        if depth == 0 and any(
+            stripped_line.startswith(f"{variable}=")
+            or stripped_line.startswith(f"export {variable}=")
+            for variable in protected_variables
+        ):
             return True
         if _opens_nested_shell_scope(stripped_line):
             depth += 1
@@ -585,10 +595,17 @@ def _dispatches_after_absent_ref_creation(text: str) -> bool:
         len(dispatch_commands) == 1
         and creation_block_end_index is not None
         and dispatch_commands[0][0] > creation_block_end_index
-        and not _has_dispatch_ref_reassignment_between(
+        and not _has_protected_variable_reassignment_between(
+            text,
+            start_index=-1,
+            end_index=dispatch_commands[0][0],
+            protected_variables={"MERGE_COMMIT_SHA"},
+        )
+        and not _has_protected_variable_reassignment_between(
             text,
             start_index=creation_block_end_index,
             end_index=dispatch_commands[0][0],
+            protected_variables={"dispatch_ref"},
         )
         and _is_exact_main_releasability_dispatch_command(dispatch_commands[0][1])
     )
