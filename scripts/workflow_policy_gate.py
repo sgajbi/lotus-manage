@@ -124,6 +124,32 @@ def _closes_nested_shell_scope(stripped_line: str) -> bool:
     return stripped_line in {"fi", "done", "esac", "}"} or stripped_line.startswith(")")
 
 
+def _opens_isolating_shell_scope(stripped_line: str) -> bool:
+    scope_line = _strip_shell_command_prefixes(stripped_line)
+    return (
+        scope_line == "("
+        or scope_line.startswith("(")
+        or re.search(r"(?:^|[;&|]\s*)\(", scope_line) is not None
+    )
+
+
+def _closes_isolating_shell_scope(stripped_line: str) -> bool:
+    return stripped_line.startswith(")")
+
+
+def _contains_protected_assignment_command(
+    stripped_line: str,
+    *,
+    protected_variables: set[str],
+) -> bool:
+    variable_alternation = "|".join(re.escape(variable) for variable in protected_variables)
+    assignment_pattern = re.compile(
+        rf"(?:^|[;&|]|\bthen\b|\bdo\b)\s*(?:export\s+)?"
+        rf"(?:{variable_alternation})="
+    )
+    return assignment_pattern.search(stripped_line) is not None
+
+
 def _is_shell_comment(stripped_line: str) -> bool:
     return stripped_line.startswith("#")
 
@@ -708,15 +734,14 @@ def _has_protected_variable_reassignment_between(
         stripped_line = line.strip()
         if not stripped_line or _is_shell_comment(stripped_line):
             continue
-        if depth == 0 and any(
-            stripped_line.startswith(f"{variable}=")
-            or stripped_line.startswith(f"export {variable}=")
-            for variable in protected_variables
+        if depth == 0 and _contains_protected_assignment_command(
+            stripped_line,
+            protected_variables=protected_variables,
         ):
             return True
-        if _opens_nested_shell_scope(stripped_line):
+        if _opens_isolating_shell_scope(stripped_line):
             depth += 1
-        if _closes_nested_shell_scope(stripped_line):
+        if _closes_isolating_shell_scope(stripped_line):
             depth -= 1
     return False
 
