@@ -24,6 +24,8 @@ env:
   PYTHONUNBUFFERED: "1"
   PYTHON_VERSION: "3.12"
   COVERAGE_FAIL_UNDER: "99"
+  LOTUS_RELEASE_GIT_REF: ${{ inputs.expected_sha && 'main' || github.ref_name }}
+  LOTUS_QUALITY_REF_NAME: ${{ inputs.expected_sha && 'main' || github.ref_name }}
 
 jobs:
   exact-revision-assertion:
@@ -185,7 +187,7 @@ jobs:
       - name: Build Docker image and write evidence
         env:
           GIT_SHA: ${{ github.sha }}
-          GIT_BRANCH: ${{ github.ref_name }}
+          GIT_BRANCH: ${{ env.LOTUS_RELEASE_GIT_REF }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           CI_PIPELINE_ID: ${{ github.run_id }}
         run: make docker-image-evidence

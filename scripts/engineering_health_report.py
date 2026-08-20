@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 DEFAULT_BASE_REF = "origin/main"
+MAINLINE_REF_NAMES = {"main", "master"}
 QUALITY_DIR = REPO_ROOT / "quality"
 DEFAULT_OUTPUT = QUALITY_DIR / "refactor_health_report.md"
 DEFAULT_BASELINE_OUTPUT = QUALITY_DIR / "baseline_report.md"
@@ -125,6 +126,9 @@ def _git_resolved_ref(ref: str) -> str:
 
 
 def _current_ref_name() -> str:
+    quality_ref_name = os.environ.get("LOTUS_QUALITY_REF_NAME")
+    if quality_ref_name in MAINLINE_REF_NAMES:
+        return quality_ref_name
     env_ref_name = os.environ.get("GITHUB_REF_NAME")
     if env_ref_name:
         return env_ref_name
@@ -132,7 +136,10 @@ def _current_ref_name() -> str:
 
 
 def _is_github_mainline_ref(ref_name: str) -> bool:
-    return bool(os.environ.get("GITHUB_REF_NAME")) and ref_name in {"main", "master"}
+    return (
+        bool(os.environ.get("GITHUB_REF_NAME") or os.environ.get("LOTUS_QUALITY_REF_NAME"))
+        and ref_name in MAINLINE_REF_NAMES
+    )
 
 
 def _recorded_quality_baseline_ref() -> str | None:
@@ -150,7 +157,7 @@ def _recorded_quality_baseline_ref() -> str | None:
 
 def _base_ref_for_quality_check() -> tuple[str, str]:
     ref_name = _current_ref_name()
-    if ref_name in {"main", "master"} and _git_ref_exists("HEAD^"):
+    if ref_name in MAINLINE_REF_NAMES and _git_ref_exists("HEAD^"):
         if _is_github_mainline_ref(ref_name):
             return _recorded_quality_baseline_ref() or "HEAD^", DEFAULT_BASE_REF
         if _git_status_porcelain().strip():
