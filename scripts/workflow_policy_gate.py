@@ -199,6 +199,7 @@ def _immutable_ref_creation_commands(text: str) -> list[str]:
 
 
 def _is_exact_immutable_ref_creation_command(command: str) -> bool:
+    padded_command = f" {command} "
     return (
         (
             command == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
@@ -206,6 +207,9 @@ def _is_exact_immutable_ref_creation_command(command: str) -> bool:
         )
         and "||" not in command
         and not command.rstrip().endswith("&")
+        and "--method" not in padded_command
+        and " -X" not in padded_command
+        and "--input" not in padded_command
         and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in command
         and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in command
     )
