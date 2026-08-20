@@ -29,10 +29,17 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)
 VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
-IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITION = (
-    'if existing_ref_sha="$(gh api '
-    '"repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" '
-    '--jq .object.sha 2>/dev/null)"; then'
+IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
+    (
+        'if existing_ref_sha="$(gh api '
+        '"repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" '
+        '--jq .object.sha 2>/dev/null)"; then'
+    ),
+    (
+        'if existing_ref_sha="$(gh api '
+        '"repos/$GITHUB_REPOSITORY/git/ref/tags/${dispatch_ref}" '
+        '--jq .object.sha 2>/dev/null)"; then'
+    ),
 )
 PR_TEMPLATE_REQUIRED_TOKENS = {
     "summary": "## Summary",
@@ -114,11 +121,15 @@ def _step_block(text: str, step_name: str) -> str:
     return text[start:end]
 
 
+def _contains_immutable_dispatch_ref_lookup(text: str) -> bool:
+    return "git/ref/tags/$dispatch_ref" in text or "git/ref/tags/${dispatch_ref}" in text
+
+
 def _immutable_ref_lookup_blocks(text: str) -> list[str]:
     lines = text.splitlines()
     blocks: list[str] = []
     for index, line in enumerate(lines):
-        if "git/ref/tags/$dispatch_ref" not in line:
+        if not _contains_immutable_dispatch_ref_lookup(line):
             continue
 
         block_lines = [line]
@@ -146,7 +157,7 @@ def _immutable_ref_lookup_guard_blocks(text: str) -> list[str]:
     blocks: list[str] = []
     for index, line in enumerate(lines):
         stripped_line = line.strip()
-        if stripped_line != IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITION:
+        if stripped_line not in IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS:
             continue
 
         block_lines = [line]
@@ -199,7 +210,7 @@ def _outer_lookup_else_arm_has_unconditional_reset(block: str) -> bool:
 
 def _is_conditionally_guarded_immutable_ref_lookup_block(block: str) -> bool:
     return (
-        "git/ref/tags/$dispatch_ref" in block
+        _contains_immutable_dispatch_ref_lookup(block)
         and "\n" in block
         and "else" in block
         and _outer_lookup_else_arm_has_unconditional_reset(block)
