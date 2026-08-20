@@ -21,7 +21,7 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
     "feature-lane.yml": {"contents": "read"},
     "pr-merge-gate.yml": {"contents": "read"},
     "main-releasability.yml": {"contents": "read"},
-    "merged-pr-main-releasability.yml": {"actions": "write", "contents": "read"},
+    "merged-pr-main-releasability.yml": {"actions": "write", "contents": "write"},
     "quality-baseline.yml": {"contents": "read"},
     "demo-certification.yml": {"contents": "read"},
     "pr-auto-merge.yml": {"contents": "read"},
@@ -96,6 +96,17 @@ def _top_level_permissions(text: str) -> dict[str, str] | None:
             permissions[key.strip()] = value.strip().split("#", 1)[0].strip()
         return permissions
     return None
+
+
+def _step_block(text: str, step_name: str) -> str:
+    start = text.find(f"- name: {step_name}")
+    if start == -1:
+        return ""
+    next_step = text.find("\n      - name:", start + 1)
+    next_uses = text.find("\n      - uses:", start + 1)
+    candidates = [index for index in (next_step, next_uses) if index != -1]
+    end = min(candidates) if candidates else len(text)
+    return text[start:end]
 
 
 def permission_violations(workflow_path: Path) -> list[str]:
@@ -305,16 +316,18 @@ def merged_pr_main_releasability_dispatch_violations(
             "github.event.pull_request.merge_commit_sha": (
                 "dispatcher must bind dispatch evidence to the merged PR SHA"
             ),
-            'gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha': (
-                "dispatcher must resolve current main before dispatching"
+            'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"': (
+                "dispatcher must create an immutable dispatch ref for the merged PR SHA"
             ),
-            'if [ "$current_main_sha" != "$MERGE_COMMIT_SHA" ]; then': (
-                "dispatcher must skip stale pull-request close events after main advances"
+            'gh api "repos/$GITHUB_REPOSITORY/git/refs"': (
+                "dispatcher must create the immutable dispatch ref before workflow dispatch"
             ),
             "gh workflow run main-releasability.yml": (
                 "dispatcher must start the governed main releasability workflow"
             ),
-            "--ref main": "dispatcher must dispatch against main",
+            '--ref "$dispatch_ref"': (
+                "dispatcher must dispatch against the immutable merged-PR ref"
+            ),
             "-f expected_sha=": (
                 "dispatcher must pass the merged PR SHA as an expected mainline SHA"
             ),
@@ -331,12 +344,13 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{main_releasability.as_posix()}: main releasability must keep manual "
                 "workflow_dispatch support"
             )
+        assertion_step = _step_block(main_text, "Assert expected merged PR SHA")
         required_assertion_tokens = {
             "expected_sha:": trigger_section,
-            'actual_sha="$(git rev-parse HEAD)"': main_text,
-            'if [ "$actual_sha" != "$EXPECTED_SHA" ]; then': main_text,
-            "does not match expected merged PR SHA": main_text,
-            "exit 1": main_text,
+            'actual_sha="$(git rev-parse HEAD)"': assertion_step,
+            'if [ "$actual_sha" != "$EXPECTED_SHA" ]; then': assertion_step,
+            "does not match expected merged PR SHA": assertion_step,
+            "exit 1": assertion_step,
         }
         missing_assertion_tokens = [
             token
