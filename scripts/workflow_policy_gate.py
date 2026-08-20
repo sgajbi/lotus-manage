@@ -192,14 +192,25 @@ def _outer_lookup_else_arm(block: str) -> str:
     return "\n".join(else_lines)
 
 
-def _has_conditionally_guarded_immutable_ref_lookup(text: str) -> bool:
-    return any(
+def _is_conditionally_guarded_immutable_ref_lookup_block(block: str) -> bool:
+    return (
         "git/ref/tags/$dispatch_ref" in block
         and "\n" in block
         and "else" in block
         and 'existing_ref_sha=""' in _outer_lookup_else_arm(block)
         and block.strip().endswith("fi")
-        for block in _immutable_ref_lookup_guard_blocks(text)
+    )
+
+
+def _has_conditionally_guarded_immutable_ref_lookup(text: str) -> bool:
+    lookup_blocks = _immutable_ref_lookup_blocks(text)
+    guarded_blocks = _immutable_ref_lookup_guard_blocks(text)
+    return (
+        bool(lookup_blocks)
+        and len(lookup_blocks) == len(guarded_blocks)
+        and all(
+            _is_conditionally_guarded_immutable_ref_lookup_block(block) for block in guarded_blocks
+        )
     )
 
 
