@@ -2212,6 +2212,35 @@ def test_merged_pr_dispatch_gate_rejects_compound_prefixed_subshell(
     )
 
 
+def test_merged_pr_dispatch_gate_rejects_time_prefixed_compound_scope(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    workflow_text = MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
+    workflow_text = workflow_text.replace(
+        "        run: |\n",
+        "        run: |\n          time if false; then\n",
+        1,
+    ).replace(
+        '            -f triggering_pr="$PR_NUMBER"',
+        '            -f triggering_pr="$PR_NUMBER"\n          fi',
+        1,
+    )
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        workflow_text,
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must not place the governed lookup, creation, and dispatch body behind "
+        "a time-prefixed compound command" in violation
+        for violation in violations
+    )
+
+
 def test_merged_pr_dispatch_gate_rejects_repository_variable_reassignment(
     tmp_path: Path,
 ) -> None:
