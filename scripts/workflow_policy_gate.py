@@ -136,6 +136,42 @@ def _immutable_ref_lookup_blocks(text: str) -> list[str]:
     return blocks
 
 
+def _immutable_ref_lookup_guard_blocks(text: str) -> list[str]:
+    lines = text.splitlines()
+    blocks: list[str] = []
+    for index, line in enumerate(lines):
+        stripped_line = line.strip()
+        if "git/ref/tags/$dispatch_ref" not in line or not stripped_line.startswith(
+            'if existing_ref_sha="$(gh api '
+        ):
+            continue
+
+        block_lines = [line]
+        depth = 1
+        for follow in lines[index + 1 :]:
+            block_lines.append(follow)
+            stripped_follow = follow.strip()
+            if stripped_follow.startswith("if "):
+                depth += 1
+            if stripped_follow == "fi":
+                depth -= 1
+            if depth == 0:
+                break
+        blocks.append("\n".join(block_lines))
+    return blocks
+
+
+def _has_conditionally_guarded_immutable_ref_lookup(text: str) -> bool:
+    return any(
+        "git/ref/tags/$dispatch_ref" in block
+        and "\n" in block
+        and "else" in block
+        and 'existing_ref_sha=""' in block
+        and block.strip().endswith("fi")
+        for block in _immutable_ref_lookup_guard_blocks(text)
+    )
+
+
 def permission_violations(workflow_path: Path) -> list[str]:
     expected = EXPECTED_WORKFLOW_PERMISSIONS.get(workflow_path.name)
     if expected is None:
@@ -346,10 +382,6 @@ def merged_pr_main_releasability_dispatch_violations(
             'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"': (
                 "dispatcher must create an immutable dispatch ref for the merged PR SHA"
             ),
-            'existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref"': (
-                "dispatcher must treat a missing immutable ref as absent without capturing the "
-                "404 response body as a ref SHA"
-            ),
             "Dispatch ref $dispatch_ref points to $existing_ref_sha": (
                 "dispatcher must fail closed if an existing dispatch ref points to a different SHA"
             ),
@@ -369,6 +401,12 @@ def merged_pr_main_releasability_dispatch_violations(
         for token, reason in required_tokens.items():
             if token not in dispatcher_text:
                 violations.append(f"{dispatcher.as_posix()}: {reason}")
+        if not _has_conditionally_guarded_immutable_ref_lookup(dispatcher_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must guard immutable-ref lookup with "
+                "an if/else reset so a missing ref is treated as absent instead of terminating "
+                "the workflow or capturing an error body as an existing ref SHA"
+            )
         if any("||" in block for block in _immutable_ref_lookup_blocks(dispatcher_text)):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must not mask immutable-ref lookup "
