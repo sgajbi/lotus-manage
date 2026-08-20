@@ -192,6 +192,22 @@ def _strip_shell_here_document_bodies(text: str) -> str:
     return "\n".join(executable_lines)
 
 
+def _has_failure_masked_outer_brace_group(text: str) -> bool:
+    brace_depth = 0
+    for line in text.splitlines():
+        stripped_line = _strip_shell_inline_comment(line.strip())
+        if not stripped_line:
+            continue
+        if stripped_line == "{":
+            brace_depth += 1
+            continue
+        if stripped_line.startswith("}") and brace_depth:
+            if brace_depth == 1 and "||" in stripped_line:
+                return True
+            brace_depth -= 1
+    return False
+
+
 def _strip_shell_inline_comment(stripped_line: str) -> str:
     in_single_quote = False
     in_double_quote = False
@@ -622,7 +638,7 @@ def _dispatches_after_absent_ref_creation(text: str) -> bool:
             text,
             start_index=-1,
             end_index=dispatch_commands[0][0],
-            protected_variables={"MERGE_COMMIT_SHA"},
+            protected_variables={"GITHUB_REPOSITORY", "MERGE_COMMIT_SHA"},
         )
         and not _has_protected_variable_reassignment_between(
             text,
@@ -888,6 +904,12 @@ def merged_pr_main_releasability_dispatch_violations(
                 search_text = dispatch_contract_text
             if token not in search_text:
                 violations.append(f"{dispatcher.as_posix()}: {reason}")
+        if _has_failure_masked_outer_brace_group(dispatch_contract_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must not wrap the governed "
+                "lookup, creation, and dispatch commands in a brace group whose failure is "
+                "masked by a shell OR fallback"
+            )
         if not _has_conditionally_guarded_immutable_ref_lookup(dispatch_contract_text):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must guard immutable-ref lookup with "
