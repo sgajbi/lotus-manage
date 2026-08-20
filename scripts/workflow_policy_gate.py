@@ -41,6 +41,9 @@ IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
         '--jq .object.sha 2>/dev/null)"; then'
     ),
 )
+IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION = (
+    'if [ "$existing_ref_sha" != "$MERGE_COMMIT_SHA" ]; then'
+)
 PR_TEMPLATE_REQUIRED_TOKENS = {
     "summary": "## Summary",
     "risk": "## Risk / Rollback",
@@ -208,6 +211,41 @@ def _outer_lookup_else_arm_has_unconditional_reset(block: str) -> bool:
     return executable_commands == ['existing_ref_sha=""']
 
 
+def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
+    lines = block.splitlines()
+    then_arm: list[str] = []
+    depth = 1
+    for line in lines[1:]:
+        stripped = line.strip()
+        if stripped == "else" and depth == 1:
+            break
+        then_arm.append(line)
+        if stripped.startswith("if "):
+            depth += 1
+        if stripped == "fi":
+            depth -= 1
+
+    for index, line in enumerate(then_arm):
+        if line.strip() != IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION:
+            continue
+
+        executable_commands: list[str] = []
+        depth = 1
+        for follow in then_arm[index + 1 :]:
+            stripped_follow = follow.strip()
+            if stripped_follow == "fi" and depth == 1:
+                break
+            if not stripped_follow or stripped_follow.startswith("#"):
+                continue
+            executable_commands.append(stripped_follow)
+            if stripped_follow.startswith("if "):
+                depth += 1
+            if stripped_follow == "fi":
+                depth -= 1
+        return "exit 1" in executable_commands
+    return False
+
+
 def _is_conditionally_guarded_immutable_ref_lookup_block(block: str) -> bool:
     return (
         _contains_immutable_dispatch_ref_lookup(block)
@@ -227,6 +265,13 @@ def _has_conditionally_guarded_immutable_ref_lookup(text: str) -> bool:
         and all(
             _is_conditionally_guarded_immutable_ref_lookup_block(block) for block in guarded_blocks
         )
+    )
+
+
+def _guarded_lookup_success_arms_fail_on_ref_mismatch(text: str) -> bool:
+    guarded_blocks = _immutable_ref_lookup_guard_blocks(text)
+    return bool(guarded_blocks) and all(
+        _outer_lookup_then_arm_has_mismatch_exit(block) for block in guarded_blocks
     )
 
 
@@ -464,6 +509,11 @@ def merged_pr_main_releasability_dispatch_violations(
                 f"{dispatcher.as_posix()}: dispatcher must guard immutable-ref lookup with "
                 "an if/else reset so a missing ref is treated as absent instead of terminating "
                 "the workflow or capturing an error body as an existing ref SHA"
+            )
+        elif not _guarded_lookup_success_arms_fail_on_ref_mismatch(dispatcher_text):
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must fail closed with exit 1 when an "
+                "existing immutable dispatch ref points to a different SHA"
             )
         if any("||" in block for block in _immutable_ref_lookup_blocks(dispatcher_text)):
             violations.append(
