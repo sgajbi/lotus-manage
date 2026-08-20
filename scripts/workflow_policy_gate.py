@@ -369,11 +369,11 @@ def merged_pr_main_releasability_dispatch_violations(
         for token, reason in required_tokens.items():
             if token not in dispatcher_text:
                 violations.append(f"{dispatcher.as_posix()}: {reason}")
-        if any("|| true" in block for block in _immutable_ref_lookup_blocks(dispatcher_text)):
+        if any("||" in block for block in _immutable_ref_lookup_blocks(dispatcher_text)):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must not mask immutable-ref lookup "
-                "failures with `|| true` because GitHub 404 response bodies can be captured as "
-                "existing ref SHAs"
+                "failures with shell OR fallbacks because GitHub 404 response bodies can be "
+                "captured as existing ref SHAs"
             )
 
     if main_releasability.exists():
