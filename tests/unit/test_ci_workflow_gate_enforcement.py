@@ -2154,6 +2154,59 @@ def test_merged_pr_dispatch_gate_rejects_creation_hostname_override(
     )
 
 
+def test_merged_pr_dispatch_gate_rejects_or_masked_brace_group(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    workflow_text = MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
+    workflow_text = workflow_text.replace(
+        "        run: |\n",
+        "        run: |\n          {\n",
+        1,
+    ).replace(
+        '            -f triggering_pr="$PR_NUMBER"',
+        '            -f triggering_pr="$PR_NUMBER"\n          } || true',
+        1,
+    )
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        workflow_text,
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must not wrap the governed lookup, creation, and dispatch commands in a brace "
+        "group whose failure is masked by a shell OR fallback" in violation
+        for violation in violations
+    )
+
+
+def test_merged_pr_dispatch_gate_rejects_repository_variable_reassignment(
+    tmp_path: Path,
+) -> None:
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(
+        MERGED_PR_DISPATCHER.read_text(encoding="utf-8").replace(
+            '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+            '          GITHUB_REPOSITORY="wrong/other"\n'
+            '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any(
+        "must run the main releasability dispatch only after the absent immutable-ref creation "
+        "branch has completed" in violation
+        for violation in violations
+    )
+
+
 def test_merged_pr_dispatch_gate_rejects_dispatch_before_ref_creation(
     tmp_path: Path,
 ) -> None:
