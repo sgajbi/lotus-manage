@@ -45,7 +45,6 @@ jobs:
               -f sha="$MERGE_COMMIT_SHA" >/dev/null
           fi
           gh workflow run main-releasability.yml \
-            --repo "$GITHUB_REPOSITORY" \
             --ref "$dispatch_ref" \
             -f expected_sha="$MERGE_COMMIT_SHA" \
             -f triggering_pr="$PR_NUMBER"
