@@ -148,8 +148,49 @@ def _step_block(text: str, step_name: str) -> str:
     return text[start:end]
 
 
+def _continued_shell_command(lines: list[str], start_index: int) -> tuple[str, int]:
+    command_parts: list[str] = []
+    index = start_index
+    while index < len(lines):
+        stripped = lines[index].strip()
+        if stripped.endswith("\\"):
+            command_parts.append(stripped[:-1].rstrip())
+            index += 1
+            continue
+        command_parts.append(stripped)
+        break
+    return " ".join(command_parts), index
+
+
 def _contains_immutable_dispatch_ref_lookup(text: str) -> bool:
     return "git/ref/tags/$dispatch_ref" in text or "git/ref/tags/${dispatch_ref}" in text
+
+
+def _immutable_ref_creation_commands(text: str) -> list[str]:
+    lines = text.splitlines()
+    commands: list[str] = []
+    index = 0
+    while index < len(lines):
+        stripped_line = lines[index].strip()
+        if not _is_shell_comment(stripped_line) and (
+            stripped_line == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
+            or stripped_line.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
+        ):
+            command, index = _continued_shell_command(lines, index)
+            commands.append(command)
+        index += 1
+    return commands
+
+
+def _is_exact_immutable_ref_creation_command(command: str) -> bool:
+    return (
+        (
+            command == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
+            or command.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
+        )
+        and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in command
+        and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in command
+    )
 
 
 def _immutable_ref_lookup_blocks(text: str) -> list[str]:
@@ -308,41 +349,49 @@ def _guarded_lookup_success_arms_fail_on_ref_mismatch(text: str) -> bool:
 
 def _conditionally_creates_absent_immutable_ref(text: str) -> bool:
     lines = text.splitlines()
+    creation_commands = _immutable_ref_creation_commands(text)
+    guarded_creation_commands: list[str] = []
     depth = 0
     for index, line in enumerate(lines):
         stripped_line = line.strip()
         if stripped_line == IMMUTABLE_DISPATCH_REF_CREATION_CONDITION and depth == 0:
-            direct_executable_commands: list[str] = []
             creation_depth = 1
-            for follow in lines[index + 1 :]:
+            follow_index = index + 1
+            while follow_index < len(lines):
+                follow = lines[follow_index]
                 stripped_follow = follow.strip()
                 if stripped_follow == "fi" and creation_depth == 1:
                     break
                 if not stripped_follow or _is_shell_comment(stripped_follow):
+                    follow_index += 1
                     continue
-                if creation_depth == 1:
-                    direct_executable_commands.append(stripped_follow)
+                if creation_depth == 1 and (
+                    stripped_follow == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
+                    or stripped_follow.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
+                ):
+                    command, follow_index = _continued_shell_command(lines, follow_index)
+                    guarded_creation_commands.append(command)
+                    follow_index += 1
+                    continue
                 if _opens_nested_shell_scope(stripped_follow):
                     creation_depth += 1
                 if _closes_nested_shell_scope(stripped_follow):
                     creation_depth -= 1
-            creation_text = "\n".join(direct_executable_commands)
-            return (
-                any(
-                    command == IMMUTABLE_DISPATCH_REF_CREATION_COMMAND
-                    or command.startswith(f"{IMMUTABLE_DISPATCH_REF_CREATION_COMMAND} ")
-                    for command in direct_executable_commands
-                )
-                and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in creation_text
-                and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in creation_text
-            )
+                follow_index += 1
         if not stripped_line or _is_shell_comment(stripped_line):
             continue
         if _opens_nested_shell_scope(stripped_line):
             depth += 1
         if _closes_nested_shell_scope(stripped_line):
             depth -= 1
-    return False
+    return (
+        bool(guarded_creation_commands)
+        and len(guarded_creation_commands) == len(creation_commands)
+        and all(
+            _is_exact_immutable_ref_creation_command(command)
+            for command in guarded_creation_commands
+        )
+    )
 
 
 def permission_violations(workflow_path: Path) -> list[str]:
@@ -544,6 +593,13 @@ def merged_pr_main_releasability_dispatch_violations(
         )
     else:
         dispatcher_text = dispatcher.read_text(encoding="utf-8")
+        dispatch_step_text = _step_block(dispatcher_text, "Dispatch main releasability gate")
+        if not dispatch_step_text:
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must keep lookup, conditional ref "
+                "creation, and workflow dispatch in one named run step"
+            )
+        dispatch_contract_text = dispatch_step_text or dispatcher_text
         required_tokens = {
             "pull_request_target:": "dispatcher must run from pull_request_target close events",
             "types: [closed]": "dispatcher must be limited to closed pull request events",
@@ -572,26 +628,37 @@ def merged_pr_main_releasability_dispatch_violations(
             ),
         }
         for token, reason in required_tokens.items():
-            if token not in dispatcher_text:
+            search_text = dispatcher_text
+            if token in {
+                "github.event.pull_request.merge_commit_sha",
+                'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+                "Dispatch ref $dispatch_ref points to $existing_ref_sha",
+                'gh api "repos/$GITHUB_REPOSITORY/git/refs"',
+                "gh workflow run main-releasability.yml",
+                '--ref "$dispatch_ref"',
+                "-f expected_sha=",
+            }:
+                search_text = dispatch_contract_text
+            if token not in search_text:
                 violations.append(f"{dispatcher.as_posix()}: {reason}")
-        if not _has_conditionally_guarded_immutable_ref_lookup(dispatcher_text):
+        if not _has_conditionally_guarded_immutable_ref_lookup(dispatch_contract_text):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must guard immutable-ref lookup with "
                 "an if/else reset so a missing ref is treated as absent instead of terminating "
                 "the workflow or capturing an error body as an existing ref SHA"
             )
-        elif not _guarded_lookup_success_arms_fail_on_ref_mismatch(dispatcher_text):
+        elif not _guarded_lookup_success_arms_fail_on_ref_mismatch(dispatch_contract_text):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must fail closed with exit 1 when an "
                 "existing immutable dispatch ref points to a different SHA"
             )
-        if any("||" in block for block in _immutable_ref_lookup_blocks(dispatcher_text)):
+        if any("||" in block for block in _immutable_ref_lookup_blocks(dispatch_contract_text)):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must not mask immutable-ref lookup "
                 "failures with shell OR fallbacks because GitHub 404 response bodies can be "
                 "captured as existing ref SHAs"
             )
-        if not _conditionally_creates_absent_immutable_ref(dispatcher_text):
+        if not _conditionally_creates_absent_immutable_ref(dispatch_contract_text):
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must create the immutable dispatch ref only "
                 "inside the empty existing-ref branch with exact ref and SHA fields so reruns do "
