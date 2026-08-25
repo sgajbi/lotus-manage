@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, Protocol
 
 from src.core.mandates import (
@@ -18,6 +18,13 @@ class DpmMandateRepository(Protocol):
         self,
         *,
         portfolio_id: str,
+    ) -> Optional[DpmMandateDigitalTwin]: ...
+
+    def get_mandate_by_portfolio_as_of(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
     ) -> Optional[DpmMandateDigitalTwin]: ...
 
     def get_latest_mandate(
@@ -38,6 +45,13 @@ class DpmMandateRepository(Protocol):
         self,
         *,
         mandate_id: str,
+    ) -> Optional[DpmMandateHealthSnapshot]: ...
+
+    def get_health_snapshot_as_of(
+        self,
+        *,
+        mandate_id: str,
+        as_of_date: date,
     ) -> Optional[DpmMandateHealthSnapshot]: ...
 
     def save_monitoring_exception(self, exception: DpmMonitoringException) -> None: ...
