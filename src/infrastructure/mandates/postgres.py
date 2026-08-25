@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from contextlib import closing
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Optional
 
 from src.core.common.capabilities import has_psycopg
@@ -88,11 +88,28 @@ class PostgresDpmMandateRepository:
             SELECT payload_json
             FROM dpm_mandate_snapshots
             WHERE portfolio_id = %s
-            ORDER BY as_of_date DESC, mandate_version DESC
+            ORDER BY as_of_date DESC, mandate_version DESC, mandate_id DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (portfolio_id,)).fetchone()
+        return _to_twin(row)
+
+    def get_mandate_by_portfolio_as_of(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+    ) -> Optional[DpmMandateDigitalTwin]:
+        query = """
+            SELECT payload_json
+            FROM dpm_mandate_snapshots
+            WHERE portfolio_id = %s AND as_of_date <= %s
+            ORDER BY as_of_date DESC, mandate_version DESC, mandate_id DESC
+            LIMIT 1
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (portfolio_id, as_of_date.isoformat())).fetchone()
         return _to_twin(row)
 
     def get_latest_mandate(self, *, mandate_id: str) -> Optional[DpmMandateDigitalTwin]:
@@ -179,6 +196,25 @@ class PostgresDpmMandateRepository:
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (mandate_id,)).fetchone()
+        if row is None:
+            return None
+        return load_model_json(DpmMandateHealthSnapshot, _payload(row))
+
+    def get_health_snapshot_as_of(
+        self,
+        *,
+        mandate_id: str,
+        as_of_date: date,
+    ) -> Optional[DpmMandateHealthSnapshot]:
+        query = """
+            SELECT payload_json
+            FROM dpm_mandate_health_snapshots
+            WHERE mandate_id = %s AND as_of_date <= %s
+            ORDER BY as_of_date DESC, created_at DESC, health_snapshot_id DESC
+            LIMIT 1
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (mandate_id, as_of_date.isoformat())).fetchone()
         if row is None:
             return None
         return load_model_json(DpmMandateHealthSnapshot, _payload(row))
