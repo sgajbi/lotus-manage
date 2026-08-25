@@ -45,12 +45,18 @@ Gateway should expose a product-facing command-center contract that composes the
 | Monitoring run audit | `GET /api/v1/dpm/monitoring/runs` and `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}` | Provide newest-first audit view and drill-down. |
 | Exception queue | `GET /api/v1/dpm/exceptions` | Shape for table and drill-down panels without changing reason codes, severity, or recommended action. |
 | Exception resolution | `POST /api/v1/dpm/exceptions/{exception_id}/resolve` | Enforce resolver entitlement and pass bounded resolution reason. |
-| Mandate drill-down | `GET /api/v1/mandates/{mandate_id}`, `GET /api/v1/mandates/{mandate_id}/health`, `GET /api/v1/mandates/{mandate_id}/diff` | Provide twin, score, dimension evidence, and version delta for the selected mandate. |
-| Portfolio entry point | `GET /api/v1/mandates/by-portfolio/{portfolio_id}` | Support portfolio-context navigation from existing Workbench portfolio pages. |
+| Mandate drill-down | `GET /api/v1/mandates/{mandate_id}`, `GET /api/v1/mandates/{mandate_id}/health`, `GET /api/v1/mandates/{mandate_id}/diff` | Provide twin, score, dimension evidence, and version delta for the selected mandate. Forward `as_of_date` to the health read for historical reviews and preserve the resolved snapshot date. |
+| Portfolio entry point | `GET /api/v1/mandates/by-portfolio/{portfolio_id}` | Support portfolio-context navigation from existing Workbench portfolio pages. Forward `as_of_date` when the portfolio review is historical and preserve the resolved twin date. |
 
 Gateway should keep the same domain vocabulary as `lotus-manage`: `mandate_id`,
 `portfolio_id`, `portfolio_manager_id`, `book_id`, `monitoring_run_id`, `health_state`,
 `source_readiness_state`, `reason_code`, `recommended_action`, and `supportability`.
+
+Historical review calls must pass the same governed business date to both the portfolio-mandate
+and mandate-health reads. Manage selects only persisted evidence whose own `as_of_date` is on or
+before that request, returns `404` before the first qualifying record, and never relabels the
+resolved source date as the requested date. Gateway must keep treating differing source dates as
+non-aligned evidence rather than blending them into a mandate verdict.
 
 ### Gateway Request Examples
 
