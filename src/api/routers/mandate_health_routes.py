@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import Depends
+from datetime import date
+
+from fastapi import Depends, Query
 
 from src.api.dependencies import get_mandate_repository
 from src.api.routers.mandate_http import (
@@ -10,9 +12,9 @@ from src.api.routers.mandate_http import (
 from src.api.routers.mandates import router
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
-    get_latest_mandate_health,
     recalculate_mandate_health,
 )
+from src.api.services.mandate_temporal_reads import get_mandate_health
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMandateHealthInput, DpmMandateHealthSnapshot
 
@@ -20,23 +22,36 @@ from src.core.mandates import DpmMandateHealthInput, DpmMandateHealthSnapshot
 @router.get(
     "/{mandate_id}/health",
     response_model=DpmMandateHealthSnapshot,
-    summary="Get latest discretionary mandate health snapshot",
+    summary="Get discretionary mandate health snapshot",
     description=(
-        "Use this endpoint when a PM, operator, or command-center surface needs the latest "
-        "persisted health state for a mandate, including dimension scores, top reasons, source "
-        "readiness, and recommended action."
+        "Use this endpoint when a PM, operator, or historical review needs a persisted health "
+        "state for a mandate. When as_of_date is supplied, Manage returns the latest snapshot "
+        "whose source-owned business date is on or before the request and preserves the actual "
+        "snapshot date. When omitted, the endpoint remains a latest-state read."
     ),
     responses={
-        200: {"description": "Latest mandate health snapshot."},
+        200: {"description": "Resolved mandate health snapshot."},
         404: {"description": "No health snapshot exists for this mandate id."},
     },
 )
 async def read_mandate_health(
     mandate_id: str,
+    as_of_date: date | None = Query(
+        default=None,
+        description=(
+            "Optional business date used to resolve the latest persisted health snapshot on or "
+            "before that date. The response keeps the snapshot's actual as_of_date."
+        ),
+        examples=["2026-04-10"],
+    ),
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateHealthSnapshot:
     return read_mandate_with_not_found_http_mapping(
-        lambda: get_latest_mandate_health(repository=repository, mandate_id=mandate_id)
+        lambda: get_mandate_health(
+            repository=repository,
+            mandate_id=mandate_id,
+            as_of_date=as_of_date,
+        )
     )
 
 
