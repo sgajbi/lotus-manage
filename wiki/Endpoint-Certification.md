@@ -201,8 +201,9 @@ Purpose:
 
 RFC-0038 mandate digital-twin foundation for discretionary portfolio management. These endpoints
 let lotus-manage refresh mandate state from product-specific `lotus-core` source products, persist
-the compiled mandate digital twin, read the latest portfolio or mandate view, inspect version
-history, explain what changed between versions, recalculate health, run bounded mandate monitoring,
+the compiled mandate digital twin, read the latest or date-qualified portfolio mandate and health
+view for historical review, inspect version history, explain what changed between versions,
+recalculate health, run bounded mandate monitoring,
 search monitoring runs, summarize a bounded command-center view, search exception queues, and
 resolve reviewed exceptions. They are not advisory proposal endpoints and do not claim Gateway or
 Workbench product-surface integration.
@@ -214,12 +215,17 @@ Functional behavior:
 - Refresh returns the persisted `DpmMandateDigitalTwin`, a generated mandate-health snapshot,
   derived monitoring exceptions, and explicit field-gap codes for source products not yet
   available in core.
-- Read by portfolio and read by mandate return only previously refreshed state and return `404`
-  when no mandate snapshot exists.
+- Read by portfolio returns only previously refreshed state. Optional `as_of_date` selects the
+  latest twin on or before that business date, preserves the twin's actual source date, and returns
+  `404` before the first qualifying snapshot. Omitting the query preserves latest-state behavior.
+- Read by mandate remains a latest-state lookup and returns `404` when no mandate snapshot exists.
 - Version listing returns persisted mandate twins newest first.
 - Diff compares the latest two versions by default, or caller-supplied `from_version` and
   `to_version`, and labels materiality for changed mandate fields.
-- Health read returns the latest persisted mandate health snapshot.
+- Health read accepts optional `as_of_date`, selects the latest snapshot on or before that
+  business date using deterministic same-date ordering, preserves the snapshot's actual date, and
+  returns `404` before the first qualifying snapshot. Omitting the query returns the latest
+  persisted health snapshot.
 - Health recalculate persists a new snapshot and derived exceptions from explicit monitoring input.
 - Monitoring run-once evaluates caller-supplied mandate ids that have already been refreshed.
 - Monitoring run search and detail return persisted run records.
@@ -258,6 +264,8 @@ Non-functional posture:
 - The API preserves source-lineage records from core and keeps missing source products explicit
   through `field_gap_codes`.
 - Diff output is deterministic and ignores volatile source-lineage ordering.
+- Temporal reads are implemented in both in-memory and PostgreSQL repositories. PostgreSQL uses
+  covering temporal indexes and the same source-date/version-or-snapshot tie-break semantics.
 - The default repository profile is in-memory for local runtime and tests; the Postgres repository
   and migrations exist for production profile wiring.
 - Swagger groups the endpoints under `lotus-manage Mandates` with route-local examples and bounded

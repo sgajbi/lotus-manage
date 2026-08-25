@@ -963,6 +963,13 @@ Current repository posture:
     source-lineage filters/facets are merged in their owning repositories. Richer source
     methodology remains tracked by RFC42-WTBD-006, and external OMS/client-communication runtime
     promotion remains an unsupported external-owner dependency rather than a Manage gap.
+17. Mandate-by-portfolio and mandate-health reads support optional source-preserving
+    `as_of_date` selection. Both in-memory and PostgreSQL repositories resolve the latest persisted
+    evidence on or before the requested business date with deterministic same-date tie-breaks,
+    keep the record's actual `as_of_date`, and return the existing typed not-found posture before
+    the first qualifying record. Omitting the query remains a backward-compatible latest-state
+    read. This source contract enables Gateway historical mandate comparison without allowing
+    Gateway or Workbench to reconstruct or relabel Manage evidence.
 
 ## Architecture And Module Map
 
