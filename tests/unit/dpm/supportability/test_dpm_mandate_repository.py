@@ -700,21 +700,47 @@ class _FakeConnection:
                 rows = [row for row in rows if row["portfolio_id"] == params[0]]
             if "where mandate_id" in normalized:
                 rows = [row for row in rows if row["mandate_id"] == params[0]]
+            if "as_of_date <= %s" in normalized:
+                rows = [row for row in rows if row["as_of_date"] <= params[1]]
             rows = sorted(
-                rows, key=lambda row: (row["as_of_date"], row["mandate_version"]), reverse=True
+                rows,
+                key=lambda row: (
+                    row["as_of_date"],
+                    row["mandate_version"],
+                    row["mandate_id"],
+                ),
+                reverse=True,
             )
             return _FakeResult(rows=[{"payload_json": row["payload_json"]} for row in rows])
 
         if normalized.startswith("insert into dpm_mandate_health_snapshots"):
             self.store.health[str(params[0])] = {
+                "health_snapshot_id": params[0],
                 "mandate_id": params[1],
+                "as_of_date": params[3],
                 "created_at": params[10],
                 "payload_json": params[9],
             }
             return _FakeResult(rowcount=1)
         if "from dpm_mandate_health_snapshots" in normalized:
             rows = [row for row in self.store.health.values() if row["mandate_id"] == params[0]]
-            rows = sorted(rows, key=lambda row: row["created_at"], reverse=True)
+            if "as_of_date <= %s" in normalized:
+                rows = [row for row in rows if row["as_of_date"] <= params[1]]
+                rows = sorted(
+                    rows,
+                    key=lambda row: (
+                        row["as_of_date"],
+                        row["created_at"],
+                        row["health_snapshot_id"],
+                    ),
+                    reverse=True,
+                )
+            else:
+                rows = sorted(
+                    rows,
+                    key=lambda row: (row["created_at"], row["health_snapshot_id"]),
+                    reverse=True,
+                )
             return _FakeResult(rows=[{"payload_json": row["payload_json"]} for row in rows])
 
         if normalized.startswith("insert into dpm_monitoring_runs"):
@@ -875,6 +901,68 @@ def test_postgres_repository_persists_reads_versions_and_health(
     assert repository.get_latest_mandate(mandate_id="UNKNOWN") is None
     assert repository.get_latest_health_snapshot(mandate_id=twin_v2.mandate_id) == health
     assert repository.get_latest_health_snapshot(mandate_id="UNKNOWN") is None
+
+
+def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, _ = _postgres_repository(monkeypatch)
+    first = _twin(version="1", as_of=date(2026, 4, 1))
+    same_day_older = _twin(version="2", as_of=date(2026, 4, 10))
+    selected = _twin(version="3", as_of=date(2026, 4, 10))
+    future = _twin(version="4", as_of=date(2026, 5, 3))
+    for twin in (first, same_day_older, selected, future):
+        repository.save_mandate_snapshot(twin)
+
+    same_day_older_health = _health_snapshot(selected).model_copy(
+        update={
+            "health_snapshot_id": "mh_20260410_a",
+            "as_of_date": date(2026, 4, 10),
+            "calculated_at": datetime(2026, 4, 10, 10, 0, tzinfo=timezone.utc),
+        }
+    )
+    selected_health = same_day_older_health.model_copy(
+        update={"health_snapshot_id": "mh_20260410_b"}
+    )
+    future_health = _health_snapshot(future).model_copy(
+        update={
+            "health_snapshot_id": "mh_20260503",
+            "as_of_date": date(2026, 5, 3),
+            "calculated_at": datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        }
+    )
+    repository.save_health_snapshot(same_day_older_health)
+    repository.save_health_snapshot(selected_health)
+    repository.save_health_snapshot(future_health)
+
+    assert (
+        repository.get_mandate_by_portfolio_as_of(
+            portfolio_id=selected.portfolio_id,
+            as_of_date=date(2026, 4, 10),
+        )
+        == selected
+    )
+    assert (
+        repository.get_mandate_by_portfolio_as_of(
+            portfolio_id=selected.portfolio_id,
+            as_of_date=date(2026, 3, 31),
+        )
+        is None
+    )
+    assert (
+        repository.get_health_snapshot_as_of(
+            mandate_id=selected.mandate_id,
+            as_of_date=date(2026, 4, 10),
+        )
+        == selected_health
+    )
+    assert (
+        repository.get_health_snapshot_as_of(
+            mandate_id=selected.mandate_id,
+            as_of_date=date(2026, 3, 31),
+        )
+        is None
+    )
 
 
 def test_postgres_repository_lists_resolves_and_purges_exceptions(
