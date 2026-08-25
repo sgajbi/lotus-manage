@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Optional
 
 from fastapi import Depends, Query
@@ -16,9 +17,9 @@ from src.api.services.mandate_service import (
     DpmMandateDiffUnavailableError,
     diff_mandate_versions,
     get_latest_mandate,
-    get_latest_mandate_by_portfolio,
     list_mandate_versions,
 )
+from src.api.services.mandate_temporal_reads import get_mandate_by_portfolio
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMandateDigitalTwin
 
@@ -26,15 +27,17 @@ from src.core.mandates import DpmMandateDigitalTwin
 @router.get(
     "/by-portfolio/{portfolio_id}",
     response_model=DpmMandateDigitalTwin,
-    summary="Get latest discretionary mandate for a portfolio",
+    summary="Get discretionary mandate for a portfolio",
     description=(
-        "Use this endpoint when a DPM command center or operations surface needs the latest "
-        "lotus-manage mandate digital twin for a core-governed portfolio. The response is "
-        "read-only state previously refreshed from lotus-core source products."
+        "Use this endpoint when a DPM command center or historical portfolio review needs the "
+        "lotus-manage mandate digital twin that applied to a core-governed portfolio. When "
+        "as_of_date is supplied, Manage returns the latest persisted twin whose source-owned "
+        "business date is on or before the request and preserves that actual business date. "
+        "When omitted, the endpoint remains a latest-state read."
     ),
     responses={
         200: {
-            "description": "Latest discretionary mandate digital twin for the portfolio.",
+            "description": "Resolved discretionary mandate digital twin for the portfolio.",
             "content": {"application/json": {"example": MANDATE_RESPONSE_EXAMPLE}},
         },
         404: {"description": "No mandate digital twin has been refreshed for this portfolio."},
@@ -42,12 +45,21 @@ from src.core.mandates import DpmMandateDigitalTwin
 )
 async def read_mandate_by_portfolio(
     portfolio_id: str,
+    as_of_date: date | None = Query(
+        default=None,
+        description=(
+            "Optional business date used to resolve the latest persisted mandate twin on or "
+            "before that date. The response keeps the source twin's actual as_of_date."
+        ),
+        examples=["2026-04-10"],
+    ),
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateDigitalTwin:
     return read_mandate_with_not_found_http_mapping(
-        lambda: get_latest_mandate_by_portfolio(
+        lambda: get_mandate_by_portfolio(
             repository=repository,
             portfolio_id=portfolio_id,
+            as_of_date=as_of_date,
         )
     )
 

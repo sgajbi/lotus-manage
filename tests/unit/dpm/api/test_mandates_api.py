@@ -351,14 +351,17 @@ def _portfolio_cashflow_projection_payload() -> dict[str, Any]:
 
 
 def _twin(
-    *, version: str = "3", turnover_budget: Decimal = Decimal("0.15")
+    *,
+    version: str = "3",
+    turnover_budget: Decimal = Decimal("0.15"),
+    as_of: date = AS_OF,
 ) -> DpmMandateDigitalTwin:
     twin = DpmMandateDigitalTwin.model_validate(
         {
             "mandate_id": MANDATE_ID,
             "portfolio_id": PORTFOLIO_ID,
             "mandate_version": version,
-            "as_of_date": AS_OF,
+            "as_of_date": as_of,
             "base_currency": "SGD",
             "reference_currency": "SGD",
             "risk_profile": "BALANCED",
@@ -519,6 +522,67 @@ def test_read_mandate_by_portfolio_and_by_id_use_persisted_state() -> None:
     assert by_portfolio.json()["mandate_version"] == "3"
     assert by_id.status_code == 200
     assert by_id.json()["portfolio_id"] == PORTFOLIO_ID
+
+
+def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
+    repository = InMemoryDpmMandateRepository()
+    historical = _twin(version="2", as_of=date(2026, 4, 10))
+    future = _twin(version="3", as_of=date(2026, 5, 3))
+    repository.save_mandate_snapshot(historical)
+    repository.save_mandate_snapshot(future)
+    historical_health = calculate_mandate_health(
+        DpmMandateHealthInput(twin=historical, cash_weight=Decimal("0.11"))
+    ).model_copy(
+        update={
+            "health_snapshot_id": "mh_20260410",
+            "as_of_date": date(2026, 4, 10),
+            "calculated_at": datetime(2026, 4, 10, 10, 0, tzinfo=timezone.utc),
+        }
+    )
+    future_health = calculate_mandate_health(
+        DpmMandateHealthInput(twin=future, cash_weight=Decimal("0.08"))
+    ).model_copy(
+        update={
+            "health_snapshot_id": "mh_20260503",
+            "as_of_date": date(2026, 5, 3),
+            "calculated_at": datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        }
+    )
+    repository.save_health_snapshot(historical_health)
+    repository.save_health_snapshot(future_health)
+
+    with _client(repository) as client:
+        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-10")
+        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-10")
+        latest_mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}")
+        latest_health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
+
+    assert mandate.status_code == 200
+    assert mandate.json()["mandate_version"] == "2"
+    assert mandate.json()["as_of_date"] == "2026-04-10"
+    assert health.status_code == 200
+    assert health.json()["health_snapshot_id"] == "mh_20260410"
+    assert health.json()["as_of_date"] == "2026-04-10"
+    assert latest_mandate.json()["mandate_version"] == "3"
+    assert latest_health.json()["health_snapshot_id"] == "mh_20260503"
+
+
+def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidence() -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin(version="2", as_of=date(2026, 4, 10))
+    repository.save_mandate_snapshot(twin)
+    repository.save_health_snapshot(
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11")))
+    )
+
+    with _client(repository) as client:
+        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-09")
+        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-09")
+
+    assert mandate.status_code == 404
+    assert mandate.json()["detail"] == "DPM_MANDATE_NOT_FOUND"
+    assert health.status_code == 404
+    assert health.json()["detail"] == "DPM_MANDATE_HEALTH_NOT_FOUND"
 
 
 def test_missing_mandate_by_portfolio_returns_404() -> None:
