@@ -585,6 +585,36 @@ def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidenc
     assert health.json()["detail"] == "DPM_MANDATE_HEALTH_NOT_FOUND"
 
 
+def test_temporal_read_queries_reject_invalid_business_dates() -> None:
+    with _client(InMemoryDpmMandateRepository()) as client:
+        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=not-a-date")
+        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-02-30")
+
+    assert mandate.status_code == 422
+    assert health.status_code == 422
+    assert isinstance(mandate.json()["detail"], list)
+    assert isinstance(health.json()["detail"], list)
+
+
+def test_temporal_read_queries_are_documented_as_optional_business_dates() -> None:
+    schema = app.openapi()
+    paths = (
+        "/api/v1/mandates/by-portfolio/{portfolio_id}",
+        "/api/v1/mandates/{mandate_id}/health",
+    )
+
+    for path in paths:
+        operation = schema["paths"][path]["get"]
+        parameter = next(item for item in operation["parameters"] if item["name"] == "as_of_date")
+        assert parameter["in"] == "query"
+        assert parameter["required"] is False
+        assert "business date" in parameter["description"].lower()
+        assert {entry.get("format") for entry in parameter["schema"]["anyOf"]} == {
+            "date",
+            None,
+        }
+
+
 def test_missing_mandate_by_portfolio_returns_404() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}")
