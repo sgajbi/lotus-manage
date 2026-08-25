@@ -168,6 +168,26 @@ def test_repository_resolves_portfolio_mandate_at_or_before_business_date() -> N
     assert repository.get_latest_mandate_by_portfolio(portfolio_id=first.portfolio_id) == future
 
 
+def test_repository_preserves_same_binding_version_across_business_dates() -> None:
+    repository = InMemoryDpmMandateRepository()
+    historical = _twin(version="1", as_of=date(2026, 4, 10))
+    current = _twin(version="1", as_of=date(2026, 5, 3)).model_copy(
+        update={"risk_profile": "GROWTH"}
+    )
+
+    repository.save_mandate_snapshot(historical)
+    repository.save_mandate_snapshot(current)
+
+    assert (
+        repository.get_mandate_by_portfolio_as_of(
+            portfolio_id=historical.portfolio_id,
+            as_of_date=historical.as_of_date,
+        )
+        == historical
+    )
+    assert repository.get_latest_mandate_by_portfolio(portfolio_id=current.portfolio_id) == current
+
+
 def test_repository_resolves_health_snapshot_at_or_before_business_date() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin()
@@ -515,11 +535,15 @@ def test_in_memory_retention_key_helpers_select_only_stale_records() -> None:
 
     assert _stale_mandate_keys(
         {
-            (old_twin.mandate_id, old_twin.mandate_version): old_twin,
-            (current_twin.mandate_id, current_twin.mandate_version): current_twin,
+            (old_twin.mandate_id, old_twin.mandate_version, old_twin.as_of_date): old_twin,
+            (
+                current_twin.mandate_id,
+                current_twin.mandate_version,
+                current_twin.as_of_date,
+            ): current_twin,
         },
         cutoff,
-    ) == [(old_twin.mandate_id, old_twin.mandate_version)]
+    ) == [(old_twin.mandate_id, old_twin.mandate_version, old_twin.as_of_date)]
     assert _stale_health_snapshot_keys(
         {
             old_snapshot.health_snapshot_id: old_snapshot,
@@ -660,7 +684,7 @@ class _FakeResult:
 
 class _FakePostgresStore:
     def __init__(self) -> None:
-        self.mandates: dict[tuple[str, str], dict[str, Any]] = {}
+        self.mandates: dict[tuple[str, str, str], dict[str, Any]] = {}
         self.health: dict[str, dict[str, Any]] = {}
         self.monitoring_runs: dict[str, dict[str, Any]] = {}
         self.exceptions: dict[str, dict[str, Any]] = {}
@@ -692,7 +716,7 @@ class _FakeConnection:
                 "as_of_date": params[4],
                 "payload_json": params[7],
             }
-            self.store.mandates[(str(params[1]), str(params[3]))] = row
+            self.store.mandates[(str(params[1]), str(params[3]), str(params[4]))] = row
             return _FakeResult(rowcount=1)
         if "from dpm_mandate_snapshots" in normalized:
             rows = list(self.store.mandates.values())
@@ -963,6 +987,29 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
         )
         is None
     )
+
+
+def test_postgres_repository_preserves_same_binding_version_across_business_dates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, store = _postgres_repository(monkeypatch)
+    historical = _twin(version="1", as_of=date(2026, 4, 10))
+    current = _twin(version="1", as_of=date(2026, 5, 3)).model_copy(
+        update={"risk_profile": "GROWTH"}
+    )
+
+    repository.save_mandate_snapshot(historical)
+    repository.save_mandate_snapshot(current)
+
+    assert len(store.mandates) == 2
+    assert (
+        repository.get_mandate_by_portfolio_as_of(
+            portfolio_id=historical.portfolio_id,
+            as_of_date=historical.as_of_date,
+        )
+        == historical
+    )
+    assert repository.get_latest_mandate_by_portfolio(portfolio_id=current.portfolio_id) == current
 
 
 def test_postgres_repository_lists_resolves_and_purges_exceptions(
