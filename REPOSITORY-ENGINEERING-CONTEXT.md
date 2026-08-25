@@ -969,7 +969,9 @@ Current repository posture:
     keep the record's actual `as_of_date`, and return the existing typed not-found posture before
     the first qualifying record. Omitting the query remains a backward-compatible latest-state
     read. This source contract enables Gateway historical mandate comparison without allowing
-    Gateway or Workbench to reconstruct or relabel Manage evidence.
+    Gateway or Workbench to reconstruct or relabel Manage evidence. Persisted mandate snapshot
+    identity is `(mandate_id, mandate_version, as_of_date)`, so an unchanged source binding version
+    cannot overwrite a prior business-date observation; same-date replays remain idempotent.
 
 ## Architecture And Module Map
 

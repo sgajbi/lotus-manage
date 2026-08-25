@@ -218,6 +218,9 @@ Functional behavior:
 - Read by portfolio returns only previously refreshed state. Optional `as_of_date` selects the
   latest twin on or before that business date, preserves the twin's actual source date, and returns
   `404` before the first qualifying snapshot. Omitting the query preserves latest-state behavior.
+- Persistence keys mandate observations by mandate, source-owned binding version, and business
+  date. This preserves history when a binding remains at the same version across reporting dates,
+  while a replay for the same version and date stays idempotent.
 - Read by mandate remains a latest-state lookup and returns `404` when no mandate snapshot exists.
 - Version listing returns persisted mandate twins newest first.
 - Diff compares the latest two versions by default, or caller-supplied `from_version` and
