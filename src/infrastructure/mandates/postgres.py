@@ -47,7 +47,7 @@ class PostgresDpmMandateRepository:
                 created_at,
                 created_by
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (mandate_id, mandate_version) DO UPDATE SET
+            ON CONFLICT (mandate_id, mandate_version, as_of_date) DO UPDATE SET
                 portfolio_id=excluded.portfolio_id,
                 as_of_date=excluded.as_of_date,
                 source_hash=excluded.source_hash,
@@ -540,7 +540,7 @@ def _import_psycopg() -> tuple[Any, Any]:
 
 
 def _mandate_snapshot_id(twin: DpmMandateDigitalTwin) -> str:
-    return f"ms_{twin.mandate_id}_{twin.mandate_version}"
+    return f"ms_{twin.mandate_id}_{twin.mandate_version}_{twin.as_of_date.isoformat()}"
 
 
 def _source_hash(payload_json: str) -> str:
