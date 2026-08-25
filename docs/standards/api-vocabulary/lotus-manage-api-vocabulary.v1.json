@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-08-08T14:27:20.619115+00:00",
+  "generatedAt": "2026-08-25T14:49:47.317902+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -17816,6 +17816,18 @@
       "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
     },
     {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional business date used to resolve the latest persisted mandate twin on or before that date. The response keeps the source twin's actual as_of_date.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+    },
+    {
       "name": "mandate_id",
       "kind": "request_option",
       "location": "path",
@@ -17910,6 +17922,18 @@
       "allowedValues": [],
       "semanticId": "lotus.mandate_id",
       "attributeRef": "#/attributeCatalog/lotus.mandate_id"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional business date used to resolve the latest persisted health snapshot on or before that date. The response keeps the snapshot's actual as_of_date.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
     },
     {
       "name": "mandate_id",
@@ -56440,7 +56464,7 @@
       "method": "GET",
       "path": "/api/v1/mandates/by-portfolio/{portfolio_id}",
       "operationId": "read_mandate_by_portfolio_api_v1_mandates_by_portfolio__portfolio_id__get",
-      "summary": "Get latest discretionary mandate for a portfolio",
+      "summary": "Get discretionary mandate for a portfolio",
       "request": {
         "fields": [
           {
@@ -56450,6 +56474,14 @@
             "type": "string",
             "semanticId": "lotus.portfolio_id",
             "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           }
         ]
       },
@@ -58482,7 +58514,7 @@
       "method": "GET",
       "path": "/api/v1/mandates/{mandate_id}/health",
       "operationId": "read_mandate_health_api_v1_mandates__mandate_id__health_get",
-      "summary": "Get latest discretionary mandate health snapshot",
+      "summary": "Get discretionary mandate health snapshot",
       "request": {
         "fields": [
           {
@@ -58492,6 +58524,14 @@
             "type": "string",
             "semanticId": "lotus.mandate_id",
             "attributeRef": "#/attributeCatalog/lotus.mandate_id"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
           }
         ]
       },
