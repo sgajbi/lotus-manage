@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from threading import Lock
 from typing import Optional
 
@@ -35,7 +35,23 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
             rows = [
                 twin for twin in self._mandates_by_key.values() if twin.portfolio_id == portfolio_id
             ]
-            return deepcopy(_latest_twin(rows)) if rows else None
+            latest = _latest_twin(rows)
+            return deepcopy(latest) if latest is not None else None
+
+    def get_mandate_by_portfolio_as_of(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+    ) -> Optional[DpmMandateDigitalTwin]:
+        with self._lock:
+            rows = [
+                twin
+                for twin in self._mandates_by_key.values()
+                if twin.portfolio_id == portfolio_id and twin.as_of_date <= as_of_date
+            ]
+            latest = _latest_twin(rows)
+            return deepcopy(latest) if latest is not None else None
 
     def get_latest_mandate(
         self,
@@ -46,7 +62,8 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
             rows = [
                 twin for twin in self._mandates_by_key.values() if twin.mandate_id == mandate_id
             ]
-            return deepcopy(_latest_twin(rows)) if rows else None
+            latest = _latest_twin(rows)
+            return deepcopy(latest) if latest is not None else None
 
     def list_mandate_versions(
         self,
@@ -78,6 +95,26 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
             if not rows:
                 return None
             latest = max(rows, key=lambda row: (row.calculated_at, row.health_snapshot_id))
+            return deepcopy(latest)
+
+    def get_health_snapshot_as_of(
+        self,
+        *,
+        mandate_id: str,
+        as_of_date: date,
+    ) -> Optional[DpmMandateHealthSnapshot]:
+        with self._lock:
+            rows = [
+                snapshot
+                for snapshot in self._health_snapshots.values()
+                if snapshot.mandate_id == mandate_id and snapshot.as_of_date <= as_of_date
+            ]
+            if not rows:
+                return None
+            latest = max(
+                rows,
+                key=lambda row: (row.as_of_date, row.calculated_at, row.health_snapshot_id),
+            )
             return deepcopy(latest)
 
     def save_monitoring_exception(self, exception: DpmMonitoringException) -> None:
@@ -187,8 +224,10 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
             return len(mandate_keys) + len(health_keys) + len(run_keys) + len(exception_keys)
 
 
-def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> DpmMandateDigitalTwin:
-    return max(rows, key=lambda row: (row.as_of_date, row.mandate_version))
+def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> Optional[DpmMandateDigitalTwin]:
+    if not rows:
+        return None
+    return max(rows, key=lambda row: (row.as_of_date, row.mandate_version, row.mandate_id))
 
 
 def _stale_mandate_keys(

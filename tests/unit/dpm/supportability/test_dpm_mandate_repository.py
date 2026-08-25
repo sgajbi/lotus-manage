@@ -143,6 +143,80 @@ def test_repository_persists_latest_health_snapshot() -> None:
     assert latest.health_score == 91
 
 
+def test_repository_resolves_portfolio_mandate_at_or_before_business_date() -> None:
+    repository = InMemoryDpmMandateRepository()
+    first = _twin(version="1", as_of=date(2026, 4, 1))
+    same_day_older = _twin(version="2", as_of=date(2026, 4, 10))
+    same_day_latest = _twin(version="3", as_of=date(2026, 4, 10))
+    future = _twin(version="4", as_of=date(2026, 5, 3))
+    for twin in (first, same_day_older, same_day_latest, future):
+        repository.save_mandate_snapshot(twin)
+
+    resolved = repository.get_mandate_by_portfolio_as_of(
+        portfolio_id=first.portfolio_id,
+        as_of_date=date(2026, 4, 10),
+    )
+
+    assert resolved == same_day_latest
+    assert (
+        repository.get_mandate_by_portfolio_as_of(
+            portfolio_id=first.portfolio_id,
+            as_of_date=date(2026, 3, 31),
+        )
+        is None
+    )
+    assert repository.get_latest_mandate_by_portfolio(portfolio_id=first.portfolio_id) == future
+
+
+def test_repository_resolves_health_snapshot_at_or_before_business_date() -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin()
+    first = _health_snapshot(twin).model_copy(
+        update={
+            "health_snapshot_id": "mh_20260401",
+            "as_of_date": date(2026, 4, 1),
+            "calculated_at": datetime(2026, 4, 1, 9, 0, tzinfo=timezone.utc),
+        }
+    )
+    same_day_older = first.model_copy(
+        update={
+            "health_snapshot_id": "mh_20260410_a",
+            "as_of_date": date(2026, 4, 10),
+            "calculated_at": datetime(2026, 4, 10, 9, 0, tzinfo=timezone.utc),
+        }
+    )
+    same_day_latest = same_day_older.model_copy(
+        update={
+            "health_snapshot_id": "mh_20260410_b",
+            "calculated_at": datetime(2026, 4, 10, 10, 0, tzinfo=timezone.utc),
+        }
+    )
+    future = same_day_latest.model_copy(
+        update={
+            "health_snapshot_id": "mh_20260503",
+            "as_of_date": date(2026, 5, 3),
+            "calculated_at": datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+        }
+    )
+    for snapshot in (first, same_day_older, same_day_latest, future):
+        repository.save_health_snapshot(snapshot)
+
+    resolved = repository.get_health_snapshot_as_of(
+        mandate_id=twin.mandate_id,
+        as_of_date=date(2026, 4, 10),
+    )
+
+    assert resolved == same_day_latest
+    assert (
+        repository.get_health_snapshot_as_of(
+            mandate_id=twin.mandate_id,
+            as_of_date=date(2026, 3, 31),
+        )
+        is None
+    )
+    assert repository.get_latest_health_snapshot(mandate_id=twin.mandate_id) == future
+
+
 def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin()
