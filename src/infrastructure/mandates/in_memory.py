@@ -17,14 +17,16 @@ from src.core.mandates import (
 class InMemoryDpmMandateRepository(DpmMandateRepository):
     def __init__(self) -> None:
         self._lock = Lock()
-        self._mandates_by_key: dict[tuple[str, str], DpmMandateDigitalTwin] = {}
+        self._mandates_by_key: dict[tuple[str, str, date], DpmMandateDigitalTwin] = {}
         self._health_snapshots: dict[str, DpmMandateHealthSnapshot] = {}
         self._monitoring_runs: dict[str, DpmMonitoringRun] = {}
         self._exceptions: dict[str, DpmMonitoringException] = {}
 
     def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin) -> None:
         with self._lock:
-            self._mandates_by_key[(twin.mandate_id, twin.mandate_version)] = deepcopy(twin)
+            self._mandates_by_key[(twin.mandate_id, twin.mandate_version, twin.as_of_date)] = (
+                deepcopy(twin)
+            )
 
     def get_latest_mandate_by_portfolio(
         self,
@@ -231,9 +233,9 @@ def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> Optional[DpmMandateDigita
 
 
 def _stale_mandate_keys(
-    mandates: dict[tuple[str, str], DpmMandateDigitalTwin],
+    mandates: dict[tuple[str, str, date], DpmMandateDigitalTwin],
     cutoff_utc: datetime,
-) -> list[tuple[str, str]]:
+) -> list[tuple[str, str, date]]:
     return [
         key
         for key, twin in mandates.items()

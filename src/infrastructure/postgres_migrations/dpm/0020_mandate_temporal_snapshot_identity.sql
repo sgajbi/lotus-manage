@@ -1,0 +1,6 @@
+ALTER TABLE dpm_mandate_snapshots
+DROP CONSTRAINT IF EXISTS dpm_mandate_snapshots_mandate_id_mandate_version_key;
+
+ALTER TABLE dpm_mandate_snapshots
+ADD CONSTRAINT dpm_mandate_snapshots_mandate_version_as_of_key
+UNIQUE (mandate_id, mandate_version, as_of_date);
