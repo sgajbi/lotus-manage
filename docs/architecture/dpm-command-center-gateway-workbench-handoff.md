@@ -58,6 +58,11 @@ before that request, returns `404` before the first qualifying record, and never
 resolved source date as the requested date. Gateway must keep treating differing source dates as
 non-aligned evidence rather than blending them into a mandate verdict.
 
+Mandate snapshot identity includes `mandate_id`, source-owned `mandate_version`, and
+`as_of_date`. An unchanged source binding version observed on a later business date is therefore a
+new temporal observation, not an update that may overwrite earlier decision evidence. Replaying the
+same version on the same date remains idempotent.
+
 ### Gateway Request Examples
 
 Book cockpit:
