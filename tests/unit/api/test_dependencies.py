@@ -57,6 +57,22 @@ def test_repository_dependencies_return_default_singletons(monkeypatch) -> None:
     )
 
 
+def test_pm_quality_application_service_preserves_repository_wiring() -> None:
+    repositories = {
+        "outcome_review_repository": InMemoryDpmOutcomeReviewRepository(),
+        "policy_repository": InMemoryDpmPmQualityPolicyRepository(),
+        "score_run_repository": InMemoryDpmPmQualityScoreRunRepository(),
+        "fairness_repository": InMemoryDpmPmQualityFairnessAnalysisRepository(),
+        "review_action_repository": InMemoryDpmPmQualityReviewActionRepository(),
+        "summary_invocation_repository": InMemoryDpmPmQualitySummaryInvocationRepository(),
+    }
+
+    service = dependencies.get_pm_operating_quality_application_service(**repositories)
+
+    for field_name, repository in repositories.items():
+        assert getattr(service, field_name) is repository
+
+
 def test_repository_dependencies_use_canonical_postgres_dsn_when_configured(
     monkeypatch,
 ) -> None:
@@ -260,6 +276,19 @@ def test_risk_authority_dependency_is_configured_from_environment(monkeypatch) -
     assert client._config.max_attempts == 3
     assert client._client is not None
     assert client._owns_client is False
+    close_shared_source_http_clients()
+
+
+def test_risk_authority_invalid_tuning_uses_bounded_defaults(monkeypatch) -> None:
+    close_shared_source_http_clients()
+    monkeypatch.setenv("DPM_RISK_BASE_URL", "http://risk.local")
+    monkeypatch.setenv("DPM_RISK_AUTHORITY_TIMEOUT_SECONDS", "not-a-number")
+    monkeypatch.setenv("DPM_RISK_AUTHORITY_MAX_ATTEMPTS", "not-an-integer")
+
+    client = dependencies.get_risk_authority_client()
+
+    assert client._config.timeout_seconds == 2.0
+    assert client._config.max_attempts == 2
     close_shared_source_http_clients()
 
 
