@@ -159,3 +159,21 @@ def test_validate_persistence_profile_accepts_valid_production_configuration(
     monkeypatch.setattr(profile, "policy_pack_catalog_backend_name", lambda: "POSTGRES")
 
     profile.validate_persistence_profile_guardrails()
+
+
+def test_validate_persistence_profile_accepts_optional_policy_pack_catalog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", "PRODUCTION")
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "false")
+    monkeypatch.setenv("DPM_POLICY_PACK_ADMIN_APIS_ENABLED", "false")
+    _configure_valid_production_authz(monkeypatch)
+    monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
+    monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "postgresql://dpm")
+    monkeypatch.setattr(
+        profile,
+        "policy_pack_catalog_backend_name",
+        lambda: pytest.fail("optional policy-pack backend must not be consulted"),
+    )
+
+    profile.validate_persistence_profile_guardrails()

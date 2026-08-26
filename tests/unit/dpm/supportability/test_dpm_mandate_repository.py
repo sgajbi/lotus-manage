@@ -1049,13 +1049,20 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         }
     )
     second_exception = exception.model_copy(
-        update={"exception_id": "me_second", "monitoring_run_id": "dmr_unrelated"}
+        update={
+            "exception_id": "me_second",
+            "monitoring_run_id": "dmr_unrelated",
+            "measured_value": None,
+            "threshold_value": None,
+        }
     )
 
     repository.save_monitoring_exception(exception)
     repository.save_monitoring_exception(second_exception)
     assert store.exceptions[exception.exception_id]["measured_value_json"] == '"0.12"'
     assert store.exceptions[exception.exception_id]["threshold_value_json"] == "0"
+    assert store.exceptions[second_exception.exception_id]["measured_value_json"] is None
+    assert store.exceptions[second_exception.exception_id]["threshold_value_json"] is None
     page, cursor = repository.list_monitoring_exceptions(
         monitoring_run_id=None,
         mandate_id=twin.mandate_id,
