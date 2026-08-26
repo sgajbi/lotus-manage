@@ -65,7 +65,8 @@ test-e2e-coverage:
 	python -m pytest $(E2E_TESTS) --cov=src --cov-report=
 
 test-all:
-	python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=$(COVERAGE_FAIL_UNDER)
+	python -m pytest --cov=src --cov-report=term-missing
+	python scripts/coverage_gate.py --coverage-file .coverage --fail-under $(COVERAGE_FAIL_UNDER)
 
 # Fast local loop: unit tests only (no coverage)
 test-fast:
@@ -73,7 +74,8 @@ test-fast:
 
 # Full suite with coverage gate, but without term-missing output overhead
 test-all-fast:
-	python -m pytest --cov=src --cov-report= --cov-fail-under=$(COVERAGE_FAIL_UNDER)
+	python -m pytest --cov=src --cov-report=
+	python scripts/coverage_gate.py --coverage-file .coverage --fail-under $(COVERAGE_FAIL_UNDER)
 
 # Full suite without coverage for quickest full functional signal
 test-all-no-cov:
@@ -81,7 +83,8 @@ test-all-no-cov:
 
 # Full suite, optional parallel workers when pytest-xdist is installed
 test-all-parallel:
-	python -c "import importlib.util, subprocess, sys; args=[sys.executable,'-m','pytest','--cov=src','--cov-report=','--cov-fail-under=$(COVERAGE_FAIL_UNDER)']; args += (['-n','auto','--dist','loadscope'] if importlib.util.find_spec('xdist') else []); raise SystemExit(subprocess.call(args))"
+	python -c "import importlib.util, subprocess, sys; args=[sys.executable,'-m','pytest','--cov=src','--cov-report=']; args += (['-n','auto','--dist','loadscope'] if importlib.util.find_spec('xdist') else []); raise SystemExit(subprocess.call(args))"
+	python scripts/coverage_gate.py --coverage-file .coverage --fail-under $(COVERAGE_FAIL_UNDER)
 
 # Local execution flow aligned with the Pull Request Merge Gate workflow
 ci-local: static-quality-gates check-deps

@@ -1041,6 +1041,11 @@ Use these commands as the primary local contract:
    `make check`
 3. PR-grade local gate
    `make ci`
+   The monolithic full-suite coverage run delegates threshold enforcement to
+   `scripts/coverage_gate.py --coverage-file .coverage`, the same governed two-decimal validator
+   used by protected combined coverage. Do not reintroduce pytest-cov `--cov-fail-under` on
+   `test-all`, `test-all-fast`, or `test-all-parallel`; its default precision can false-green a
+   result that protected CI correctly rejects.
 4. feature-lane local gate
    `make ci-local`
 5. Docker parity

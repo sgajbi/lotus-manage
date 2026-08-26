@@ -30,7 +30,9 @@ to `main`.
 - `make check`
   lint, no-alias, typecheck, OpenAPI, API vocabulary, unit tests
 - `make ci`
-  migration smoke, full tests with coverage, security audit
+  migration smoke, full tests with coverage, security audit. Coverage is enforced by the same
+  governed two-decimal `scripts/coverage_gate.py` validator as protected combined coverage, so a
+  local 98.98% result cannot pass the 99.00% policy through display rounding.
 - `make ci-local`
   split local validation across unit, integration, and e2e phases
 - `make ci-local-docker`

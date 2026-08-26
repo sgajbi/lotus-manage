@@ -30618,3 +30618,25 @@ and improves internal transaction-cost source posture maintainability only.
   monitoring contract, and this ledger changed because query-shape and operator metric truth
   changed. Central context and platform skills do not need updates because the decision is
   repository-local and follows existing backend delivery guidance.
+
+## BACKEND-REVIEW-20260826-641: Exact local/protected coverage parity
+
+- Date: 2026-08-26
+- GitHub issue: #641
+- Scope: full-suite Make targets, shared coverage validator, mandate PostgreSQL adapter, focused
+  tests, repository context, and Validation/CI wiki source.
+- Finding: PR #640 passed local `make ci` at 98.98% while protected combined coverage correctly
+  failed the governed 99.00% threshold. Local `test-all` used pytest-cov's default precision;
+  protected CI used the repository's two-decimal `scripts/coverage_gate.py` policy.
+- Action: route `test-all`, `test-all-fast`, and `test-all-parallel` through the shared exact
+  validator after test execution; prohibit `--cov-fail-under` in their recipes; fail closed on
+  unexpected PostgreSQL JSON payload types; and prove real psycopg row-factory loading plus non-null
+  numeric monitoring-value persistence.
+- Status: fixed on PR #640 branch; protected exact-head validation pending.
+- Evidence: focused adapter/CI/coverage suite passed 119 tests. Full `make ci`, protected combined
+  coverage, review verdict, merge, exact-main validation, and wiki publication remain required.
+- Same-pattern scan: every local monolithic full-suite coverage target now shares the protected
+  validator. Split-suite `ci-local` already used the same validator and required no change.
+- Docs/wiki/context/skill decision: repository context and Validation/CI wiki source changed because
+  the canonical local gate behavior changed. No central skill change is justified; the recurring
+  defect is prevented by a repository fitness test over every full-suite Make recipe.
