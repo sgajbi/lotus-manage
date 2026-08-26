@@ -153,6 +153,19 @@ def test_local_ci_uses_shared_coverage_gate_script() -> None:
     assert "python -m coverage report" not in ci_local_recipe
 
 
+def test_local_full_suite_targets_use_exact_shared_coverage_gate() -> None:
+    makefile_text = Path("Makefile").read_text(encoding="utf-8")
+    exact_gate = (
+        "python scripts/coverage_gate.py --coverage-file .coverage "
+        "--fail-under $(COVERAGE_FAIL_UNDER)"
+    )
+
+    for target_name in ["test-all", "test-all-fast", "test-all-parallel"]:
+        recipe = _make_target_recipe(makefile_text, target_name)
+        assert exact_gate in recipe
+        assert "--cov-fail-under" not in recipe
+
+
 def test_makefile_exposes_repo_native_suite_coverage_targets() -> None:
     makefile_text = Path("Makefile").read_text(encoding="utf-8")
 
