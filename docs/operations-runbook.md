@@ -24,7 +24,8 @@ For full repo-native evidence in production-oriented work, run:
   path. `CI_LOCAL_COMPOSE_PROJECT` may override it when an orchestrator supplies a unique identity.
   Cleanup is therefore limited to CI-owned containers, networks, and volumes and must not stop or
   remove the live product Compose project. The purpose-built CI image includes GNU Make because its
-  bounded entrypoint executes the repo-native `make ci-local` target, and mounts the sibling
+  bounded entrypoint executes the repo-native `make ci-local` target, trusts only the `/workspace`
+  bind mount for the Git-backed quality gates on Linux hosts, and mounts the sibling
   `lotus-platform` tree plus the eight manifest-declared repositories' domain-data-product
   declaration directories read-only for governed validators and generated contract evidence.
   Keep those sibling repositories available at the standard workspace paths before running Docker

@@ -71,6 +71,7 @@ def test_ci_local_docker_compose_does_not_publish_internal_postgres_port() -> No
     assert "postgres:17.6" in compose_text
     assert '"5432:5432"' not in compose_text
     assert "apt-get install --no-install-recommends --yes git make" in dockerfile_text
+    assert "git config --system --add safe.directory /workspace" in dockerfile_text
     assert 'pip install -e ".[dev,quality]"' in dockerfile_text
     assert 'command: ["sh", "-lc", "make ci-local"]' in compose_text
     assert "../lotus-platform:/lotus-platform:ro" in compose_text
