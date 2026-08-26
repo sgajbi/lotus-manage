@@ -55,9 +55,13 @@ def enforce_coverage_gate(
     if missing:
         print(f"Missing coverage files: {missing}")
         return 1
-    cov = coverage.Coverage()
-    cov.combine([path.as_posix() for path in files])
-    cov.save()
+    if len(files) == 1:
+        cov = coverage.Coverage(data_file=files[0].as_posix())
+        cov.load()
+    else:
+        cov = coverage.Coverage()
+        cov.combine([path.as_posix() for path in files])
+        cov.save()
     total = cov.report()
     if should_fail_under(total, fail_under, REPORT_PRECISION):
         print(f"Coverage gate failed: {total:.2f} < {fail_under:.2f}")
