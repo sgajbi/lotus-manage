@@ -665,6 +665,18 @@ def test_postgres_payload_loader_accepts_psycopg_jsonb_dicts() -> None:
     assert load_model_json(type(run), reloaded) == run
 
 
+def test_postgres_payload_loader_rejects_unexpected_driver_values() -> None:
+    with pytest.raises(TypeError, match="DPM_MANDATE_PAYLOAD_INVALID"):
+        mandate_postgres._payload({"payload_json": 42})  # noqa: SLF001
+
+
+def test_postgres_driver_loader_uses_psycopg_dict_rows() -> None:
+    driver, row_factory = mandate_postgres._import_psycopg()  # noqa: SLF001
+
+    assert driver.__name__ == "psycopg"
+    assert row_factory is driver.rows.dict_row
+
+
 class _FakeResult:
     def __init__(
         self,
@@ -817,6 +829,8 @@ class _FakeConnection:
                 "mandate_id": params[2],
                 "portfolio_id": params[3],
                 "state": params[8],
+                "measured_value_json": params[9],
+                "threshold_value_json": params[10],
                 "detected_at": params[17],
                 "payload_json": params[16],
             }
@@ -1027,13 +1041,21 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         )
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)[0]
-    exception = exception.model_copy(update={"monitoring_run_id": "dmr_selected"})
+    exception = exception.model_copy(
+        update={
+            "monitoring_run_id": "dmr_selected",
+            "measured_value": Decimal("0.12"),
+            "threshold_value": 0,
+        }
+    )
     second_exception = exception.model_copy(
         update={"exception_id": "me_second", "monitoring_run_id": "dmr_unrelated"}
     )
 
     repository.save_monitoring_exception(exception)
     repository.save_monitoring_exception(second_exception)
+    assert store.exceptions[exception.exception_id]["measured_value_json"] == '"0.12"'
+    assert store.exceptions[exception.exception_id]["threshold_value_json"] == "0"
     page, cursor = repository.list_monitoring_exceptions(
         monitoring_run_id=None,
         mandate_id=twin.mandate_id,
