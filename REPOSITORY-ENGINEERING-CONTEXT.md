@@ -1050,6 +1050,10 @@ Use these commands as the primary local contract:
    `make ci-local`
 5. Docker parity
    `make ci-local-docker`
+   The CI-local Docker lifecycle uses a stable checkout-specific project name from
+   `scripts/ci_local_compose_project.py` for both startup and cleanup. Preserve that symmetric
+   identity so CI teardown cannot remove the live product Compose project; orchestrators may set
+   `CI_LOCAL_COMPOSE_PROJECT` to another unique value.
 6. canonical host runtime
    `make run-canonical`
 7. app-level demo certification

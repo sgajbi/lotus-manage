@@ -5,7 +5,11 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 
 WORKDIR /workspace
 
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes git make \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md ./
 COPY src ./src
 
-RUN python -m pip install --upgrade pip && pip install -e ".[dev]"
+RUN python -m pip install --upgrade pip && pip install -e ".[dev,quality]"
