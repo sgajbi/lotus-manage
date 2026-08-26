@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-08-25T15:10:58+00:00`
+- Generated at: `2026-08-26T10:04:40+00:00`
 
 - Baseline ref: `origin/main`
 
 - Baseline source snapshot: `ccf35bd848128a683954ed9132ec8a4699af13dd`
 
-- Report source snapshot: `81d768b4`
+- Report source snapshot: `680da18a`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,8 +15,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 901 | 904 | +3 |
-| Total Python LOC | 208987 | 209506 | +519 |
-| Test functions | 3018 | 3030 | +12 |
+| Total Python LOC | 208987 | 209541 | +554 |
+| Test functions | 3018 | 3033 | +15 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -55,8 +55,8 @@
 | 1 | tests/unit/dpm/api/test_waves_api.py | 7624 |
 | 2 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3609 |
 | 3 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
-| 4 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
-| 5 | tests/unit/test_ci_workflow_gate_enforcement.py | 3283 |
+| 4 | tests/unit/test_ci_workflow_gate_enforcement.py | 3296 |
+| 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
 | 7 | tests/unit/test_documentation_current_state.py | 2774 |
 | 8 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2689 |
