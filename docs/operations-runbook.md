@@ -19,6 +19,16 @@
 For full repo-native evidence in production-oriented work, run:
 
 - `make ci-local` (unit/integration/e2e with merge-gate coverage and gates)
+- `make ci-local-docker` followed by `make ci-local-docker-down` for Docker parity. Both commands
+  derive the same stable, checkout-specific Compose project identity from the absolute repository
+  path. `CI_LOCAL_COMPOSE_PROJECT` may override it when an orchestrator supplies a unique identity.
+  Cleanup is therefore limited to CI-owned containers, networks, and volumes and must not stop or
+  remove the live product Compose project. The purpose-built CI image includes GNU Make because its
+  bounded entrypoint executes the repo-native `make ci-local` target, and mounts the sibling
+  `lotus-platform` tree plus the eight manifest-declared repositories' domain-data-product
+  declaration directories read-only for governed validators and generated contract evidence.
+  Keep those sibling repositories available at the standard workspace paths before running Docker
+  parity; no service source tree outside `lotus-manage` is writable inside the CI container.
 - `make mesh-contract-validate`
 
 ## Incident triage

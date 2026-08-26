@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from scripts.ci_local_compose_project import compose_project_name
+
 
 def test_local_docker_compose_does_not_publish_internal_postgres_port() -> None:
     compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
@@ -64,9 +66,62 @@ def test_local_docker_runtime_exposes_stateful_core_sourcing_gates() -> None:
 
 def test_ci_local_docker_compose_does_not_publish_internal_postgres_port() -> None:
     compose_text = Path("docker-compose.ci-local.yml").read_text(encoding="utf-8")
+    dockerfile_text = Path("Dockerfile.ci-local").read_text(encoding="utf-8")
 
     assert "postgres:17.6" in compose_text
     assert '"5432:5432"' not in compose_text
+    assert "apt-get install --no-install-recommends --yes git make" in dockerfile_text
+    assert 'pip install -e ".[dev,quality]"' in dockerfile_text
+    assert 'command: ["sh", "-lc", "make ci-local"]' in compose_text
+    assert "../lotus-platform:/lotus-platform:ro" in compose_text
+    for repository in (
+        "lotus-core",
+        "lotus-performance",
+        "lotus-risk",
+        "lotus-advise",
+        "lotus-report",
+        "lotus-gateway",
+        "lotus-idea",
+    ):
+        assert (
+            f"../{repository}/contracts/domain-data-products:/{repository}/contracts/"
+            "domain-data-products:ro"
+        ) in compose_text
+    assert (
+        "./contracts/domain-data-products:/lotus-manage/contracts/domain-data-products:ro"
+        in compose_text
+    )
+
+
+def test_ci_local_compose_cleanup_uses_an_isolated_project_identity() -> None:
+    makefile_text = Path("Makefile").read_text(encoding="utf-8")
+
+    assert (
+        "CI_LOCAL_COMPOSE_PROJECT ?= $(shell python scripts/ci_local_compose_project.py)"
+        in makefile_text
+    )
+    assert (
+        'docker compose --project-name "$(CI_LOCAL_COMPOSE_PROJECT)" '
+        "-f docker-compose.ci-local.yml "
+        "up --build --abort-on-container-exit --exit-code-from ci-local ci-local"
+    ) in makefile_text
+    assert (
+        'docker compose --project-name "$(CI_LOCAL_COMPOSE_PROJECT)" '
+        "-f docker-compose.ci-local.yml down -v --remove-orphans"
+    ) in makefile_text
+    assert "docker compose -f docker-compose.ci-local.yml down" not in makefile_text
+
+
+def test_ci_local_compose_project_name_is_stable_and_checkout_specific(tmp_path: Path) -> None:
+    first_checkout = tmp_path / "first" / "lotus-manage"
+    second_checkout = tmp_path / "second" / "lotus-manage"
+
+    first_name = compose_project_name(first_checkout)
+
+    assert first_name == compose_project_name(first_checkout)
+    assert first_name != compose_project_name(second_checkout)
+    assert first_name.startswith("lotus-manage-ci-local-lotus-manage-")
+    assert first_name.replace("-", "").isalnum()
 
 
 def test_readme_documents_internal_postgres_port_stays_unpublished() -> None:

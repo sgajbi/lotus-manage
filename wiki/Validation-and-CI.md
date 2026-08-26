@@ -36,7 +36,10 @@ to `main`.
 - `make ci-local`
   split local validation across unit, integration, and e2e phases
 - `make ci-local-docker`
-  Docker parity for the local CI contract
+  Docker parity for the local CI contract. Startup and cleanup share a stable, checkout-specific
+  Compose project derived by `scripts/ci_local_compose_project.py`; an orchestrator may override it
+  with `CI_LOCAL_COMPOSE_PROJECT`. `make ci-local-docker-down` removes only this CI-owned project
+  and must not remove an active product `lotus-manage` container, network, or volume.
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`

@@ -18,6 +18,15 @@ services:
     working_dir: /workspace
     volumes:
       - ./:/workspace
+      - ../lotus-platform:/lotus-platform:ro
+      - ../lotus-core/contracts/domain-data-products:/lotus-core/contracts/domain-data-products:ro
+      - ../lotus-performance/contracts/domain-data-products:/lotus-performance/contracts/domain-data-products:ro
+      - ../lotus-risk/contracts/domain-data-products:/lotus-risk/contracts/domain-data-products:ro
+      - ../lotus-advise/contracts/domain-data-products:/lotus-advise/contracts/domain-data-products:ro
+      - ../lotus-report/contracts/domain-data-products:/lotus-report/contracts/domain-data-products:ro
+      - ./contracts/domain-data-products:/lotus-manage/contracts/domain-data-products:ro
+      - ../lotus-gateway/contracts/domain-data-products:/lotus-gateway/contracts/domain-data-products:ro
+      - ../lotus-idea/contracts/domain-data-products:/lotus-idea/contracts/domain-data-products:ro
     depends_on:
       postgres:
         condition: service_healthy
