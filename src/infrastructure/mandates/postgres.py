@@ -527,9 +527,9 @@ def _payload(row: Any) -> str | dict[str, Any]:
     payload = row["payload_json"]
     if isinstance(payload, dict):
         return payload
-    if not isinstance(payload, str):
-        return json.dumps(payload, default=str)
-    return payload
+    if isinstance(payload, str):
+        return payload
+    raise TypeError("DPM_MANDATE_PAYLOAD_INVALID")
 
 
 def _import_psycopg() -> tuple[Any, Any]:
