@@ -30629,11 +30629,12 @@ and improves internal transaction-cost source posture maintainability only.
   failed the governed 99.00% threshold. Local `test-all` used pytest-cov's default precision;
   protected CI used the repository's two-decimal `scripts/coverage_gate.py` policy.
 - Action: route `test-all`, `test-all-fast`, and `test-all-parallel` through the shared exact
-  validator after test execution; prohibit `--cov-fail-under` in their recipes; fail closed on
-  unexpected PostgreSQL JSON payload types; and prove real psycopg row-factory loading plus non-null
-  numeric monitoring-value persistence.
+  validator after test execution; prohibit `--cov-fail-under` in their recipes; load a single
+  monolithic coverage file directly rather than combining it into itself; fail closed on unexpected
+  PostgreSQL JSON payload types; and prove real psycopg row-factory loading plus non-null numeric
+  monitoring-value persistence.
 - Status: fixed on PR #640 branch; protected exact-head validation pending.
-- Evidence: focused adapter/CI/coverage suite passed 119 tests. Full `make ci`, protected combined
+- Evidence: focused adapter/CI/coverage suite passed 120 tests. Full `make ci`, protected combined
   coverage, review verdict, merge, exact-main validation, and wiki publication remain required.
 - Same-pattern scan: every local monolithic full-suite coverage target now shares the protected
   validator. Split-suite `ci-local` already used the same validator and required no change.
