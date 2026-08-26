@@ -552,8 +552,8 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
     repository.save_health_snapshot(future_health)
 
     with _client(repository) as client:
-        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-10")
-        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-10")
+        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-15")
+        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-15")
         latest_mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}")
         latest_health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
 
