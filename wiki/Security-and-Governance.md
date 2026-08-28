@@ -84,12 +84,30 @@ blast-radius controls, not identity checks.
 Three families enforce identity themselves, so they hold whatever the enterprise toggle says. They
 are **not** equivalent to each other, and the differences matter:
 
-### Idea-action intake — strictest, all four headers mandatory
+### Idea-action intake — full authorization, locally, always
 
-`POST /api/v1/rebalance/idea-action-intake` always runs `require_idea_action_intake_principal`,
-which declares `X-Actor-Id`, `X-Role`, `X-Tenant-Id` **and `X-Legal-Entity-Code`** as required
-headers with `min_length=1`. A request missing any of them is rejected before the handler, in every
-configuration. This is the only family that requires the legal-entity code.
+`POST /api/v1/rebalance/idea-action-intake` always runs `require_idea_action_intake_principal`. It
+is the only route that performs complete authentication *and* authorization by itself, so it behaves
+identically whether or not `ENTERPRISE_ENFORCE_AUTHZ` is set.
+
+Six headers are declared `Header(min_length=1)` and a request missing any one is rejected before the
+handler:
+
+`X-Actor-Id` · `X-Role` · `X-Tenant-Id` · `X-Legal-Entity-Code` · `X-Service-Identity` ·
+`X-Capabilities`
+
+Three further checks then run, each with its own reason code:
+
+| check | rejection |
+|---|---|
+| `X-Principal-Status`, defaulting to `ACTIVE` when absent, must be `ACTIVE` | `IDEA_ACTION_INTAKE_PRINCIPAL_INVALID` |
+| the role must be `PORTFOLIO_MANAGER`, `DPM_MANAGER`, `INVESTMENT_COUNSELLOR` or `SERVICE` | `IDEA_ACTION_INTAKE_ROLE_NOT_AUTHORIZED` |
+| capabilities must include `manage.idea_action_intake.accept` | `IDEA_ACTION_INTAKE_CAPABILITY_REQUIRED` |
+
+`X-Correlation-Id` is optional here and falls back to a placeholder. Note the practical consequence:
+a caller that satisfies the enterprise layer's four identity headers is still rejected on this route
+without the service-identity and capability headers, so treat this contract as its own, not as a
+subset of the enterprise one.
 
 ### PM operating quality — actor is verified against the header
 
