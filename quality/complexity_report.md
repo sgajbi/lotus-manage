@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-08-28T03:55:53+00:00`
+- Generated at: `2026-08-28T04:29:43+00:00`
 
-- Baseline source snapshot: `6acf2d389f4da2572d35129da8ea3f7a9a50e2e3`
+- Baseline source snapshot: `4faa1b6e9f8aa242daaf8734dc08768dd989305f`
 
-- Report source snapshot: `ea21225d+worktree`
+- Report source snapshot: `6d3b90b0`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -13,7 +13,7 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Reported top functions | 10 | 10 | +0 |
-| Highest complexity | 1066 | 1068 | +2 |
+| Highest complexity | 1068 | 1068 | +0 |
 
 ### Most Complex Current Functions
 
