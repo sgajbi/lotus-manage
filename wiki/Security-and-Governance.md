@@ -81,14 +81,21 @@ blast-radius controls, not identity checks.
 
 ## Route-level trusted identity, independent of the toggle
 
-Two families enforce identity themselves, so they hold whatever the enterprise toggle says. They
-are **not** equivalent to each other, and the difference matters:
+Three families enforce identity themselves, so they hold whatever the enterprise toggle says. They
+are **not** equivalent to each other, and the differences matter:
+
+### Idea-action intake — strictest, all four headers mandatory
+
+`POST /api/v1/rebalance/idea-action-intake` always runs `require_idea_action_intake_principal`,
+which declares `X-Actor-Id`, `X-Role`, `X-Tenant-Id` **and `X-Legal-Entity-Code`** as required
+headers with `min_length=1`. A request missing any of them is rejected before the handler, in every
+configuration. This is the only family that requires the legal-entity code.
 
 ### PM operating quality — actor is verified against the header
 
-Every mutation builds a trusted identity from `X-Actor-Id`, `X-Tenant-Id` and `X-Role`, then
-compares the body's actor field against `X-Actor-Id` and rejects a mismatch. The field name differs
-by request, which is a payload-contract detail callers need:
+Every mutation builds a trusted identity from `X-Actor-Id`, `X-Tenant-Id` and `X-Role`. Where the
+request body carries an actor field, it is compared against `X-Actor-Id` and a mismatch is rejected.
+The field name differs by request, which is a payload-contract detail callers need:
 
 | request | field compared against `X-Actor-Id` |
 |---|---|
@@ -96,8 +103,11 @@ by request, which is a payload-contract detail callers need:
 | fairness analysis | `actor_id` |
 | review action | `actor_id` |
 | summary invocation | `requested_by` |
+| policy version (`PUT .../policies/{id}/versions/{version}`) | *none — the body carries no actor* |
 
-A body cannot nominate an actor other than the one the caller presented.
+For the four request types with an actor field, a body cannot nominate an actor other than the one
+the caller presented. The policy mutation has no such field to spoof: it takes tenant scope from the
+trusted identity directly, which is the same protection reached a different way.
 
 ### Bulk-review campaigns — only the tenant is trusted
 
@@ -111,9 +121,10 @@ So with enterprise authorization disabled, the recorded actor on a campaign muta
 caller-controlled. The tenant is trusted; the actor is asserted. Do not read the PM-quality
 invariant as applying here.
 
-**For new routes**, the PM-quality shape is the one to copy: take tenant *and* actor from the
-trusted headers, and validate any body-supplied equivalent against them rather than using it in
-their place.
+**For new routes**, the idea-action-intake and PM-quality shapes are the ones to copy: declare the
+identity headers as required, take tenant *and* actor from them, and validate any body-supplied
+equivalent against them rather than using it in their place. The safest form is the one with no body
+actor at all.
 
 PM operating quality is additionally disabled by default; enabled policies require bank approval and
 fairness-review evidence, and HR, compensation, conduct-enforcement and autonomous-ranking uses are
