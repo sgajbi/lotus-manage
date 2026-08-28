@@ -88,7 +88,9 @@ Three checks run in order, and the first failure is the reported reason:
 **Service identity** is satisfied by either `x-service-identity` or `authorization` being present.
 Note what that is and is not: it is a **presence check**. Neither header's value is verified, so this
 establishes that a caller declared an identity, not that the identity is genuine. Authentication is
-assumed to happen at platform ingress before the request arrives.
+assumed to happen at platform ingress before the request arrives — and that assumption is a
+**deployment prerequisite, not a property of this service**. See [Where that assumption
+holds](#where-the-ingress-assumption-holds) below.
 
 **Capabilities** are read from the caller's own `x-capabilities` header, comma-separated. The
 requirement for a route comes from `ENTERPRISE_CAPABILITY_RULES_JSON`, whose keys are
@@ -112,7 +114,7 @@ most complete set of local checks on any route here — and it is still **presen
 not authentication**. `X-Service-Identity` is only required to be non-empty; actor, tenant, role and
 capabilities are taken as the caller states them. No credential, signature or token is validated, so
 the route does not resist a caller that misrepresents its principal. As everywhere else in this
-service, that trust comes from platform ingress, not from here.
+service, that trust is expected to come from platform ingress, not from here.
 
 Six headers are declared `Header(min_length=1)` and a request missing any one is rejected before the
 handler:
@@ -188,6 +190,26 @@ PM operating quality is additionally disabled by default; enabled policies requi
 fairness-review evidence, and HR, compensation, conduct-enforcement and autonomous-ranking uses are
 prohibited by the product contract. See
 [`docs/methodologies/pm-quality/scoring-and-fairness.md`](https://github.com/sgajbi/lotus-manage/blob/main/docs/methodologies/pm-quality/scoring-and-fairness.md).
+
+## Where the ingress assumption holds
+
+Every identity control on this page rests on something upstream having authenticated the caller and
+set the headers honestly. That is an assumption about the deployment, and it is worth checking
+rather than inheriting:
+
+- **It does not hold for the checked-in Compose stack.** `docker-compose.yml` publishes the
+  application port directly (`${LOTUS_MANAGE_HOST_PORT:-8000}:8000`), so anything that can reach the
+  host port speaks to the service with no ingress in front of it and sets its own identity and
+  capability headers.
+- **It does not hold before an authenticating ingress is deployed.** Until one is in place, the
+  service is the only thing between a caller and the data, and it verifies nothing.
+- **It holds only where the ingress both authenticates the caller and rewrites these headers**,
+  rather than passing through whatever the client sent. An ingress that forwards client-supplied
+  `X-Actor-Id` unchanged provides no more assurance than none at all.
+
+Treat network reachability as the real control, and deploy accordingly: internal only, never routed
+to the public internet, and with the ingress that sets these headers being the only thing able to
+reach the port.
 
 ## Other enterprise controls
 
