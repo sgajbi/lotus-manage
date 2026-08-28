@@ -63,8 +63,10 @@ The accurate statement is:
 > With the toggle off, **any write whose route has no local guard** reaches its handler with no
 > identity requirement at all.
 
-Reads are never covered by this layer in any configuration; it applies to `POST`, `PUT`, `PATCH`
-and `DELETE` only.
+The **enterprise** layer never covers reads in any configuration — it applies to `POST`, `PUT`,
+`PATCH` and `DELETE` only. Route-local guards are a different matter and do cover reads: the
+PM-quality and portfolio-memory read routes all require trusted identity headers regardless of the
+toggle.
 
 ## What a write must carry when enforcement is on
 
@@ -144,9 +146,14 @@ service identity and capabilities, and a caller satisfying only the route's loca
 rejected once enforcement is on. Treat the two contracts as cumulative and send everything both
 require.
 
-### PM operating quality — actor is verified against the header
+### PM operating quality and portfolio memory — actor is verified against the header
 
-Every mutation builds a trusted identity from `X-Actor-Id`, `X-Tenant-Id` and `X-Role`. Where the
+`pm_quality_trusted_identity_required` guards **nine route modules**, reads as well as writes:
+PM-quality policy, score-run reads, fairness reads, review-action reads and summary reads, plus all
+three portfolio-memory families — detail, events and search. Every one rejects a request missing
+`X-Actor-Id`, `X-Tenant-Id` or `X-Role`, whatever the enterprise toggle says.
+
+Each mutation builds a trusted identity from those three headers. Where the
 request body carries an actor field, it is compared against `X-Actor-Id` and a mismatch is rejected.
 The field name differs by request, which is a payload-contract detail callers need:
 
