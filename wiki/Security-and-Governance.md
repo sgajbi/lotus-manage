@@ -44,11 +44,17 @@ So a production deployment **cannot run with authorization off**. The checked-in
 configuration selects that profile. This is a fail-closed startup gate, and it is stronger than
 forcing the toggle on would be: the deployment stops rather than starting in a posture nobody chose.
 
-### 2. Outside that profile, the toggle governs — and defaults to off
+### 2. Everywhere else, the toggle alone decides — and defaults to off
 
-`ENTERPRISE_ENFORCE_AUTHZ` defaults to `"false"`. Under `APP_PERSISTENCE_PROFILE=LOCAL`, which is
-the default, the enterprise write-authorization layer is skipped entirely: no identity headers, no
-service identity, no capability check.
+`write_authorization_required()` reads **only** `ENTERPRISE_ENFORCE_AUTHZ`; it does not consult
+`APP_PERSISTENCE_PROFILE`. The profile's role is solely the startup guardrail above — `PRODUCTION`
+refuses to boot without the toggle, and no other profile forces it on.
+
+So a `LOCAL` deployment that sets `ENTERPRISE_ENFORCE_AUTHZ=true` enforces every write exactly as
+production does, which is the right way to develop or test against the real contract. And the
+default — the toggle unset — skips the enterprise write-authorization layer entirely: no identity
+headers, no service identity, no capability check. **It is the toggle that decides, not the
+profile.**
 
 That is not the same as "unauthenticated" for every route. Some route families guard themselves
 regardless of the toggle — see [Route-level trusted identity](#route-level-trusted-identity-independent-of-the-toggle).
