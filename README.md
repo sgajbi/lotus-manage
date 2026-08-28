@@ -77,9 +77,10 @@ certified and what remains downstream handoff work - is tracked on the
 authoritative statement and is kept in step with the RFCs.
 
 What Manage consumes from upstream is declared, not narrated:
-`contracts/domain-data-products/lotus-manage-consumers.v1.json` governs 29 `lotus-core`
-source-product dependencies under RFC-0084, each with its required trust metadata, migration
-posture and consumption mode. Six are the external treasury and execution products -
+`contracts/domain-data-products/lotus-manage-consumers.v1.json` governs 29 source-product
+dependencies under RFC-0084 - 24 from `lotus-core`, 3 from `lotus-risk`, and one each from
+`lotus-performance` and `lotus-advise` - each with its required trust metadata, migration posture
+and consumption mode. Six are the external treasury and execution products -
 `ExternalCurrencyExposure`, `ExternalHedgePolicy`, `ExternalFXForwardCurve`,
 `ExternalEligibleHedgeInstrument`, `ExternalHedgeExecutionReadiness` and
 `ExternalOrderExecutionAcknowledgement` - which Core exposes as fail-closed routes and which Manage
