@@ -162,9 +162,16 @@ definitions. But `CampaignTrustedContext` carries **only** `tenant_id`. Create, 
 assignment mutations take `created_by`, `actor_id` or `recorded_by` **from the request body** and do
 not compare them to `X-Actor-Id`.
 
-So with enterprise authorization disabled, the recorded actor on a campaign mutation is
-caller-controlled. The tenant is trusted; the actor is asserted. Do not read the PM-quality
-invariant as applying here.
+Nothing here is verified. `campaign_trusted_context_required` strips `X-Tenant-Id`, checks it is
+non-empty and returns it — no credential, signature or claim is validated — so the tenant is
+**required, not trusted**, and a direct caller reaching Manage without trusted ingress can name any
+tenant it likes. The only difference from the actor is that the tenant must at least be present,
+while `created_by`, `actor_id` and `recorded_by` are not compared to anything at all.
+
+With enterprise authorization disabled, then, both the tenant and the recorded actor on a campaign
+mutation are caller-controlled. Do not read the PM-quality invariant as applying here, and do not
+read "trusted context" in the code as a spoofing guarantee — it names where the value comes from,
+not that it was proven.
 
 **For new routes**, the idea-action-intake and PM-quality shapes are the ones to copy: declare the
 identity headers as required, take tenant *and* actor from them, and validate any body-supplied

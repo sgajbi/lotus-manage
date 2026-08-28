@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-08-28T01:39:25+00:00`
+- Generated at: `2026-08-28T03:00:45+00:00`
 
 - Baseline ref: `origin/main`
 
 - Baseline source snapshot: `6acf2d389f4da2572d35129da8ea3f7a9a50e2e3`
 
-- Report source snapshot: `ed4fb076`
+- Report source snapshot: `36e753c8`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,7 +15,7 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 905 | 905 | +0 |
-| Total Python LOC | 209699 | 209699 | +0 |
+| Total Python LOC | 209699 | 209708 | +9 |
 | Test functions | 3039 | 3039 | +0 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
@@ -58,7 +58,7 @@
 | 4 | tests/unit/test_ci_workflow_gate_enforcement.py | 3296 |
 | 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
-| 7 | tests/unit/test_documentation_current_state.py | 2774 |
+| 7 | tests/unit/test_documentation_current_state.py | 2783 |
 | 8 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2689 |
 | 9 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2670 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
@@ -84,7 +84,7 @@
 
 | Rank | Function | File | Lines |
 | --- | --- | --- | --- |
-| 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1549 |
+| 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 774 |
 | 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 396 |
 | 4 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 380 |
@@ -116,7 +116,7 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1066 | 1549 |
+| 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1068 | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 774 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
 | 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 107 | 396 |
