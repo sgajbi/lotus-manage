@@ -71,10 +71,14 @@ a discretionary mandate portfolio-management operating system.
 
 RFC-0038 is implementation-backed for the mandate digital twin, health-score engine, derived
 monitoring exceptions, persistence foundation, and the mandate, health, monitoring and
-command-centre APIs. Progress against RFC-0037 through RFC-0043 - including which slices are
-certified and what remains downstream handoff work - is tracked on the
-[Roadmap](https://github.com/sgajbi/lotus-manage/wiki/Roadmap) wiki page, which is the
-authoritative statement and is kept in step with the RFCs.
+command-centre APIs. For slice-level status - what is certified and what remains - the authoritative sources are the RFCs
+under [`docs/rfcs/`](docs/rfcs/) and
+[Supported Features](https://github.com/sgajbi/lotus-manage/wiki/Supported-Features), which are
+updated as work merges. The [Roadmap](https://github.com/sgajbi/lotus-manage/wiki/Roadmap) wiki page
+is the readable summary over them. Three of its rows were found trailing the RFCs while this change
+was in review; two are corrected and the third is pinned by a documentation test
+([#652](https://github.com/sgajbi/lotus-manage/issues/652)), so prefer the RFCs and Supported
+Features where the two disagree.
 
 What Manage consumes from upstream is declared, not narrated:
 `contracts/domain-data-products/lotus-manage-consumers.v1.json` governs 29 source-product
