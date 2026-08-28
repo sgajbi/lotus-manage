@@ -1568,10 +1568,19 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "first-wave product realization" in roadmap
     assert "output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/" in roadmap
     assert "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in roadmap
-    assert (
-        "Remaining roadmap work is copilot workspace, portfolio-memory, and front-office realization depth"
-        in roadmap
-    )
+    # Assert the boundary the roadmap must keep publishing, not one sentence's wording.
+    # Pinning the literal froze this row behind reality: it named copilot workspace and
+    # portfolio-memory as remaining after wiki/Supported-Features.md recorded both as
+    # implemented, and the test passed throughout. See issue #652.
+    assert "front-office realization depth" in roadmap
+    for unsupported_boundary in (
+        "runtime external treasury ingestion",
+        "financial-planning advice",
+        "funding recommendations",
+        "external execution/OMS integration",
+        "tax advice or tax optimization",
+    ):
+        assert unsupported_boundary in roadmap
     assert "2026-05-16 source-owner FX attribution update" in roadmap
     assert "`lotus-performance` PR #167 (`16261c9`, wiki\n`41bdaa3`)" in roadmap
     assert "2026-05-16 external treasury source-boundary update" in roadmap

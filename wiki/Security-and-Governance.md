@@ -30,8 +30,15 @@ set**, the policy-pack catalog must also be Postgres-backed with an explicit DSN
 
 | requirement | error when missing |
 |---|---|
-| policy-pack catalog backend is Postgres | `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES` |
+| policy-pack catalog backend is Postgres | `DPM_POLICY_PACK_CATALOG_BACKEND_UNSUPPORTED` — see below |
 | `DPM_POLICY_PACK_POSTGRES_DSN` is set explicitly | `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN` |
+
+On the backend check, the error an operator actually sees is not the guardrail's own code.
+`policy_pack_catalog_backend_name()` **raises** `DPM_POLICY_PACK_CATALOG_BACKEND_UNSUPPORTED` for any
+value other than `POSTGRES`, before `_policy_pack_catalog_guardrail_error()` can compare and return
+`PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES`. Since a `POSTGRES` value passes the comparison,
+that guardrail code is unreachable for this condition. Search for
+`DPM_POLICY_PACK_CATALOG_BACKEND_UNSUPPORTED` when troubleshooting.
 
 So a production deployment **cannot run with authorization off**. The checked-in production Compose
 configuration selects that profile. This is a fail-closed startup gate, and it is stronger than

@@ -76,9 +76,7 @@ under [`docs/rfcs/`](docs/rfcs/) and
 [Supported Features](https://github.com/sgajbi/lotus-manage/wiki/Supported-Features), which are
 updated as work merges. The [Roadmap](https://github.com/sgajbi/lotus-manage/wiki/Roadmap) wiki page
 is the readable summary over them. Three of its rows were found trailing the RFCs while this change
-was in review; two are corrected and the third is pinned by a documentation test
-([#652](https://github.com/sgajbi/lotus-manage/issues/652)), so prefer the RFCs and Supported
-Features where the two disagree.
+was in review and all three are now corrected; prefer the RFCs where the two ever disagree.
 
 What Manage consumes from upstream is declared, not narrated:
 `contracts/domain-data-products/lotus-manage-consumers.v1.json` governs 29 source-product
