@@ -4,22 +4,46 @@ What protects `lotus-manage`, what is off unless switched on, and what a deploym
 Measured against `main` in
 [`src/api/enterprise_readiness.py`](https://github.com/sgajbi/lotus-manage/blob/main/src/api/enterprise_readiness.py).
 
-## The controlling fact: write authorization is off by default
+## How authorization is actually gated
 
-`write_authorization_required` returns true only when **`ENTERPRISE_ENFORCE_AUTHZ`** is enabled, and
-its default is `"false"`. With the variable unset, **every write reaches its handler unauthorized** —
-no headers required, no service identity, no capability check.
+Two mechanisms decide whether a write is authorized, and reading only one of them gives the wrong
+answer.
 
-Reads are never authorized by this layer at all, in any configuration. The authorization surface
-covers `POST`, `PUT`, `PATCH` and `DELETE` only.
+### 1. Startup guardrails bind the production profile
 
-There is **no runtime-profile guard**: nothing raises the requirement because the deployment calls
-itself production. `lotus-report` does have one — it forces enforcement for `prod`, `production`,
-`preprod`, `staging` and `uat` profiles — so a Manage deployment that omits the toggle fails open
-where the same omission in Report fails closed. Tracked as
-[#649](https://github.com/sgajbi/lotus-manage/issues/649).
+`validate_persistence_profile_guardrails()` runs during application lifespan
+([`src/api/main.py`](https://github.com/sgajbi/lotus-manage/blob/main/src/api/main.py)). When
+`APP_PERSISTENCE_PROFILE=PRODUCTION` it **raises and the service does not start** unless all of the
+following hold:
 
-Treat enabling `ENTERPRISE_ENFORCE_AUTHZ` as a deployment requirement, not an option.
+| requirement | error when missing |
+|---|---|
+| supportability store is Postgres | `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES` |
+| a Postgres DSN is configured | `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN` |
+| the Postgres access policy validates | *(policy-specific)* |
+| **`ENTERPRISE_ENFORCE_AUTHZ` is enabled** | `PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_AUTHZ` |
+| `ENTERPRISE_PRIMARY_KEY_ID` is set | `PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_PRIMARY_KEY_ID` |
+| capability rules are loaded | `PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_CAPABILITY_RULES` |
+
+So a production deployment **cannot run with authorization off**. The checked-in production Compose
+configuration selects that profile. This is a fail-closed startup gate, and it is stronger than
+forcing the toggle on would be: the deployment stops rather than starting in a posture nobody chose.
+
+### 2. Outside that profile, the toggle governs — and defaults to off
+
+`ENTERPRISE_ENFORCE_AUTHZ` defaults to `"false"`. Under `APP_PERSISTENCE_PROFILE=LOCAL`, which is
+the default, the enterprise write-authorization layer is skipped entirely: no identity headers, no
+service identity, no capability check.
+
+That is not the same as "unauthenticated" for every route. Some route families guard themselves
+regardless of the toggle — see [Route-level trusted identity](#route-level-trusted-identity-independent-of-the-toggle).
+The accurate statement is:
+
+> With the toggle off, **any write whose route has no local guard** reaches its handler with no
+> identity requirement at all.
+
+Reads are never covered by this layer in any configuration; it applies to `POST`, `PUT`, `PATCH`
+and `DELETE` only.
 
 ## What a write must carry when enforcement is on
 
@@ -57,19 +81,39 @@ blast-radius controls, not identity checks.
 
 ## Route-level trusted identity, independent of the toggle
 
-Some route families do **not** rely on `ENTERPRISE_ENFORCE_AUTHZ` and enforce identity themselves.
-These are the strongest controls in the service, because they hold whatever the enterprise toggle
-says:
+Two families enforce identity themselves, so they hold whatever the enterprise toggle says. They
+are **not** equivalent to each other, and the difference matters:
 
-| family | control |
+### PM operating quality — actor is verified against the header
+
+Every mutation builds a trusted identity from `X-Actor-Id`, `X-Tenant-Id` and `X-Role`, then
+compares the body's actor field against `X-Actor-Id` and rejects a mismatch. The field name differs
+by request, which is a payload-contract detail callers need:
+
+| request | field compared against `X-Actor-Id` |
 |---|---|
-| PM operating quality | builds a trusted identity from `X-Actor-Id`, `X-Tenant-Id` and `X-Role`, then asserts the request body's `requested_by` **matches the header actor**. A body cannot nominate a different actor than the caller presented. |
-| Bulk-review campaign definitions | `campaign_trusted_context_required` rejects a request with no `X-Tenant-Id`, returning `400 BULK_REVIEW_CAMPAIGN_TRUSTED_TENANT_REQUIRED`, and the same requirement applies when resolving persisted definitions. |
+| score run | `actor_id` |
+| fairness analysis | `actor_id` |
+| review action | `actor_id` |
+| summary invocation | `requested_by` |
 
-The principle both encode is worth generalising when new routes are added: **the tenant and actor
-come from the trusted headers, and the request body may not override them.** Where a route takes a
-tenant or actor in its payload, that value is validated against the header rather than used in place
-of it.
+A body cannot nominate an actor other than the one the caller presented.
+
+### Bulk-review campaigns — only the tenant is trusted
+
+`campaign_trusted_context_required` rejects a request with no `X-Tenant-Id`
+(`400 BULK_REVIEW_CAMPAIGN_TRUSTED_TENANT_REQUIRED`), and the same applies when resolving persisted
+definitions. But `CampaignTrustedContext` carries **only** `tenant_id`. Create, launch and
+assignment mutations take `created_by`, `actor_id` or `recorded_by` **from the request body** and do
+not compare them to `X-Actor-Id`.
+
+So with enterprise authorization disabled, the recorded actor on a campaign mutation is
+caller-controlled. The tenant is trusted; the actor is asserted. Do not read the PM-quality
+invariant as applying here.
+
+**For new routes**, the PM-quality shape is the one to copy: take tenant *and* actor from the
+trusted headers, and validate any body-supplied equivalent against them rather than using it in
+their place.
 
 PM operating quality is additionally disabled by default; enabled policies require bank approval and
 fairness-review evidence, and HR, compensation, conduct-enforcement and autonomous-ranking uses are
@@ -84,11 +128,17 @@ prohibited by the product contract. See
 | runtime configuration validation | `validate_enterprise_runtime_config()` collects issues — policy version, secret rotation, authorization key material — and raises `enterprise_runtime_config_invalid` **only when `ENTERPRISE_ENFORCE_RUNTIME_CONFIG` is enabled**, default `"false"` |
 | policy version | `ENTERPRISE_POLICY_VERSION` |
 | key material and rotation | `ENTERPRISE_PRIMARY_KEY_ID`, `ENTERPRISE_SECRET_ROTATION_DAYS` |
-| feature flags | `ENTERPRISE_FEATURE_FLAGS_JSON` |
 
-Two of these enforcement toggles default to `false`, so a deployment that sets neither gets
-validation that reports issues without acting on them. That is a deliberate migration affordance;
-it is not a posture to run a bank on.
+`ENTERPRISE_FEATURE_FLAGS_JSON` is **not** in this table on purpose. `load_feature_flags()` and
+`is_feature_enabled()` have no production callers — only their definitions and unit tests — so
+configuring tenant or role flags there restricts nothing today. It is unused infrastructure, not a
+control.
+
+Both enforcement toggles default to `false`, and outside the `PRODUCTION` profile that combination
+is **silent**: `validate_enterprise_runtime_config()` returns its issue list to `main.py`, which
+discards it without logging, and with authorization off the key-material check is skipped anyway. A
+`LOCAL` deployment with both toggles unset therefore gets neither enforcement nor a warning. The
+`PRODUCTION` profile is what turns that silence into a startup failure.
 
 Sensitive fields — `password`, `secret`, `token` and their siblings — are redacted from audit
 records rather than logged.

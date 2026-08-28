@@ -86,6 +86,16 @@ posture and consumption mode. Six are the external treasury and execution produc
 preserves in construction diagnostics as blocked external evidence rather than treating as
 available. That file is the authority; read it rather than a prose list, which cannot stay current.
 
+RFC-0040 is implementation-backed for Manage-owned pre-trade proof packs - durable JSON,
+deterministic Markdown, report-input and AI-evidence handoffs, hashes, lineage, retention metadata,
+immutable persistence, certified APIs, and source-backed mandate-context attachment. Downstream
+realization has landed in the owning apps: Gateway composition and Workbench review UX, report
+materialization in `lotus-render`/`lotus-report`/`lotus-archive`, and governed AI PM memo support in
+`lotus-ai`/`lotus-gateway`/`lotus-workbench`. Proof packs support **internal review only** - the
+handoffs carry `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence so no consumer can read them
+as client contact, client-ready message generation, client approval, delivery confirmation or
+communication audit truth.
+
 PM operating quality is governed rather than merely implemented. Scoring is documented in
 [docs/methodologies/pm-quality/scoring-and-fairness.md](docs/methodologies/pm-quality/scoring-and-fairness.md).
 It is **disabled by default**; enabled policies require bank approval and fairness-review evidence,
