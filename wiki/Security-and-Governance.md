@@ -25,6 +25,14 @@ following hold:
 | `ENTERPRISE_PRIMARY_KEY_ID` is set | `PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_PRIMARY_KEY_ID` |
 | capability rules are loaded | `PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_CAPABILITY_RULES` |
 
+And conditionally, **when `DPM_POLICY_PACKS_ENABLED` or `DPM_POLICY_PACK_ADMIN_APIS_ENABLED` is
+set**, the policy-pack catalog must also be Postgres-backed with an explicit DSN:
+
+| requirement | error when missing |
+|---|---|
+| policy-pack catalog backend is Postgres | `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES` |
+| `DPM_POLICY_PACK_POSTGRES_DSN` is set explicitly | `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN` |
+
 So a production deployment **cannot run with authorization off**. The checked-in production Compose
 configuration selects that profile. This is a fail-closed startup gate, and it is stronger than
 forcing the toggle on would be: the deployment stops rather than starting in a posture nobody chose.
@@ -84,11 +92,14 @@ blast-radius controls, not identity checks.
 Three families enforce identity themselves, so they hold whatever the enterprise toggle says. They
 are **not** equivalent to each other, and the differences matter:
 
-### Idea-action intake — full authorization, locally, always
+### Idea-action intake — the fullest local checks, but still not authentication
 
-`POST /api/v1/rebalance/idea-action-intake` always runs `require_idea_action_intake_principal`. It
-is the only route that performs complete authentication *and* authorization by itself, so it behaves
-identically whether or not `ENTERPRISE_ENFORCE_AUTHZ` is set.
+`POST /api/v1/rebalance/idea-action-intake` always runs `require_idea_action_intake_principal`, the
+most complete set of local checks on any route here — and it is still **presence and value checking,
+not authentication**. `X-Service-Identity` is only required to be non-empty; actor, tenant, role and
+capabilities are taken as the caller states them. No credential, signature or token is validated, so
+the route does not resist a caller that misrepresents its principal. As everywhere else in this
+service, that trust comes from platform ingress, not from here.
 
 Six headers are declared `Header(min_length=1)` and a request missing any one is rejected before the
 handler:
@@ -104,10 +115,19 @@ Three further checks then run, each with its own reason code:
 | the role must be `PORTFOLIO_MANAGER`, `DPM_MANAGER`, `INVESTMENT_COUNSELLOR` or `SERVICE` | `IDEA_ACTION_INTAKE_ROLE_NOT_AUTHORIZED` |
 | capabilities must include `manage.idea_action_intake.accept` | `IDEA_ACTION_INTAKE_CAPABILITY_REQUIRED` |
 
-`X-Correlation-Id` is optional here and falls back to a placeholder. Note the practical consequence:
-a caller that satisfies the enterprise layer's four identity headers is still rejected on this route
-without the service-identity and capability headers, so treat this contract as its own, not as a
-subset of the enterprise one.
+The two layers are **additive, not equivalent** — the route does not behave identically across
+toggle states:
+
+- with the toggle **off**, `X-Correlation-Id` is optional here and falls back to a placeholder
+- with the toggle **on**, the enterprise middleware requires `X-Correlation-Id` as one of its four
+  identity headers and rejects the same request as `missing_headers:x-correlation-id` before the
+  handler runs, and any configured capability rule for this path applies on top of the route's own
+  capability check
+
+So a caller satisfying the enterprise layer's four identity headers is still rejected here without
+service identity and capabilities, and a caller satisfying only the route's local contract can be
+rejected once enforcement is on. Treat the two contracts as cumulative and send everything both
+require.
 
 ### PM operating quality — actor is verified against the header
 
