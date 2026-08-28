@@ -73,8 +73,9 @@ RFC-0038 is implementation-backed for the mandate digital twin, health-score eng
 monitoring exceptions, persistence foundation, and the mandate, health, monitoring and
 command-centre APIs. For slice-level status - what is certified and what remains - the authoritative sources are the RFCs
 under [`docs/rfcs/`](docs/rfcs/) and
-[Supported Features](https://github.com/sgajbi/lotus-manage/wiki/Supported-Features), which are
-updated as work merges. The [Roadmap](https://github.com/sgajbi/lotus-manage/wiki/Roadmap) wiki page
+[`wiki/Supported-Features.md`](wiki/Supported-Features.md), which are updated as work merges. Those
+are the repo-local authored sources, current with this commit; the published wiki lags them until
+the next publication. The [`wiki/Roadmap.md`](wiki/Roadmap.md) page
 is the readable summary over them. Three of its rows were found trailing the RFCs while this change
 was in review and all three are now corrected; prefer the RFCs where the two ever disagree.
 
@@ -114,8 +115,7 @@ bounded continuation pages to terminal exhaustion, and fails closed on unavailab
 degraded, empty, duplicate, non-terminating or still-truncated Core pages. It claims no
 relationship householding, no global portfolio-universe ownership, no PM ranking, no external
 workflow orchestration, no OMS execution and no client-communication workflow. See
-[Supported Features](https://github.com/sgajbi/lotus-manage/wiki/Supported-Features) for the full
-posture.
+[`wiki/Supported-Features.md`](wiki/Supported-Features.md) for the full posture.
 
 The per-PR integration history for those products previously sat here as a single 470-line
 paragraph of cross-repo PR numbers and commit SHAs. It is in the commit history and the RFCs, where
