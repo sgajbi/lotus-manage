@@ -278,7 +278,7 @@ sequenceDiagram
 ```
 
 The implementation handoff contract is maintained in
-[`docs/architecture/dpm-command-center-gateway-workbench-handoff.md`](../docs/architecture/dpm-command-center-gateway-workbench-handoff.md).
+[`docs/architecture/dpm-command-center-gateway-workbench-handoff.md`](https://github.com/sgajbi/lotus-manage/blob/main/docs/architecture/dpm-command-center-gateway-workbench-handoff.md).
 
 Downstream tracking:
 
@@ -320,8 +320,8 @@ sequenceDiagram
 ```
 
 The implementation handoff contract is maintained in
-[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
+[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](https://github.com/sgajbi/lotus-manage/blob/main/docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
 ## Reference
 
-- [docs/standards/RFC-0082-upstream-contract-family-map.md](../docs/standards/RFC-0082-upstream-contract-family-map.md)
+- [docs/standards/RFC-0082-upstream-contract-family-map.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/standards/RFC-0082-upstream-contract-family-map.md)

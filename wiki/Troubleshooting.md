@@ -18,5 +18,5 @@ python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_d
 
 ## References
 
-- [docs/runbooks/service-operations.md](../docs/runbooks/service-operations.md)
-- [docs/documentation/postgres-migration-rollout-runbook.md](../docs/documentation/postgres-migration-rollout-runbook.md)
+- [docs/runbooks/service-operations.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/runbooks/service-operations.md)
+- [docs/documentation/postgres-migration-rollout-runbook.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/documentation/postgres-migration-rollout-runbook.md)

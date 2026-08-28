@@ -377,9 +377,9 @@ python scripts/openapi_quality_gate.py
 
 ## Key references
 
-- [docs/documentation/project-overview.md](../docs/documentation/project-overview.md)
-- [docs/documentation/postgres-migration-rollout-runbook.md](../docs/documentation/postgres-migration-rollout-runbook.md)
-- [docs/runbooks/service-operations.md](../docs/runbooks/service-operations.md)
-- [docs/standards/enterprise-readiness.md](../docs/standards/enterprise-readiness.md)
-- [docs/standards/migration-contract.md](../docs/standards/migration-contract.md)
-- [docs/standards/scalability-availability.md](../docs/standards/scalability-availability.md)
+- [docs/documentation/project-overview.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/documentation/project-overview.md)
+- [docs/documentation/postgres-migration-rollout-runbook.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/documentation/postgres-migration-rollout-runbook.md)
+- [docs/runbooks/service-operations.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/runbooks/service-operations.md)
+- [docs/standards/enterprise-readiness.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/standards/enterprise-readiness.md)
+- [docs/standards/migration-contract.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/standards/migration-contract.md)
+- [docs/standards/scalability-availability.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/standards/scalability-availability.md)

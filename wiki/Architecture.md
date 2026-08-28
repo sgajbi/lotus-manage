@@ -146,7 +146,7 @@ For liquidity-aware construction, `PortfolioCashflowProjection:v1` is consumed a
 projected cash-pressure evidence; client income-need or liability-planning support is not inferred
 from projection totals. Gateway and Workbench must consume that truth without recomputing
 construction methods or bypassing the experience API. The downstream handoff is maintained in
-[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
+[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](https://github.com/sgajbi/lotus-manage/blob/main/docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
 ## Portfolio Memory Module Boundary
 
