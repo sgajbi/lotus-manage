@@ -24,7 +24,7 @@ That host runtime uses port `8001` so `lotus-manage` can coexist with `lotus-adv
 
 ## First docs to read
 
-- [README.md](../README.md)
-- [docs/documentation/project-overview.md](../docs/documentation/project-overview.md)
-- [docs/standards/RFC-0082-upstream-contract-family-map.md](../docs/standards/RFC-0082-upstream-contract-family-map.md)
-- [docs/runbooks/service-operations.md](../docs/runbooks/service-operations.md)
+- [README.md](https://github.com/sgajbi/lotus-manage/blob/main/README.md)
+- [docs/documentation/project-overview.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/documentation/project-overview.md)
+- [docs/standards/RFC-0082-upstream-contract-family-map.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/standards/RFC-0082-upstream-contract-family-map.md)
+- [docs/runbooks/service-operations.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/runbooks/service-operations.md)

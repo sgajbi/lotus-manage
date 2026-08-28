@@ -74,7 +74,7 @@ storage-layer constraint.
 These routes are manage-owned backend contracts. Gateway and Workbench are not yet integrated with
 this surface; construction-specific realization requirements now live in Gateway RFC-0098,
 Workbench RFC-0098, and
-[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
+[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](https://github.com/sgajbi/lotus-manage/blob/main/docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
 ## Proof-pack surfaces
 

@@ -5,11 +5,11 @@ supportability service in Lotus.
 
 ## Start here
 
-- Repo entrypoint: [README.md](../README.md)
-- Repo context: [REPOSITORY-ENGINEERING-CONTEXT.md](../REPOSITORY-ENGINEERING-CONTEXT.md)
-- Project overview: [docs/documentation/project-overview.md](../docs/documentation/project-overview.md)
+- Repo entrypoint: [README.md](https://github.com/sgajbi/lotus-manage/blob/main/README.md)
+- Repo context: [REPOSITORY-ENGINEERING-CONTEXT.md](https://github.com/sgajbi/lotus-manage/blob/main/REPOSITORY-ENGINEERING-CONTEXT.md)
+- Project overview: [docs/documentation/project-overview.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/documentation/project-overview.md)
 - Upstream contract map:
-  [docs/standards/RFC-0082-upstream-contract-family-map.md](../docs/standards/RFC-0082-upstream-contract-family-map.md)
+  [docs/standards/RFC-0082-upstream-contract-family-map.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/standards/RFC-0082-upstream-contract-family-map.md)
 
 ## Repo role
 

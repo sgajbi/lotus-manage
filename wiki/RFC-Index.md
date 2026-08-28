@@ -153,4 +153,4 @@ updates, and supported-feature promotion are complete.
 
 ## Full local RFC inventory
 
-- [docs/rfcs/README.md](../docs/rfcs/README.md)
+- [docs/rfcs/README.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/rfcs/README.md)
