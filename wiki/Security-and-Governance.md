@@ -187,7 +187,7 @@ prohibited by the product contract. See
 
 | control | mechanism |
 |---|---|
-| write payload size | `ENTERPRISE_MAX_WRITE_PAYLOAD_BYTES`, compared against `Content-Length` on write methods |
+| write payload size | `ENTERPRISE_MAX_WRITE_PAYLOAD_BYTES`, compared against a **declared** `Content-Length` on write methods — see the gap below |
 | runtime configuration validation | `validate_enterprise_runtime_config()` collects issues — policy version, secret rotation, authorization key material — and raises `enterprise_runtime_config_invalid` **only when `ENTERPRISE_ENFORCE_RUNTIME_CONFIG` is enabled**, default `"false"` |
 | policy version | `ENTERPRISE_POLICY_VERSION` |
 | key material and rotation | `ENTERPRISE_PRIMARY_KEY_ID`, `ENTERPRISE_SECRET_ROTATION_DAYS` |
@@ -202,6 +202,20 @@ is **silent**: `validate_enterprise_runtime_config()` returns its issue list to 
 discards it without logging, and with authorization off the key-material check is skipped anyway. A
 `LOCAL` deployment with both toggles unset therefore gets neither enforcement nor a warning. The
 `PRODUCTION` profile is what turns that silence into a startup failure.
+
+### Gap: the payload cap needs a well-formed declared length
+
+`_request_content_length()` reads `Content-Length` and returns `0` when the header is absent **or
+unparseable**. The middleware never measures the received body, so a write that omits the header —
+chunked transfer encoding, for instance — or sends a malformed one is compared against zero and
+passes whatever its actual size. There is no proxy or server-level body limit elsewhere in the repo
+to catch it.
+
+This is the same control implemented three ways across the estate, and this is the weakest:
+`lotus-report` streams and enforces the cap when no length is declared; `lotus-render` is also
+header-only but treats a malformed header as oversized, failing closed; `lotus-manage` fails open in
+both cases. Tracked as [#653](https://github.com/sgajbi/lotus-manage/issues/653), and as
+[lotus-render#84](https://github.com/sgajbi/lotus-render/issues/84) for the sibling.
 
 Sensitive fields — `password`, `secret`, `token` and their siblings — are redacted from audit
 records rather than logged.
