@@ -28,6 +28,7 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
     "pr-auto-merge.yml": {"contents": "read"},
 }
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)
+WORKFLOW_JOB_PATTERN = re.compile(r"(?m)^  [A-Za-z0-9_-]+:\s*$")
 VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
 HERE_DOCUMENT_START_PATTERN = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
@@ -816,17 +817,23 @@ def quality_report_gate_violations(workflow_path: Path) -> list[str]:
     if "make quality-report-gate" not in text:
         return [f"{workflow_path.as_posix()}: blocking workflow must run make quality-report-gate"]
     start = text.index("make quality-report-gate")
-    checkout_start = text.rfind("uses: actions/checkout@", 0, start)
+    preceding_jobs = list(WORKFLOW_JOB_PATTERN.finditer(text, 0, start))
+    job_start = preceding_jobs[-1].start() if preceding_jobs else start
+    next_job = WORKFLOW_JOB_PATTERN.search(text, start)
+    job_end = next_job.start() if next_job else len(text)
+    job_block = text[job_start:job_end]
+    gate_offset = start - job_start
+    checkout_start = job_block.rfind("uses: actions/checkout@", 0, gate_offset)
     if checkout_start == -1:
         violations.append(
             f"{workflow_path.as_posix()}: quality report gate job must checkout repository first"
         )
     else:
-        checkout_block_end = text.find("\n      - ", checkout_start)
+        checkout_block_end = job_block.find("\n      - ", checkout_start)
         checkout_block = (
-            text[checkout_start:]
+            job_block[checkout_start:]
             if checkout_block_end == -1
-            else text[checkout_start:checkout_block_end]
+            else job_block[checkout_start:checkout_block_end]
         )
         if "fetch-depth: 0" not in checkout_block:
             violations.append(
@@ -841,9 +848,9 @@ def quality_report_gate_violations(workflow_path: Path) -> list[str]:
                 f"{workflow_path.as_posix()}: PR quality report gate must checkout the "
                 "immutable pull-request head so merge-checkout changes cannot stale the report"
             )
-    step_start = text.rfind("\n      - name:", 0, start)
-    step_end = text.find("\n      - name:", start)
-    step_block = text[step_start:] if step_end == -1 else text[step_start:step_end]
+    step_start = job_block.rfind("\n      - name:", 0, gate_offset)
+    step_end = job_block.find("\n      - name:", gate_offset)
+    step_block = job_block[step_start:] if step_end == -1 else job_block[step_start:step_end]
     if "continue-on-error" in step_block:
         violations.append(
             f"{workflow_path.as_posix()}: quality report freshness gate must be blocking, "
