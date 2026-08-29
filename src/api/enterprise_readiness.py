@@ -8,6 +8,12 @@ from typing import Any, Awaitable, Callable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
+from src.api.request_body_limit import (
+    declared_content_length,
+    read_limited_body,
+    replay_body_for_downstream,
+)
+
 logger = logging.getLogger("enterprise_readiness")
 MiddlewareNext = Callable[[Request], Awaitable[Response]]
 MiddlewareCallable = Callable[[Request, MiddlewareNext], Awaitable[Response]]
@@ -253,20 +259,6 @@ def emit_audit_event(
     )
 
 
-def _request_content_length(request: Request) -> int:
-    try:
-        return int(request.headers.get("content-length", "0"))
-    except ValueError:
-        return 0
-
-
-def _write_payload_too_large(request: Request, *, max_write_payload_bytes: int) -> bool:
-    return (
-        request.method in _WRITE_METHODS
-        and _request_content_length(request) > max_write_payload_bytes
-    )
-
-
 def _audit_identity_from_request(request: Request) -> _AuditIdentity:
     return _AuditIdentity(
         actor_id=request.headers.get("X-Actor-Id", "unknown"),
@@ -325,11 +317,14 @@ def _emit_write_audit_if_needed(request: Request, response: Response) -> None:
 def build_enterprise_audit_middleware() -> MiddlewareCallable:
     async def middleware(request: Request, call_next: MiddlewareNext) -> Response:
         max_write_payload_bytes = _env_int("ENTERPRISE_MAX_WRITE_PAYLOAD_BYTES", 1_048_576)
-        if _write_payload_too_large(
-            request,
-            max_write_payload_bytes=max_write_payload_bytes,
-        ):
-            return JSONResponse(status_code=413, content={"detail": "payload_too_large"})
+        method_is_write = request.method in _WRITE_METHODS
+        if method_is_write:
+            try:
+                content_length = declared_content_length(request)
+            except ValueError:
+                return JSONResponse(status_code=400, content={"detail": "invalid_content_length"})
+            if content_length is not None and content_length > max_write_payload_bytes:
+                return JSONResponse(status_code=413, content={"detail": "payload_too_large"})
 
         authorized, reason = authorize_write_request(
             request.method, request.url.path, dict(request.headers)
@@ -337,6 +332,12 @@ def build_enterprise_audit_middleware() -> MiddlewareCallable:
         if not authorized:
             _emit_denied_write_audit(request, reason=reason)
             return _authorization_denied_response(reason)
+
+        if method_is_write:
+            body = await read_limited_body(request, max_bytes=max_write_payload_bytes)
+            if body is None:
+                return JSONResponse(status_code=413, content={"detail": "payload_too_large"})
+            replay_body_for_downstream(request, body)
 
         response = await call_next(request)
         _attach_policy_version_header(response)

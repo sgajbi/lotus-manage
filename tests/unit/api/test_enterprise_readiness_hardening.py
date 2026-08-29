@@ -9,7 +9,6 @@ from src.api.enterprise_readiness import (
     _authorization_denied_response,
     _has_service_identity,
     _missing_capability_reason,
-    _request_content_length,
     _missing_required_headers,
     _missing_required_headers_reason,
     _missing_service_identity_reason,
@@ -18,7 +17,6 @@ from src.api.enterprise_readiness import (
     _provided_capabilities,
     _secret_rotation_issue,
     _write_authorization_failure_reason,
-    _write_payload_too_large,
     _write_authorization_required,
     authorize_write_request,
     build_enterprise_audit_middleware,
@@ -250,7 +248,7 @@ def test_enterprise_middleware_blocks_oversized_payload(monkeypatch) -> None:
     assert response.json() == {"detail": "payload_too_large"}
 
 
-def test_enterprise_middleware_treats_invalid_content_length_as_zero(monkeypatch) -> None:
+def test_enterprise_middleware_rejects_invalid_content_length(monkeypatch) -> None:
     monkeypatch.setenv("ENTERPRISE_MAX_WRITE_PAYLOAD_BYTES", "5")
     client = TestClient(_enterprise_app())
 
@@ -266,7 +264,8 @@ def test_enterprise_middleware_treats_invalid_content_length_as_zero(monkeypatch
         },
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 400
+    assert response.json() == {"detail": "invalid_content_length"}
 
 
 def test_enterprise_middleware_helpers_parse_size_and_audit_identity(monkeypatch) -> None:
@@ -280,17 +279,11 @@ def test_enterprise_middleware_helpers_parse_size_and_audit_identity(monkeypatch
             "X-Correlation-Id": "corr",
         }
     )
-    invalid_length_request = _request(headers={"content-length": "not-a-number"})
-
     identity = _audit_identity_from_request(request)
     response = Response()
     denied_response = _authorization_denied_response("missing_service_identity")
     _attach_policy_version_header(response)
 
-    assert _request_content_length(request) == 6
-    assert _request_content_length(invalid_length_request) == 0
-    assert _write_payload_too_large(request, max_write_payload_bytes=5)
-    assert not _write_payload_too_large(request, max_write_payload_bytes=6)
     assert identity.actor_id == "actor"
     assert identity.tenant_id == "tenant"
     assert identity.role == "operator"
