@@ -40,6 +40,11 @@ to `main`.
   Compose project derived by `scripts/ci_local_compose_project.py`; an orchestrator may override it
   with `CI_LOCAL_COMPOSE_PROJECT`. `make ci-local-docker-down` removes only this CI-owned project
   and must not remove an active product `lotus-manage` container, network, or volume.
+- `make quality-report-gate`
+  verifies the checked-in quality reports against their immutable recorded baseline and current
+  absolute measurements. A clean feature branch therefore does not become stale merely because
+  `origin/main` advances; dirty development worktrees and unavailable recorded commits fall back
+  to the current upstream baseline.
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`
