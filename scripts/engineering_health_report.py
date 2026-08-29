@@ -691,12 +691,13 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
             "Quality report freshness",
             "Active gate",
             "`make quality-report-gate` blocks stale checked-in quality reports, pins clean "
-            "checkouts to the report's recorded baseline, and ignores volatile report provenance.",
+            "checkouts to the report's recorded baseline, measures pull requests on the immutable "
+            "PR head, and ignores volatile report provenance.",
         ],
         [
             "Workflow policy",
             "Active gate",
-            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, raw blocking-workflow pytest shortcuts, coverage-gate drift, and PR evidence drift.",
+            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, non-head PR report checks, raw blocking-workflow pytest shortcuts, coverage-gate drift, and PR evidence drift.",
         ],
         [
             "Local CI parity",

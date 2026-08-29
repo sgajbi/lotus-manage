@@ -833,6 +833,14 @@ def quality_report_gate_violations(workflow_path: Path) -> list[str]:
                 f"{workflow_path.as_posix()}: quality report gate job must use "
                 "actions/checkout with fetch-depth: 0 so origin/main is available"
             )
+        if (
+            workflow_path.name == "pr-merge-gate.yml"
+            and "github.event.pull_request.head.sha" not in checkout_block
+        ):
+            violations.append(
+                f"{workflow_path.as_posix()}: PR quality report gate must checkout the "
+                "immutable pull-request head so merge-checkout changes cannot stale the report"
+            )
     step_start = text.rfind("\n      - name:", 0, start)
     step_end = text.find("\n      - name:", start)
     step_block = text[step_start:] if step_end == -1 else text[step_start:step_end]
