@@ -3254,6 +3254,36 @@ def test_workflow_policy_gate_accepts_blocking_pr_head_quality_report_gate(
     assert quality_report_gate_violations(workflow) == []
 
 
+def test_workflow_policy_gate_does_not_reuse_checkout_from_preceding_job(
+    tmp_path: Path,
+) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  merge-validation:",
+                "    steps:",
+                "      - uses: actions/checkout@v6",
+                "        with:",
+                "          fetch-depth: 0",
+                "          ref: ${{ github.event.pull_request.head.sha || github.sha }}",
+                "  quality-report:",
+                "    steps:",
+                "      - name: Quality Report Freshness Gate",
+                "        run: make quality-report-gate",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert quality_report_gate_violations(workflow) == [
+        f"{workflow.as_posix()}: quality report gate job must checkout repository first"
+    ]
+
+
 def test_workflow_policy_gate_rejects_ad_hoc_coverage_commands(tmp_path: Path) -> None:
     workflow = tmp_path / "pr-merge-gate.yml"
     workflow.write_text(
