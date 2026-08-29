@@ -1,10 +1,10 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-08-29T02:28:51+00:00`
+- Generated at: `2026-08-29T02:45:38+00:00`
 
 - Baseline source snapshot: `0c33ffd896c6fdbecea019547495b0e17423e1cc`
 
-- Report source snapshot: `0c33ffd8+worktree`
+- Report source snapshot: `0a392fca+worktree`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -20,8 +20,8 @@
 | OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 1. |
 | Complexity | Active source C gate | `make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only. |
 | Duplicate implementation hotspots | Active exact-duplicate non-regression gate | `make duplicate-implementation-gate` blocks newly introduced exact non-trivial Python function-body duplicates; `quality/duplicate_implementation_baseline.json` governs current accepted groups. |
-| Quality report freshness | Active gate | `make quality-report-gate` blocks stale checked-in quality reports, pins clean checkouts to the report's recorded baseline, and ignores volatile report provenance. |
-| Workflow policy | Active gate | `make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, raw blocking-workflow pytest shortcuts, coverage-gate drift, and PR evidence drift. |
+| Quality report freshness | Active gate | `make quality-report-gate` blocks stale checked-in quality reports, pins clean checkouts to the report's recorded baseline, measures pull requests on the immutable PR head, and ignores volatile report provenance. |
+| Workflow policy | Active gate | `make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, non-head PR report checks, raw blocking-workflow pytest shortcuts, coverage-gate drift, and PR evidence drift. |
 | Local CI parity | Active gate | `make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates. |
 | Coverage gate parity | Active gate | `scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate. |
 | Test-family proof breadth | Active gate | `make test-family-inventory` checks `quality/test_family_inventory_baseline.json` and blocks loss of API/runtime, contract/governance, observability/security, domain/lifecycle/methodology, and integration/runtime proof-family file counts. |

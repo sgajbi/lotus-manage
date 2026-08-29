@@ -71,12 +71,27 @@ jobs:
         run: make dead-code-gate
       - name: Workflow Policy Gate
         run: make workflow-policy-gate
-      - name: Quality Report Freshness Gate
-        run: make quality-report-gate
       - name: Test Family Inventory Gate
         run: make test-family-inventory
       - name: Security Audit
         run: make security-audit
+
+  quality-report:
+    name: PR Merge Gate / Quality Report (PR Head)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - name: Install
+        run: make install-ci
+      - name: Quality Report Freshness Gate
+        run: make quality-report-gate
 
   test-suites:
     name: PR Merge Gate / Tests (${{ matrix.suite }})

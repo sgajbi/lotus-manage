@@ -3194,8 +3194,64 @@ def test_workflow_policy_gate_requires_full_history_for_quality_report_gate(
 
     assert quality_report_gate_violations(workflow) == [
         f"{workflow.as_posix()}: quality report gate job must use actions/checkout with "
-        "fetch-depth: 0 so origin/main is available"
+        "fetch-depth: 0 so origin/main is available",
+        f"{workflow.as_posix()}: PR quality report gate must checkout the immutable "
+        "pull-request head so merge-checkout changes cannot stale the report",
     ]
+
+
+def test_workflow_policy_gate_requires_pr_head_for_quality_report_gate(
+    tmp_path: Path,
+) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  quality-report:",
+                "    steps:",
+                "      - uses: actions/checkout@v6",
+                "        with:",
+                "          fetch-depth: 0",
+                "      - name: Quality Report Freshness Gate",
+                "        run: make quality-report-gate",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert quality_report_gate_violations(workflow) == [
+        f"{workflow.as_posix()}: PR quality report gate must checkout the immutable "
+        "pull-request head so merge-checkout changes cannot stale the report"
+    ]
+
+
+def test_workflow_policy_gate_accepts_blocking_pr_head_quality_report_gate(
+    tmp_path: Path,
+) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  quality-report:",
+                "    steps:",
+                "      - uses: actions/checkout@v6",
+                "        with:",
+                "          fetch-depth: 0",
+                "          ref: ${{ github.event.pull_request.head.sha || github.sha }}",
+                "      - name: Quality Report Freshness Gate",
+                "        run: make quality-report-gate",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert quality_report_gate_violations(workflow) == []
 
 
 def test_workflow_policy_gate_rejects_ad_hoc_coverage_commands(tmp_path: Path) -> None:
