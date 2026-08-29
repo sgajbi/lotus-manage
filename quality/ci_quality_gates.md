@@ -39,7 +39,9 @@ The following commands are active repository gates:
     guidance decisions, coverage evidence, blocking workflow coverage-gate drift, and raw pytest
     shortcuts in blocking workflows when repo-native Make test targets exist)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
-    ignores volatile report provenance while enforcing measured report content)
+    pins clean checkouts to the immutable baseline SHA recorded in the report, ignores volatile
+    report provenance, and enforces absolute measured content; dirty development worktrees and
+    missing recorded refs safely fall back to `origin/main`)
   - `make test-family-inventory` (`python scripts/test_family_inventory.py --check`;
     blocks loss of measured proof-family breadth and rejects new uncategorized tests against
     `quality/test_family_inventory_baseline.json`)
