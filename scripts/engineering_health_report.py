@@ -163,7 +163,9 @@ def _base_ref_for_quality_check() -> tuple[str, str]:
         if _git_status_porcelain().strip():
             return DEFAULT_BASE_REF, DEFAULT_BASE_REF
         return _recorded_quality_baseline_ref() or "HEAD^", DEFAULT_BASE_REF
-    return DEFAULT_BASE_REF, DEFAULT_BASE_REF
+    if _git_status_porcelain().strip():
+        return DEFAULT_BASE_REF, DEFAULT_BASE_REF
+    return _recorded_quality_baseline_ref() or DEFAULT_BASE_REF, DEFAULT_BASE_REF
 
 
 def _report_source_snapshot() -> str:
@@ -688,7 +690,8 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         [
             "Quality report freshness",
             "Active gate",
-            "`make quality-report-gate` blocks stale checked-in quality reports while ignoring volatile report provenance.",
+            "`make quality-report-gate` blocks stale checked-in quality reports, pins clean "
+            "checkouts to the report's recorded baseline, and ignores volatile report provenance.",
         ],
         [
             "Workflow policy",

@@ -133,15 +133,68 @@ def test_quality_report_check_uses_parent_commit_for_clean_mainline(monkeypatch)
     ]
 
 
-def test_quality_report_check_uses_origin_main_for_feature_branch(monkeypatch) -> None:
+def test_quality_report_check_uses_recorded_baseline_for_clean_feature_branch(
+    monkeypatch,
+) -> None:
     def fake_git(*args: str) -> str:
         if args == ("rev-parse", "--abbrev-ref", "HEAD"):
             return "feature/example\n"
+        if args == ("status", "--porcelain"):
+            return ""
         raise AssertionError(args)
 
     monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
     monkeypatch.setattr(ehr, "_git", fake_git)
-    monkeypatch.setattr(ehr, "_git_ref_exists", lambda _ref: True)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref == "base1234")
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: "base1234")
+
+    assert ehr._base_ref_for_quality_check() == ("base1234", "origin/main")
+
+
+def test_quality_report_check_uses_recorded_baseline_in_github_feature_lane(
+    monkeypatch,
+) -> None:
+    def fake_git(*args: str) -> str:
+        if args == ("status", "--porcelain"):
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.setenv("GITHUB_REF_NAME", "feature/example")
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: "base1234")
+
+    assert ehr._base_ref_for_quality_check() == ("base1234", "origin/main")
+
+
+def test_quality_report_check_uses_origin_main_for_dirty_feature_branch(monkeypatch) -> None:
+    def fake_git(*args: str) -> str:
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "feature/example\n"
+        if args == ("status", "--porcelain"):
+            return " M src/example.py\n"
+        raise AssertionError(args)
+
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref == "base1234")
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: "base1234")
+
+    assert ehr._base_ref_for_quality_check() == ("origin/main", "origin/main")
+
+
+def test_quality_report_check_falls_back_when_recorded_feature_baseline_is_missing(
+    monkeypatch,
+) -> None:
+    def fake_git(*args: str) -> str:
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "feature/example\n"
+        if args == ("status", "--porcelain"):
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: None)
 
     assert ehr._base_ref_for_quality_check() == ("origin/main", "origin/main")
 
