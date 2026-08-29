@@ -1094,7 +1094,10 @@ Important validation expectations:
    findings unrelated to the RFC-0002 temporal-evidence change. Checked-in quality reports pin
    clean branch validation to their recorded immutable baseline SHA;
    do not replace that behavior with moving `origin/main` comparison or normalize away absolute
-   measurements. Dirty worktrees and missing recorded refs retain the safe `origin/main` fallback.
+   measurements. The PR merge gate validates static and test integration on GitHub's merge result,
+   while a separate blocking job checks report freshness on the immutable pull-request head; this
+   prevents unrelated base-branch changes from making branch-owned evidence stale. Dirty worktrees
+   and missing recorded refs retain the safe `origin/main` fallback.
 4. PR-grade validation includes coverage-backed full test execution,
 5. `make static-quality-gates` includes `make test-family-inventory`, which blocks loss of the
    measured API/runtime, contract/governance, observability/security, domain/lifecycle/methodology,

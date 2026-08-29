@@ -44,7 +44,9 @@ to `main`.
   verifies the checked-in quality reports against their immutable recorded baseline and current
   absolute measurements. A clean feature branch therefore does not become stale merely because
   `origin/main` advances; dirty development worktrees and unavailable recorded commits fall back
-  to the current upstream baseline.
+  to the current upstream baseline. Pull requests run this check in a separate blocking job on the
+  immutable PR head, while static, contract, security, and test gates continue to validate the
+  merge result.
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`
