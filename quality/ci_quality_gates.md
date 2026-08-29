@@ -35,6 +35,7 @@ The following commands are active repository gates:
   - `make dead-code-gate` (`python -m vulture src tests --min-confidence 80`)
   - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
     action references, unexpected workflow permissions, missing blocking quality-report checks, and
+    PR quality-report checks that do not use the immutable pull-request head, plus
     PR-template evidence drift for local gates, CI lanes, security, stranded truth, wiki decisions,
     guidance decisions, coverage evidence, blocking workflow coverage-gate drift, and raw pytest
     shortcuts in blocking workflows when repo-native Make test targets exist)
@@ -90,7 +91,8 @@ The following commands are active repository gates:
   - matrix unit/integration/e2e tests with coverage upload
   - combined coverage floor (`99`)
   - workflow policy integrity
-  - checked-in quality report freshness
+  - checked-in quality report freshness in a separate blocking job checked out at the immutable PR
+    head; the other PR gates continue to validate GitHub's merge result
   - test-family breadth inventory (`make test-family-inventory`)
   - shared coverage gate script for downloaded unit/integration/e2e coverage artifacts
   - suite tests through `make test-${{ matrix.suite }}-coverage`, preserving
