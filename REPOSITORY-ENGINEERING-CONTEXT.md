@@ -1079,7 +1079,11 @@ Important validation expectations:
    addition to Postgres persistence guardrails; PM-quality read/write routes require trusted actor,
    tenant, and role headers, reject body/header actor or tenant mismatches, and persist/list policy,
    score-run, fairness-analysis, review-action, summary-invocation, and portfolio-memory PM-quality
-   source reads under the trusted tenant scope,
+   source reads under the trusted tenant scope. Write-request admission also rejects malformed or
+   negative `Content-Length`, pre-rejects a declared oversized body, and then streams and measures
+   authorized request bytes before replaying the bounded body unchanged to route handling; preserve
+   this received-byte enforcement so missing or under-declared lengths cannot bypass
+   `ENTERPRISE_MAX_WRITE_PAYLOAD_BYTES`,
 3. architecture, complexity, exact duplicate implementation non-regression, dependency-hygiene,
    and dead-code gates are active in Remote Feature Lane, Pull Request Merge Gate, and Main
    Releasability; the separate Quality Baseline workflow remains report-only for expanded trend
