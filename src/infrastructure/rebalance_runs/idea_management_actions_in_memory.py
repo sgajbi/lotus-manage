@@ -91,5 +91,11 @@ class InMemoryIdeaManagementActionRepository(IdeaManagementActionRepository):
             )
         return existing
 
+    def reset(self) -> None:
+        with self._lock:
+            self._actions.clear()
+            self._action_id_by_intake_scope.clear()
+            self._action_id_by_idempotency_scope.clear()
+
 
 __all__ = ["InMemoryIdeaManagementActionRepository"]
