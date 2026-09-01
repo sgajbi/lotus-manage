@@ -15,6 +15,9 @@ from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
+from src.core.rebalance_runs.idea_management_action_repository import (
+    IdeaManagementActionRepository,
+)
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityPolicyRepository,
@@ -38,6 +41,10 @@ from src.infrastructure.proof_packs import (
 from src.infrastructure.outcomes import (
     InMemoryDpmOutcomeReviewRepository,
     PostgresDpmOutcomeReviewRepository,
+)
+from src.infrastructure.rebalance_runs import (
+    InMemoryIdeaManagementActionRepository,
+    PostgresIdeaManagementActionRepository,
 )
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityFairnessAnalysisRepository,
@@ -68,6 +75,7 @@ _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
 _CONSTRUCTION_REPOSITORY = InMemoryConstructionRepository()
 _PROOF_PACK_REPOSITORY = InMemoryDpmProofPackRepository()
 _OUTCOME_REVIEW_REPOSITORY = InMemoryDpmOutcomeReviewRepository()
+_IDEA_MANAGEMENT_ACTION_REPOSITORY = InMemoryIdeaManagementActionRepository()
 _PM_QUALITY_POLICY_REPOSITORY = InMemoryDpmPmQualityPolicyRepository()
 _PM_QUALITY_SCORE_RUN_REPOSITORY = InMemoryDpmPmQualityScoreRunRepository()
 _PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY = InMemoryDpmPmQualityFairnessAnalysisRepository()
@@ -85,6 +93,7 @@ _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
 _POSTGRES_CONSTRUCTION_REPOSITORY: PostgresConstructionRepository | None = None
 _POSTGRES_PROOF_PACK_REPOSITORY: PostgresDpmProofPackRepository | None = None
 _POSTGRES_OUTCOME_REVIEW_REPOSITORY: PostgresDpmOutcomeReviewRepository | None = None
+_POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY: PostgresIdeaManagementActionRepository | None = None
 _POSTGRES_PM_QUALITY_POLICY_REPOSITORY: PostgresDpmPmQualityPolicyRepository | None = None
 _POSTGRES_PM_QUALITY_SCORE_RUN_REPOSITORY: PostgresDpmPmQualityScoreRunRepository | None = None
 _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY: (
@@ -158,6 +167,24 @@ def get_outcome_review_repository() -> DpmOutcomeReviewRepository:
             _POSTGRES_OUTCOME_REVIEW_REPOSITORY = PostgresDpmOutcomeReviewRepository(dsn=dsn)
         return _POSTGRES_OUTCOME_REVIEW_REPOSITORY
     return _OUTCOME_REVIEW_REPOSITORY
+
+
+def get_idea_management_action_repository() -> IdeaManagementActionRepository:
+    """Return the repository for Idea-originated Manage review work."""
+
+    dsn = _idea_management_action_repository_dsn()
+    if dsn:
+        global _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY
+        if _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY is None:
+            _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY = PostgresIdeaManagementActionRepository(
+                dsn=dsn
+            )
+        return _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY
+    return _IDEA_MANAGEMENT_ACTION_REPOSITORY
+
+
+def reset_idea_management_action_repository_for_tests() -> None:
+    _IDEA_MANAGEMENT_ACTION_REPOSITORY.reset()
 
 
 def get_pm_quality_score_run_repository() -> DpmPmQualityScoreRunRepository:
@@ -517,6 +544,13 @@ def _repository_dsn(primary_env_name: str) -> str:
         os.getenv(primary_env_name, "").strip()
         or os.getenv("DPM_MANAGE_POSTGRES_DSN", "").strip()
         or os.getenv("DPM_SUPPORTABILITY_POSTGRES_DSN", "").strip()
+    )
+
+
+def _idea_management_action_repository_dsn() -> str:
+    return (
+        os.getenv("DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN", "").strip()
+        or os.getenv("DPM_MANAGE_POSTGRES_DSN", "").strip()
     )
 
 
