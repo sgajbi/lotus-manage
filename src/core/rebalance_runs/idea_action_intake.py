@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from hashlib import sha256
-from threading import Lock
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -12,22 +11,27 @@ from src.core.rebalance_runs.idea_action_intake_authority import (
     IDEA_ACTION_INTAKE_ACCEPT_CAPABILITY,
     IdeaActionIntakePrincipal,
 )
-
-
-class IdeaActionIntakeIdempotencyConflictError(Exception):
-    """Raised when an Idea action-intake idempotency key is reused for a different request."""
+from src.core.rebalance_runs.idea_management_action import (
+    IdeaManagementAction,
+    IdeaManagementActionEvent,
+)
+from src.core.rebalance_runs.models import DpmWorkflowActionType, DpmWorkflowStatus
 
 
 class IdeaActionIntakeInvalidIdempotencyKeyError(Exception):
     """Raised when an Idea action-intake idempotency key is empty after normalization."""
 
 
+class IdeaActionIntakeScopeError(Exception):
+    """Raised when trusted local/dev scope does not authorize the requested portfolio."""
+
+
 IdeaActionIntakeStatus = Literal["ACCEPTED", "ACCEPTED_REPLAYED", "REJECTED"]
 IdeaActionIntakeSupportabilityStatus = Literal["not_certified"]
 IdeaActionIntentType = Literal["REVIEW_FOR_REBALANCE", "CREATE_MANAGEMENT_ACTION_DRAFT"]
 IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS = [
-    "rebalance_execution_authority_remains_lotus_manage",
-    "action_register_persistence_not_certified",
+    "production_idp_caller_scope_not_certified",
+    "rebalance_execution_not_certified",
     "oms_execution_not_certified",
     "client_publication_authority_blocked",
 ]
@@ -35,6 +39,7 @@ IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS = [
 IDEA_ACTION_INTAKE_REQUEST_EXAMPLE: dict[str, Any] = {
     "source_system": "lotus-idea",
     "source_product": "lotus-idea:IdeaCandidate:v1",
+    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
     "idea_candidate_id": "idea_candidate_001",
     "conversion_intent_id": "conversion_intent_001",
     "intent_type": "REVIEW_FOR_REBALANCE",
@@ -65,327 +70,255 @@ IDEA_ACTION_INTAKE_RESPONSE_EXAMPLE: dict[str, Any] = {
         "role": "SERVICE",
         "tenant_id": "tenant-private-bank-sg",
         "legal_entity_code": "SGPB",
+        "portfolio_ids": ["PB_SG_GLOBAL_BAL_001"],
         "correlation_id": "corr-idea-action-001",
         "service_identity": "lotus-idea",
         "capability": IDEA_ACTION_INTAKE_ACCEPT_CAPABILITY,
     },
-    "outcome_reason_codes": ["idea_action_intake_receipt_accepted"],
-    "action_register_created": False,
+    "outcome_reason_codes": ["idea_action_created_for_management_review"],
+    "action_register_created": True,
+    "management_action_id": "ima_70aac20f34d0a83fc85a",
+    "management_action_status": "PENDING_REVIEW",
+    "source_event_version": 1,
+    "outcome_history_route": "/api/v1/rebalance/idea-action-intakes/iai_7a1d2b3c4d5e/outcomes",
+    "outcome_history_contract_version": "lotus-manage.idea-action-outcome-history.v1",
     "rebalance_execution_authority_granted": False,
     "order_created": False,
     "client_publication_authorized": False,
     "certification_blockers": IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS,
     "evidence_refs": [
         "contracts/idea-action-intake/lotus-manage-idea-action-intake.v1.json",
-        "src/api/routers/rebalance_runs_idea_action_intake_routes.py",
-        "src/core/rebalance_runs/idea_action_intake.py",
+        "src/core/rebalance_runs/idea_management_action.py",
+        "src/infrastructure/rebalance_runs/idea_management_actions_postgres.py",
     ],
-    "received_at": "2026-06-21T10:10:00+00:00",
+    "received_at": "2026-09-02T01:00:00+00:00",
     "correlation_id": "corr-idea-action-001",
 }
 
 IDEA_ACTION_INTAKE_ERROR_EXAMPLE: dict[str, Any] = {
-    "detail": "UNSUPPORTED_QUERY_PARAMETER: dry_run not supported for this endpoint"
+    "type": "about:blank",
+    "title": "Validation Error",
+    "status": 422,
+    "detail": "Idea management action request failed semantic validation.",
+    "reasonCode": "IDEA_ACTION_INTAKE_VALIDATION_FAILED",
+    "correlationId": "corr-idea-action-001",
+    "instance": "/api/v1/rebalance/idea-action-intake",
 }
 
 
 class IdeaActionSourceRef(BaseModel):
-    source_system: Literal["lotus-idea"] = Field(
-        description="Source system that owns the referenced idea evidence.",
-        examples=["lotus-idea"],
-    )
-    source_type: str = Field(
-        min_length=1,
-        description="Source-owned evidence type or product name.",
-        examples=["IdeaCandidate"],
-    )
-    source_id: str = Field(
-        min_length=1,
-        description="Source-owned identifier; no portfolio, account, or client identifier required.",
-        examples=["idea_candidate_001"],
-    )
-    content_hash: str | None = Field(
-        default=None,
-        max_length=160,
-        description="Optional source-owned content hash for replay and lineage checks.",
-        examples=["sha256:abc123"],
-    )
+    source_system: Literal["lotus-idea"]
+    source_type: str = Field(min_length=1, max_length=160)
+    source_id: str = Field(min_length=1, max_length=160)
+    content_hash: str | None = Field(default=None, max_length=160)
 
     @field_validator("source_type", "source_id", "content_hash")
     @classmethod
     def _trim_source_text(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        trimmed = value.strip()
-        if not trimmed:
+        normalized = value.strip()
+        if not normalized:
             raise ValueError("IDEA_ACTION_SOURCE_REF_REQUIRED")
-        return trimmed
+        return normalized
 
 
 class IdeaActionIntakeRequest(BaseModel):
     model_config = {"json_schema_extra": {"example": IDEA_ACTION_INTAKE_REQUEST_EXAMPLE}}
 
-    source_system: Literal["lotus-idea"] = Field(
-        description="Producer system submitting the reviewed opportunity handoff.",
-        examples=["lotus-idea"],
-    )
-    source_product: Literal["lotus-idea:IdeaCandidate:v1"] = Field(
-        description="Source product represented by the handoff.",
-        examples=["lotus-idea:IdeaCandidate:v1"],
-    )
-    idea_candidate_id: str = Field(
+    source_system: Literal["lotus-idea"]
+    source_product: Literal["lotus-idea:IdeaCandidate:v1"]
+    portfolio_id: str = Field(
         min_length=1,
         max_length=160,
-        description="lotus-idea candidate identifier; Manage does not infer portfolio facts from it.",
-        examples=["idea_candidate_001"],
-    )
-    conversion_intent_id: str = Field(
-        min_length=1,
-        max_length=160,
-        description="lotus-idea conversion intent identifier used for idempotent handoff tracking.",
-        examples=["conversion_intent_001"],
-    )
-    intent_type: IdeaActionIntentType = Field(
         description=(
-            "Requested management-side intake posture. This route records only the handoff "
-            "foundation and does not create an action register row or execution order."
+            "Authoritative portfolio scope carried by the Idea conversion intent. Manage "
+            "validates it against trusted local/dev caller entitlement before persistence."
         ),
-        examples=["REVIEW_FOR_REBALANCE"],
     )
-    source_refs: list[IdeaActionSourceRef] = Field(
-        min_length=1,
-        max_length=16,
-        description="Source-safe idea evidence references supplied by lotus-idea.",
-    )
+    idea_candidate_id: str = Field(min_length=1, max_length=160)
+    conversion_intent_id: str = Field(min_length=1, max_length=160)
+    intent_type: IdeaActionIntentType
+    source_refs: list[IdeaActionSourceRef] = Field(min_length=1, max_length=16)
 
-    @field_validator("idea_candidate_id", "conversion_intent_id")
+    @field_validator("portfolio_id", "idea_candidate_id", "conversion_intent_id")
     @classmethod
     def _trim_required_identifier(cls, value: str) -> str:
-        trimmed = value.strip()
-        if not trimmed:
+        normalized = value.strip()
+        if not normalized:
             raise ValueError("IDEA_ACTION_IDENTIFIER_REQUIRED")
-        return trimmed
+        return normalized
 
 
 class IdeaActionIntakeResponse(BaseModel):
     model_config = {"json_schema_extra": {"example": IDEA_ACTION_INTAKE_RESPONSE_EXAMPLE}}
 
-    intake_id: str = Field(
-        description="Deterministic source-safe intake identifier derived from source handoff fields.",
-        examples=["iai_7a1d2b3c4d5e"],
-    )
-    intake_status: IdeaActionIntakeStatus = Field(
-        description="Bounded action-intake receipt status; not a management action or execution status.",
-        examples=["ACCEPTED"],
-    )
-    supportability_status: IdeaActionIntakeSupportabilityStatus = Field(
-        description="Certification posture for this action-intake receipt.",
-        examples=["not_certified"],
-    )
-    source_authority: Literal["lotus-idea"] = Field(
-        description="Source authority for candidate and conversion intent evidence.",
-        examples=["lotus-idea"],
-    )
-    action_authority: Literal["lotus-manage"] = Field(
-        description="Management action authority retained by lotus-manage.",
-        examples=["lotus-manage"],
-    )
-    target_product: Literal["lotus-manage:PortfolioActionRegister:v1"] = Field(
-        description="Manage-owned product that future certified realization may update.",
-        examples=["lotus-manage:PortfolioActionRegister:v1"],
-    )
-    route_existence_proven: bool = Field(
-        description="True because this route exists and is covered by contract tests.",
-        examples=[True],
-    )
-    action_receipt_accepted: bool = Field(
-        description=(
-            "True only when Manage accepted the handoff into its bounded action-intake receipt "
-            "layer. This is not action-register persistence."
-        ),
-        examples=[True],
-    )
-    idempotency_replay: bool = Field(
-        description="True when the response is a safe replay for the same idempotency key/request.",
-        examples=[False],
-    )
-    idempotency_key_hash: str = Field(
-        description="Hashed idempotency key reference; raw idempotency keys are not echoed.",
-        examples=["sha256:71d5d5d1fbf0"],
-    )
-    request_fingerprint: str = Field(
-        description="Source-safe request fingerprint used for idempotency conflict detection.",
-        examples=["sha256:a4e9afedc3cb"],
-    )
-    trusted_scope: dict[str, Any] = Field(
-        description=(
-            "Bounded trusted principal scope derived from local/dev headers. Production IdP "
-            "integration remains external to this route until available."
-        ),
-    )
-    outcome_reason_codes: list[str] = Field(
-        description="Machine-readable outcome reasons for accepted, replayed, or rejected intake.",
-        examples=[["idea_action_intake_receipt_accepted"]],
-    )
-    action_register_created: bool = Field(
-        description="False until a later certified management action realization slice persists one.",
-        examples=[False],
-    )
-    rebalance_execution_authority_granted: bool = Field(
-        description="False; this route does not approve, create, route, or execute rebalance orders.",
-        examples=[False],
-    )
-    order_created: bool = Field(
-        description="False; no order, OMS instruction, fill, or settlement evidence is created.",
-        examples=[False],
-    )
-    client_publication_authorized: bool = Field(
-        description="False; this route does not authorize client communication or publication.",
-        examples=[False],
-    )
-    certification_blockers: list[str] = Field(
-        description="Remaining blockers before this route can support certified realization.",
-        examples=[IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS],
-    )
-    evidence_refs: list[str] = Field(
-        description="Implementation and contract evidence references for the action-intake receipt.",
-    )
-    received_at: str = Field(
-        description="UTC timestamp when the handoff envelope was acknowledged.",
-        examples=["2026-06-21T10:10:00+00:00"],
-    )
-    correlation_id: str = Field(
-        description="Caller or generated correlation id for source-safe operational tracing.",
-        examples=["corr-idea-action-001"],
-    )
+    intake_id: str
+    intake_status: IdeaActionIntakeStatus
+    supportability_status: IdeaActionIntakeSupportabilityStatus
+    source_authority: Literal["lotus-idea"]
+    action_authority: Literal["lotus-manage"]
+    target_product: Literal["lotus-manage:PortfolioActionRegister:v1"]
+    route_existence_proven: bool
+    action_receipt_accepted: bool
+    idempotency_replay: bool
+    idempotency_key_hash: str
+    request_fingerprint: str
+    trusted_scope: dict[str, Any]
+    outcome_reason_codes: list[str]
+    action_register_created: bool
+    management_action_id: str | None = None
+    management_action_status: DpmWorkflowStatus | None = None
+    source_event_version: int | None = Field(default=None, ge=1)
+    outcome_history_route: str | None = None
+    outcome_history_contract_version: str | None = None
+    rebalance_execution_authority_granted: Literal[False]
+    order_created: Literal[False]
+    client_publication_authorized: Literal[False]
+    certification_blockers: list[str]
+    evidence_refs: list[str]
+    received_at: str
+    correlation_id: str
 
 
-def acknowledge_idea_action_intake(
+class IdeaManagementActionDecisionRequest(BaseModel):
+    workflow_action: DpmWorkflowActionType
+    expected_source_event_version: int = Field(ge=1)
+    reason_code: str = Field(min_length=1, max_length=120)
+
+    @field_validator("reason_code")
+    @classmethod
+    def _trim_reason_code(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("IDEA_MANAGEMENT_ACTION_REASON_CODE_REQUIRED")
+        return normalized
+
+
+class IdeaManagementActionOutcomeHistoryResponse(BaseModel):
+    contract_version: Literal["lotus-manage.idea-action-outcome-history.v1"]
+    source_authority: Literal["lotus-manage"]
+    intake_id: str
+    management_action_id: str
+    portfolio_id: str
+    idea_candidate_id: str
+    conversion_intent_id: str
+    status: DpmWorkflowStatus
+    source_event_version: int = Field(ge=1)
+    events: tuple[IdeaManagementActionEvent, ...]
+    rebalance_execution_proven: Literal[False]
+    order_execution_proven: Literal[False]
+    client_publication_proven: Literal[False]
+
+
+def assert_idea_action_portfolio_scope(
     request: IdeaActionIntakeRequest,
     *,
-    correlation_id: str,
-    idempotency_key: str = "domain-determinism-only",
-    principal: IdeaActionIntakePrincipal | None = None,
-    received_at: datetime | None = None,
-) -> IdeaActionIntakeResponse:
-    timestamp = received_at or datetime.now(timezone.utc)
-    source_refs_fingerprint = _source_refs_fingerprint(request.source_refs)
-    request_fingerprint = _request_fingerprint(
-        request,
-        source_refs_fingerprint=source_refs_fingerprint,
-    )
-    intake_id = _intake_id(
-        idea_candidate_id=request.idea_candidate_id,
-        conversion_intent_id=request.conversion_intent_id,
-        intent_type=request.intent_type,
-        source_refs_fingerprint=source_refs_fingerprint,
-    )
-    accepted = request.intent_type == "REVIEW_FOR_REBALANCE"
-    return IdeaActionIntakeResponse(
-        intake_id=intake_id,
-        intake_status="ACCEPTED" if accepted else "REJECTED",
-        supportability_status="not_certified",
-        source_authority="lotus-idea",
-        action_authority="lotus-manage",
-        target_product="lotus-manage:PortfolioActionRegister:v1",
-        route_existence_proven=True,
-        action_receipt_accepted=accepted,
-        idempotency_replay=False,
-        idempotency_key_hash=_safe_key_hash(idempotency_key),
-        request_fingerprint=request_fingerprint,
-        trusted_scope=_trusted_scope(principal=principal, correlation_id=correlation_id),
-        outcome_reason_codes=_outcome_reason_codes(request),
-        action_register_created=False,
-        rebalance_execution_authority_granted=False,
-        order_created=False,
-        client_publication_authorized=False,
-        certification_blockers=list(IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS),
-        evidence_refs=[
-            "contracts/idea-action-intake/lotus-manage-idea-action-intake.v1.json",
-            "src/api/routers/rebalance_runs_idea_action_intake_routes.py",
-            "src/core/rebalance_runs/idea_action_intake.py",
-        ],
-        received_at=timestamp.isoformat(),
-        correlation_id=correlation_id,
-    )
+    principal: IdeaActionIntakePrincipal,
+) -> None:
+    if not principal.can_access_portfolio(request.portfolio_id):
+        raise IdeaActionIntakeScopeError("IDEA_ACTION_INTAKE_PORTFOLIO_SCOPE_FORBIDDEN")
 
 
-def process_idea_action_intake(
+def idea_action_request_fingerprint(request: IdeaActionIntakeRequest) -> str:
+    canonical_payload = json.dumps(
+        {
+            **request.model_dump(mode="json", exclude_none=False),
+            "source_refs": _canonical_source_refs(request.source_refs),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return f"sha256:{sha256(canonical_payload.encode()).hexdigest()[:12]}"
+
+
+def idea_action_intake_id(
     request: IdeaActionIntakeRequest,
     *,
-    correlation_id: str,
+    principal: IdeaActionIntakePrincipal,
+) -> str:
+    identity = "|".join(
+        (
+            principal.tenant_id,
+            principal.legal_entity_code,
+            request.portfolio_id,
+            request.idea_candidate_id,
+            request.conversion_intent_id,
+            request.intent_type,
+            idea_action_request_fingerprint(request),
+        )
+    )
+    return f"iai_{sha256(identity.encode()).hexdigest()[:20]}"
+
+
+def idea_action_idempotency_scope_hash(
+    *,
     idempotency_key: str,
     principal: IdeaActionIntakePrincipal,
-    received_at: datetime | None = None,
-) -> IdeaActionIntakeResponse:
-    response = acknowledge_idea_action_intake(
-        request,
-        correlation_id=correlation_id,
-        idempotency_key=idempotency_key,
-        principal=principal,
-        received_at=received_at,
-    )
-    return _IDEMPOTENCY_REGISTRY.record(
-        idempotency_key=idempotency_key,
-        request_fingerprint=response.request_fingerprint,
-        response=response,
-    )
-
-
-def reset_idea_action_intake_idempotency_for_tests() -> None:
-    _IDEMPOTENCY_REGISTRY.reset()
-
-
-class _IdeaActionIntakeIdempotencyRegistry:
-    def __init__(self) -> None:
-        self._lock = Lock()
-        self._records: dict[str, tuple[str, IdeaActionIntakeResponse]] = {}
-
-    def record(
-        self,
-        *,
-        idempotency_key: str,
-        request_fingerprint: str,
-        response: IdeaActionIntakeResponse,
-    ) -> IdeaActionIntakeResponse:
-        idempotency_key_hash = _safe_key_hash(idempotency_key)
-        registry_key = _idempotency_registry_key(
-            idempotency_key_hash=idempotency_key_hash,
-            trusted_scope=response.trusted_scope,
+    portfolio_id: str,
+) -> str:
+    key_hash = safe_idea_action_idempotency_key_hash(idempotency_key)
+    canonical_scope = "|".join(
+        (
+            key_hash,
+            principal.tenant_id,
+            principal.legal_entity_code,
+            portfolio_id,
+            principal.service_identity,
         )
-        with self._lock:
-            existing = self._records.get(registry_key)
-            if existing is None:
-                self._records[registry_key] = (request_fingerprint, response)
-                return response
-            existing_fingerprint, existing_response = existing
-            if existing_fingerprint != request_fingerprint:
-                raise IdeaActionIntakeIdempotencyConflictError(
-                    "IDEA_ACTION_INTAKE_IDEMPOTENCY_CONFLICT"
-                )
-            return existing_response.model_copy(
-                update={
-                    "intake_status": "ACCEPTED_REPLAYED"
-                    if existing_response.action_receipt_accepted
-                    else "REJECTED",
-                    "idempotency_replay": True,
-                    "correlation_id": response.correlation_id,
-                    "trusted_scope": response.trusted_scope,
-                    "received_at": response.received_at,
-                    "outcome_reason_codes": _replay_reason_codes(existing_response),
-                }
-            )
-
-    def reset(self) -> None:
-        with self._lock:
-            self._records.clear()
+    )
+    return f"sha256:{sha256(canonical_scope.encode()).hexdigest()[:24]}"
 
 
-_IDEMPOTENCY_REGISTRY = _IdeaActionIntakeIdempotencyRegistry()
+def safe_idea_action_idempotency_key_hash(idempotency_key: str) -> str:
+    normalized = idempotency_key.strip()
+    if not normalized:
+        raise IdeaActionIntakeInvalidIdempotencyKeyError(
+            "IDEA_ACTION_INTAKE_IDEMPOTENCY_KEY_REQUIRED"
+        )
+    return f"sha256:{sha256(normalized.encode()).hexdigest()[:12]}"
 
 
-def _source_refs_fingerprint(source_refs: list[IdeaActionSourceRef]) -> str:
-    canonical_refs = sorted(
+def idea_action_trusted_scope(
+    *,
+    principal: IdeaActionIntakePrincipal,
+    correlation_id: str,
+    capability: str = IDEA_ACTION_INTAKE_ACCEPT_CAPABILITY,
+) -> dict[str, Any]:
+    metadata = principal.audit_metadata(capability=capability)
+    metadata["correlation_id"] = correlation_id
+    return metadata
+
+
+def idea_management_action_history(
+    action: IdeaManagementAction,
+) -> IdeaManagementActionOutcomeHistoryResponse:
+    return IdeaManagementActionOutcomeHistoryResponse(
+        contract_version="lotus-manage.idea-action-outcome-history.v1",
+        source_authority="lotus-manage",
+        intake_id=action.intake_id,
+        management_action_id=action.action_id,
+        portfolio_id=action.portfolio_id,
+        idea_candidate_id=action.idea_candidate_id,
+        conversion_intent_id=action.conversion_intent_id,
+        status=action.status,
+        source_event_version=action.source_event_version,
+        events=action.events,
+        rebalance_execution_proven=False,
+        order_execution_proven=False,
+        client_publication_proven=False,
+    )
+
+
+def idea_action_received_at(value: datetime | None = None) -> datetime:
+    timestamp = value or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        raise ValueError("IDEA_ACTION_INTAKE_TIMEZONE_REQUIRED")
+    return timestamp.astimezone(timezone.utc)
+
+
+def _canonical_source_refs(source_refs: list[IdeaActionSourceRef]) -> list[dict[str, Any]]:
+    return sorted(
         (source_ref.model_dump(mode="json", exclude_none=False) for source_ref in source_refs),
         key=lambda item: (
             item["source_system"],
@@ -394,113 +327,25 @@ def _source_refs_fingerprint(source_refs: list[IdeaActionSourceRef]) -> str:
             item.get("content_hash") or "",
         ),
     )
-    canonical_payload = json.dumps(canonical_refs, sort_keys=True, separators=(",", ":"))
-    return sha256(canonical_payload.encode()).hexdigest()
 
 
-def _request_fingerprint(
-    request: IdeaActionIntakeRequest,
-    *,
-    source_refs_fingerprint: str,
-) -> str:
-    canonical_payload = json.dumps(
-        {
-            "source_system": request.source_system,
-            "source_product": request.source_product,
-            "idea_candidate_id": request.idea_candidate_id,
-            "conversion_intent_id": request.conversion_intent_id,
-            "intent_type": request.intent_type,
-            "source_refs_fingerprint": source_refs_fingerprint,
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return f"sha256:{sha256(canonical_payload.encode()).hexdigest()[:12]}"
-
-
-def _safe_key_hash(idempotency_key: str) -> str:
-    normalized = _normalized_idempotency_key(idempotency_key)
-    return f"sha256:{sha256(normalized.encode()).hexdigest()[:12]}"
-
-
-def _normalized_idempotency_key(idempotency_key: str) -> str:
-    normalized = idempotency_key.strip()
-    if not normalized:
-        raise IdeaActionIntakeInvalidIdempotencyKeyError(
-            "IDEA_ACTION_INTAKE_IDEMPOTENCY_KEY_REQUIRED"
-        )
-    return normalized
-
-
-def _idempotency_registry_key(
-    *,
-    idempotency_key_hash: str,
-    trusted_scope: dict[str, Any],
-) -> str:
-    canonical_scope = {
-        "subject": str(trusted_scope.get("subject") or ""),
-        "role": str(trusted_scope.get("role") or ""),
-        "tenant_id": str(trusted_scope.get("tenant_id") or ""),
-        "legal_entity_code": str(trusted_scope.get("legal_entity_code") or ""),
-        "service_identity": str(trusted_scope.get("service_identity") or ""),
-        "capability": str(trusted_scope.get("capability") or ""),
-    }
-    canonical_payload = json.dumps(
-        {
-            "idempotency_key_hash": idempotency_key_hash,
-            "trusted_scope": canonical_scope,
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return f"sha256:{sha256(canonical_payload.encode()).hexdigest()[:12]}"
-
-
-def _trusted_scope(
-    *,
-    principal: IdeaActionIntakePrincipal | None,
-    correlation_id: str,
-) -> dict[str, Any]:
-    if principal is None:
-        return {
-            "subject": "domain-only",
-            "role": "DOMAIN_TEST",
-            "tenant_id": "domain-only",
-            "legal_entity_code": "DOMAIN",
-            "correlation_id": correlation_id,
-            "service_identity": "domain-only",
-            "capability": IDEA_ACTION_INTAKE_ACCEPT_CAPABILITY,
-        }
-    metadata = principal.audit_metadata(capability=IDEA_ACTION_INTAKE_ACCEPT_CAPABILITY)
-    metadata["correlation_id"] = correlation_id
-    return metadata
-
-
-def _outcome_reason_codes(request: IdeaActionIntakeRequest) -> list[str]:
-    if request.intent_type == "REVIEW_FOR_REBALANCE":
-        return ["idea_action_intake_receipt_accepted"]
-    return [
-        "action_register_persistence_not_certified",
-        "idea_action_intake_receipt_rejected_no_action_created",
-    ]
-
-
-def _replay_reason_codes(response: IdeaActionIntakeResponse) -> list[str]:
-    if response.action_receipt_accepted:
-        return ["idea_action_intake_receipt_replayed"]
-    return ["idea_action_intake_rejection_replayed"]
-
-
-def _intake_id(
-    *,
-    idea_candidate_id: str,
-    conversion_intent_id: str,
-    intent_type: str,
-    source_refs_fingerprint: str,
-) -> str:
-    digest = sha256(
-        (
-            f"{idea_candidate_id}|{conversion_intent_id}|{intent_type}|{source_refs_fingerprint}"
-        ).encode()
-    ).hexdigest()
-    return f"iai_{digest[:12]}"
+__all__ = [
+    "IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS",
+    "IDEA_ACTION_INTAKE_ERROR_EXAMPLE",
+    "IDEA_ACTION_INTAKE_REQUEST_EXAMPLE",
+    "IDEA_ACTION_INTAKE_RESPONSE_EXAMPLE",
+    "IdeaActionIntakeInvalidIdempotencyKeyError",
+    "IdeaActionIntakeRequest",
+    "IdeaActionIntakeResponse",
+    "IdeaActionIntakeScopeError",
+    "IdeaManagementActionDecisionRequest",
+    "IdeaManagementActionOutcomeHistoryResponse",
+    "assert_idea_action_portfolio_scope",
+    "idea_action_idempotency_scope_hash",
+    "idea_action_intake_id",
+    "idea_action_received_at",
+    "idea_action_request_fingerprint",
+    "idea_action_trusted_scope",
+    "idea_management_action_history",
+    "safe_idea_action_idempotency_key_hash",
+]

@@ -3,6 +3,7 @@ from typing import AsyncIterator
 
 from fastapi import Depends
 
+from src.infrastructure.postgres_access import PostgresAccessError
 from src.infrastructure.advise_authority import (
     LotusAdviseAuthorityClient,
     LotusAdviseAuthorityConfig,
@@ -17,6 +18,7 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.idea_management_action_repository import (
     IdeaManagementActionRepository,
+    IdeaManagementActionRepositoryUnavailableError,
 )
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisRepository,
@@ -176,9 +178,16 @@ def get_idea_management_action_repository() -> IdeaManagementActionRepository:
     if dsn:
         global _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY
         if _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY is None:
-            _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY = PostgresIdeaManagementActionRepository(
-                dsn=dsn
-            )
+            try:
+                _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY = (
+                    PostgresIdeaManagementActionRepository(dsn=dsn)
+                )
+            except PostgresAccessError as exc:
+                # Construction faults (misconfiguration, missing driver) speak
+                # the repository's own vocabulary above this boundary.
+                raise IdeaManagementActionRepositoryUnavailableError(
+                    "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+                ) from exc
         return _POSTGRES_IDEA_MANAGEMENT_ACTION_REPOSITORY
     return _IDEA_MANAGEMENT_ACTION_REPOSITORY
 

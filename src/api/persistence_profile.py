@@ -43,6 +43,8 @@ def _persistence_profile_guardrail_error() -> str | None:
         return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES"
     if not supportability_postgres_dsn():
         return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN"
+    if not _idea_management_action_postgres_dsn():
+        return "PERSISTENCE_PROFILE_REQUIRES_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN"
     postgres_access_error = _postgres_access_policy_guardrail_error()
     if postgres_access_error is not None:
         return postgres_access_error
@@ -89,3 +91,10 @@ def _env_flag(name: str, default: bool) -> bool:
 
 def _explicit_policy_pack_postgres_dsn() -> str:
     return os.getenv("DPM_POLICY_PACK_POSTGRES_DSN", "").strip()
+
+
+def _idea_management_action_postgres_dsn() -> str:
+    return (
+        os.getenv("DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN", "").strip()
+        or os.getenv("DPM_MANAGE_POSTGRES_DSN", "").strip()
+    )

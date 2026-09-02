@@ -3,6 +3,14 @@ import pytest
 import src.api.persistence_profile as profile
 
 
+@pytest.fixture(autouse=True)
+def _configure_idea_action_persistence(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN",
+        "postgresql://manage-actions",
+    )
+
+
 def _configure_valid_production_authz(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ENTERPRISE_ENFORCE_AUTHZ", "true")
     monkeypatch.setenv("ENTERPRISE_PRIMARY_KEY_ID", "manage-prod-kid")
@@ -62,6 +70,22 @@ def test_validate_persistence_profile_requires_dpm_postgres_dsn(
     monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "")
 
     with pytest.raises(RuntimeError, match="PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN"):
+        profile.validate_persistence_profile_guardrails()
+
+
+def test_validate_persistence_profile_requires_idea_management_action_postgres_dsn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", "PRODUCTION")
+    monkeypatch.delenv("DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN")
+    monkeypatch.delenv("DPM_MANAGE_POSTGRES_DSN", raising=False)
+    monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
+    monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "postgresql://dpm")
+
+    with pytest.raises(
+        RuntimeError,
+        match="PERSISTENCE_PROFILE_REQUIRES_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN",
+    ):
         profile.validate_persistence_profile_guardrails()
 
 

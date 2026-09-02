@@ -120,7 +120,9 @@ def create_idea_management_action(
         conversion_intent_id=conversion_intent_id,
     )
     event = IdeaManagementActionEvent(
-        event_id=_event_id(action_id=action_id, source_event_version=1, event_type="INTAKE_ACCEPTED"),
+        event_id=_event_id(
+            action_id=action_id, source_event_version=1, event_type="INTAKE_ACCEPTED"
+        ),
         action_id=action_id,
         source_event_version=1,
         event_type="INTAKE_ACCEPTED",

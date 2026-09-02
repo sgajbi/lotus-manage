@@ -30,6 +30,8 @@ def test_idea_action_intake_contract_preserves_manage_authority_boundary() -> No
     assert contract["supportability_status"] == "not_certified"
     assert contract["route_existence_proven"] is True
     assert contract["runtime_action_receipt_proven"] is True
+    assert contract["durable_management_action_proven"] is True
+    assert contract["management_review_outcome_history_proven"] is True
     assert contract["downstream_execution_proven"] is False
     assert contract["supported_feature_promoted"] is False
 
@@ -38,9 +40,9 @@ def test_idea_action_intake_contract_keeps_non_proof_boundaries_and_blockers() -
     contract = _contract()
     boundaries = " ".join(contract["non_proof_boundaries"])
 
-    assert "Proves a live executable action-intake receipt" in boundaries
+    assert "one durable, portfolio-scoped PENDING_REVIEW management action" in boundaries
     assert "Does not grant suitability" in boundaries
-    assert "Does not create orders" in boundaries
+    assert "does not prove rebalance execution" in boundaries
     assert "Does not promote a supported feature" in boundaries
     assert contract["certification_blockers"] == IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS
     assert "manage_live_contract_proof_missing" not in contract["certification_blockers"]
@@ -49,5 +51,9 @@ def test_idea_action_intake_contract_keeps_non_proof_boundaries_and_blockers() -
         "src/api/routers/rebalance_runs_idea_action_intake_principal.py",
         "src/core/rebalance_runs/idea_action_intake_authority.py",
         "src/core/rebalance_runs/idea_action_intake.py",
+        "src/core/rebalance_runs/idea_management_action.py",
+        "src/infrastructure/postgres_migrations/dpm/0021_idea_management_actions.sql",
+        "src/infrastructure/rebalance_runs/idea_management_actions_postgres.py",
         "tests/unit/dpm/api/test_idea_action_intake_api.py",
+        "tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py",
     }.issubset(set(contract["evidence_refs"]))

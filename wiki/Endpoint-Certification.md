@@ -768,35 +768,40 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportabili
 LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
-## Documented not-certified executable receipt: Idea action intake
+## Documented not-certified realization: Idea management review
 
 Route:
 
 - `POST /api/v1/rebalance/idea-action-intake`
+- `GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes`
+- `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes`
 
 Purpose:
 
-Source-safe handoff receipt for `lotus-idea` conversion intents that may later become Manage-owned
-action-register work. This is executable receipt proof for cross-repo readiness, including trusted
-local/dev caller scope, idempotency conflict detection, replay, and accepted/rejected outcomes. It
-is not production IdP binding, action-register persistence, rebalance approval, order creation, OMS
-routing, client contact, client publication, or supported-feature promotion.
+Source-safe realization for `lotus-idea` conversion intents. An accepted
+`REVIEW_FOR_REBALANCE` intent immediately becomes one durable Manage-owned, portfolio-scoped
+`PENDING_REVIEW` action. The outcome routes expose and append owner history. This is not production
+IdP binding, rebalance execution, order creation, OMS routing, suitability, client contact, client
+publication, or supported-feature promotion.
 
 Functional coverage:
 
 - accepts only `lotus-idea:IdeaCandidate:v1` handoff envelopes,
 - requires at least one source-safe `source_refs` entry,
 - requires `Idempotency-Key` and trusted local/dev principal headers,
-- returns deterministic `intake_id` and request-fingerprint values from the source handoff identity,
+- returns deterministic `intake_id`, `management_action_id`, and request fingerprint values,
 - returns bounded `ACCEPTED`, `ACCEPTED_REPLAYED`, or `REJECTED` receipt outcomes,
 - preserves `source_authority=lotus-idea` and `action_authority=lotus-manage`,
-- returns `action_register_created=false`,
+- persists one action and initial `INTAKE_ACCEPTED` event for supported accepted intents,
+- returns `action_register_created=true` plus the source-owned outcome-history route,
+- appends authorized `APPROVE`, `REJECT`, or `REQUEST_CHANGES` review events,
+- rejects stale concurrent review decisions using `expected_source_event_version`,
+- returns cross-tenant and out-of-portfolio lookups as product-safe not-found responses,
 - returns `rebalance_execution_authority_granted=false`,
 - returns `order_created=false`,
 - returns `client_publication_authorized=false`,
-- returns all remaining certification blockers:
-  `rebalance_execution_authority_remains_lotus_manage`,
-  `action_register_persistence_not_certified`, `oms_execution_not_certified`, and
+- returns the remaining certification blockers: `production_idp_caller_scope_not_certified`,
+  `rebalance_execution_not_certified`, `oms_execution_not_certified`, and
   `client_publication_authority_blocked`,
 - rejects conflicting idempotency replays with HTTP 409,
 - rejects unsupported query parameters.
@@ -804,22 +809,22 @@ Functional coverage:
 Certification posture:
 
 - `supportability_status=not_certified`.
-- This route is documented for OpenAPI and executable receipt traceability only. It must not be
-  represented as certified endpoint support until a later realization slice binds production IdP
-  claims, persists action-register records, and clears all certification blockers.
+- These routes are documented for OpenAPI and source-owned lifecycle traceability. They must not be
+  represented as certified endpoint support until production IdP scope and live consumer evidence
+  are proven and the relevant certification blockers are cleared.
 
 Downstream consumers:
 
-- `lotus-idea` consumes the contract as Manage not-certified receipt evidence for RFC-0002
-  downstream realization readiness.
+- `lotus-idea` consumes the receipt and Manage-owned outcome history for RFC-0002 downstream
+  realization and reconciliation.
 - Gateway and Workbench must not treat this route as a product-surface or client-demo support claim
-  until a later certified realization slice persists action-register records and clears downstream
-  blockers.
+  until consumer evidence and remaining certification blockers are cleared.
 
 Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_idea_action_intake_api.py tests/unit/dpm/contracts/test_idea_action_intake_contract.py tests/unit/test_domain_data_product_contracts.py -q
+DPM_POSTGRES_INTEGRATION_DSN=<managed-test-dsn> make test-idea-management-action-postgres
 python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_json_requests_and_responses_have_examples tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_error_responses_have_json_examples -q
 make domain-product-validate
 ```

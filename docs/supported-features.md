@@ -19,11 +19,11 @@ explicitly excluded.
 
 ## Explicitly unsupported in `lotus-manage`
 
-- The `lotus-idea` action-intake receipt is not a supported feature. It acknowledges source-safe
-  conversion-intent handoff evidence with trusted local/dev caller scope, idempotency conflict
-  detection, replay, and accepted/rejected outcomes only and does not create action-register
-  records, approve rebalances, create orders, bind production IdP claims, authorize client
-  publication, or prove downstream execution.
+- The `lotus-idea` management-review realization is not yet a supported feature. It durably creates
+  scoped `PENDING_REVIEW` actions and records append-only, version-fenced Manage review outcomes.
+  Production IdP claim binding and live consumer certification remain outstanding. A review
+  `APPROVED` outcome does not prove rebalance or order execution, suitability, OMS state, or client
+  publication.
 - OMS execution instructions, best execution claims, and settlement lifecycle.
 - Client-ready communication, consent collection, or messaging.
 - External treasury advisory, order routing, or execution confirmation.

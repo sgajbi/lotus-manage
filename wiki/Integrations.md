@@ -28,8 +28,8 @@ authority into Manage.
   owner of advisor-led proposal simulation, proposal artifacts, and proposal lifecycle workflows;
   `lotus-manage` must not reintroduce those concerns
 - `lotus-idea`
-  source authority for opportunity candidates and conversion intents that may be handed to Manage
-  through a not-certified action-intake receipt
+  source authority for opportunity candidates and conversion intents; Manage owns the resulting
+  durable management-review action and its outcome history
 
 ## Boundary rules
 
@@ -41,9 +41,9 @@ authority into Manage.
 5. advisory proposal workflows should be integrated through `lotus-advise`
 6. risk-aware construction must consume `lotus-risk` authority or source-backed authority context;
    `lotus-manage` must not recalculate risk methodology locally
-7. `lotus-idea` action-intake handoff proves route existence only; it must not be treated as
-   action-register persistence, rebalance approval, order creation, client publication, or
-   supported-feature proof
+7. `lotus-idea` action intake creates durable management-review work only for
+   `REVIEW_FOR_REBALANCE`; neither transport acceptance nor a review `APPROVED` outcome proves
+   rebalance execution, an order, suitability, client publication, or supported-feature posture
 
 ## Core Sourcing Target
 
@@ -150,9 +150,10 @@ Strategic downstream consumption should use:
 12. `/api/v1/construction/alternative-sets/*` construction alternative generate/read/selection
     routes
 13. `POST /api/v1/rebalance/idea-action-intake` for source-safe `lotus-idea` conversion-intent
-    handoff receipt behavior. This is a not-certified executable receipt with trusted local/dev
-    caller scope and idempotency semantics, not production IdP binding, execution, or
-    action-register creation proof.
+    realization. Accepted rebalance-review intents create one durable scoped action. `GET` and
+    `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes` expose and advance
+    Manage-owned review history. The surface remains not-certified: local/dev trusted headers are
+    not production IdP binding, and management review is not execution proof.
 
 ## Construction Alternatives Upstream Authority
 

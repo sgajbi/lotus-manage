@@ -146,6 +146,37 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
+  idea-management-action-postgres:
+    name: Main Releasability / Idea Management Action PostgreSQL
+    needs: [lint-typecheck-security]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_DB: manage_actions
+          POSTGRES_USER: manage
+          POSTGRES_PASSWORD: manage
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U manage -d manage_actions"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - name: Install
+        run: make install-ci
+      - name: Prove durable Idea management action semantics
+        env:
+          DPM_POSTGRES_INTEGRATION_DSN: postgresql://manage:manage@127.0.0.1:5432/manage_actions
+        run: make test-idea-management-action-postgres
+
   coverage-gate:
     name: Main Releasability / Coverage Gate (Combined)
     needs: [test-suites]
@@ -178,7 +209,7 @@ jobs:
 
   docker-build:
     name: Main Releasability / Docker Image Evidence
-    needs: [coverage-gate]
+    needs: [coverage-gate, idea-management-action-postgres]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
