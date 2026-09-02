@@ -54,6 +54,10 @@ from src.api.routers.wave_campaign_problem_details import (
     CampaignProblemDetailsException,
     campaign_problem_details_exception_handler,
 )
+from src.api.routers.rebalance_runs_idea_action_intake_http import (
+    IdeaActionProblemDetailsException,
+    idea_action_problem_details_exception_handler,
+)
 from src.api.routers.proof_packs import router as proof_pack_router
 from src.api.routers.outcome_reviews import (
     router as outcome_reviews_router,
@@ -318,6 +322,15 @@ async def _campaign_problem_details_exception_handler(
     return await campaign_problem_details_exception_handler(request, exc)
 
 
+async def _idea_action_problem_details_exception_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    if not isinstance(exc, IdeaActionProblemDetailsException):
+        raise exc
+    return await idea_action_problem_details_exception_handler(request, exc)
+
+
 app.add_exception_handler(
     PmQualityProblemDetailsException,
     _pm_quality_problem_details_exception_handler,
@@ -325,6 +338,10 @@ app.add_exception_handler(
 app.add_exception_handler(
     CampaignProblemDetailsException,
     _campaign_problem_details_exception_handler,
+)
+app.add_exception_handler(
+    IdeaActionProblemDetailsException,
+    _idea_action_problem_details_exception_handler,
 )
 
 

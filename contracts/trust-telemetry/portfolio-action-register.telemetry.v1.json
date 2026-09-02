@@ -25,14 +25,20 @@
       "supported_feature_promoted": false,
       "route_existence_proven": true,
       "runtime_action_receipt_proven": true,
+      "durable_management_action_proven": true,
+      "management_review_outcome_history_proven": true,
       "principal_capability": "manage.idea_action_intake.accept",
-      "action_register_created": false,
+      "outcome_read_capability": "manage.idea_action_intake.read",
+      "outcome_review_capability": "manage.idea_action_intake.review",
+      "outcome_history_route": "GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
+      "outcome_decision_route": "POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
+      "action_register_created": true,
       "rebalance_execution_authority_granted": false,
       "order_created": false,
       "client_publication_authorized": false,
       "certification_blockers": [
-        "rebalance_execution_authority_remains_lotus_manage",
-        "action_register_persistence_not_certified",
+        "production_idp_caller_scope_not_certified",
+        "rebalance_execution_not_certified",
         "oms_execution_not_certified",
         "client_publication_authority_blocked"
       ]

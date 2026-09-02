@@ -294,14 +294,24 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
             "supported_feature_promoted": False,
             "route_existence_proven": True,
             "runtime_action_receipt_proven": True,
+            "durable_management_action_proven": True,
+            "management_review_outcome_history_proven": True,
             "principal_capability": "manage.idea_action_intake.accept",
-            "action_register_created": False,
+            "outcome_read_capability": "manage.idea_action_intake.read",
+            "outcome_review_capability": "manage.idea_action_intake.review",
+            "outcome_history_route": (
+                "GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes"
+            ),
+            "outcome_decision_route": (
+                "POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes"
+            ),
+            "action_register_created": True,
             "rebalance_execution_authority_granted": False,
             "order_created": False,
             "client_publication_authorized": False,
             "certification_blockers": [
-                "rebalance_execution_authority_remains_lotus_manage",
-                "action_register_persistence_not_certified",
+                "production_idp_caller_scope_not_certified",
+                "rebalance_execution_not_certified",
                 "oms_execution_not_certified",
                 "client_publication_authority_blocked",
             ],
@@ -317,8 +327,8 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     freshness_description = product["freshness_policy"]["max_allowed_age_description"]
     assert "Certified PortfolioActionRegister routes exclude" in freshness_description
     assert "not-certified route foundation" in freshness_description
-    assert "handoff receipt evidence" in freshness_description
-    assert "does not create action-register records" in freshness_description
+    assert "one durable PENDING_REVIEW management action" in freshness_description
+    assert "append-only, source-versioned Manage review outcomes" in freshness_description
     assert "grant rebalance authority" in freshness_description
     assert "create orders" in freshness_description
     assert "authorize client publication" in freshness_description

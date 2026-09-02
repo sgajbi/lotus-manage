@@ -140,14 +140,15 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   clocks when temporal identity is missing or mixed. Current preserved mandate-health refs do not
   carry source-owned Risk/Performance as-of dates, so downstream proof must treat
   `missing_source_evidence` as non-certifying until that owner evidence is preserved.
-- idea action-intake receipt
+- idea-originated management review realization
   `/api/v1/rebalance/idea-action-intake` accepts source-safe `lotus-idea`
-  conversion-intent handoff evidence and returns a not-certified executable receipt with trusted
-  local/dev caller scope, idempotency conflict detection, replay, and accepted/rejected outcomes.
-  It does not create action-register records, approve rebalances, create orders, route OMS
-  instructions, contact clients, authorize publication, bind production IdP claims, or promote a
-  supported feature. It is represented as route-foundation evidence, not as a certified
-  `PortfolioActionRegister:v1` serving route.
+  conversion-intent evidence. An accepted `REVIEW_FOR_REBALANCE` intent creates exactly one
+  durable, portfolio-scoped `PENDING_REVIEW` management action. The related outcome routes expose
+  append-only Manage-owned review history and use optimistic source-event versions to reject stale
+  decisions. The implementation remains not-certified because production IdP scope and live
+  consumer proof are outstanding. Approval is a management-review outcome; it does not prove
+  rebalance or order execution, suitability, OMS state, or client publication. These routes remain
+  route-foundation evidence rather than certified `PortfolioActionRegister:v1` serving routes.
 - policy-pack supportability
   `/api/v1/rebalance/policies/*`
 - mandate digital twin and health

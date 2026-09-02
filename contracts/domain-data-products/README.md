@@ -143,10 +143,10 @@ Current watchlist:
    `BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED`. Keep benchmark composition, active-risk, performance
    attribution, benchmark analytics, and model-approval methodology in their owning source
    services.
-5. The `lotus-idea` action-intake route is not-certified receipt evidence only. It clears the
-   cross-repo missing-route proof when validated by `lotus-idea` and proves trusted local/dev
-   caller scope, idempotency conflict detection, replay, and accepted/rejected outcomes, but it does
-   not persist an action register row, grant rebalance authority, create orders, bind production IdP
-   claims, authorize client publication, or promote a supported feature. It must remain outside
+5. The `lotus-idea` action-intake route is a not-certified realization foundation. An accepted
+   `REVIEW_FOR_REBALANCE` intent persists exactly one scoped `PENDING_REVIEW` action and Manage-owned,
+   append-only outcome history with optimistic version fencing. This proves management-review state,
+   not rebalance or order execution, suitability, production IdP claim binding, or client
+   publication. It must remain outside
    certified product `current_routes` and unblocked trust-telemetry `serving_routes` unless those
    blockers are deliberately cleared.

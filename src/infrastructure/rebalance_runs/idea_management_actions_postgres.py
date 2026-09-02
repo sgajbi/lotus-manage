@@ -10,20 +10,25 @@ from src.core.rebalance_runs.idea_management_action import (
     IdeaManagementActionEvent,
 )
 from src.core.rebalance_runs.idea_management_action_repository import (
+    IdeaManagementActionRepositoryUnavailableError,
     IdeaManagementActionCreateResult,
     IdeaManagementActionRepository,
     IdeaManagementActionRepositoryConflictError,
 )
-from src.infrastructure.postgres_access import connect_postgres
+from src.infrastructure.postgres_access import (
+    PostgresAccessError,
+    PostgresConfigurationError,
+    connect_postgres,
+)
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
 class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
-            raise RuntimeError("DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN_REQUIRED")
+            raise PostgresConfigurationError("DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN_REQUIRED")
         if not has_psycopg():
-            raise RuntimeError("DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DRIVER_MISSING")
+            raise PostgresConfigurationError("DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DRIVER_MISSING")
         self._dsn = dsn
         self._init_db()
 
@@ -172,13 +177,22 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
         )
 
     def _connect(self) -> Any:
+        """Every operation reaches PostgreSQL through here, so unavailability
+        is translated ONCE into the repository protocol's own error - callers
+        above the boundary never see a Postgres exception type."""
+
         psycopg, dict_row = _import_psycopg()
-        return connect_postgres(
-            self._dsn,
-            connect_fn=psycopg.connect,
-            row_factory=dict_row,
-            application_name="lotus-manage:idea-management-actions",
-        )
+        try:
+            return connect_postgres(
+                self._dsn,
+                connect_fn=psycopg.connect,
+                row_factory=dict_row,
+                application_name="lotus-manage:idea-management-actions",
+            )
+        except PostgresAccessError as exc:
+            raise IdeaManagementActionRepositoryUnavailableError(
+                "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+            ) from exc
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:

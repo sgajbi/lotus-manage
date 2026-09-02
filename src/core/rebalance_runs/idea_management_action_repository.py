@@ -10,6 +10,18 @@ class IdeaManagementActionRepositoryConflictError(Exception):
     """Raised when immutable identity or optimistic concurrency conflicts."""
 
 
+class IdeaManagementActionRepositoryUnavailableError(Exception):
+    """The repository cannot serve the operation right now.
+
+    The repository boundary's own word for persistence unavailability, so
+    routers and services map it to a 503 without knowing which store sits
+    behind the protocol - the same reason the conflict error lives here. The
+    adapter translates its store's errors into this one; a router importing
+    src.infrastructure to catch a database exception is the layering
+    violation the router-infrastructure gate exists to block.
+    """
+
+
 @dataclass(frozen=True)
 class IdeaManagementActionCreateResult:
     action: IdeaManagementAction

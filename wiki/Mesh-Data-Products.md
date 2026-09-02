@@ -25,14 +25,13 @@
 - Supportability discovery: direct Idea consumers may call
    `/api/v1/integration/capabilities?consumer_system=lotus-idea&tenant_id=<tenant>` before
    consuming action-register evidence.
-- Idea action-intake receipt: `POST /api/v1/rebalance/idea-action-intake` accepts source-safe
-  `lotus-idea` conversion-intent handoff evidence and returns a not-certified executable receipt
-  with trusted local/dev caller scope, idempotency conflict detection, replay, and
-  accepted/rejected outcomes. It does not create action-register records, approve rebalances,
-  create orders, route OMS instructions, contact clients, authorize publication, bind production
-  IdP claims, or promote a supported feature. The product declaration and trust snapshot keep this
-  route under `route_foundations`, not under certified `current_routes` or unblocked
-  `serving_routes`.
+- Idea management-review realization: `POST /api/v1/rebalance/idea-action-intake` accepts
+  source-safe conversion-intent evidence. Each accepted `REVIEW_FOR_REBALANCE` intent creates one
+  durable scoped `PENDING_REVIEW` action; owner history is available through the associated
+  `/outcomes` routes with optimistic source-event version fencing. This does not approve or execute
+  a rebalance, create orders, prove suitability, authorize publication, or bind production IdP
+  claims. The product declaration and trust snapshot therefore keep these routes under
+  `route_foundations`, outside certified `current_routes` and unblocked `serving_routes`.
 - Certified implemented route families:
    - `/api/v1/rebalance/supportability/summary`
    - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`

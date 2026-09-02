@@ -10,6 +10,8 @@
   "target_route": "POST /api/v1/rebalance/idea-action-intake",
   "route_existence_proven": true,
   "runtime_action_receipt_proven": true,
+  "durable_management_action_proven": true,
+  "management_review_outcome_history_proven": true,
   "downstream_execution_proven": false,
   "supported_feature_promoted": false,
   "receipt_outcomes": [
@@ -18,17 +20,22 @@
     "REJECTED"
   ],
   "principal_capability": "manage.idea_action_intake.accept",
+  "outcome_read_capability": "manage.idea_action_intake.read",
+  "outcome_review_capability": "manage.idea_action_intake.review",
+  "outcome_history_route": "GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
+  "outcome_decision_route": "POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
+  "outcome_history_contract_version": "lotus-manage.idea-action-outcome-history.v1",
   "local_dev_principal_source": "trusted_headers_until_production_idp_available",
   "certification_blockers": [
-    "rebalance_execution_authority_remains_lotus_manage",
-    "action_register_persistence_not_certified",
+    "production_idp_caller_scope_not_certified",
+    "rebalance_execution_not_certified",
     "oms_execution_not_certified",
     "client_publication_authority_blocked"
   ],
   "non_proof_boundaries": [
-    "Proves a live executable action-intake receipt for lotus-idea conversion-intent handoff into lotus-manage, including accepted, replayed, rejected, and idempotency-conflict behavior.",
+    "Proves a live executable action-intake receipt and one durable, portfolio-scoped PENDING_REVIEW management action for an accepted REVIEW_FOR_REBALANCE intent, including replay, rejection, conflict, restart, and append-only review-history behavior.",
     "Does not grant suitability, mandate, rebalance, order, OMS, fill, settlement, or client-communication authority.",
-    "Does not create orders, action-register records, execution instructions, fills, settlement records, or client messages.",
+    "An APPROVED management-review outcome does not prove rebalance execution, create orders or execution instructions, or prove fills, settlement, suitability, or client publication.",
     "Does not promote a supported feature, client-ready workflow, data-product certification, or downstream execution proof."
   ],
   "evidence_refs": [
@@ -36,6 +43,10 @@
     "src/api/routers/rebalance_runs_idea_action_intake_principal.py",
     "src/core/rebalance_runs/idea_action_intake_authority.py",
     "src/core/rebalance_runs/idea_action_intake.py",
-    "tests/unit/dpm/api/test_idea_action_intake_api.py"
+    "src/core/rebalance_runs/idea_management_action.py",
+    "src/infrastructure/postgres_migrations/dpm/0021_idea_management_actions.sql",
+    "src/infrastructure/rebalance_runs/idea_management_actions_postgres.py",
+    "tests/unit/dpm/api/test_idea_action_intake_api.py",
+    "tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py"
   ]
 }

@@ -51,13 +51,14 @@ Current repository posture:
    scope for this supportability summary remains outside the
    current no-auth local/dev posture until an IdP-backed caller context exists; this production
    scope-binding gap is tracked in sgajbi/lotus-manage#624. The declaration also
-   includes a not-certified `lotus-idea` action-intake receipt at
-   `POST /api/v1/rebalance/idea-action-intake`. The route proves source-safe conversion-intent
-   handoff receipt behavior for cross-repo readiness, including trusted local/dev caller scope,
-   idempotency conflict detection, replay, and accepted/rejected outcomes; it does not persist
-   action-register records, grant rebalance authority, create orders, route OMS instructions,
-   contact clients, authorize publication, bind production IdP claims, or promote a supported
-   feature. It is represented as `route_foundations` evidence and must stay outside certified
+   includes a not-certified `lotus-idea` conversion-intent realization at
+   `POST /api/v1/rebalance/idea-action-intake`. Accepted `REVIEW_FOR_REBALANCE` intents persist one
+   scoped `PENDING_REVIEW` action plus append-only Manage-owned outcome history. Review decisions
+   are fenced by `source_event_version`, and exact replays retain the same action identity. This
+   proves management-review state only: it does not grant rebalance authority, create orders,
+   prove execution, route OMS instructions, contact clients, authorize publication, bind
+   production IdP claims, or promote a supported feature. It is represented as
+   `route_foundations` evidence and must stay outside certified
    domain-product `current_routes` and unblocked trust-telemetry `serving_routes`; `make
    trust-telemetry-validate` enforces this boundary.
 7. the service remains part of the canonical front-office validation path through `lotus-gateway`,

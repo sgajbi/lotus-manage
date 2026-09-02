@@ -51,14 +51,20 @@
           "supported_feature_promoted": false,
           "route_existence_proven": true,
           "runtime_action_receipt_proven": true,
+          "durable_management_action_proven": true,
+          "management_review_outcome_history_proven": true,
           "principal_capability": "manage.idea_action_intake.accept",
-          "action_register_created": false,
+          "outcome_read_capability": "manage.idea_action_intake.read",
+          "outcome_review_capability": "manage.idea_action_intake.review",
+          "outcome_history_route": "GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
+          "outcome_decision_route": "POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
+          "action_register_created": true,
           "rebalance_execution_authority_granted": false,
           "order_created": false,
           "client_publication_authorized": false,
           "certification_blockers": [
-            "rebalance_execution_authority_remains_lotus_manage",
-            "action_register_persistence_not_certified",
+            "production_idp_caller_scope_not_certified",
+            "rebalance_execution_not_certified",
             "oms_execution_not_certified",
             "client_publication_authority_blocked"
           ]
@@ -66,7 +72,7 @@
       ],
       "freshness_policy": {
         "freshness_class": "daily",
-        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs. Portfolio-scoped supportability receipts expose producer_generated_at, source-owned evidence_as_of_date when mandate-health refs agree, and temporal_identity_status; missing or mixed temporal identity is fail-closed downstream evidence. Certified PortfolioActionRegister routes exclude the lotus-idea action-intake receipt, which is tracked separately as a not-certified route foundation for source-safe conversion-intent handoff receipt evidence only; it does not create action-register records, grant rebalance authority, create orders, bind production IdP claims, authorize client publication, or promote a supported feature."
+        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs. Portfolio-scoped supportability receipts expose producer_generated_at, source-owned evidence_as_of_date when mandate-health refs agree, and temporal_identity_status; missing or mixed temporal identity is fail-closed downstream evidence. Certified PortfolioActionRegister routes exclude the lotus-idea action-intake and outcome-history routes, which are tracked separately as a not-certified route foundation. An accepted REVIEW_FOR_REBALANCE intent creates one durable PENDING_REVIEW management action with append-only, source-versioned Manage review outcomes. That implementation does not grant rebalance authority, create orders, prove execution, bind production IdP claims, authorize client publication, or promote a supported feature."
       },
       "completeness_policy": {
         "default_status": "complete",
