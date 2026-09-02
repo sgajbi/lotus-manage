@@ -342,3 +342,197 @@ def test_intake_openapi_documents_scope_and_owner_history_contracts() -> None:
         "x-portfolio-ids",
     }.issubset(required_headers)
     assert "application/problem+json" in intake["responses"]["409"]["content"]
+
+
+def test_intake_rejects_blank_idempotency_key_as_unprocessable() -> None:
+    """A whitespace key is neither an idempotency scope nor an omission; the
+    intake refuses it before any scope or persistence work."""
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(idempotency_key="   "),
+        )
+
+    assert response.status_code == 422
+    assert response.json()["reasonCode"] == "IDEA_ACTION_INTAKE_IDEMPOTENCY_KEY_REQUIRED"
+
+
+def test_inactive_principal_is_unauthenticated() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers={**_headers(), "X-Principal-Status": "SUSPENDED"},
+        )
+
+    assert response.status_code == 401
+    assert response.json()["reasonCode"] == "IDEA_ACTION_INTAKE_PRINCIPAL_INVALID"
+
+
+def test_principal_without_portfolio_scope_is_unauthenticated() -> None:
+    """A trusted principal that names no portfolios has no scope to validate
+    against - authentication-shaped, because the scope claim itself is
+    missing, not merely insufficient."""
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(portfolio_ids="  "),
+        )
+
+    assert response.status_code == 401
+    assert response.json()["reasonCode"] == "IDEA_ACTION_INTAKE_PORTFOLIO_SCOPE_REQUIRED"
+
+
+def test_wrong_role_is_forbidden_before_capability() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(role="VIEWER"),
+        )
+
+    assert response.status_code == 403
+    assert response.json()["reasonCode"] == "IDEA_ACTION_INTAKE_ROLE_NOT_AUTHORIZED"
+
+
+def test_whitespace_actor_header_is_unauthenticated_not_a_validation_error() -> None:
+    """FastAPI enforces header PRESENCE (min_length on the raw value), so the
+    principal's own required-header branch guards the case FastAPI cannot: a
+    header that is present but whitespace. That is an authentication fact -
+    no actor was identified - not a 422 shape problem. Correlation is omitted
+    here too: it is genuinely optional and must default, not fail."""
+
+    headers = _headers(correlation_id=None)
+    headers["X-Actor-Id"] = " "
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=headers,
+        )
+
+    assert response.status_code == 401
+    assert response.json()["reasonCode"] == "IDEA_ACTION_INTAKE_PRINCIPAL_REQUIRED"
+
+
+class _UnavailableAfterConstructionRepository:
+    """Constructs fine, then persistence vanishes - the mid-operation case,
+    distinct from the construction failure the factory catches."""
+
+    def create_or_replay(self, *, action):
+        raise IdeaManagementActionRepositoryUnavailableError(
+            "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+        )
+
+    def get_by_intake_id(self, *, tenant_id, legal_entity_code, intake_id):
+        raise IdeaManagementActionRepositoryUnavailableError(
+            "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+        )
+
+    def update(self, *, action, expected_source_event_version):
+        raise IdeaManagementActionRepositoryUnavailableError(
+            "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+        )
+
+
+@pytest.fixture
+def _mid_operation_unavailable(monkeypatch):
+    monkeypatch.setattr(
+        idea_action_routes,
+        "get_idea_management_action_repository",
+        lambda: _UnavailableAfterConstructionRepository(),
+    )
+
+
+def test_each_endpoint_fails_closed_when_persistence_vanishes_mid_operation(
+    _mid_operation_unavailable,
+) -> None:
+    """The repository can become unavailable AFTER construction - a dropped
+    connection during the call - and every endpoint must map that to the same
+    503 posture it gives a construction failure. Asserted per endpoint,
+    because each carries its own catch."""
+
+    with TestClient(app) as client:
+        intake = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(),
+        )
+        history = client.get(
+            "/api/v1/rebalance/idea-action-intakes/idea-intake-x/outcomes",
+            headers=_headers(capabilities="manage.idea_action_intake.read"),
+        )
+        decision = client.post(
+            "/api/v1/rebalance/idea-action-intakes/idea-intake-x/outcomes",
+            json={
+                "workflow_action": "APPROVE",
+                "expected_source_event_version": 1,
+                "reason_code": "REVIEWED_OK",
+            },
+            headers=_headers(
+                capabilities="manage.idea_action_intake.review", role="PORTFOLIO_MANAGER"
+            ),
+        )
+
+    for response in (intake, history, decision):
+        assert response.status_code == 503
+        assert response.json()["reasonCode"] == "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+
+
+def test_review_decision_for_unknown_intake_is_scoped_not_found() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intakes/idea-intake-missing/outcomes",
+            json={
+                "workflow_action": "APPROVE",
+                "expected_source_event_version": 1,
+                "reason_code": "REVIEWED_OK",
+            },
+            headers=_headers(
+                capabilities="manage.idea_action_intake.review", role="PORTFOLIO_MANAGER"
+            ),
+        )
+
+    assert response.status_code == 404
+
+
+def test_right_role_without_capability_is_forbidden() -> None:
+    """Role and capability are separate authorization facts; a SERVICE
+    principal without the accept capability fails on the capability, proving
+    the check is not role-only."""
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(capabilities="manage.something_else"),
+        )
+
+    assert response.status_code == 403
+    assert response.json()["reasonCode"] == "IDEA_ACTION_INTAKE_CAPABILITY_REQUIRED"
+
+
+def test_whitespace_correlation_header_defaults_instead_of_failing() -> None:
+    """Correlation is genuinely optional: a present-but-blank header is the
+    same fact as an absent one and must default, not 4xx an otherwise valid
+    intake."""
+
+    with TestClient(app) as client:
+        blank = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers={**_headers(correlation_id=None), "X-Correlation-Id": "  "},
+        )
+        absent = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(correlation_id=None, idempotency_key="idea-action-intake-idem-noc"),
+        )
+
+    assert blank.status_code == 202
+    assert absent.status_code == 202

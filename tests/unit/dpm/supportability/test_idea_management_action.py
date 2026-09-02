@@ -188,3 +188,189 @@ def test_repository_optimistic_update_rejects_concurrent_stale_writer() -> None:
             action=rejected_from_stale_copy,
             expected_source_event_version=1,
         )
+
+
+def _action_at(created_at):
+    return create_idea_management_action(
+        intake_id="iai_001",
+        tenant_id="tenant-private-bank-sg",
+        legal_entity_code="SGPB",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        idea_candidate_id="idea_candidate_001",
+        conversion_intent_id="conversion_intent_001",
+        source_refs=(
+            {
+                "source_system": "lotus-idea",
+                "source_type": "IdeaCandidate",
+                "source_id": "idea_candidate_001",
+                "content_hash": "sha256:abc123",
+            },
+        ),
+        request_fingerprint="sha256:0123456789ab",
+        idempotency_scope_hash="sha256:0123456789abcdef01234567",
+        actor_id="svc-lotus-idea",
+        actor_role="SERVICE",
+        correlation_id="corr-intake-001",
+        created_at=created_at,
+    )
+
+
+def test_domain_fields_refuse_blank_and_naive_time() -> None:
+    """The aggregate's own validation: identity fields are never whitespace
+    and event time is never naive - a naive timestamp silently reinterpreted
+    as local time would corrupt the monotonic history it orders."""
+
+    action = _action()
+    event = action.events[0]
+
+    # event_type is a Literal (its own guard); the trim validator protects the
+    # plain identity strings - whitespace passes min_length and must still fail.
+    with pytest.raises(ValueError, match="IDEA_MANAGEMENT_ACTION_EVENT_FIELD_REQUIRED"):
+        type(event).model_validate({**event.model_dump(), "actor_id": "  "})
+    with pytest.raises(ValueError, match="IDEA_MANAGEMENT_ACTION_FIELD_REQUIRED"):
+        action.model_validate({**action.model_dump(), "tenant_id": "   "})
+    # The factory converts caller time to UTC; a naive datetime silently
+    # reinterpreted as local would corrupt the monotonic history it orders,
+    # so it is refused at the door rather than guessed at.
+    with pytest.raises(ValueError, match="IDEA_MANAGEMENT_ACTION_TIMEZONE_REQUIRED"):
+        _action_at(datetime(2026, 4, 22, 9, 0, 0))
+
+
+def test_in_memory_update_speaks_the_full_conflict_vocabulary() -> None:
+    """The fake must fail exactly like the real adapter: unknown action,
+    stale expected version, and a non-sequential next version are three
+    distinct conflicts, not one."""
+
+    repository = InMemoryIdeaManagementActionRepository()
+    action = _action()
+    repository.create_or_replay(action=action)
+
+    unknown = action.model_copy(update={"action_id": "act-unknown"})
+    with pytest.raises(
+        IdeaManagementActionRepositoryConflictError, match="IDEA_MANAGEMENT_ACTION_NOT_FOUND"
+    ):
+        repository.update(action=unknown, expected_source_event_version=1)
+
+    skipping = action.model_copy(update={"source_event_version": 5})
+    with pytest.raises(
+        IdeaManagementActionRepositoryConflictError,
+        match="IDEA_MANAGEMENT_ACTION_VERSION_SEQUENCE_INVALID",
+    ):
+        repository.update(action=skipping, expected_source_event_version=1)
+
+
+def test_intake_vocabulary_refuses_whitespace_where_length_checks_cannot() -> None:
+    """min_length counts raw characters, so "  " passes it; the trim
+    validators are what keep a whitespace identifier, source-ref field, or
+    reason code from masquerading as a value. One test per vocabulary,
+    because each guards a different contract surface."""
+
+    from src.core.rebalance_runs.idea_action_intake import (
+        IDEA_ACTION_INTAKE_REQUEST_EXAMPLE,
+        IdeaActionIntakeRequest,
+        IdeaActionSourceRef,
+        IdeaManagementActionDecisionRequest,
+        idea_action_received_at,
+    )
+
+    # None is a legitimate absence for optional ref fields - only whitespace
+    # masquerading as a value is refused.
+    assert (
+        IdeaActionSourceRef.model_validate(
+            {
+                "source_system": "lotus-idea",
+                "source_type": "IdeaCandidate",
+                "source_id": "idea_candidate_001",
+                "content_hash": None,
+            }
+        ).content_hash
+        is None
+    )
+
+    with pytest.raises(ValueError, match="IDEA_ACTION_SOURCE_REF_REQUIRED"):
+        IdeaActionSourceRef.model_validate(
+            {
+                "source_system": "lotus-idea",
+                "source_type": "  ",
+                "source_id": "idea_candidate_001",
+                "content_hash": "sha256:abc123",
+            }
+        )
+
+    with pytest.raises(ValueError, match="IDEA_ACTION_IDENTIFIER_REQUIRED"):
+        IdeaActionIntakeRequest.model_validate(
+            {**IDEA_ACTION_INTAKE_REQUEST_EXAMPLE, "portfolio_id": "   "}
+        )
+
+    with pytest.raises(ValueError, match="IDEA_MANAGEMENT_ACTION_REASON_CODE_REQUIRED"):
+        IdeaManagementActionDecisionRequest.model_validate(
+            {
+                "workflow_action": "APPROVE",
+                "expected_source_event_version": 1,
+                "reason_code": "  ",
+            }
+        )
+
+    # A naive received-at reinterpreted as local time would skew every
+    # receipt it stamps; refused, never guessed.
+    with pytest.raises(ValueError, match="IDEA_ACTION_INTAKE_TIMEZONE_REQUIRED"):
+        idea_action_received_at(datetime(2026, 4, 22, 9, 0, 0))
+
+
+def test_service_translates_repository_update_conflict_to_domain_conflict() -> None:
+    """The service speaks domain vocabulary upward: a repository update
+    conflict (stale fencing version) surfaces as the domain's conflict error,
+    which the API maps to 409 - never the raw repository type."""
+
+    from src.api.services.idea_management_action_service import (
+        IdeaManagementActionService,
+    )
+    from src.core.rebalance_runs.idea_management_action import (
+        IdeaManagementActionConflictError,
+    )
+    from src.core.rebalance_runs.idea_action_intake_authority import (
+        IdeaActionIntakePrincipal,
+    )
+
+    repository = InMemoryIdeaManagementActionRepository()
+    action = _action()
+    repository.create_or_replay(action=action)
+    principal = IdeaActionIntakePrincipal(
+        actor_id="pm-001",
+        role="PORTFOLIO_MANAGER",
+        tenant_id=action.tenant_id,
+        legal_entity_code=action.legal_entity_code,
+        correlation_id="corr-review-001",
+        service_identity="lotus-manage-ui",
+        capabilities=frozenset({"manage.idea_action_intake.review"}),
+        portfolio_ids=frozenset({action.portfolio_id}),
+    )
+
+    class _ConflictOnUpdate:
+        """A concurrent writer lands between the service's read and its
+        update: the domain check passes (expected matches what was read) and
+        the REPOSITORY is the layer that detects the race."""
+
+        def get_by_intake_id(self, *, tenant_id, legal_entity_code, intake_id):
+            return repository.get_by_intake_id(
+                tenant_id=tenant_id,
+                legal_entity_code=legal_entity_code,
+                intake_id=intake_id,
+            )
+
+        def update(self, *, action, expected_source_event_version):
+            raise IdeaManagementActionRepositoryConflictError(
+                "IDEA_MANAGEMENT_ACTION_SOURCE_EVENT_VERSION_CONFLICT"
+            )
+
+    racing_service = IdeaManagementActionService(repository=_ConflictOnUpdate())
+
+    with pytest.raises(IdeaManagementActionConflictError):
+        racing_service.record_review_decision(
+            intake_id=action.intake_id,
+            workflow_action="APPROVE",
+            expected_source_event_version=1,
+            reason_code="REVIEWED_OK",
+            principal=principal,
+            correlation_id="corr-review-001",
+        )
