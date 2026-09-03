@@ -57,6 +57,7 @@ test-idea-management-action-postgres:
 
 test-idea-management-action-postgres-coverage:
 	python -m pytest tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py -q --cov=src --cov-report=
+	@test -f .coverage.idea-postgres || mv .coverage .coverage.idea-postgres
 
 test-e2e:
 	python -m pytest $(E2E_TESTS)
