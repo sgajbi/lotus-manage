@@ -163,6 +163,9 @@ jobs:
         with:
           name: coverage-data-idea-postgres
           path: .coverage.idea-postgres
+          # Dotfiles are excluded by upload-artifact unless stated - the
+          # matrix uploads say so and this one must match them exactly.
+          include-hidden-files: true
           # A missing coverage file is a broken lane, not a shrug: the silent
           # warning here is exactly how the combined gate read a smaller
           # world and failed wrongly.
