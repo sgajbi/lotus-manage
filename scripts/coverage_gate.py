@@ -8,7 +8,15 @@ from pathlib import Path
 import coverage
 from coverage.results import should_fail_under
 
-DEFAULT_COVERAGE_FILES = (".coverage.unit", ".coverage.integration", ".coverage.e2e")
+# Every lane that uploads coverage-data-* must be named here: the gate
+# combines this list, and a lane missing from it is downloaded and silently
+# ignored - the combined total then reads a smaller world than CI proved.
+DEFAULT_COVERAGE_FILES = (
+    ".coverage.unit",
+    ".coverage.integration",
+    ".coverage.e2e",
+    ".coverage.idea-postgres",
+)
 DEFAULT_FAIL_UNDER = 99.0
 REPORT_PRECISION = 2
 
