@@ -185,7 +185,8 @@ jobs:
 
   coverage-gate:
     name: Main Releasability / Coverage Gate (Combined)
-    needs: [test-suites]
+    # Waits for the postgres lane so its coverage artifact is downloadable.
+    needs: [test-suites, idea-management-action-postgres]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
