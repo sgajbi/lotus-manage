@@ -155,8 +155,14 @@ jobs:
         run: make install-ci
       - name: Prove durable Idea management action semantics
         env:
+          COVERAGE_FILE: .coverage.idea-postgres
           DPM_POSTGRES_INTEGRATION_DSN: postgresql://manage:manage@127.0.0.1:5432/manage_actions
-        run: make test-idea-management-action-postgres
+        run: make test-idea-management-action-postgres-coverage
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-data-idea-postgres
+          path: .coverage.idea-postgres
 
   coverage-gate:
     name: PR Merge Gate / Coverage Gate (Combined)
