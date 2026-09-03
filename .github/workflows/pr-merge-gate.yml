@@ -166,7 +166,10 @@ jobs:
 
   coverage-gate:
     name: PR Merge Gate / Coverage Gate (Combined)
-    needs: [test-suites]
+    # The postgres lane's coverage artifact must exist before this gate
+    # downloads coverage-data-* - a gate racing its own evidence reads a
+    # smaller world and fails honestly but wrongly.
+    needs: [test-suites, idea-management-action-postgres]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
