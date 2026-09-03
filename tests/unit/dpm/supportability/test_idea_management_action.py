@@ -374,3 +374,50 @@ def test_service_translates_repository_update_conflict_to_domain_conflict() -> N
             principal=principal,
             correlation_id="corr-review-001",
         )
+
+
+def test_postgres_adapter_translates_unavailability_at_its_connection_funnel(monkeypatch) -> None:
+    """The one branch real-Postgres integration cannot hit without killing
+    the database mid-suite: every operation reaches PostgreSQL through
+    _connect, and an access failure there must surface as the repository
+    protocol's own unavailability error - never a Postgres type crossing the
+    boundary the router-infrastructure gate protects."""
+
+    import src.infrastructure.rebalance_runs.idea_management_actions_postgres as adapter_module
+    from src.core.rebalance_runs.idea_management_action_repository import (
+        IdeaManagementActionRepositoryUnavailableError,
+    )
+    from src.infrastructure.postgres_access import PostgresUnavailableError
+
+    adapter = adapter_module.PostgresIdeaManagementActionRepository.__new__(
+        adapter_module.PostgresIdeaManagementActionRepository
+    )
+    adapter._dsn = "postgresql://manage:manage@127.0.0.1:1/never"
+
+    def _refuse(*args, **kwargs):
+        raise PostgresUnavailableError("POSTGRES_CONNECTION_UNAVAILABLE")
+
+    monkeypatch.setattr(adapter_module, "connect_postgres", _refuse)
+
+    with pytest.raises(IdeaManagementActionRepositoryUnavailableError):
+        adapter._connect()
+
+
+def test_postgres_adapter_refuses_misconfiguration_at_construction(monkeypatch) -> None:
+    """An empty DSN and a missing driver are configuration facts caught at
+    the door, each with its own bounded reason - the dependency layer
+    translates them to the repository's unavailability for callers."""
+
+    import src.infrastructure.rebalance_runs.idea_management_actions_postgres as adapter_module
+    from src.infrastructure.postgres_access import PostgresConfigurationError
+
+    with pytest.raises(
+        PostgresConfigurationError, match="DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DSN_REQUIRED"
+    ):
+        adapter_module.PostgresIdeaManagementActionRepository(dsn="")
+
+    monkeypatch.setattr(adapter_module, "has_psycopg", lambda: False)
+    with pytest.raises(
+        PostgresConfigurationError, match="DPM_IDEA_MANAGEMENT_ACTION_POSTGRES_DRIVER_MISSING"
+    ):
+        adapter_module.PostgresIdeaManagementActionRepository(dsn="postgresql://x")
