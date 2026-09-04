@@ -14,10 +14,11 @@ capabilities listed below, but full front-office product claims require the gove
 `lotus-gateway` and `lotus-workbench` realization path to be implemented, validated, merged, and
 published.
 
-Current non-promotion boundary: `POST /api/v1/rebalance/idea-action-intake` exists only as a
-not-certified executable receipt for `lotus-idea` conversion-intent handoff evidence. It is not a
-supported feature and does not create action-register records, approve rebalances, create orders,
-bind production IdP claims, authorize client publication, or prove downstream execution.
+Current non-promotion boundary: the `lotus-idea` action-intake and outcome-history routes implement
+durable, portfolio-scoped management-review work with append-only, version-fenced owner outcomes.
+They are not yet a supported feature because production IdP claim binding and live consumer
+certification remain outstanding. A Manage review approval does not prove rebalance or order
+execution, suitability, OMS state, or client publication.
 
 ```mermaid
 flowchart LR
