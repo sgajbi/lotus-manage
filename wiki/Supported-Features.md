@@ -17,8 +17,10 @@ published.
 Current non-promotion boundary: the `lotus-idea` action-intake and outcome-history routes implement
 durable, portfolio-scoped management-review work with append-only, version-fenced owner outcomes.
 They are not yet a supported feature because production IdP claim binding and live consumer
-certification remain outstanding. A Manage review approval does not prove rebalance or order
-execution, suitability, OMS state, or client publication.
+certification remain outstanding. Neither intake nor a Manage review decision grants rebalance
+execution authority, creates an order, or authorizes client publication. A review approval records
+only the management-review outcome; it does not establish suitability, OMS state, execution, fill,
+settlement, or publication.
 
 ```mermaid
 flowchart LR
