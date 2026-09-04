@@ -1,10 +1,10 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-09-03T02:30:18+00:00`
+- Generated at: `2026-09-04T22:41:05+00:00`
 
-- Baseline source snapshot: `491470c4bf2f978ac7e1f91cad046e054090a1da`
+- Baseline source snapshot: `1a37eb947c552c7f38445b0bfcb146d86bf9697e`
 
-- Report source snapshot: `bf31e07e+worktree`
+- Report source snapshot: `30bc3f11+worktree`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
