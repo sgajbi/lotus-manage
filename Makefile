@@ -98,6 +98,7 @@ ci-local: static-quality-gates check-deps
 	COVERAGE_FILE=.coverage.unit $(MAKE) test-unit-coverage
 	COVERAGE_FILE=.coverage.integration $(MAKE) test-integration-coverage
 	COVERAGE_FILE=.coverage.e2e $(MAKE) test-e2e-coverage
+	COVERAGE_FILE=.coverage.idea-postgres $(MAKE) test-idea-management-action-postgres-coverage
 	$(MAKE) coverage-gate
 
 CI_LOCAL_COMPOSE_PROJECT ?= $(shell python scripts/ci_local_compose_project.py)

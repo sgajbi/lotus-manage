@@ -149,6 +149,10 @@ def test_local_ci_uses_shared_coverage_gate_script() -> None:
     assert "$(MAKE) test-unit-coverage" in ci_local_recipe
     assert "$(MAKE) test-integration-coverage" in ci_local_recipe
     assert "$(MAKE) test-e2e-coverage" in ci_local_recipe
+    assert "$(MAKE) test-idea-management-action-postgres-coverage" in ci_local_recipe
+    assert ci_local_recipe.index("test-idea-management-action-postgres-coverage") < (
+        ci_local_recipe.index("$(MAKE) coverage-gate")
+    )
     assert "python -m coverage combine" not in ci_local_recipe
     assert "python -m coverage report" not in ci_local_recipe
 
