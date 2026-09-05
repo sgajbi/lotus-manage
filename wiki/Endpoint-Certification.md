@@ -775,6 +775,7 @@ Route:
 - `POST /api/v1/rebalance/idea-action-intake`
 - `GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes`
 - `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes`
+- `GET /api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes?portfolio_id={portfolio_id}`
 
 Purpose:
 
@@ -783,6 +784,11 @@ Source-safe realization for `lotus-idea` conversion intents. An accepted
 `PENDING_REVIEW` action. The outcome routes expose and append owner history. This is not production
 IdP binding, rebalance execution, order creation, OMS routing, suitability, client contact, client
 publication, or supported-feature promotion.
+
+The conversion-intent route is a recovery read, not another command. It requires the existing read
+capability, checks explicit portfolio entitlement before repository I/O, and returns the current
+owner version from the unique tenant/legal-entity/portfolio/conversion-intent scope. Absence is a
+product-safe 404; it never creates an action or repeats a possibly accepted intake.
 
 Functional coverage:
 
@@ -796,6 +802,7 @@ Functional coverage:
 - returns `action_register_created=true` plus the source-owned outcome-history route,
 - appends authorized `APPROVE`, `REJECT`, or `REQUEST_CHANGES` review events,
 - rejects stale concurrent review decisions using `expected_source_event_version`,
+- recovers current outcome history by exact conversion-intent scope after restart without mutation,
 - returns cross-tenant and out-of-portfolio lookups as product-safe not-found responses,
 - returns `rebalance_execution_authority_granted=false`,
 - returns `order_created=false`,

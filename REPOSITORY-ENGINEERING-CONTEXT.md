@@ -54,7 +54,11 @@ Current repository posture:
    includes a not-certified `lotus-idea` conversion-intent realization at
    `POST /api/v1/rebalance/idea-action-intake`. Accepted `REVIEW_FOR_REBALANCE` intents persist one
    scoped `PENDING_REVIEW` action plus append-only Manage-owned outcome history. Review decisions
-   are fenced by `source_event_version`, and exact replays retain the same action identity. This
+   are fenced by `source_event_version`, and exact replays retain the same action identity. The
+   read-only `GET /api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes`
+   route recovers current owner history by the exact trusted tenant, legal-entity, portfolio, and
+   conversion-intent scope after an upstream response-loss window; it rejects portfolio scope
+   before repository I/O and never repeats the intake command. This
    proves management-review state only: it does not grant rebalance authority, create orders,
    prove execution, route OMS instructions, contact clients, authorize publication, bind
    production IdP claims, or promote a supported feature. It is represented as

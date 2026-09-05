@@ -145,7 +145,9 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   conversion-intent evidence. An accepted `REVIEW_FOR_REBALANCE` intent creates exactly one
   durable, portfolio-scoped `PENDING_REVIEW` management action. The related outcome routes expose
   append-only Manage-owned review history and use optimistic source-event versions to reject stale
-  decisions. The implementation remains not-certified because production IdP scope and live
+  decisions. A read-only lookup by exact conversion intent and portfolio recovers the current
+  owner history without creating or repeating work. The implementation remains not-certified
+  because production IdP scope and live
   consumer proof are outstanding. Approval is a management-review outcome; it does not prove
   rebalance or order execution, suitability, OMS state, or client publication. These routes remain
   route-foundation evidence rather than certified `PortfolioActionRegister:v1` serving routes.

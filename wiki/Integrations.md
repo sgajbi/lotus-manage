@@ -152,7 +152,11 @@ Strategic downstream consumption should use:
 13. `POST /api/v1/rebalance/idea-action-intake` for source-safe `lotus-idea` conversion-intent
     realization. Accepted rebalance-review intents create one durable scoped action. `GET` and
     `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes` expose and advance
-    Manage-owned review history. The surface remains not-certified: local/dev trusted headers are
+    Manage-owned review history. `GET
+    /api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes?portfolio_id=...`
+    provides exact, read-only recovery of current owner history after an upstream response-loss
+    window; it cannot create or repeat management work. The surface remains not-certified:
+    local/dev trusted headers are
     not production IdP binding, and management review is not execution proof.
 
 ## Construction Alternatives Upstream Authority
