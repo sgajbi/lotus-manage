@@ -6,6 +6,7 @@ from src.core.rebalance_runs.idea_action_intake import (
     IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS,
     IdeaActionIntakeRequest,
     IdeaActionIntakeResponse,
+    IdeaActionIntakeScopeError,
     IdeaManagementActionOutcomeHistoryResponse,
     assert_idea_action_portfolio_scope,
     idea_action_idempotency_scope_hash,
@@ -100,6 +101,25 @@ class IdeaManagementActionService:
         principal: IdeaActionIntakePrincipal,
     ) -> IdeaManagementActionOutcomeHistoryResponse:
         action = self._load_scoped_action(intake_id=intake_id, principal=principal)
+        return idea_management_action_history(action)
+
+    def get_outcome_history_by_conversion_intent(
+        self,
+        *,
+        portfolio_id: str,
+        conversion_intent_id: str,
+        principal: IdeaActionIntakePrincipal,
+    ) -> IdeaManagementActionOutcomeHistoryResponse:
+        if not principal.can_access_portfolio(portfolio_id):
+            raise IdeaActionIntakeScopeError("IDEA_ACTION_INTAKE_PORTFOLIO_SCOPE_FORBIDDEN")
+        action = self._repository.get_by_conversion_intent(
+            tenant_id=principal.tenant_id,
+            legal_entity_code=principal.legal_entity_code,
+            portfolio_id=portfolio_id,
+            conversion_intent_id=conversion_intent_id,
+        )
+        if action is None:
+            raise IdeaManagementActionNotFoundError("IDEA_MANAGEMENT_ACTION_NOT_FOUND")
         return idea_management_action_history(action)
 
     def record_review_decision(

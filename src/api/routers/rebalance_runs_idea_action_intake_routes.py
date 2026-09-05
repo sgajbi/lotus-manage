@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, Path, Request, status
+from fastapi import Depends, Path, Query, Request, status
 
 from src.api.dependencies import get_idea_management_action_repository
 from src.api.routers import rebalance_runs as shared
@@ -161,6 +161,49 @@ def get_idea_management_action_outcomes(
     shared._reject_unexpected_query_params(request, allowed_params=set())
     try:
         return service.get_outcome_history(intake_id=intake_id, principal=principal)
+    except IdeaManagementActionNotFoundError as exc:
+        raise idea_action_problem(
+            status_code=404,
+            reason_code=str(exc),
+            detail="Scoped Idea-originated management action was not found.",
+        ) from exc
+    except IdeaManagementActionRepositoryUnavailableError as exc:
+        raise _persistence_unavailable() from exc
+
+
+@shared.router.get(
+    "/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes",
+    response_model=IdeaManagementActionOutcomeHistoryResponse,
+    summary="Get Manage-owned Outcome History by Idea Conversion Intent",
+    description=(
+        "Returns the current, append-only Manage-owned outcome history for the exact Idea "
+        "conversion intent within trusted tenant, legal-entity, and portfolio scope. This is "
+        "a read-only recovery route: it does not create or repeat management work and does "
+        "not prove rebalance execution, order execution, or client publication."
+    ),
+    responses=_PROBLEM_RESPONSES,
+)
+def get_idea_management_action_outcomes_by_conversion_intent(
+    request: Request,
+    conversion_intent_id: Annotated[str, Path(min_length=1, max_length=160)],
+    portfolio_id: Annotated[str, Query(min_length=1, max_length=160)],
+    principal: IdeaActionIntakePrincipal = Depends(require_idea_action_read_principal),
+    service: IdeaManagementActionService = Depends(_service),
+) -> IdeaManagementActionOutcomeHistoryResponse:
+    shared._assert_support_apis_enabled()
+    shared._reject_unexpected_query_params(request, allowed_params={"portfolio_id"})
+    try:
+        return service.get_outcome_history_by_conversion_intent(
+            portfolio_id=portfolio_id,
+            conversion_intent_id=conversion_intent_id,
+            principal=principal,
+        )
+    except IdeaActionIntakeScopeError as exc:
+        raise idea_action_problem(
+            status_code=403,
+            reason_code=str(exc),
+            detail="Trusted principal is not entitled to the requested portfolio.",
+        ) from exc
     except IdeaManagementActionNotFoundError as exc:
         raise idea_action_problem(
             status_code=404,

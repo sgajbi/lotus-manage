@@ -32,6 +32,11 @@ def test_idea_action_intake_contract_preserves_manage_authority_boundary() -> No
     assert contract["runtime_action_receipt_proven"] is True
     assert contract["durable_management_action_proven"] is True
     assert contract["management_review_outcome_history_proven"] is True
+    assert contract["conversion_intent_owner_recovery_proven"] is True
+    assert contract["conversion_intent_outcome_history_route"] == (
+        "GET /api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
+        "{conversion_intent_id}/outcomes?portfolio_id={portfolio_id}"
+    )
     assert contract["downstream_execution_proven"] is False
     assert contract["supported_feature_promoted"] is False
 
@@ -43,6 +48,7 @@ def test_idea_action_intake_contract_keeps_non_proof_boundaries_and_blockers() -
     assert "one durable, portfolio-scoped PENDING_REVIEW management action" in boundaries
     assert "Does not grant suitability" in boundaries
     assert "does not prove rebalance execution" in boundaries
+    assert "never creates or repeats management work" in boundaries
     assert "Does not promote a supported feature" in boundaries
     assert contract["certification_blockers"] == IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS
     assert "manage_live_contract_proof_missing" not in contract["certification_blockers"]

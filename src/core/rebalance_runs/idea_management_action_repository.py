@@ -43,6 +43,15 @@ class IdeaManagementActionRepository(Protocol):
         intake_id: str,
     ) -> IdeaManagementAction | None: ...
 
+    def get_by_conversion_intent(
+        self,
+        *,
+        tenant_id: str,
+        legal_entity_code: str,
+        portfolio_id: str,
+        conversion_intent_id: str,
+    ) -> IdeaManagementAction | None: ...
+
     def update(
         self,
         *,
@@ -55,4 +64,5 @@ __all__ = [
     "IdeaManagementActionCreateResult",
     "IdeaManagementActionRepository",
     "IdeaManagementActionRepositoryConflictError",
+    "IdeaManagementActionRepositoryUnavailableError",
 ]

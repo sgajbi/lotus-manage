@@ -86,6 +86,28 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
             ).fetchone()
         return _load_action(row)
 
+    def get_by_conversion_intent(
+        self,
+        *,
+        tenant_id: str,
+        legal_entity_code: str,
+        portfolio_id: str,
+        conversion_intent_id: str,
+    ) -> IdeaManagementAction | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM dpm_idea_management_actions
+                WHERE tenant_id = %s
+                  AND legal_entity_code = %s
+                  AND portfolio_id = %s
+                  AND conversion_intent_id = %s
+                """,
+                (tenant_id, legal_entity_code, portfolio_id, conversion_intent_id),
+            ).fetchone()
+        return _load_action(row)
+
     def update(
         self,
         *,
@@ -143,6 +165,12 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
                     AND legal_entity_code = %s
                     AND intake_id = %s
                )
+               OR (
+                    tenant_id = %s
+                    AND legal_entity_code = %s
+                    AND portfolio_id = %s
+                    AND conversion_intent_id = %s
+               )
             ORDER BY action_id ASC
             LIMIT 1
             """,
@@ -152,6 +180,10 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
                 action.tenant_id,
                 action.legal_entity_code,
                 action.intake_id,
+                action.tenant_id,
+                action.legal_entity_code,
+                action.portfolio_id,
+                action.conversion_intent_id,
             ),
         ).fetchone()
         return _load_action(row)

@@ -214,6 +214,93 @@ def test_owner_history_and_review_transition_are_source_owned_and_versioned() ->
     assert approved.json()["order_execution_proven"] is False
 
 
+def test_conversion_intent_lookup_recovers_current_owner_history_without_mutation() -> None:
+    read_headers = _headers(
+        capabilities="manage.idea_action_intake.read",
+        idempotency_key="unused-read",
+    )
+    review_headers = _headers(
+        capabilities="manage.idea_action_intake.review",
+        role="PORTFOLIO_MANAGER",
+        actor_id="pm-001",
+        service_identity="lotus-workbench",
+        idempotency_key="unused-review",
+    )
+    recovery_route = (
+        "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/conversion_intent_001/outcomes"
+    )
+
+    with TestClient(app) as client:
+        intake = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(),
+        ).json()
+        approved = client.post(
+            intake["outcome_history_route"],
+            json={
+                "workflow_action": "APPROVE",
+                "expected_source_event_version": 1,
+                "reason_code": "management_review_approved",
+            },
+            headers=review_headers,
+        )
+        recovered = client.get(
+            recovery_route,
+            params={"portfolio_id": PORTFOLIO_ID},
+            headers=read_headers,
+        )
+        replayed = client.get(
+            recovery_route,
+            params={"portfolio_id": PORTFOLIO_ID},
+            headers=read_headers,
+        )
+
+    assert approved.status_code == 200
+    assert recovered.status_code == 200
+    assert recovered.json() == approved.json()
+    assert replayed.json() == recovered.json()
+    assert recovered.json()["source_event_version"] == 2
+    assert [event["event_type"] for event in recovered.json()["events"]] == [
+        "INTAKE_ACCEPTED",
+        "APPROVE",
+    ]
+
+
+def test_conversion_intent_lookup_denies_scope_and_masks_absence() -> None:
+    recovery_route = (
+        "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/conversion_intent_001/outcomes"
+    )
+    with TestClient(app) as client:
+        client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=_payload(),
+            headers=_headers(),
+        )
+        forbidden = client.get(
+            recovery_route,
+            params={"portfolio_id": PORTFOLIO_ID},
+            headers=_headers(
+                capabilities="manage.idea_action_intake.read",
+                portfolio_ids="PB_SG_OTHER_001",
+                idempotency_key="unused-read",
+            ),
+        )
+        missing = client.get(
+            recovery_route.replace("conversion_intent_001", "conversion_intent_missing"),
+            params={"portfolio_id": PORTFOLIO_ID},
+            headers=_headers(
+                capabilities="manage.idea_action_intake.read",
+                idempotency_key="unused-read",
+            ),
+        )
+
+    assert forbidden.status_code == 403
+    assert forbidden.json()["reasonCode"] == "IDEA_ACTION_INTAKE_PORTFOLIO_SCOPE_FORBIDDEN"
+    assert missing.status_code == 404
+    assert missing.json()["reasonCode"] == "IDEA_MANAGEMENT_ACTION_NOT_FOUND"
+
+
 def test_concurrent_review_decision_rejects_stale_source_event_version() -> None:
     with TestClient(app) as client:
         intake = client.post(
@@ -322,10 +409,17 @@ def test_intake_openapi_documents_scope_and_owner_history_contracts() -> None:
 
     intake = openapi["paths"]["/api/v1/rebalance/idea-action-intake"]["post"]
     history_path = openapi["paths"]["/api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes"]
+    recovery_path = openapi["paths"][
+        "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes"
+    ]
     assert intake["summary"] == ("Realize lotus-idea Conversion Intent as Management Review Work")
     assert "not rebalance approval or execution" in intake["description"]
     assert "get" in history_path
     assert "post" in history_path
+    assert recovery_path["get"]["summary"] == (
+        "Get Manage-owned Outcome History by Idea Conversion Intent"
+    )
+    assert "read-only recovery route" in recovery_path["get"]["description"]
     required_headers = {
         parameter["name"]
         for parameter in intake["parameters"]
@@ -434,6 +528,18 @@ class _UnavailableAfterConstructionRepository:
             "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
         )
 
+    def get_by_conversion_intent(
+        self,
+        *,
+        tenant_id,
+        legal_entity_code,
+        portfolio_id,
+        conversion_intent_id,
+    ):
+        raise IdeaManagementActionRepositoryUnavailableError(
+            "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+        )
+
     def update(self, *, action, expected_source_event_version):
         raise IdeaManagementActionRepositoryUnavailableError(
             "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
@@ -467,6 +573,12 @@ def test_each_endpoint_fails_closed_when_persistence_vanishes_mid_operation(
             "/api/v1/rebalance/idea-action-intakes/idea-intake-x/outcomes",
             headers=_headers(capabilities="manage.idea_action_intake.read"),
         )
+        recovery = client.get(
+            "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
+            "conversion-intent-x/outcomes",
+            params={"portfolio_id": PORTFOLIO_ID},
+            headers=_headers(capabilities="manage.idea_action_intake.read"),
+        )
         decision = client.post(
             "/api/v1/rebalance/idea-action-intakes/idea-intake-x/outcomes",
             json={
@@ -479,7 +591,7 @@ def test_each_endpoint_fails_closed_when_persistence_vanishes_mid_operation(
             ),
         )
 
-    for response in (intake, history, decision):
+    for response in (intake, history, recovery, decision):
         assert response.status_code == 503
         assert response.json()["reasonCode"] == "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
 

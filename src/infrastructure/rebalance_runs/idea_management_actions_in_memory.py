@@ -16,6 +16,7 @@ class InMemoryIdeaManagementActionRepository(IdeaManagementActionRepository):
         self._lock = Lock()
         self._actions: dict[str, IdeaManagementAction] = {}
         self._action_id_by_intake_scope: dict[tuple[str, str, str], str] = {}
+        self._action_id_by_conversion_scope: dict[tuple[str, str, str, str], str] = {}
         self._action_id_by_idempotency_scope: dict[str, str] = {}
 
     def create_or_replay(
@@ -31,6 +32,14 @@ class InMemoryIdeaManagementActionRepository(IdeaManagementActionRepository):
             self._action_id_by_intake_scope[
                 (action.tenant_id, action.legal_entity_code, action.intake_id)
             ] = action.action_id
+            self._action_id_by_conversion_scope[
+                (
+                    action.tenant_id,
+                    action.legal_entity_code,
+                    action.portfolio_id,
+                    action.conversion_intent_id,
+                )
+            ] = action.action_id
             self._action_id_by_idempotency_scope[action.idempotency_scope_hash] = action.action_id
             return IdeaManagementActionCreateResult(action=deepcopy(action), created=True)
 
@@ -44,6 +53,21 @@ class InMemoryIdeaManagementActionRepository(IdeaManagementActionRepository):
         with self._lock:
             action_id = self._action_id_by_intake_scope.get(
                 (tenant_id, legal_entity_code, intake_id)
+            )
+            action = self._actions.get(action_id or "")
+            return deepcopy(action) if action is not None else None
+
+    def get_by_conversion_intent(
+        self,
+        *,
+        tenant_id: str,
+        legal_entity_code: str,
+        portfolio_id: str,
+        conversion_intent_id: str,
+    ) -> IdeaManagementAction | None:
+        with self._lock:
+            action_id = self._action_id_by_conversion_scope.get(
+                (tenant_id, legal_entity_code, portfolio_id, conversion_intent_id)
             )
             action = self._actions.get(action_id or "")
             return deepcopy(action) if action is not None else None
@@ -80,6 +104,16 @@ class InMemoryIdeaManagementActionRepository(IdeaManagementActionRepository):
             intake_key = (action.tenant_id, action.legal_entity_code, action.intake_id)
             action_id = self._action_id_by_intake_scope.get(intake_key)
         if action_id is None:
+            conversion_key = (
+                action.tenant_id,
+                action.legal_entity_code,
+                action.portfolio_id,
+                action.conversion_intent_id,
+            )
+            action_id = self._action_id_by_conversion_scope.get(conversion_key)
+        if action_id is None:
+            action_id = action.action_id if action.action_id in self._actions else None
+        if action_id is None:
             return None
         existing = self._actions[action_id]
         if (
@@ -95,6 +129,7 @@ class InMemoryIdeaManagementActionRepository(IdeaManagementActionRepository):
         with self._lock:
             self._actions.clear()
             self._action_id_by_intake_scope.clear()
+            self._action_id_by_conversion_scope.clear()
             self._action_id_by_idempotency_scope.clear()
 
 
