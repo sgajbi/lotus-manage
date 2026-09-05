@@ -120,6 +120,25 @@ def test_postgres_realization_survives_restart_replays_and_fences_stale_writer()
         "APPROVE",
     ]
 
+    recovered_by_conversion = PostgresIdeaManagementActionRepository(
+        dsn=_DSN
+    ).get_by_conversion_intent(
+        tenant_id=original.tenant_id,
+        legal_entity_code=original.legal_entity_code,
+        portfolio_id=original.portfolio_id,
+        conversion_intent_id=original.conversion_intent_id,
+    )
+    assert recovered_by_conversion == after_restart
+    assert (
+        restarted_repository.get_by_conversion_intent(
+            tenant_id=original.tenant_id,
+            legal_entity_code=original.legal_entity_code,
+            portfolio_id="portfolio-out-of-scope",
+            conversion_intent_id=original.conversion_intent_id,
+        )
+        is None
+    )
+
 
 def test_postgres_realization_rejects_changed_request_for_scoped_idempotency() -> None:
     suffix = uuid.uuid4().hex[:20]

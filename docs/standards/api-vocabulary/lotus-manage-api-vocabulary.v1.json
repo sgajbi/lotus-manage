@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-01T21:08:53.464786+00:00",
+  "generatedAt": "2026-09-05T23:19:19.800694+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2843,7 +2843,8 @@
       "example": "CONVERSION_INTENT_001",
       "type": "string",
       "locations": [
-        "body"
+        "body",
+        "path"
       ],
       "observedTypes": [
         "string"
@@ -17934,6 +17935,138 @@
       "allowedValues": [],
       "semanticId": "lotus.x_portfolio_ids",
       "attributeRef": "#/attributeCatalog/lotus.x_portfolio_ids"
+    },
+    {
+      "name": "x_principal_status",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x principal status used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_principal_status",
+      "attributeRef": "#/attributeCatalog/lotus.x_principal_status"
+    },
+    {
+      "name": "conversion_intent_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical conversion intent id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.conversion_intent_id",
+      "attributeRef": "#/attributeCatalog/lotus.conversion_intent_id"
+    },
+    {
+      "name": "portfolio_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": true,
+      "type": "string",
+      "description": "Canonical portfolio id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.portfolio_id",
+      "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+    },
+    {
+      "name": "x_actor_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Canonical x actor id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_actor_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_actor_id"
+    },
+    {
+      "name": "x_role",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Canonical x role used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_role",
+      "attributeRef": "#/attributeCatalog/lotus.x_role"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Canonical x tenant id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "x_legal_entity_code",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Canonical x legal entity code used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_legal_entity_code",
+      "attributeRef": "#/attributeCatalog/lotus.x_legal_entity_code"
+    },
+    {
+      "name": "x_service_identity",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Canonical x service identity used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_service_identity",
+      "attributeRef": "#/attributeCatalog/lotus.x_service_identity"
+    },
+    {
+      "name": "x_capabilities",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Canonical x capabilities used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_capabilities",
+      "attributeRef": "#/attributeCatalog/lotus.x_capabilities"
+    },
+    {
+      "name": "x_portfolio_ids",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Canonical x portfolio ids used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.x_portfolio_ids",
+      "attributeRef": "#/attributeCatalog/lotus.x_portfolio_ids"
+    },
+    {
+      "name": "x_correlation_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Canonical x correlation id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_correlation_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
     },
     {
       "name": "x_principal_status",
@@ -52223,6 +52356,309 @@
             "type": "string",
             "semanticId": "lotus.reason_code",
             "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "contract_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.contract_version",
+            "attributeRef": "#/attributeCatalog/lotus.contract_version"
+          },
+          {
+            "name": "source_authority",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_authority"
+          },
+          {
+            "name": "intake_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.intake_id",
+            "attributeRef": "#/attributeCatalog/lotus.intake_id"
+          },
+          {
+            "name": "management_action_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.management_action_id",
+            "attributeRef": "#/attributeCatalog/lotus.management_action_id"
+          },
+          {
+            "name": "portfolio_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "idea_candidate_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idea_candidate_id",
+            "attributeRef": "#/attributeCatalog/lotus.idea_candidate_id"
+          },
+          {
+            "name": "conversion_intent_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.conversion_intent_id",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_intent_id"
+          },
+          {
+            "name": "status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          },
+          {
+            "name": "source_event_version",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_event_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_event_version"
+          },
+          {
+            "name": "events",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.events",
+            "attributeRef": "#/attributeCatalog/lotus.events"
+          },
+          {
+            "name": "events[].event_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_id",
+            "attributeRef": "#/attributeCatalog/lotus.event_id"
+          },
+          {
+            "name": "events[].action_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.action_id",
+            "attributeRef": "#/attributeCatalog/lotus.action_id"
+          },
+          {
+            "name": "events[].source_event_version",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_event_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_event_version"
+          },
+          {
+            "name": "events[].event_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_type",
+            "attributeRef": "#/attributeCatalog/lotus.event_type"
+          },
+          {
+            "name": "events[].previous_status",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.previous_status",
+            "attributeRef": "#/attributeCatalog/lotus.previous_status"
+          },
+          {
+            "name": "events[].status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          },
+          {
+            "name": "events[].occurred_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.occurred_at",
+            "attributeRef": "#/attributeCatalog/lotus.occurred_at"
+          },
+          {
+            "name": "events[].actor_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "events[].actor_role",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_role",
+            "attributeRef": "#/attributeCatalog/lotus.actor_role"
+          },
+          {
+            "name": "events[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "events[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "events[].causation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.causation_id",
+            "attributeRef": "#/attributeCatalog/lotus.causation_id"
+          },
+          {
+            "name": "rebalance_execution_proven",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.rebalance_execution_proven",
+            "attributeRef": "#/attributeCatalog/lotus.rebalance_execution_proven"
+          },
+          {
+            "name": "order_execution_proven",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.order_execution_proven",
+            "attributeRef": "#/attributeCatalog/lotus.order_execution_proven"
+          },
+          {
+            "name": "client_publication_proven",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.client_publication_proven",
+            "attributeRef": "#/attributeCatalog/lotus.client_publication_proven"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_run_supportability",
+      "method": "GET",
+      "path": "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes",
+      "operationId": "get_idea_management_action_outcomes_by_conversion_intent_api_v1_rebalance_idea_action_intakes_by_conversion_intent__conversion_intent_id__outcomes_get",
+      "summary": "Get Manage-owned Outcome History by Idea Conversion Intent",
+      "request": {
+        "fields": [
+          {
+            "name": "conversion_intent_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.conversion_intent_id",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_intent_id"
+          },
+          {
+            "name": "portfolio_id",
+            "location": "query",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "x-actor-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_actor_id"
+          },
+          {
+            "name": "x-role",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_role",
+            "attributeRef": "#/attributeCatalog/lotus.x_role"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
+            "name": "x-legal-entity-code",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_legal_entity_code",
+            "attributeRef": "#/attributeCatalog/lotus.x_legal_entity_code"
+          },
+          {
+            "name": "x-service-identity",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_service_identity",
+            "attributeRef": "#/attributeCatalog/lotus.x_service_identity"
+          },
+          {
+            "name": "x-capabilities",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.x_capabilities"
+          },
+          {
+            "name": "x-portfolio-ids",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.x_portfolio_ids"
+          },
+          {
+            "name": "x-correlation-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+          },
+          {
+            "name": "x-principal-status",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_principal_status",
+            "attributeRef": "#/attributeCatalog/lotus.x_principal_status"
           }
         ]
       },

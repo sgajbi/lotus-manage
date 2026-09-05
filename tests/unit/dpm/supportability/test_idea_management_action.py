@@ -18,13 +18,19 @@ from src.infrastructure.rebalance_runs.idea_management_actions_in_memory import 
 NOW = datetime(2026, 9, 2, 1, 0, tzinfo=timezone.utc)
 
 
-def _action(*, fingerprint: str = "sha256:0123456789ab"):
+def _action(
+    *,
+    fingerprint: str = "sha256:0123456789ab",
+    intake_id: str = "iai_001",
+    candidate_id: str = "idea_candidate_001",
+    idempotency_scope_hash: str = "sha256:0123456789abcdef01234567",
+):
     return create_idea_management_action(
-        intake_id="iai_001",
+        intake_id=intake_id,
         tenant_id="tenant-private-bank-sg",
         legal_entity_code="SGPB",
         portfolio_id="PB_SG_GLOBAL_BAL_001",
-        idea_candidate_id="idea_candidate_001",
+        idea_candidate_id=candidate_id,
         conversion_intent_id="conversion_intent_001",
         source_refs=(
             {
@@ -35,7 +41,7 @@ def _action(*, fingerprint: str = "sha256:0123456789ab"):
             },
         ),
         request_fingerprint=fingerprint,
-        idempotency_scope_hash="sha256:0123456789abcdef01234567",
+        idempotency_scope_hash=idempotency_scope_hash,
         actor_id="svc-lotus-idea",
         actor_role="SERVICE",
         correlation_id="corr-intake-001",
@@ -142,6 +148,104 @@ def test_repository_replays_same_intake_without_duplicating_action() -> None:
     assert first.created is True
     assert replay.created is False
     assert replay.action == first.action
+
+
+def test_repository_reads_current_action_by_exact_conversion_scope() -> None:
+    repository = InMemoryIdeaManagementActionRepository()
+    original = repository.create_or_replay(action=_action()).action
+    approved = record_idea_management_review_decision(
+        original,
+        workflow_action="APPROVE",
+        expected_source_event_version=1,
+        actor_id="pm-001",
+        actor_role="PORTFOLIO_MANAGER",
+        reason_code="management_review_approved",
+        correlation_id="corr-review-approved",
+        decided_at=NOW,
+    )
+    repository.update(action=approved, expected_source_event_version=1)
+
+    recovered = repository.get_by_conversion_intent(
+        tenant_id=approved.tenant_id,
+        legal_entity_code=approved.legal_entity_code,
+        portfolio_id=approved.portfolio_id,
+        conversion_intent_id=approved.conversion_intent_id,
+    )
+
+    assert recovered == approved
+    assert (
+        repository.get_by_conversion_intent(
+            tenant_id=approved.tenant_id,
+            legal_entity_code=approved.legal_entity_code,
+            portfolio_id="PB_SG_OTHER_001",
+            conversion_intent_id=approved.conversion_intent_id,
+        )
+        is None
+    )
+
+
+def test_repository_rejects_second_action_for_same_conversion_scope() -> None:
+    repository = InMemoryIdeaManagementActionRepository()
+    original = _action()
+    repository.create_or_replay(action=original)
+    conflicting = _action(
+        fingerprint="sha256:ba9876543210",
+        intake_id="iai_changed",
+        candidate_id="idea_candidate_changed",
+        idempotency_scope_hash="sha256:ba9876543210ba9876543210",
+    )
+
+    with pytest.raises(
+        IdeaManagementActionRepositoryConflictError,
+        match="IDEA_ACTION_INTAKE_IDEMPOTENCY_CONFLICT",
+    ):
+        repository.create_or_replay(action=conflicting)
+
+    assert (
+        repository.get_by_conversion_intent(
+            tenant_id=original.tenant_id,
+            legal_entity_code=original.legal_entity_code,
+            portfolio_id=original.portfolio_id,
+            conversion_intent_id=original.conversion_intent_id,
+        )
+        == original
+    )
+
+
+def test_conversion_lookup_rejects_portfolio_scope_before_repository_io() -> None:
+    from src.api.services.idea_management_action_service import (
+        IdeaManagementActionService,
+    )
+    from src.core.rebalance_runs.idea_action_intake import IdeaActionIntakeScopeError
+    from src.core.rebalance_runs.idea_action_intake_authority import (
+        IdeaActionIntakePrincipal,
+    )
+
+    class _RepositoryThatMustNotBeCalled:
+        def get_by_conversion_intent(self, **kwargs):
+            raise AssertionError("repository I/O must follow portfolio authorization")
+
+    principal = IdeaActionIntakePrincipal(
+        actor_id="svc-lotus-idea",
+        role="SERVICE",
+        tenant_id="tenant-private-bank-sg",
+        legal_entity_code="SGPB",
+        correlation_id="corr-read-001",
+        service_identity="lotus-idea",
+        capabilities=frozenset({"manage.idea_action_intake.read"}),
+        portfolio_ids=frozenset({"PB_SG_GLOBAL_BAL_001"}),
+    )
+    service = IdeaManagementActionService(repository=_RepositoryThatMustNotBeCalled())
+
+    with pytest.raises(
+        IdeaActionIntakeScopeError,
+        match="IDEA_ACTION_INTAKE_PORTFOLIO_SCOPE_FORBIDDEN",
+    ):
+        service.get_outcome_history_by_conversion_intent(
+            portfolio_id="PB_SG_OTHER_001",
+            conversion_intent_id="conversion_intent_001",
+            principal=principal,
+        )
 
 
 def test_repository_rejects_changed_payload_for_same_scoped_idempotency_key() -> None:
