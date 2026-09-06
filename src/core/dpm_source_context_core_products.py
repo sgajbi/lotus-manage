@@ -147,7 +147,16 @@ class DpmCoreMandateBindingResponse(BaseModel):
         default=None,
         description="Resolved binding effective end date.",
     )
-    binding_version: int = Field(description="Resolved binding version.")
+    binding_version: int = Field(
+        ge=0,
+        description=(
+            "Resolved binding version. Non-negative: the version is rendered to TEXT and "
+            "ordered by magnitude, and a negative value falls outside that grammar, so '-2' "
+            "would resolve as later than '-1'. A version counter has no meaningful negative "
+            "value, so it is refused at the boundary rather than ordered by a rule invented "
+            "for it here."
+        ),
+    )
     supportability: DpmCoreMandateBindingSupportability = Field(
         description="Completeness and readiness posture for the mandate binding product."
     )
@@ -280,7 +289,13 @@ class DpmCoreCioModelChangeAffectedMandate(BaseModel):
         default=None,
         description="Mandate binding effective end date.",
     )
-    binding_version: int = Field(description="Selected mandate binding version.")
+    binding_version: int = Field(
+        ge=0,
+        description=(
+            "Selected mandate binding version. Non-negative, for the ordering reason given "
+            "on DpmCoreMandateBinding.binding_version."
+        ),
+    )
     source_record_id: Optional[str] = Field(
         default=None,
         description="Core source record identifier for replay and audit.",
@@ -371,7 +386,13 @@ class DpmCorePortfolioUniverseCandidate(BaseModel):
         default=None,
         description="Mandate binding effective end date.",
     )
-    binding_version: int = Field(description="Selected mandate binding version.")
+    binding_version: int = Field(
+        ge=0,
+        description=(
+            "Selected mandate binding version. Non-negative, for the ordering reason given "
+            "on DpmCoreMandateBinding.binding_version."
+        ),
+    )
     source_record_id: Optional[str] = Field(
         default=None,
         description="Core source record identifier for replay and audit.",
