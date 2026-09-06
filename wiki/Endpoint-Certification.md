@@ -223,8 +223,14 @@ Functional behavior:
   while a replay for the same version and date stays idempotent.
 - Read by mandate remains a latest-state lookup and returns `404` when no mandate snapshot exists.
 - Version listing returns persisted mandate twins newest first.
-- Diff compares the latest two versions by default, or caller-supplied `from_version` and
-  `to_version`, and labels materiality for changed mandate fields.
+- Diff compares the latest two distinct versions by default, or caller-supplied `from_version`
+  and `to_version`, and labels materiality for changed mandate fields. Because persistence keeps
+  one observation per business date, a version can appear several times; the diff uses the most
+  recent observation of each version, so re-observing an unchanged binding is not reported as a
+  change. A history holding only one distinct version has nothing to compare and is refused with
+  `409` rather than diffed against itself. The response carries `from_as_of_date` and
+  `to_as_of_date`, the business dates of the two compared observations, which differ from the
+  version numbers and are what an auditor needs to place the comparison in time.
 - Health read accepts optional `as_of_date`, selects the latest snapshot on or before that
   business date using deterministic same-date ordering, preserves the snapshot's actual date, and
   returns `404` before the first qualifying snapshot. Omitting the query returns the latest

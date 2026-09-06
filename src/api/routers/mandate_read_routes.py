@@ -123,7 +123,10 @@ async def read_mandate_versions(
     description=(
         "Use this endpoint when portfolio managers, supervision, or operations need to explain "
         "what changed between two mandate versions. If versions are omitted, lotus-manage "
-        "compares the latest two persisted versions."
+        "compares the latest two distinct versions, using the most recent observation of each. "
+        "Repeated observations of one version are not a change, so a history holding only a "
+        "single distinct version is refused with 409 rather than diffed against itself. The "
+        "response carries the business date of each compared observation."
     ),
     responses={
         200: {
@@ -135,6 +138,8 @@ async def read_mandate_versions(
                         "compared_at": "2026-05-03T08:30:00Z",
                         "from_version": "2",
                         "to_version": "3",
+                        "from_as_of_date": "2026-04-10",
+                        "to_as_of_date": "2026-05-03",
                         "changed_fields": [
                             {
                                 "field_path": "constraints.turnover_budget",
