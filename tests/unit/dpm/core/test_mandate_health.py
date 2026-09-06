@@ -1415,3 +1415,55 @@ def test_monitoring_exceptions_are_derived_from_health_reasons_with_lineage() ->
     assert exceptions[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
     assert exceptions[0].dimension == MandateHealthDimension.ELIGIBILITY_RESTRICTIONS
     assert exceptions[0].reason_code == "RESTRICTED_INSTRUMENT_HELD"
+
+
+def test_source_gaps_decide_the_overall_action_over_co_occurring_warnings() -> None:
+    """A missing limit outranks other findings when the headline action is chosen.
+
+    Reasons of equal severity keep dimension order, so ALLOCATION_DRIFT sorts
+    ahead of the cash and turnover source gaps and used to supply the overall
+    action. The snapshot then contradicted itself: the individual source-gap
+    reasons said FIX_SOURCE_DATA while the headline said SIMULATE_REBALANCE.
+
+    Simulating a rebalance cannot produce a limit lotus-core never supplied, so
+    an operator following the headline would be sent somewhere that cannot
+    resolve the finding.
+    """
+
+    unsourced_limits = _twin(
+        constraints=DpmMandateConstraintSet(
+            cash_reserve_weight=Decimal("0.02"),
+            max_tracking_error=Decimal("0.05"),
+        ),
+        field_gap_codes=[
+            "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+            "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
+        ],
+    )
+
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            twin=unsourced_limits,
+            # Drift is real and worth reporting; it just must not decide the
+            # headline while a limit is unavailable.
+            current_weights={
+                "EQ_US_AAPL": Decimal("0.72"),
+                "FI_US_TREASURY_10Y": Decimal("0.28"),
+            },
+        )
+    )
+
+    assert snapshot.recommended_action == MandateRecommendedAction.FIX_SOURCE_DATA
+
+    reason_codes = {reason.reason_code for reason in snapshot.top_reasons}
+    assert "ALLOCATION_DRIFT" in reason_codes, "the drift finding must still be reported"
+    assert reason_codes & {"CASH_BAND_NOT_SOURCED", "TURNOVER_BUDGET_NOT_SOURCED"}
+
+    # The headline agrees with the source-gap reasons rather than contradicting
+    # them, which is the property that was actually broken.
+    source_gap_actions = {
+        reason.recommended_action
+        for reason in snapshot.top_reasons
+        if reason.reason_code in {"CASH_BAND_NOT_SOURCED", "TURNOVER_BUDGET_NOT_SOURCED"}
+    }
+    assert source_gap_actions == {MandateRecommendedAction.FIX_SOURCE_DATA}

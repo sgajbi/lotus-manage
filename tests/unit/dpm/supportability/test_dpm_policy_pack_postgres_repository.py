@@ -79,12 +79,20 @@ class _FakeConnection:
             existed = args[0] in self.policy_packs
             self.policy_packs.pop(args[0], None)
             return _FakeCursor(rowcount=1 if existed else 0)
-        if sql.startswith("UPDATE dpm_mandate_snapshots") and " jsonb_set(" in sql:
+        if "dpm_mandate_snapshots" in sql and (
+            " jsonb_set(" in sql
+            or "DELETE FROM dpm_monitoring_exceptions" in sql
+            or "DELETE FROM dpm_mandate_health_snapshots" in sql
+        ):
             # Migration 0023 retires the fabricated mandate limits from
-            # already-persisted twins. This fake models policy packs and not
-            # dpm_mandate_snapshots, so the statement is acknowledged here and
-            # proven for real in
+            # already-persisted twins and the health evidence derived from
+            # them. This fake models policy packs and not those tables, so the
+            # statements are acknowledged here and proven for real in
             # tests/integration/dpm/mandates/test_retire_fabricated_limits_postgres.py.
+            #
+            # Matched on content rather than a prefix because the migration
+            # opens with a comment block, which the statement splitter keeps
+            # attached to the first statement.
             return _FakeCursor()
         raise AssertionError(f"Unhandled SQL: {sql}")
 
