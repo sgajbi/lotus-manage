@@ -42,6 +42,7 @@ from src.api.routers.rebalance_simulation import (
 from src.api.routers.integration_capabilities import (
     router as integration_capabilities_router,
 )
+from src.api.routers.mandate_tenant_query import DpmMandateTenantRequiredError
 from src.api.routers.mandates import router as mandates_router
 from src.api.routers.monitoring import router as monitoring_router
 from src.api.routers.portfolio_memory import router as portfolio_memory_router
@@ -331,6 +332,32 @@ async def _idea_action_problem_details_exception_handler(
     return await idea_action_problem_details_exception_handler(request, exc)
 
 
+async def _mandate_tenant_required_exception_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    """Refuse a mandate read that never said whose data it wanted (#648).
+
+    Without this the refusal escapes as an unhandled error and the caller sees
+    a 500, which reads as "lotus-manage is broken" rather than "state a
+    tenant". It is a request problem, so it answers as one.
+    """
+
+    if not isinstance(exc, DpmMandateTenantRequiredError):
+        raise exc
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        content={
+            "detail": "DPM_MANDATE_TENANT_REQUIRED",
+            "reason": (
+                "Mandate snapshots and health evidence are stored per tenant, so this "
+                "request must state which tenant it is reading. It is refused rather "
+                "than answered from an assumed tenant."
+            ),
+        },
+    )
+
+
 app.add_exception_handler(
     PmQualityProblemDetailsException,
     _pm_quality_problem_details_exception_handler,
@@ -338,6 +365,10 @@ app.add_exception_handler(
 app.add_exception_handler(
     CampaignProblemDetailsException,
     _campaign_problem_details_exception_handler,
+)
+app.add_exception_handler(
+    DpmMandateTenantRequiredError,
+    _mandate_tenant_required_exception_handler,
 )
 app.add_exception_handler(
     IdeaActionProblemDetailsException,
