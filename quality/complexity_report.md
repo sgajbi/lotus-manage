@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-09-06T16:03:46+00:00`
+- Generated at: `2026-09-07T00:16:47+00:00`
 
-- Baseline source snapshot: `54c0f5e08bf801ee3c31707ddb2ce784648d122e`
+- Baseline source snapshot: `7f7edcbc9ddb49e7ad63eb1daf7c583daa4bde84`
 
-- Report source snapshot: `6f8f47f7+worktree`
+- Report source snapshot: `099b5ed6`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -22,7 +22,7 @@
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1068 | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 774 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
-| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 107 | 396 |
+| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 110 | 407 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
@@ -41,9 +41,9 @@
 | 5 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
 | 6 | _campaign_workflow_labels_for_http_exception | src/api/routers/wave_campaign_workflow_telemetry.py | 11 | 21 |
 | 7 | list_definitions_by_workflow_projection | src/infrastructure/waves/campaign_definitions.py | 9 | 64 |
-| 8 | _workflow_projection_matches | src/infrastructure/waves/campaign_definitions.py | 9 | 38 |
-| 9 | _validate_postgres_review_action_parent | src/infrastructure/pm_quality/postgres.py | 9 | 36 |
-| 10 | build_supportability_summary_response | src/core/rebalance_runs/supportability_summary.py | 8 | 75 |
+| 8 | _score_cash_liquidity | src/core/mandate_health_scoring.py | 9 | 48 |
+| 9 | _workflow_projection_matches | src/infrastructure/waves/campaign_definitions.py | 9 | 38 |
+| 10 | _validate_postgres_review_action_parent | src/infrastructure/pm_quality/postgres.py | 9 | 36 |
 
 ### Most Complex Current Test Functions
 
@@ -52,7 +52,7 @@
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1068 | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 774 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
-| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 107 | 396 |
+| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 110 | 407 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
