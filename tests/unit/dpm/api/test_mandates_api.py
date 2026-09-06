@@ -512,7 +512,7 @@ def test_refresh_from_core_preserves_gap_when_optional_profile_is_incomplete() -
 
 def test_read_mandate_by_portfolio_and_by_id_use_persisted_state() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="3"))
+    repository.save_mandate_snapshot(_twin(version="3"), tenant_id="tenant-test")
 
     with _client(repository) as client:
         by_portfolio = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}")
@@ -528,8 +528,8 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
     repository = InMemoryDpmMandateRepository()
     historical = _twin(version="2", as_of=date(2026, 4, 10))
     future = _twin(version="3", as_of=date(2026, 5, 3))
-    repository.save_mandate_snapshot(historical)
-    repository.save_mandate_snapshot(future)
+    repository.save_mandate_snapshot(historical, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(future, tenant_id="tenant-test")
     historical_health = calculate_mandate_health(
         DpmMandateHealthInput(twin=historical, cash_weight=Decimal("0.11"))
     ).model_copy(
@@ -548,8 +548,8 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
             "calculated_at": datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
         }
     )
-    repository.save_health_snapshot(historical_health)
-    repository.save_health_snapshot(future_health)
+    repository.save_health_snapshot(historical_health, tenant_id="tenant-test")
+    repository.save_health_snapshot(future_health, tenant_id="tenant-test")
 
     with _client(repository) as client:
         mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-15")
@@ -570,10 +570,11 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
 def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidence() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin(version="2", as_of=date(2026, 4, 10))
-    repository.save_mandate_snapshot(twin)
+    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
     repository.save_health_snapshot(
         calculate_mandate_health(DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11")))
-    )
+    ,
+            tenant_id="tenant-test",)
 
     with _client(repository) as client:
         mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-09")
@@ -625,8 +626,8 @@ def test_missing_mandate_by_portfolio_returns_404() -> None:
 
 def test_mandate_versions_are_returned_newest_first() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2"))
-    repository.save_mandate_snapshot(_twin(version="3"))
+    repository.save_mandate_snapshot(_twin(version="2"), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(_twin(version="3"), tenant_id="tenant-test")
 
     with _client(repository) as client:
         response = client.get(f"/api/v1/mandates/{MANDATE_ID}/versions")
@@ -645,8 +646,8 @@ def test_missing_mandate_versions_return_404() -> None:
 
 def test_mandate_diff_identifies_material_constraint_changes() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")))
-    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")))
+    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test")
 
     with _client(repository) as client:
         response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff")
@@ -665,8 +666,8 @@ def test_mandate_diff_identifies_material_constraint_changes() -> None:
 
 def test_mandate_diff_with_explicit_versions_and_missing_version_errors() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")))
-    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")))
+    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test")
 
     with _client(repository) as client:
         explicit = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&to_version=3")
@@ -691,7 +692,7 @@ def test_missing_mandate_diff_returns_404() -> None:
 
 def test_mandate_diff_requires_two_versions() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="3"))
+    repository.save_mandate_snapshot(_twin(version="3"), tenant_id="tenant-test")
 
     with _client(repository) as client:
         response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff")
@@ -860,7 +861,7 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
         == []
     )
 
-    repository.save_mandate_snapshot(_twin())
+    repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
     assert (
         source_refs_for_portfolio_mandate_health(
             repository=repository,
@@ -934,7 +935,8 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
                 "source_analytics_posture": posture,
             }
         )
-    )
+    ,
+            tenant_id="tenant-test",)
 
     mixed_refs = source_refs_for_portfolio_mandate_health(
         repository=repository,

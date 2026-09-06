@@ -91,8 +91,8 @@ def _seed_mandate_evidence(repository: InMemoryDpmMandateRepository) -> None:
             "review_policy": {"review_frequency": "QUARTERLY"},
         }
     )
-    repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)))
+    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
+    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test")
 
 
 def _generate_selected_alternative(client: TestClient) -> tuple[str, str]:
