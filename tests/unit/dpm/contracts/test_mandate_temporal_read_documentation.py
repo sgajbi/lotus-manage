@@ -47,3 +47,24 @@ def test_published_diff_semantics_match_the_implemented_selection_and_refusal() 
     # Business dates travel with the comparison; version numbers are not dates.
     assert "from_as_of_date" in endpoint
     assert "to_as_of_date" in endpoint
+
+
+def test_supported_features_discloses_the_unconditional_mandate_limit_gaps() -> None:
+    """Operators must be told the two limits are unassessable, not discover it.
+
+    No source product states a mandate cash band or turnover budget, and Manage
+    no longer derives them, so CASH_LIQUIDITY and TAX_TURNOVER reach pending
+    review for every Core-compiled twin. The supported-feature contract is the
+    operator-facing surface for that, and it previously described the health
+    engine as though both dimensions were assessable.
+    """
+
+    supported = _normalized("wiki/Supported-Features.md")
+
+    assert "mandate_cash_band_not_yet_sourced" in supported
+    assert "mandate_turnover_budget_not_yet_sourced" in supported
+    # The consequence, not only the code: pending review with a source-data
+    # action, rather than a ready result.
+    assert "`fix_source_data` action rather than a ready result" in supported
+    # And that the reserve is not quietly reused as a band boundary.
+    assert "never reinterpreted as a band boundary" in supported
