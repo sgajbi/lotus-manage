@@ -205,7 +205,27 @@ Key code areas:
 
 ## Quick Start
 
-Install dependencies:
+Prerequisites, each pinned by a source you can check:
+
+| Tool | Version | Needed for | Where that version is pinned |
+| --- | --- | --- | --- |
+| Python | 3.12 | everything | `pyproject.toml` (`requires-python = ">=3.12"`), `mypy.ini`, ruff `target-version`, every CI lane, and the `Dockerfile` base image |
+| `make` | any | every repo-native command | `Makefile` |
+| Docker | any current release | the containerised stack and PostgreSQL-backed runs | `Dockerfile`, `docker-compose.yml` |
+
+`>=3.12` permits newer interpreters, but every gate — CI, type checking, the lint target, and the
+runtime image — runs 3.12, so 3.12 is what reproduces the gates locally.
+
+From a fresh checkout, create and activate a virtual environment first: `make install` installs
+into whichever interpreter `python` resolves to, and installing into a system Python fails outright
+on distributions that follow PEP 668.
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
+```
+
+Install dependencies (this also registers the pre-commit hooks):
 
 ```bash
 make install

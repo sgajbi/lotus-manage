@@ -29677,7 +29677,7 @@ and improves internal transaction-cost source posture maintainability only.
   supportability summary, bounded supportability metrics, and retired core DPM route absence on
   both core-control and core-query. The governed canonical Workbench validation also passed for
   `PB_SG_GLOBAL_BAL_001`, writing `live-validation-summary.json` and 29 `demo_ready` screenshots to
-  `C:\Users\Sandeep\projects\lotus-workbench\output\playwright\live-canonical\lotus-manage-main-20260620-090006`.
+  `<lotus-workbench>\output\playwright\live-canonical\lotus-manage-main-20260620-090006`.
   The aggregate `make check` gate then passed with 2,960 passed and 13 skipped unit tests after
   completing the static, contract, architecture, duplicate, dependency, dead-code, workflow-policy,
   quality-report, and unit-test phases.

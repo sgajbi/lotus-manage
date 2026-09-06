@@ -2467,7 +2467,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-core` PR #367" in work_to_be_done
     assert "`lotus-core` PR #368" in work_to_be_done
     assert "`lotus-core` PR #369" in work_to_be_done
-    assert "`lotus-platform` PR\n#333" in work_to_be_done
+    assert "`lotus-platform` PR #333" in work_to_be_done
     assert "`lotus-platform` PR #334" in work_to_be_done
     assert "`lotus-platform` PR #335" in work_to_be_done
     assert "`3d0a7bbd`" in work_to_be_done
@@ -2600,9 +2600,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "`lotus-performance` PR #165 (`191a405`, wiki `46a9124`)" in supported_features
-    assert "`lotus-performance` PR\n#167 / wiki `41bdaa3`" in supported_features
+    assert "`lotus-performance` PR #167 / wiki `41bdaa3`" in supported_features
     assert "weight-averaged local/FX returns before Karnosky-Singer effects" in (supported_features)
-    assert "`lotus-risk` PR\n#139 / wiki `421ae79`" in supported_features
+    assert "`lotus-risk` PR #139 / wiki `421ae79`" in supported_features
     assert "degrade response-level\ncalculation supportability" in supported_features
     assert "empty\nactive-risk alignment" in supported_features
     assert "Current Manage drawdown analytics consumer proof additionally preserves" in (
