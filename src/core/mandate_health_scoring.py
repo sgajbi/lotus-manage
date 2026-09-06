@@ -276,7 +276,11 @@ def _score_risk_drift(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore
 
 def _score_cash_liquidity(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
     constraints = input_.twin.constraints
-    if input_.cash_weight < constraints.cash_band_min_weight:
+    # A limit the mandate never stated cannot be breached (issue #664).
+    if (
+        constraints.cash_band_min_weight is not None
+        and input_.cash_weight < constraints.cash_band_min_weight
+    ):
         return _attention_score(
             dimension=MandateHealthDimension.CASH_LIQUIDITY,
             score=60,
@@ -285,7 +289,10 @@ def _score_cash_liquidity(input_: DpmMandateHealthInput) -> DpmMandateDimensionS
             measured_value=input_.cash_weight,
             threshold_value=constraints.cash_band_min_weight,
         )
-    if input_.cash_weight > constraints.cash_band_max_weight:
+    if (
+        constraints.cash_band_max_weight is not None
+        and input_.cash_weight > constraints.cash_band_max_weight
+    ):
         return _attention_score(
             dimension=MandateHealthDimension.CASH_LIQUIDITY,
             score=75,

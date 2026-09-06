@@ -101,8 +101,14 @@ def bounded_ratio(value: Decimal, *, field_name: str) -> Decimal:
 
 
 class DpmMandateConstraintSet(BaseModel):
-    cash_band_min_weight: Decimal = Field(default=Decimal("0"), ge=0, le=1)
-    cash_band_max_weight: Decimal = Field(default=Decimal("1"), ge=0, le=1)
+    # A mandate cash BAND is a contractual limit. Manage does not set one:
+    # absent means Core has not supplied it, named in field_gap_codes, and
+    # never defaulted to a permissive 0..1 that reads as a real band.
+    cash_band_min_weight: Optional[Decimal] = Field(default=None, ge=0, le=1)
+    cash_band_max_weight: Optional[Decimal] = Field(default=None, ge=0, le=1)
+    # The rebalance cash RESERVE, kept under its own meaning. It is an
+    # operating floor for rebalancing, not a mandate band boundary.
+    cash_reserve_weight: Optional[Decimal] = Field(default=None, ge=0, le=1)
     single_position_max_weight: Optional[Decimal] = Field(default=None)
     issuer_max_weight: Optional[Decimal] = Field(default=None)
     sector_max_weight: Optional[Decimal] = Field(default=None)
@@ -141,7 +147,13 @@ class DpmMandateConstraintSet(BaseModel):
 
     @model_validator(mode="after")
     def validate_cash_band(self) -> "DpmMandateConstraintSet":
-        if self.cash_band_min_weight > self.cash_band_max_weight:
+        # Either bound may be absent when the source has not stated it
+        # (issue #664); the ordering invariant applies only to a stated pair.
+        if (
+            self.cash_band_min_weight is not None
+            and self.cash_band_max_weight is not None
+            and self.cash_band_min_weight > self.cash_band_max_weight
+        ):
             raise ValueError("cash_band_min_weight must not exceed cash_band_max_weight")
         return self
 

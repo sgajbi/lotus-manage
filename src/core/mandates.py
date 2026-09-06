@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from decimal import Decimal
 from typing import Optional
 
 from src.core.dpm_source_context import (
@@ -105,6 +104,7 @@ def _mandate_twin_field_gap_codes(
         planned_withdrawal_schedule=planned_withdrawal_schedule,
     )
     field_gaps.extend(_mandate_binding_profile_gap_codes(mandate))
+    field_gaps.extend(_mandate_constraint_gap_codes())
     field_gaps.extend(
         _mandate_optional_source_product_gap_codes(
             client_restriction_profile=client_restriction_profile,
@@ -114,6 +114,20 @@ def _mandate_twin_field_gap_codes(
         )
     )
     return field_gaps
+
+
+def _mandate_constraint_gap_codes() -> list[str]:
+    """Mandate limits Core does not yet supply (issue #664).
+
+    Unconditional: no source product carries a governed cash band or
+    turnover budget today, so every twin reports both as absent. When Core
+    supplies them these become conditional on the source being present.
+    """
+
+    return [
+        "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+        "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
+    ]
 
 
 def _mandate_source_schedule_gap_codes(
@@ -256,11 +270,12 @@ def _mandate_twin_constraint_set(
     mandate: DpmCoreMandateBindingResponse,
     client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse],
 ) -> DpmMandateConstraintSet:
-    cash_reserve_weight = mandate.rebalance_bands.cash_reserve_weight or Decimal("0")
+    # Issue #664: publish only what the source states. The cash band and
+    # turnover budget are contractual mandate limits that Core does not yet
+    # supply, so they stay absent and are named in field_gap_codes. The
+    # rebalance cash reserve is real and survives under its own field.
     constraints = DpmMandateConstraintSet(
-        cash_band_min_weight=cash_reserve_weight,
-        cash_band_max_weight=max(cash_reserve_weight, Decimal("0.10")),
-        turnover_budget=Decimal("0.15"),
+        cash_reserve_weight=mandate.rebalance_bands.cash_reserve_weight,
     )
     if client_restriction_profile is not None:
         constraints.restricted_instruments = _active_restricted_instruments(
