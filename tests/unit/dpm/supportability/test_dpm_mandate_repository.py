@@ -736,7 +736,7 @@ class _FakeResult:
 
 class _FakePostgresStore:
     def __init__(self) -> None:
-        self.mandates: dict[tuple[str, str, str], dict[str, Any]] = {}
+        self.mandates: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.health: dict[str, dict[str, Any]] = {}
         self.monitoring_runs: dict[str, dict[str, Any]] = {}
         self.exceptions: dict[str, dict[str, Any]] = {}
@@ -767,17 +767,29 @@ class _FakeConnection:
                 "mandate_version": params[3],
                 "as_of_date": params[4],
                 "payload_json": params[7],
+                # tenant_id is the last INSERT column (issue #648).
+                "tenant_id": params[10],
             }
-            self.store.mandates[(str(params[1]), str(params[3]), str(params[4]))] = row
+            self.store.mandates[
+                (str(params[10]), str(params[1]), str(params[3]), str(params[4]))
+            ] = row
             return _FakeResult(rowcount=1)
         if "from dpm_mandate_snapshots" in normalized:
             rows = list(self.store.mandates.values())
-            if "where portfolio_id" in normalized:
-                rows = [row for row in rows if row["portfolio_id"] == params[0]]
-            if "where mandate_id" in normalized:
-                rows = [row for row in rows if row["mandate_id"] == params[0]]
+            # Every read is tenant-scoped (issue #648) and the tenant is the
+            # first bound parameter. Matching the real WHERE clause matters:
+            # this fake previously keyed on "where mandate_id", which the
+            # tenant-scoped SQL no longer contains, so it silently stopped
+            # filtering at all and answered every lookup with the first stored
+            # row - including lookups for identifiers that do not exist.
+            assert "where tenant_id = %s" in normalized, normalized
+            rows = [row for row in rows if row["tenant_id"] == params[0]]
+            if "and portfolio_id = %s" in normalized:
+                rows = [row for row in rows if row["portfolio_id"] == params[1]]
+            if "and mandate_id = %s" in normalized:
+                rows = [row for row in rows if row["mandate_id"] == params[1]]
             if "as_of_date <= %s" in normalized:
-                rows = [row for row in rows if row["as_of_date"] <= params[1]]
+                rows = [row for row in rows if row["as_of_date"] <= params[2]]
             rows = sorted(
                 rows,
                 key=lambda row: (
@@ -796,12 +808,19 @@ class _FakeConnection:
                 "as_of_date": params[3],
                 "created_at": params[10],
                 "payload_json": params[9],
+                # tenant_id is the last INSERT column (issue #648).
+                "tenant_id": params[11],
             }
             return _FakeResult(rowcount=1)
         if "from dpm_mandate_health_snapshots" in normalized:
-            rows = [row for row in self.store.health.values() if row["mandate_id"] == params[0]]
+            assert "where tenant_id = %s" in normalized, normalized
+            rows = [
+                row
+                for row in self.store.health.values()
+                if row["tenant_id"] == params[0] and row["mandate_id"] == params[1]
+            ]
             if "as_of_date <= %s" in normalized:
-                rows = [row for row in rows if row["as_of_date"] <= params[1]]
+                rows = [row for row in rows if row["as_of_date"] <= params[2]]
                 rows = sorted(
                     rows,
                     key=lambda row: (
