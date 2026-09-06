@@ -507,6 +507,39 @@ def test_postgres_adapter_translates_unavailability_at_its_connection_funnel(mon
         adapter._connect()
 
 
+def test_postgres_adapter_translates_mid_query_database_failures(monkeypatch) -> None:
+    import psycopg
+
+    import src.infrastructure.rebalance_runs.idea_management_actions_postgres as adapter_module
+    from src.core.rebalance_runs.idea_management_action_repository import (
+        IdeaManagementActionRepositoryUnavailableError,
+    )
+
+    class FailingConnection:
+        def execute(self, *args, **kwargs):
+            raise psycopg.OperationalError("simulated statement failure")
+
+        def close(self) -> None:
+            return None
+
+    adapter = adapter_module.PostgresIdeaManagementActionRepository.__new__(
+        adapter_module.PostgresIdeaManagementActionRepository
+    )
+    adapter._dsn = "postgresql://unused"
+    monkeypatch.setattr(adapter, "_connect", FailingConnection)
+
+    with pytest.raises(
+        IdeaManagementActionRepositoryUnavailableError,
+        match="IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE",
+    ):
+        adapter.get_by_conversion_intent(
+            tenant_id="tenant-private-bank-sg",
+            legal_entity_code="SGPB",
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            conversion_intent_id="conversion_intent_001",
+        )
+
+
 def test_postgres_adapter_refuses_misconfiguration_at_construction(monkeypatch) -> None:
     """An empty DSN and a missing driver are configuration facts caught at
     the door, each with its own bounded reason - the dependency layer
