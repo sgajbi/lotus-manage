@@ -346,3 +346,38 @@ def test_both_stores_agree_on_which_versions_are_numeric(
         assert latest.mandate_version == "2"
     finally:
         _clear(repository, mandate_id)
+
+
+def test_numerically_equal_versions_are_separated_by_raw_text(
+    repository: PostgresDpmMandateRepository,
+) -> None:
+    """'01' and '1' are equal under ::numeric, so the ordering falls through to
+    mandate_version DESC and PostgreSQL puts '1' first.
+
+    The in-memory store must make the same choice or the two backends disagree
+    about which mandate is current for the same data. Its half of this contract
+    is pinned in tests/unit/dpm/infrastructure/test_mandate_version_ordering.py;
+    this is the assertion that establishes what PostgreSQL actually does, since
+    a cast's tie-breaking behaviour is an engine claim rather than a Python one.
+    """
+
+    mandate_id = f"MANDATE_TIE_{uuid.uuid4().hex[:8]}"
+    portfolio_id = f"PF_TIE_{uuid.uuid4().hex[:8]}"
+    try:
+        # Saved least-significant first, so insertion order cannot be what
+        # produces the expected result.
+        for version in ("01", "1", "001"):
+            repository.save_mandate_snapshot(
+                _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=version)
+            )
+
+        listed = [
+            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+        ]
+        assert listed == ["1", "01", "001"]
+
+        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        assert latest is not None
+        assert latest.mandate_version == "1"
+    finally:
+        _clear(repository, mandate_id)

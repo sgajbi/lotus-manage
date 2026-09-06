@@ -19,24 +19,38 @@ from src.core.mandates import (
 _MANDATE_VERSION_NUMERIC = re.compile(r"^[0-9]+$")
 
 
-def _mandate_version_sort_key(version: str) -> tuple[int, int, str]:
-    """Numeric ordering for a TEXT mandate version (issue #646).
+def _mandate_version_sort_key(version: str) -> tuple[int, int, str, str]:
+    """Deterministic ordering for a TEXT mandate version (issue #646).
 
-    Mirrors the PostgreSQL expression exactly: 1-18 ASCII digits compare
-    numerically, anything else sorts last deterministically by its own text.
+    Reproduces the PostgreSQL ordering expression element for element:
 
-    The grammar is a regex rather than str.isdigit() on purpose. isdigit()
-    accepts Unicode digits such as Arabic-Indic numerals and superscripts,
-    which PostgreSQL's [0-9] class rejects, so the two stores would disagree
-    about whether a version is numeric and therefore about which mandate is
-    current. Neither side bounds the length: the storage contract is
-    unrestricted, SQL casts to arbitrary-precision NUMERIC, and Python ints
-    are unbounded, so a long version orders as the number it is.
+        CASE WHEN mandate_version ~ '^[0-9]+$'
+             THEN mandate_version::numeric ELSE NULL END DESC NULLS LAST,
+        mandate_version DESC
+
+    ASCII digits compare numerically and anything else sorts last. The grammar
+    is a regex rather than str.isdigit(), which accepts Unicode digits such as
+    Arabic-Indic numerals that PostgreSQL's [0-9] class rejects; the two stores
+    would otherwise disagree about which versions are numeric and therefore
+    about which mandate is current.
+
+    Numeric comparison runs on the digits rather than through int(), because
+    int() is not unbounded: str-to-int conversion raises ValueError above
+    sys.get_int_max_str_digits(), 4300 by default, while NUMERIC accepts far
+    longer values. A version PostgreSQL orders without complaint would crash
+    this store. Stripping leading zeros and comparing length before digits is
+    exact at any length and relaxes no runtime safeguard to get there.
+
+    The raw text is the final element because SQL tie-breaks on
+    mandate_version DESC. Without it '01' and '1' compare equal here while SQL
+    still separates them, and the two stores would disagree about which of two
+    equal-valued versions is current.
     """
 
     if _MANDATE_VERSION_NUMERIC.match(version):
-        return (1, int(version), "")
-    return (0, 0, version)
+        digits = version.lstrip("0") or "0"
+        return (1, len(digits), digits, version)
+    return (0, 0, "", version)
 
 
 class InMemoryDpmMandateRepository(DpmMandateRepository):
