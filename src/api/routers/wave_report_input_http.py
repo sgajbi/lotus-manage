@@ -18,6 +18,7 @@ def get_wave_report_input_response(
     proof_pack_repository: DpmProofPackRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
     mandate_repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> DpmWaveReportInput:
     try:
         return wave_service.get_report_input(
@@ -26,6 +27,7 @@ def get_wave_report_input_response(
             proof_pack_repository=proof_pack_repository,
             outcome_review_repository=outcome_review_repository,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         )
     except wave_service.DpmWaveLookupError as exc:
         raise wave_lookup_http_exception(exc) from exc

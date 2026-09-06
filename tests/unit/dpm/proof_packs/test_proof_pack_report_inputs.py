@@ -19,6 +19,7 @@ def test_portfolio_memory_context_for_report_returns_none_without_required_repos
             wave_repository=None,
             outcome_review_repository=object(),  # type: ignore[arg-type]
             mandate_repository=None,
+            tenant_id="tenant-test",
         )
         is None
     )
@@ -29,6 +30,7 @@ def test_portfolio_memory_context_for_report_returns_none_without_required_repos
             wave_repository=object(),  # type: ignore[arg-type]
             outcome_review_repository=None,
             mandate_repository=None,
+            tenant_id="tenant-test",
         )
         is None
     )
@@ -56,6 +58,7 @@ def test_portfolio_memory_context_for_report_uses_proof_pack_portfolio_id(
         wave_repository=object(),  # type: ignore[arg-type]
         outcome_review_repository=object(),  # type: ignore[arg-type]
         mandate_repository=object(),  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert result is context
@@ -89,6 +92,7 @@ def test_build_proof_pack_report_input_passes_portfolio_memory_context(
         wave_repository=object(),  # type: ignore[arg-type]
         outcome_review_repository=object(),  # type: ignore[arg-type]
         mandate_repository=None,
+        tenant_id="tenant-test",
     )
 
     assert result is report_input
@@ -123,6 +127,7 @@ def test_build_proof_pack_ai_evidence_input_passes_portfolio_memory_context(
         wave_repository=object(),  # type: ignore[arg-type]
         outcome_review_repository=object(),  # type: ignore[arg-type]
         mandate_repository=None,
+        tenant_id="tenant-test",
     )
 
     assert result == (proof_pack, memory_context, ai_input)

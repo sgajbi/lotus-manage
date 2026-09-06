@@ -187,7 +187,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert "| `ai_refs` | `READY` |" in markdown.text
     assert "| `mandate_context` | `PENDING_REVIEW` |" in markdown.text
 
-    report = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/report-input")
+    report = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/report-input?tenant_id=tenant-test")
     assert report.status_code == 200
     report_input = report.json()
     assert report_input["proof_pack_id"] == proof_pack["proof_pack_id"]
@@ -256,7 +256,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     } >= {"PROOF_PACK_CREATED", "MANDATE_HEALTH_SNAPSHOT"}
 
     ai = client.get(
-        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/ai-evidence-input"
+        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/ai-evidence-input?tenant_id=tenant-test"
     )
     assert ai.status_code == 200
     ai_input = ai.json()
@@ -581,8 +581,8 @@ def test_proof_pack_read_routes_return_404_for_missing_pack(client: TestClient) 
     for path in [
         "/api/v1/rebalance/proof-packs/missing",
         "/api/v1/rebalance/proof-packs/missing/summary.md",
-        "/api/v1/rebalance/proof-packs/missing/report-input",
-        "/api/v1/rebalance/proof-packs/missing/ai-evidence-input",
+        "/api/v1/rebalance/proof-packs/missing/report-input?tenant_id=tenant-test",
+        "/api/v1/rebalance/proof-packs/missing/ai-evidence-input?tenant_id=tenant-test",
     ]:
         response = client.get(path)
 
@@ -597,8 +597,8 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
         "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md",
-        "/api/v1/rebalance/proof-packs/{proof_pack_id}/report-input",
-        "/api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input",
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}/report-input?tenant_id=tenant-test",
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input?tenant_id=tenant-test",
     ]:
         assert path in openapi["paths"]
 
