@@ -21,8 +21,8 @@ Useful validation commands:
 
 ```powershell
 python -m pytest tests\unit\test_documentation_current_state.py -q
-python C:\Users\Sandeep\projects\lotus-platform\codex\skills\lotus-readme-wiki-governance\scripts\audit_wiki_quality.py --wiki-dir wiki --changed-page <Page>.md
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\Sandeep\projects\lotus-platform\automation\Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage
+python <lotus-platform>\codex\skills\lotus-readme-wiki-governance\scripts\audit_wiki_quality.py --wiki-dir wiki --changed-page <Page>.md
+powershell -NoProfile -ExecutionPolicy Bypass -File <lotus-platform>\automation\Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage
 ```
 
 When the branch intentionally changes repo-local `wiki/` source, run the same wiki check with

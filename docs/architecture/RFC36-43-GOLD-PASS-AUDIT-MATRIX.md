@@ -51,11 +51,11 @@ Evidence captured:
    report date, and fresh return-path date.
 5. `npm run live:validate` passed.
 6. Platform QA wrapper passed:
-   `powershell -ExecutionPolicy Bypass -File automation\Invoke-Canonical-FrontOffice-QA.ps1 -ScreenshotDirectory C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\rfc36-43-gold-pass-20260524`.
+   `powershell -ExecutionPolicy Bypass -File automation\Invoke-Canonical-FrontOffice-QA.ps1 -ScreenshotDirectory <lotus-platform>\output\front-office-qa\rfc36-43-gold-pass-20260524`.
 7. Machine-readable and screenshot evidence:
-   `C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\canonical-front-office-qa-20260524-185940.md`,
-   `C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\rfc36-43-gold-pass-20260524\live-validation-summary.json`,
-   and `C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\rfc36-43-gold-pass-20260524\SHOT-INDEX.md`.
+   `<lotus-platform>\output\front-office-qa\canonical-front-office-qa-20260524-185940.md`,
+   `<lotus-platform>\output\front-office-qa\rfc36-43-gold-pass-20260524\live-validation-summary.json`,
+   and `<lotus-platform>\output\front-office-qa\rfc36-43-gold-pass-20260524\SHOT-INDEX.md`.
 
 Panel classifications in the platform QA summary mark the following implemented surfaces `ready`:
 performance summary, contribution, attribution, evidence, risk snapshot/concentration/drawdown/

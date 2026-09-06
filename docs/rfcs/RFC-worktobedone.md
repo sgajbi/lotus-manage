@@ -287,7 +287,7 @@ events from persisted Manage task-transition truth without claiming external wor
 orchestration, approval mutation, client contact, order routing, or OMS execution.
 
 RFC40-WTBD-009 is complete for the bounded scenario-pack authority support claim. `lotus-risk` PR
-#141 (`978f441ef2023d178e6c3ba4f0f361c84b856427`, wiki `c2c6560`, Main Releasability Gate
+issue #141 (`978f441ef2023d178e6c3ba4f0f361c84b856427`, wiki `c2c6560`, Main Releasability Gate
 `26098602664`) adds source-owned `governance_evidence` to `RegimeScenarioPackEvaluation:v1` for
 CIO approval status/reference, approval body/time, effective-period posture, portfolio
 applicability posture/scope/ref, methodology reference, and fail-closed reason-code/supportability
@@ -2508,9 +2508,9 @@ promotes `ExternalCurrencyExposure:v1` to an active fail-closed route at
 empty exposures, missing `external_currency_exposure`, `external_hedge_policy`,
 `external_fx_forward_curve`, and `external_eligible_hedge_instrument` data families, blocked
 FX-attribution, hedge-advice, treasury-instruction, execution-readiness, OMS, fill, settlement, and
-autonomous-treasury-action capabilities, plus external-bank-treasury lineage. `lotus-platform` PR
-#333 merged as `c46d581` and mirrors the active domain-product posture in platform discovery
-artifacts. Manage now consumes `ExternalCurrencyExposure:v1` through stateful core sourcing and
+autonomous-treasury-action capabilities, plus external-bank-treasury lineage.
+`lotus-platform` PR #333 merged as `c46d581` and mirrors the active domain-product
+posture in platform discovery artifacts. Manage now consumes `ExternalCurrencyExposure:v1` through stateful core sourcing and
 preserves the unavailable posture in currency-overlay diagnostics without making a local exposure,
 FX-attribution, hedge advice, treasury instruction, execution-readiness, OMS, fill, or settlement
 claim.
@@ -2521,7 +2521,7 @@ promotes `ExternalHedgePolicy:v1` to an active fail-closed route at
 policy rules, missing `external_hedge_policy` data family, blocked hedge-policy approval,
 hedge-advice, treasury-instruction, counterparty-selection, OMS, fill, settlement, and
 autonomous-treasury-action capabilities, plus external-bank-treasury lineage. `lotus-platform` PR
-#334 merged as `ae4f707` and mirrors the active domain-product posture in platform discovery
+issue #334 merged as `ae4f707` and mirrors the active domain-product posture in platform discovery
 artifacts. Manage now consumes `ExternalHedgePolicy:v1` through stateful core sourcing and
 preserves the unavailable posture in currency-overlay diagnostics without making a local
 hedge-policy approval, hedge advice, treasury instruction, counterparty-selection, OMS, fill, or
@@ -3717,7 +3717,7 @@ hashed `BulkReviewCampaignUniversePosture:v1` boundary evidence that names
 required future `GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide
 candidate-discovery capabilities, promotion requirements for any future global-universe support,
 and the persisted-candidate-only source scope. `lotus-gateway` PR
-#212 now composes the manage-owned campaign-definition list/get/upsert APIs under
+issue #212 now composes the manage-owned campaign-definition list/get/upsert APIs under
 `/api/v1/dpm/command-center/waves/campaign-definitions*`, and PR #231 (`ea6c036`, Main
 Releasability Gate `25989936539`) extends bounded lifecycle-events, launch-history, launch-package,
 durable launch, and campaign-discovery BFF preservation without recomputing cohort facts, campaign
@@ -4582,7 +4582,7 @@ WTBD audit refresh on 2026-05-06:
    failures.
 2. Generated a durable live manage-backed outcome review with
    `python scripts/generate_rfc0042_outcome_evidence.py --base-url http://127.0.0.1:8001
-   --output-root C:\Users\Sandeep\projects\lotus-manage\output\rfc0042-wtbd-audit-outcome-proof`.
+   --output-root output\rfc0042-wtbd-audit-outcome-proof`.
    The accepted critical review is
    `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/critical-review.json` and it passed
    review creation, idempotency replay/conflict, source lineage, supportability, report input, AI
