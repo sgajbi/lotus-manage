@@ -111,7 +111,12 @@ def test_local_repository_navigation_readmes_cover_safe_edit_boundaries() -> Non
 
     assert "wiki/` intentionally does not contain a local `README.md`" in root_readme
     assert "wiki/` intentionally has\nno local `README.md`" in docs_readme
-    assert "Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage" in docs_readme
+    # The script path is quoted so a checkout path containing a space survives,
+    # which splits the old contiguous substring. Assert the two halves instead
+    # of loosening to a bare script name: the -CheckOnly flag and the repository
+    # argument are the parts that make this the right documented command.
+    assert 'Sync-RepoWikis.ps1" -CheckOnly -Repository lotus-manage' in docs_readme
+    assert "$LotusRoot" in docs_readme
     assert "make mesh-contract-validate" in contracts_readme
     assert "make observability-contract-validate" in contracts_readme
     assert "make trust-telemetry-validate" in trust_telemetry_readme

@@ -17,13 +17,23 @@ nearest durable doc in the same slice.
 Wiki pages are authored in `wiki/`, not in a separate `*.wiki.git` clone. `wiki/` intentionally has
 no local `README.md` because every Markdown file there is publishable wiki source.
 
-Useful validation commands:
+Useful validation commands. Run them from the repository root; the last two invoke
+scripts that live in the `lotus-platform` checkout, so set `$LotusRoot` to the directory
+that contains your Lotus checkouts first. The expansion is quoted so a path containing a
+space still works.
 
 ```powershell
+$LotusRoot = "C:\src\lotus"   # the parent of lotus-manage and lotus-platform
+
 python -m pytest tests\unit\test_documentation_current_state.py -q
-python <lotus-platform>\codex\skills\lotus-readme-wiki-governance\scripts\audit_wiki_quality.py --wiki-dir wiki --changed-page <Page>.md
-powershell -NoProfile -ExecutionPolicy Bypass -File <lotus-platform>\automation\Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage
+
+python "$LotusRoot\lotus-platform\codex\skills\lotus-readme-wiki-governance\scripts\audit_wiki_quality.py" --wiki-dir wiki --changed-page Supported-Features.md
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "$LotusRoot\lotus-platform\automation\Sync-RepoWikis.ps1" -CheckOnly -Repository lotus-manage
 ```
+
+`--changed-page` takes the wiki page you actually changed; `Supported-Features.md` is an
+example, not a fixed argument.
 
 When the branch intentionally changes repo-local `wiki/` source, run the same wiki check with
 `-AllowUnpublishedSourceChanges` before merge, then publish after merge and rerun the strict
