@@ -104,6 +104,7 @@ def test_selected_alternative_service_replays_idempotent_existing_pack() -> None
         run_service=_RunService(),
         mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
     replay = proof_pack_service.generate_proof_pack_from_selected_alternative(
         alternative_set_id=alternative_set_id,
@@ -117,6 +118,7 @@ def test_selected_alternative_service_replays_idempotent_existing_pack() -> None
         run_service=_RunService(missing=True),
         mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
 
     assert replay == first
@@ -136,6 +138,7 @@ def test_run_service_replays_existing_pack_by_source_identity() -> None:
         run_service=_RunService(run=run),
         mandate_repository=None,
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
     replay = proof_pack_service.generate_proof_pack_from_run(
         rebalance_run_id=run.rebalance_run_id,
@@ -147,6 +150,7 @@ def test_run_service_replays_existing_pack_by_source_identity() -> None:
         run_service=_RunService(missing=True),
         mandate_repository=None,
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
 
     assert replay == first
@@ -168,6 +172,7 @@ def test_selected_alternative_service_replays_existing_pack_by_source_identity()
         run_service=_RunService(),
         mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
     replay = proof_pack_service.generate_proof_pack_from_selected_alternative(
         alternative_set_id=alternative_set_id,
@@ -181,6 +186,7 @@ def test_selected_alternative_service_replays_existing_pack_by_source_identity()
         run_service=_RunService(missing=True),
         mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
 
     assert replay == first
@@ -203,6 +209,7 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
             run_service=_RunService(),
             mandate_repository=None,
             proof_pack_repository=proof_repository,
+            tenant_id="tenant-test",
         )
     with pytest.raises(
         ProofPackSourceValidationError,
@@ -220,6 +227,7 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
             run_service=_RunService(),
             mandate_repository=None,
             proof_pack_repository=proof_repository,
+            tenant_id="tenant-test",
         )
 
     proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
@@ -234,6 +242,7 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
         run_service=_RunService(missing=True),
         mandate_repository=None,
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
 
     assert proof_pack.rebalance_run_id is None
@@ -261,6 +270,7 @@ def test_selected_alternative_service_attaches_portfolio_matched_mandate_evidenc
         run_service=_RunService(),
         mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
 
     mandate_section = next(
@@ -287,6 +297,7 @@ def test_selected_alternative_service_rejects_portfolio_mismatched_mandate_evide
         run_service=_RunService(),
         mandate_repository=_mismatched_mandate_repository(),
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
 
     mandate_section = next(
@@ -313,6 +324,7 @@ def test_selected_alternative_service_degrades_when_mandate_repository_has_no_sn
         run_service=_RunService(),
         mandate_repository=InMemoryDpmMandateRepository(),
         proof_pack_repository=proof_repository,
+        tenant_id="tenant-test",
     )
 
     mandate_section = next(

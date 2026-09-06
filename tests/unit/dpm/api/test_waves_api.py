@@ -4979,6 +4979,7 @@ def test_wave_preview_rejects_empty_source_owned_portfolio_set() -> None:
             correlation_id="corr-empty",
             portfolios=[],
             mandate_repository=InMemoryDpmMandateRepository(),
+            tenant_id="tenant-test",
         )
 
     assert exc_info.value.code == "AFFECTED_PORTFOLIO_SET_EMPTY"
@@ -6097,6 +6098,7 @@ def test_wave_services_translate_durable_write_conflicts_to_governed_errors() ->
             idempotency_key="idem-conflict-create",
             mandate_repository=mandate_repository,
             wave_repository=create_conflict_repository,
+            tenant_id="tenant-test",
         )
     assert create_exc.value.code == "WAVE_CREATE_CONFLICT"
 
@@ -6245,6 +6247,7 @@ def test_wave_selection_translates_durable_write_conflict_to_governed_error() ->
             mandate_repository=InMemoryDpmMandateRepository(),
             run_service=_run_service(),
             wave_repository=conflict_repository,
+            tenant_id="tenant-test",
         )
 
     assert exc.value.code == "DPM_WAVE_VERSION_CONFLICT"

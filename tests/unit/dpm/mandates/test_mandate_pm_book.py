@@ -13,7 +13,7 @@ class _Repository:
     def __init__(self, portfolio_to_mandate: dict[str, str]) -> None:
         self.portfolio_to_mandate = portfolio_to_mandate
 
-    def get_latest_mandate_by_portfolio(self, *, portfolio_id: str) -> object | None:
+    def get_latest_mandate_by_portfolio(self, *, portfolio_id: str, tenant_id: str) -> object | None:
         mandate_id = self.portfolio_to_mandate.get(portfolio_id)
         if mandate_id is None:
             return None
@@ -63,6 +63,7 @@ def test_mandate_ids_from_pm_book_membership_resolves_portfolio_members() -> Non
         membership=_membership(
             portfolio_ids=["PB_SG_GLOBAL_BAL_001", "PB_SG_INCOME_002"],
         ),
+        tenant_id="tenant-test",
     )
 
     assert mandate_ids == [
@@ -78,6 +79,7 @@ def test_mandate_ids_from_pm_book_membership_rejects_missing_snapshot() -> None:
             membership=_membership(
                 portfolio_ids=["PB_SG_GLOBAL_BAL_001", "PB_SG_MISSING_002"],
             ),
+            tenant_id="tenant-test",
         )
 
     assert str(exc_info.value) == "DPM_PM_BOOK_MANDATE_SNAPSHOT_MISSING"
@@ -88,6 +90,7 @@ def test_mandate_ids_from_pm_book_membership_rejects_empty_membership() -> None:
         mandate_ids_from_pm_book_membership(
             repository=_Repository({}),
             membership=_membership(portfolio_ids=[]),
+            tenant_id="tenant-test",
         )
 
     assert str(exc_info.value) == "DPM_PM_BOOK_MANDATE_SNAPSHOT_EMPTY"

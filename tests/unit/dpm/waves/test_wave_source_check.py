@@ -8,6 +8,7 @@ class _MandateRepository:
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return None
 
@@ -15,6 +16,7 @@ class _MandateRepository:
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return None
 
@@ -22,6 +24,7 @@ class _MandateRepository:
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> DpmMandateHealthSnapshot | None:
         return None
 
@@ -57,6 +60,7 @@ def test_build_source_checked_wave_classifies_items_and_records_rollup_evidence(
         actor_id="pm_001",
         correlation_id="corr_source_check",
         mandate_repository=_MandateRepository(),  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert checked.state == "SOURCE_CHECKED"

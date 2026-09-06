@@ -11,10 +11,10 @@ class _CapturingMandateRepository:
         self.saved_snapshots: list[object] = []
         self.saved_exceptions: list[object] = []
 
-    def save_mandate_snapshot(self, twin: object) -> None:
+    def save_mandate_snapshot(self, twin: object, *, tenant_id: str) -> None:
         self.saved_twins.append(twin)
 
-    def save_health_snapshot(self, snapshot: object) -> None:
+    def save_health_snapshot(self, snapshot: object, *, tenant_id: str) -> None:
         self.saved_snapshots.append(snapshot)
 
     def save_monitoring_exception(self, exception: object) -> None:
@@ -31,6 +31,7 @@ def test_persist_mandate_health_evidence_saves_optional_twin_snapshot_and_except
         twin=twin,
         health_snapshot=health_result.snapshot,
         monitoring_exceptions=health_result.monitoring_exceptions,
+        tenant_id="tenant-test",
     )
 
     assert repository.saved_twins == [twin]
@@ -47,6 +48,7 @@ def test_persist_mandate_health_evidence_supports_health_only_monitoring_results
         repository=repository,  # type: ignore[arg-type]
         health_snapshot=health_result.snapshot,
         monitoring_exceptions=health_result.monitoring_exceptions,
+        tenant_id="tenant-test",
     )
 
     assert repository.saved_twins == []

@@ -64,6 +64,7 @@ def _build(
         proof_pack_repository=object(),  # type: ignore[arg-type]
         mandate_repository=object(),  # type: ignore[arg-type]
         run_service=object(),  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
 

@@ -17,6 +17,7 @@ class _MandateRepository:
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         if self._twin is not None and self._twin.portfolio_id == portfolio_id:
             return self._twin
@@ -60,6 +61,7 @@ def test_build_wave_item_uses_source_refs_and_portfolio_diagnostics() -> None:
             "diagnostics": {"source_detail": "ready", 1: "ignored"},
         },
         mandate_repository=_MandateRepository(),
+        tenant_id="tenant-test",
     )
 
     assert re.fullmatch(r"dwi_003_[0-9a-f]{8}", item.wave_item_id)
@@ -79,6 +81,7 @@ def test_build_wave_item_adds_latest_mandate_source_ref() -> None:
         index=1,
         portfolio={"portfolio_id": "PB_SG_ITEM", "source_refs": []},
         mandate_repository=_MandateRepository(_twin()),
+        tenant_id="tenant-test",
     )
 
     assert item.mandate_id == "MANDATE_PB_SG_ITEM"
@@ -95,6 +98,7 @@ def test_build_wave_item_blocks_missing_source_evidence() -> None:
         index=2,
         portfolio={"portfolio_id": "PB_SG_BLOCKED"},
         mandate_repository=_MandateRepository(),
+        tenant_id="tenant-test",
     )
 
     assert item.state == "SOURCE_BLOCKED"
