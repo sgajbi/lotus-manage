@@ -13,7 +13,9 @@ class _Repository:
     def __init__(self, portfolio_to_mandate: dict[str, str]) -> None:
         self.portfolio_to_mandate = portfolio_to_mandate
 
-    def get_latest_mandate_by_portfolio(self, *, portfolio_id: str, tenant_id: str) -> object | None:
+    def get_latest_mandate_by_portfolio(
+        self, *, portfolio_id: str, tenant_id: str
+    ) -> object | None:
         mandate_id = self.portfolio_to_mandate.get(portfolio_id)
         if mandate_id is None:
             return None

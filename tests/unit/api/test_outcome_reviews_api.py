@@ -257,16 +257,16 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     assert "requestBody" in refresh
     assert "200" in refresh["responses"]
 
-    report = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input?tenant_id=tenant-test"][
-        "get"
-    ]
+    report = schema["paths"][
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input?tenant_id=tenant-test"
+    ]["get"]
     assert all(marker in report["description"] for marker in ["What:", "When:", "How:"])
     assert "DpmOutcomeClientCommunicationBoundaryEvidence" in schema["components"]["schemas"]
     report_schema = schema["components"]["schemas"]["DpmOutcomeReportInput"]
     assert "client_communication_boundary" in report_schema["properties"]
-    ai = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input?tenant_id=tenant-test"][
-        "get"
-    ]
+    ai = schema["paths"][
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input?tenant_id=tenant-test"
+    ]["get"]
     assert all(marker in ai["description"] for marker in ["What:", "When:", "How:"])
     ai_schema = schema["components"]["schemas"]["DpmOutcomeAiEvidenceInput"]
     assert "client_communication_boundary" in ai_schema["properties"]
@@ -603,8 +603,12 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
         ]
         assert client_boundary["content_hash"].startswith("sha256:")
 
-        report = client.get("/api/v1/rebalance/outcome-reviews/dor_001/report-input?tenant_id=tenant-test")
-        ai = client.get("/api/v1/rebalance/outcome-reviews/dor_001/ai-evidence-input?tenant_id=tenant-test")
+        report = client.get(
+            "/api/v1/rebalance/outcome-reviews/dor_001/report-input?tenant_id=tenant-test"
+        )
+        ai = client.get(
+            "/api/v1/rebalance/outcome-reviews/dor_001/ai-evidence-input?tenant_id=tenant-test"
+        )
 
         assert report.status_code == 200
         assert ai.status_code == 200

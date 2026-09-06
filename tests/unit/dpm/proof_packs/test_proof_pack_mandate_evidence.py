@@ -13,7 +13,9 @@ def _repository(*, mandate_id: str, portfolio_id: str) -> InMemoryDpmMandateRepo
         }
     )
     repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
-    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test")
+    repository.save_health_snapshot(
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test"
+    )
     return repository
 
 

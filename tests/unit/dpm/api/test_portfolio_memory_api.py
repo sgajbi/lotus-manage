@@ -2470,7 +2470,7 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
             mandate_repository=mandate_repository,
             portfolio_ids=[PORTFOLIO_ID],
             event_type="NOT_A_MEMORY_EVENT",
-        tenant_id=TENANT_ID,
+            tenant_id=TENANT_ID,
         )
     state_filtered = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,

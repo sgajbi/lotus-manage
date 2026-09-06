@@ -343,5 +343,5 @@ def test_build_portfolio_memory_from_sources_rejects_unsafe_event_limits(limit: 
                 mandate_repository=mandate_repository,
             ),
             limit=limit,
-        tenant_id=TENANT_ID,
+            tenant_id=TENANT_ID,
         )
