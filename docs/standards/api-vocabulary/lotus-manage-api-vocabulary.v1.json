@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-05T23:19:19.800694+00:00",
+  "generatedAt": "2026-09-06T00:39:40.052075+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2844,7 +2844,7 @@
       "type": "string",
       "locations": [
         "body",
-        "path"
+        "query"
       ],
       "observedTypes": [
         "string"
@@ -17951,7 +17951,7 @@
     {
       "name": "conversion_intent_id",
       "kind": "request_option",
-      "location": "path",
+      "location": "query",
       "required": true,
       "type": "string",
       "description": "Canonical conversion intent id used by lotus-manage APIs.",
@@ -52567,14 +52567,14 @@
     {
       "domain": "lotus_manage_run_supportability",
       "method": "GET",
-      "path": "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes",
-      "operationId": "get_idea_management_action_outcomes_by_conversion_intent_api_v1_rebalance_idea_action_intakes_by_conversion_intent__conversion_intent_id__outcomes_get",
+      "path": "/api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent",
+      "operationId": "get_idea_management_action_outcomes_by_conversion_intent_api_v1_rebalance_idea_action_intakes_outcomes_by_conversion_intent_get",
       "summary": "Get Manage-owned Outcome History by Idea Conversion Intent",
       "request": {
         "fields": [
           {
             "name": "conversion_intent_id",
-            "location": "path",
+            "location": "query",
             "required": true,
             "type": "string",
             "semanticId": "lotus.conversion_intent_id",

@@ -55,7 +55,7 @@ Current repository posture:
    `POST /api/v1/rebalance/idea-action-intake`. Accepted `REVIEW_FOR_REBALANCE` intents persist one
    scoped `PENDING_REVIEW` action plus append-only Manage-owned outcome history. Review decisions
    are fenced by `source_event_version`, and exact replays retain the same action identity. The
-   read-only `GET /api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes`
+   read-only `GET /api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent?conversion_intent_id={conversion_intent_id}&portfolio_id={portfolio_id}`
    route recovers current owner history by the exact trusted tenant, legal-entity, portfolio, and
    conversion-intent scope after an upstream response-loss window; it rejects portfolio scope
    before repository I/O and never repeats the intake command. This

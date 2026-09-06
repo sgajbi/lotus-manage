@@ -226,9 +226,7 @@ def test_conversion_intent_lookup_recovers_current_owner_history_without_mutatio
         service_identity="lotus-workbench",
         idempotency_key="unused-review",
     )
-    recovery_route = (
-        "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/conversion_intent_001/outcomes"
-    )
+    recovery_route = "/api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent"
 
     with TestClient(app) as client:
         intake = client.post(
@@ -247,12 +245,18 @@ def test_conversion_intent_lookup_recovers_current_owner_history_without_mutatio
         )
         recovered = client.get(
             recovery_route,
-            params={"portfolio_id": PORTFOLIO_ID},
+            params={
+                "conversion_intent_id": "conversion_intent_001",
+                "portfolio_id": PORTFOLIO_ID,
+            },
             headers=read_headers,
         )
         replayed = client.get(
             recovery_route,
-            params={"portfolio_id": PORTFOLIO_ID},
+            params={
+                "conversion_intent_id": "conversion_intent_001",
+                "portfolio_id": PORTFOLIO_ID,
+            },
             headers=read_headers,
         )
 
@@ -268,9 +272,7 @@ def test_conversion_intent_lookup_recovers_current_owner_history_without_mutatio
 
 
 def test_conversion_intent_lookup_denies_scope_and_masks_absence() -> None:
-    recovery_route = (
-        "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/conversion_intent_001/outcomes"
-    )
+    recovery_route = "/api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent"
     with TestClient(app) as client:
         client.post(
             "/api/v1/rebalance/idea-action-intake",
@@ -279,7 +281,10 @@ def test_conversion_intent_lookup_denies_scope_and_masks_absence() -> None:
         )
         forbidden = client.get(
             recovery_route,
-            params={"portfolio_id": PORTFOLIO_ID},
+            params={
+                "conversion_intent_id": "conversion_intent_001",
+                "portfolio_id": PORTFOLIO_ID,
+            },
             headers=_headers(
                 capabilities="manage.idea_action_intake.read",
                 portfolio_ids="PB_SG_OTHER_001",
@@ -287,8 +292,11 @@ def test_conversion_intent_lookup_denies_scope_and_masks_absence() -> None:
             ),
         )
         missing = client.get(
-            recovery_route.replace("conversion_intent_001", "conversion_intent_missing"),
-            params={"portfolio_id": PORTFOLIO_ID},
+            recovery_route,
+            params={
+                "conversion_intent_id": "conversion_intent_missing",
+                "portfolio_id": PORTFOLIO_ID,
+            },
             headers=_headers(
                 capabilities="manage.idea_action_intake.read",
                 idempotency_key="unused-read",
@@ -301,10 +309,10 @@ def test_conversion_intent_lookup_denies_scope_and_masks_absence() -> None:
     assert missing.json()["reasonCode"] == "IDEA_MANAGEMENT_ACTION_NOT_FOUND"
 
 
-def test_conversion_intent_lookup_normalizes_the_accepted_intake_identifiers() -> None:
+def test_conversion_intent_lookup_recovers_normalized_opaque_intake_identifiers() -> None:
     padded = _payload()
     padded["portfolio_id"] = f"  {PORTFOLIO_ID}  "
-    padded["conversion_intent_id"] = "  conversion_intent_padded  "
+    padded["conversion_intent_id"] = "  vendor/123  "
 
     with TestClient(app) as client:
         accepted = client.post(
@@ -313,11 +321,11 @@ def test_conversion_intent_lookup_normalizes_the_accepted_intake_identifiers() -
             headers=_headers(),
         )
         recovered = client.get(
-            (
-                "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
-                "%20%20conversion_intent_padded%20%20/outcomes"
-            ),
-            params={"portfolio_id": f"  {PORTFOLIO_ID}  "},
+            "/api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent",
+            params={
+                "conversion_intent_id": "  vendor/123  ",
+                "portfolio_id": f"  {PORTFOLIO_ID}  ",
+            },
             headers=_headers(
                 capabilities="manage.idea_action_intake.read",
                 idempotency_key="unused-read",
@@ -326,7 +334,7 @@ def test_conversion_intent_lookup_normalizes_the_accepted_intake_identifiers() -
 
     assert accepted.status_code == 202
     assert recovered.status_code == 200
-    assert recovered.json()["conversion_intent_id"] == "conversion_intent_padded"
+    assert recovered.json()["conversion_intent_id"] == "vendor/123"
     assert recovered.json()["portfolio_id"] == PORTFOLIO_ID
 
 
@@ -344,11 +352,11 @@ def test_conversion_intent_lookup_denies_scope_before_repository_initialization(
 
     with TestClient(app) as client:
         forbidden = client.get(
-            (
-                "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
-                "conversion_intent_001/outcomes"
-            ),
-            params={"portfolio_id": PORTFOLIO_ID},
+            "/api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent",
+            params={
+                "conversion_intent_id": "conversion_intent_001",
+                "portfolio_id": PORTFOLIO_ID,
+            },
             headers=_headers(
                 capabilities="manage.idea_action_intake.read",
                 portfolio_ids="PB_SG_OTHER_001",
@@ -469,7 +477,7 @@ def test_intake_openapi_documents_scope_and_owner_history_contracts() -> None:
     intake = openapi["paths"]["/api/v1/rebalance/idea-action-intake"]["post"]
     history_path = openapi["paths"]["/api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes"]
     recovery_path = openapi["paths"][
-        "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes"
+        "/api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent"
     ]
     assert intake["summary"] == ("Realize lotus-idea Conversion Intent as Management Review Work")
     assert "not rebalance approval or execution" in intake["description"]
@@ -633,9 +641,11 @@ def test_each_endpoint_fails_closed_when_persistence_vanishes_mid_operation(
             headers=_headers(capabilities="manage.idea_action_intake.read"),
         )
         recovery = client.get(
-            "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
-            "conversion-intent-x/outcomes",
-            params={"portfolio_id": PORTFOLIO_ID},
+            "/api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent",
+            params={
+                "conversion_intent_id": "conversion-intent-x",
+                "portfolio_id": PORTFOLIO_ID,
+            },
             headers=_headers(capabilities="manage.idea_action_intake.read"),
         )
         decision = client.post(

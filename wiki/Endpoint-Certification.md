@@ -775,7 +775,7 @@ Route:
 - `POST /api/v1/rebalance/idea-action-intake`
 - `GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes`
 - `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes`
-- `GET /api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes?portfolio_id={portfolio_id}`
+- `GET /api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent?conversion_intent_id={conversion_intent_id}&portfolio_id={portfolio_id}`
 
 Purpose:
 

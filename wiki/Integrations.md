@@ -153,7 +153,7 @@ Strategic downstream consumption should use:
     realization. Accepted rebalance-review intents create one durable scoped action. `GET` and
     `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes` expose and advance
     Manage-owned review history. `GET
-    /api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes?portfolio_id=...`
+    /api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent?conversion_intent_id=...&portfolio_id=...`
     provides exact, read-only recovery of current owner history after an upstream response-loss
     window; it cannot create or repeat management work. The surface remains not-certified:
     local/dev trusted headers are
