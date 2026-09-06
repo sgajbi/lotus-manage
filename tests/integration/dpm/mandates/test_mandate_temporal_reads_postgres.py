@@ -19,6 +19,7 @@ CI job that owns the database runs this file explicitly.
 from __future__ import annotations
 
 import os
+import random
 import uuid
 
 from tests.support.mandate_version_corpus import (
@@ -418,5 +419,52 @@ def test_postgres_orders_the_shared_corpus_exactly_as_the_memory_store_does(
         latest = repository.get_latest_mandate(mandate_id=mandate_id)
         assert latest is not None
         assert latest.mandate_version == EXPECTED_CORPUS_ORDER[0]
+    finally:
+        _clear(repository, mandate_id)
+
+
+def test_a_long_but_indexable_version_round_trips_and_orders(
+    repository: PostgresDpmMandateRepository,
+) -> None:
+    """The supported length range, measured rather than assumed.
+
+    The storage contract for mandate_version is unrestricted TEXT and the
+    ordering expression imposes no length bound, but the B-tree indexes do:
+    measured on PostgreSQL 17.6 with incompressible random digits, 2000 digits
+    are accepted and 2700 are refused with "index row size 2752 exceeds btree
+    version 4 maximum 2704". The refusing index is
+    idx_dpm_mandate_snapshots_portfolio_temporal from migration 0019, already
+    on main, so the ceiling is not introduced by the ordering index added for
+    this issue.
+
+    This pins the accepted end of that range: a version far longer than any
+    realistic binding version still stores, reads back byte-for-byte, and
+    orders by magnitude rather than by text. It deliberately uses random digits
+    because a repeated digit compresses and would prove a much larger number
+    that the contract does not actually promise.
+    """
+
+    mandate_id = f"MANDATE_LONG_{uuid.uuid4().hex[:8]}"
+    portfolio_id = f"PF_LONG_{uuid.uuid4().hex[:8]}"
+    rng = random.Random(20260906)
+    long_version = "".join(rng.choice("123456789") for _ in range(2000))
+    try:
+        repository.save_mandate_snapshot(
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=long_version)
+        )
+        repository.save_mandate_snapshot(
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="99999")
+        )
+
+        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        assert latest is not None
+        # A 2000-digit number is larger than a 5-digit one, and the read must
+        # say so rather than comparing the strings.
+        assert latest.mandate_version == long_version
+
+        listed = [
+            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+        ]
+        assert listed == [long_version, "99999"]
     finally:
         _clear(repository, mandate_id)
