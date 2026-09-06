@@ -541,15 +541,23 @@ def _overall_recommended_action(
 ) -> MandateRecommendedAction:
     if health_state == MandateHealthState.READY:
         return MandateRecommendedAction.NONE
-    # A source gap outranks other findings rather than taking its turn among
-    # them (issue #664). Reasons of equal severity keep dimension order, so a
-    # co-occurring ALLOCATION_DRIFT or PROJECTED_CASHFLOW_PRESSURE would
-    # otherwise decide the overall action and the snapshot would contradict
-    # itself: the individual reason says FIX_SOURCE_DATA while the headline
-    # says SIMULATE_REBALANCE. Simulation cannot produce a limit Core never
-    # supplied, so the missing limit has to be resolved first regardless of
-    # what else is wrong.
-    if any(reason.reason_code in _SOURCE_GAP_REASON_CODES for reason in reasons):
+    # A source gap outranks other findings of the same standing rather than
+    # taking its turn among them (issue #664). Reasons of equal severity keep
+    # dimension order, so a co-occurring ALLOCATION_DRIFT or
+    # PROJECTED_CASHFLOW_PRESSURE would otherwise decide the overall action and
+    # the snapshot would contradict itself: the individual reason says
+    # FIX_SOURCE_DATA while the headline says SIMULATE_REBALANCE, which cannot
+    # produce a limit Core never supplied.
+    #
+    # It does NOT outrank a blocking condition. A restricted instrument held in
+    # the portfolio is urgent and actionable now, while an unavailable limit is
+    # neither, so sending an operator to source-data remediation while the
+    # mandate is BLOCKED would bury the finding that actually needs them. The
+    # severity-sorted reason keeps the headline whenever the mandate is
+    # blocked.
+    if health_state != MandateHealthState.BLOCKED and any(
+        reason.reason_code in _SOURCE_GAP_REASON_CODES for reason in reasons
+    ):
         return MandateRecommendedAction.FIX_SOURCE_DATA
     if reasons:
         return reasons[0].recommended_action

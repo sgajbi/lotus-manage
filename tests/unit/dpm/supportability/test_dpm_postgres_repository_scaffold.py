@@ -69,21 +69,6 @@ class _FakeConnection:
             and " WHERE " in sql
         ):
             return _FakeCursor(None)
-        if "dpm_mandate_snapshots" in sql and (
-            (" jsonb_set(" in sql and " WHERE " in sql)
-            or "DELETE FROM dpm_monitoring_exceptions" in sql
-            or "DELETE FROM dpm_mandate_health_snapshots" in sql
-        ):
-            # Migration 0023 retires the fabricated mandate limits from
-            # already-persisted twins and the health evidence derived from
-            # them. This fake models the run repository and not those tables,
-            # so the statements are acknowledged here and proven for real in
-            # tests/integration/dpm/mandates/test_retire_fabricated_limits_postgres.py.
-            #
-            # Matched on content rather than a prefix because the migration
-            # opens with a comment block, which the statement splitter keeps
-            # attached to the first statement.
-            return _FakeCursor(None)
         if "FROM schema_migrations" in sql:
             namespace = args[0]
             rows = [
