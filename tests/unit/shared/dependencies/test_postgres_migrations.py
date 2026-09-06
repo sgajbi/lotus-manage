@@ -6,6 +6,7 @@ import src.infrastructure.postgres_migrations as migrations_module
 from src.infrastructure.postgres_migrations import (
     PostgresMigration,
     _migration_lock_key,
+    _split_sql_statements,
     apply_postgres_migrations,
 )
 
@@ -203,3 +204,58 @@ def test_apply_postgres_migrations_unlocks_when_rollback_raises(monkeypatch):
     assert connection.rollback_count == 1
     assert connection.lock_calls == [_migration_lock_key(namespace="dpm")]
     assert connection.unlock_calls == [_migration_lock_key(namespace="dpm")]
+
+
+def test_a_semicolon_inside_a_comment_does_not_end_the_statement() -> None:
+    """Comments are skipped whole rather than scanned for terminators.
+
+    Without this the migration runs a truncated statement and a fragment, and
+    the error names a position inside a comment - so the SQL looks broken where
+    it is merely being explained. Every migration that documents a non-obvious
+    expression is one semicolon away from this.
+    """
+
+    sql = """
+    CREATE INDEX idx_example
+        -- The planner cannot use this; the ordering differs.
+        ON example (a, b);
+    """
+
+    statements = [s.strip() for s in _split_sql_statements(sql) if s.strip()]
+
+    assert len(statements) == 1
+    assert statements[0].startswith("CREATE INDEX idx_example")
+    assert statements[0].endswith("ON example (a, b)")
+
+
+def test_a_semicolon_inside_a_block_comment_does_not_end_the_statement() -> None:
+    sql = "CREATE INDEX i /* nested /* still; a comment */ still */ ON t (a); SELECT 1;"
+
+    statements = [s.strip() for s in _split_sql_statements(sql) if s.strip()]
+
+    assert len(statements) == 2
+    assert statements[0].endswith("ON t (a)")
+    assert statements[1] == "SELECT 1"
+
+
+def test_a_semicolon_in_a_string_literal_still_does_not_split() -> None:
+    """The pre-existing quote handling must survive the comment handling."""
+
+    sql = "INSERT INTO t (v) VALUES ('a;b'); SELECT 1;"
+
+    statements = [s.strip() for s in _split_sql_statements(sql) if s.strip()]
+
+    assert len(statements) == 2
+    assert statements[0] == "INSERT INTO t (v) VALUES ('a;b')"
+
+
+def test_a_comment_marker_inside_a_string_literal_is_not_a_comment() -> None:
+    """'--' inside quotes is data, and must not swallow the rest of the line."""
+
+    sql = "INSERT INTO t (v) VALUES ('a--b'); SELECT 1;"
+
+    statements = [s.strip() for s in _split_sql_statements(sql) if s.strip()]
+
+    assert len(statements) == 2
+    assert statements[0] == "INSERT INTO t (v) VALUES ('a--b')"
+    assert statements[1] == "SELECT 1"

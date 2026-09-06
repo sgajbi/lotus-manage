@@ -22,24 +22,27 @@ _MANDATE_VERSION_NUMERIC = re.compile(r"^[0-9]+$")
 def _mandate_version_sort_key(version: str) -> tuple[int, int, str, str]:
     """Deterministic ordering for a TEXT mandate version (issue #646).
 
-    Reproduces the PostgreSQL ordering expression element for element:
+    Runs the same algorithm as _MANDATE_VERSION_ORDER in the PostgreSQL
+    repository, element for element: numeric-or-not, then significant-digit
+    length, then the digits, then the raw text.
 
-        CASE WHEN mandate_version ~ '^[0-9]+$'
-             THEN mandate_version::numeric ELSE NULL END DESC NULLS LAST,
-        mandate_version DESC
+    Both sides order digit strings by length-then-lexical rather than by
+    converting to a number, because every conversion is bounded and the
+    storage contract for mandate_version is unrestricted TEXT. int() raises
+    ValueError above sys.get_int_max_str_digits(); NUMERIC overflows past
+    131,072 digits, which would also fail the CREATE INDEX in migration 0022
+    and so block startup. Comparing stripped-digit length and then the digits
+    is exact at any length, needs no runtime safeguard relaxed, and lets the
+    two stores share one algorithm instead of two that merely agree in range.
 
-    ASCII digits compare numerically and anything else sorts last. The grammar
-    is a regex rather than str.isdigit(), which accepts Unicode digits such as
-    Arabic-Indic numerals that PostgreSQL's [0-9] class rejects; the two stores
-    would otherwise disagree about which versions are numeric and therefore
-    about which mandate is current.
-
-    Numeric comparison runs on the digits rather than through int(), because
-    int() is not unbounded: str-to-int conversion raises ValueError above
-    sys.get_int_max_str_digits(), 4300 by default, while NUMERIC accepts far
-    longer values. A version PostgreSQL orders without complaint would crash
-    this store. Stripping leading zeros and comparing length before digits is
-    exact at any length and relaxes no runtime safeguard to get there.
+    The grammar is fullmatch rather than match: Python's '$' also matches
+    immediately before a trailing newline, so re.match would accept '9\\n' as
+    numeric and, with the newline counted in its length, order it above '10'.
+    PostgreSQL's '~' anchors at the true end of the string and rejects that
+    value, so the two stores would pick different latest snapshots. The
+    grammar is a regex rather than str.isdigit() for the same class of reason:
+    isdigit() accepts Unicode digits such as Arabic-Indic numerals that
+    PostgreSQL's [0-9] rejects.
 
     The raw text is the final element because SQL tie-breaks on
     mandate_version DESC. Without it '01' and '1' compare equal here while SQL
@@ -47,7 +50,7 @@ def _mandate_version_sort_key(version: str) -> tuple[int, int, str, str]:
     equal-valued versions is current.
     """
 
-    if _MANDATE_VERSION_NUMERIC.match(version):
+    if _MANDATE_VERSION_NUMERIC.fullmatch(version):
         digits = version.lstrip("0") or "0"
         return (1, len(digits), digits, version)
     return (0, 0, "", version)

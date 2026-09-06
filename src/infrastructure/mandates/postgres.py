@@ -27,23 +27,37 @@ class _MonitoringExceptionListQuery:
 # Issue #646: mandate_version is a TEXT column holding an integer rendered by
 # str(binding_version), so ordering by it directly is lexicographic - "9"
 # sorts above "10" and every read after version 9 resolves to the wrong row.
-# Compare numerically, and keep the column's own order as the tie-break for
-# any value that is not a plain integer so a malformed row can never abort the
-# query. The matching expression index lives in migration 0022.
+# Order digit-only versions by magnitude, keeping the column's own order as the
+# tie-break so a malformed row can never abort the query. The matching
+# expression index lives in migration 0022 and must stay identical to this.
+#
 # The storage contract for mandate_version is unrestricted TEXT, so any digit
-# string is a legitimate value and the ordering must be correct for all of
-# them. Cast to NUMERIC rather than BIGINT: numeric is arbitrary precision, so
-# a 20-digit version orders as the large number it is instead of overflowing
-# (bigint) or being demoted to the non-numeric tail (a length-bounded guard).
-# The regex still excludes non-digit text, which sorts last by its own value.
-# The in-memory store applies the identical grammar over Python ints, which
-# are also unbounded, so the two backends cannot disagree.
+# string is a legitimate value. That rules out casting: BIGINT overflows past
+# 19 digits with 22003, and NUMERIC, while far wider, still overflows past
+# 131,072 digits - and because migration 0022 indexes this expression, such a
+# row would fail CREATE INDEX and block startup rather than just one read.
+#
+# Comparing significant-digit length and then the digits themselves is exact at
+# any length with no cast at all. Leading zeros are stripped first so '007' and
+# '7' reach the same magnitude, with all-zero versions folding to '0'; the raw
+# column then separates them, which is what makes '1' sort above '01'.
+#
+# COLLATE "C" forces byte order. Without it the comparison follows the
+# database's collation, which need not order digits by code point, and the
+# in-memory store - which compares Python strings, always by code point - would
+# disagree. The two stores run this same algorithm, so they agree by
+# construction rather than by happening to overlap in range.
 _MANDATE_VERSION_NUMERIC_PATTERN = "^[0-9]+$"
+
+# Mirrors Python's version.lstrip("0") or "0".
+_MANDATE_VERSION_DIGITS = "COALESCE(NULLIF(ltrim(mandate_version, '0'), ''), '0')"
 
 _MANDATE_VERSION_ORDER = (
     f"CASE WHEN mandate_version ~ '{_MANDATE_VERSION_NUMERIC_PATTERN}' "
-    "THEN mandate_version::numeric ELSE NULL END DESC NULLS LAST, "
-    "mandate_version DESC"
+    f"THEN length({_MANDATE_VERSION_DIGITS}) ELSE NULL END DESC NULLS LAST, "
+    f"CASE WHEN mandate_version ~ '{_MANDATE_VERSION_NUMERIC_PATTERN}' "
+    f'THEN {_MANDATE_VERSION_DIGITS} ELSE NULL END COLLATE "C" DESC NULLS LAST, '
+    'mandate_version COLLATE "C" DESC'
 )
 
 

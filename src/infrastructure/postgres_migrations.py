@@ -174,12 +174,55 @@ def _split_sql_statements(sql: str) -> list[str]:
                 dollar_tag = tag
                 index += len(tag)
                 continue
+        # Comments are skipped whole. Without this a semicolon inside a comment
+        # ends the statement, and the migration silently runs a truncated
+        # fragment plus a nonsense one - the failure looks like invalid SQL
+        # somewhere in the middle of a comment, which is a confusing place to
+        # start debugging. Explaining a statement is exactly when a semicolon
+        # gets written.
+        if sql.startswith("--", index):
+            index = _advance_line_comment_sql(sql=sql, index=index)
+            continue
+        if sql.startswith("/*", index):
+            index = _advance_block_comment_sql(sql=sql, index=index)
+            continue
         if char == ";":
             statements.append(sql[start:index])
             start = index + 1
         index += 1
     statements.append(sql[start:])
     return statements
+
+
+def _advance_line_comment_sql(*, sql: str, index: int) -> int:
+    """Return the index just past a ``--`` comment, which ends at the newline."""
+
+    newline = sql.find("\n", index)
+    return len(sql) if newline == -1 else newline + 1
+
+
+def _advance_block_comment_sql(*, sql: str, index: int) -> int:
+    """Return the index just past a ``/* */`` comment.
+
+    PostgreSQL nests block comments, so the depth is tracked rather than
+    stopping at the first ``*/``. An unterminated comment consumes the rest of
+    the input, which is what PostgreSQL would also reject.
+    """
+
+    depth = 0
+    while index < len(sql):
+        if sql.startswith("/*", index):
+            depth += 1
+            index += 2
+            continue
+        if sql.startswith("*/", index):
+            depth -= 1
+            index += 2
+            if depth == 0:
+                return index
+            continue
+        index += 1
+    return index
 
 
 def _advance_dollar_quoted_sql(
