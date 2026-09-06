@@ -1027,6 +1027,68 @@ def test_ready_mandate_has_all_ready_dimensions_and_no_recommended_action() -> N
     assert {score.dimension for score in snapshot.dimension_scores} == set(MandateHealthDimension)
 
 
+def test_unsourced_contractual_limits_keep_health_out_of_ready() -> None:
+    """Issue #664/#671: every other input is ready, but the mandate cash band
+    and turnover budget were never sourced.
+
+    Removing the invented limits was only half the fix. If the absence does
+    not reach the assessment, an unknown contractual limit still reports
+    100/READY - which is worse than the fabricated number, because the number
+    was at least visible as a number while a confident READY reads as
+    knowledge. This pins the uncertainty surviving all the way out.
+    """
+
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            twin=_twin(
+                constraints=DpmMandateConstraintSet(
+                    # Both contractual limits absent; everything else unchanged
+                    # from the fully-ready fixture.
+                    max_tracking_error=Decimal("0.05"),
+                ),
+                field_gap_codes=[
+                    "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+                    "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
+                ],
+            )
+        )
+    )
+
+    # 1. The two dimensions that exist to check those limits report that they
+    #    could not, rather than reporting health.
+    cash = _dimension(snapshot, MandateHealthDimension.CASH_LIQUIDITY)
+    assert cash.state == MandateHealthState.PENDING_REVIEW
+    assert cash.reason_code == "CASH_BAND_NOT_SOURCED"
+    assert cash.score < 100
+    assert cash.threshold_value is None
+
+    turnover = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+    assert turnover.state == MandateHealthState.PENDING_REVIEW
+    assert turnover.reason_code == "TURNOVER_BUDGET_NOT_SOURCED"
+    assert turnover.score < 100
+
+    # 2. Overall posture carries it: not READY, and not a perfect score.
+    assert snapshot.health_state == MandateHealthState.PENDING_REVIEW
+    assert snapshot.health_score < 100
+
+    # 3. The reasons an operator actually reads name both gaps.
+    surfaced = {reason.reason_code for reason in snapshot.top_reasons}
+    assert "CASH_BAND_NOT_SOURCED" in surfaced
+    assert "TURNOVER_BUDGET_NOT_SOURCED" in surfaced
+
+    # 4. Every other dimension is still READY, so this proves the two
+    #    unsourced limits are what moved the assessment - not a broken fixture.
+    unaffected = {
+        score.dimension
+        for score in snapshot.dimension_scores
+        if score.state == MandateHealthState.READY
+    }
+    assert MandateHealthDimension.CASH_LIQUIDITY not in unaffected
+    assert MandateHealthDimension.TAX_TURNOVER not in unaffected
+    assert MandateHealthDimension.ALLOCATION_DRIFT in unaffected
+    assert MandateHealthDimension.SOURCE_READINESS in unaffected
+
+
 def test_mandate_constraints_reject_invalid_ratio_and_cash_band() -> None:
     with pytest.raises(ValueError, match="cash_band_min_weight"):
         DpmMandateConstraintSet(cash_band_min_weight=Decimal("2"))
