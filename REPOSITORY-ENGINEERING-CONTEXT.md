@@ -1204,6 +1204,20 @@ Most relevant current governance:
     silently reused as the canonical content hash when Core returns a valid no-batch response. Manage
     must fail closed on missing, blank, malformed, or conflicting content identity before publishing
     Core-sourced bulk-review campaign membership as READY.
+16. `mandate_version` is TEXT holding `str(binding_version)`, and the in-memory and PostgreSQL
+    mandate stores must order it identically, because both answer "which version is current" and a
+    disagreement resolves the same data to different twins depending on configuration. The contract
+    is: digit-only versions compare by significant-digit length then by the digits, non-digit
+    versions sort last, and the raw column breaks ties so `'1'` precedes `'01'`. Three specific
+    traps are worth knowing before touching it. Do not compare through a numeric conversion:
+    `int()` raises above `sys.get_int_max_str_digits()` (4300 by default) and `NUMERIC` overflows
+    past 131,072 digits, so a version one store accepts can abort the other. Use `re.fullmatch`
+    rather than `re.match`, because Python's `$` also matches before a trailing newline while
+    PostgreSQL's `~` does not, so `'9\n'` is numeric on one side only. Keep `COLLATE "C"` on the SQL
+    comparisons so byte order matches Python's code-point order under any database collation. A
+    shared adversarial corpus in `tests/support/mandate_version_corpus.py` is asserted by both the
+    unit suite and the database lane so a divergence fails on one side rather than passing quietly
+    on both.
 
 ## Context Maintenance Rule
 
