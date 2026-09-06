@@ -302,8 +302,8 @@ Initial default weights:
 | `SOURCE_READINESS` | 15 | Core data availability, freshness, coverage, and lineage readiness. |
 | `ALLOCATION_DRIFT` | 18 | Distance from model or permitted mandate bands. |
 | `RISK_DRIFT` | 12 | Risk profile, tracking error, concentration, drawdown/stress posture. |
-| `CASH_LIQUIDITY` | 10 | Cash band, known liquidity needs, overdraft risk, settlement readiness. |
-| `TAX_TURNOVER` | 10 | Tax budget and turnover budget usage. |
+| `CASH_LIQUIDITY` | 10 | Cash band, known liquidity needs, overdraft risk, settlement readiness. An unsourced mandate cash band yields `CASH_BAND_NOT_SOURCED` at PENDING_REVIEW rather than a READY score. |
+| `TAX_TURNOVER` | 10 | Tax budget and turnover budget usage. An unsourced turnover budget yields `TURNOVER_BUDGET_NOT_SOURCED` at PENDING_REVIEW rather than a READY score. |
 | `ELIGIBILITY_RESTRICTIONS` | 10 | Product shelf, restricted instruments, client exclusions, ESG constraints. |
 | `PERFORMANCE_ATTENTION` | 8 | Underperformance, attribution flags, benchmark-relative concerns. |
 | `WORKFLOW_READINESS` | 7 | Approval, stale workflow, pending decision, operation blockage. |

@@ -36,8 +36,13 @@ def _twin(*, lineage_record_id: str | None = "core-binding-001") -> DpmMandateDi
         time_horizon="LONG_TERM",
         model_portfolio_id="MODEL_PB_SG_GLOBAL_BAL_DPM",
         constraints=DpmMandateConstraintSet(
+            # A fully sourced twin: both contractual limits stated, so these
+            # cases exercise SOURCE readiness rather than the unsourced-limit
+            # rule (issue #664). A twin missing either limit is PENDING_REVIEW
+            # by design, which is covered in the mandate-health tests.
             cash_band_min_weight=Decimal("0.02"),
             cash_band_max_weight=Decimal("0.10"),
+            turnover_budget=Decimal("0.15"),
         ),
         review_policy=DpmMandateReviewPolicy(next_review_due_date=date(2026, 6, 30)),
         source_lineage=[

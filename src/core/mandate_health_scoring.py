@@ -310,6 +310,17 @@ def _score_cash_liquidity(input_: DpmMandateHealthInput) -> DpmMandateDimensionS
             measured_value=input_.projected_net_cashflow,
             threshold_value=0,
         )
+    if constraints.cash_band_min_weight is None or constraints.cash_band_max_weight is None:
+        # No breach fired, but the mandate cash band this dimension exists
+        # to check was never sourced (issue #664). Unknown is not READY.
+        return _attention_score(
+            dimension=MandateHealthDimension.CASH_LIQUIDITY,
+            score=70,
+            state=MandateHealthState.PENDING_REVIEW,
+            reason_code="CASH_BAND_NOT_SOURCED",
+            measured_value=input_.cash_weight,
+            threshold_value=None,
+        )
     return _ready_score(MandateHealthDimension.CASH_LIQUIDITY)
 
 
@@ -335,6 +346,16 @@ def _score_tax_turnover(input_: DpmMandateHealthInput) -> DpmMandateDimensionSco
             reason_code="TURNOVER_BUDGET_NEAR_LIMIT",
             measured_value=input_.turnover_budget_used,
             threshold_value=input_.twin.constraints.turnover_budget,
+        )
+    if input_.twin.constraints.turnover_budget is None:
+        # Same rule for the turnover budget: unassessable is not healthy.
+        return _attention_score(
+            dimension=MandateHealthDimension.TAX_TURNOVER,
+            score=70,
+            state=MandateHealthState.PENDING_REVIEW,
+            reason_code="TURNOVER_BUDGET_NOT_SOURCED",
+            measured_value=input_.turnover_budget_used,
+            threshold_value=None,
         )
     return _ready_score(MandateHealthDimension.TAX_TURNOVER)
 
