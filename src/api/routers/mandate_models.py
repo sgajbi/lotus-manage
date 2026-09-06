@@ -28,14 +28,15 @@ MANDATE_RESPONSE_EXAMPLE: dict[str, Any] = {
     "model_portfolio_version": "2026.04",
     "benchmark_id": None,
     "constraints": {
-        "cash_band_min_weight": "0.0200000000",
-        "cash_band_max_weight": "0.10",
+        "cash_band_min_weight": None,
+        "cash_band_max_weight": None,
+        "cash_reserve_weight": "0.0200000000",
         "single_position_max_weight": None,
         "issuer_max_weight": None,
         "sector_max_weight": None,
         "region_max_weight": None,
         "currency_max_weight": None,
-        "turnover_budget": "0.15",
+        "turnover_budget": None,
         "tax_budget_base": None,
         "max_tracking_error": None,
         "max_active_share": None,
@@ -81,6 +82,8 @@ MANDATE_RESPONSE_EXAMPLE: dict[str, Any] = {
         "CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED",
         "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED",
         "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED",
+        "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+        "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
     ],
 }
 

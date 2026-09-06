@@ -493,7 +493,13 @@ def test_compile_mandate_twin_uses_core_source_truth_and_explicit_gap_codes() ->
     assert twin.investment_objective == (
         "Preserve and grow global balanced wealth within controlled drawdown limits."
     )
-    assert twin.constraints.cash_band_min_weight == Decimal("0.0200000000")
+    # Issue #664: the twin states no cash band; the rebalance reserve
+    # survives under its own field.
+    assert twin.constraints.cash_band_min_weight is None
+    assert twin.constraints.cash_band_max_weight is None
+    assert twin.constraints.cash_reserve_weight == Decimal("0.0200000000")
+    assert "MANDATE_CASH_BAND_NOT_YET_SOURCED" in twin.field_gap_codes
+    assert "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED" in twin.field_gap_codes
     assert twin.review_policy.review_frequency == "QUARTERLY"
     assert twin.review_policy.last_review_date == date(2026, 3, 31)
     assert twin.review_policy.next_review_due_date == date(2026, 6, 30)
@@ -544,6 +550,8 @@ def test_mandate_twin_field_gap_codes_project_missing_core_products() -> None:
         "PLANNED_WITHDRAWAL_SCHEDULE_NOT_YET_SOURCED",
         "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED",
         "MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED",
+        "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+        "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
         "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED",
         "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED",
         "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED",
@@ -608,23 +616,28 @@ def test_mandate_optional_source_product_gap_codes_project_missing_products() ->
     )
 
 
-def test_mandate_twin_field_gap_codes_clear_when_core_products_are_sourced() -> None:
-    assert (
-        _mandate_twin_field_gap_codes(
-            mandate=_mandate_binding(),
-            client_restriction_profile=_client_restriction_profile(),
-            sustainability_preference_profile=_sustainability_preference_profile(),
-            portfolio_cashflow_projection=_portfolio_cashflow_projection(),
-            client_income_needs_schedule=_client_income_needs_schedule(),
-            liquidity_reserve_requirement=_liquidity_reserve_requirement(),
-            planned_withdrawal_schedule=_planned_withdrawal_schedule(),
-            benchmark_assignment=_benchmark_assignment(),
-        )
-        == []
-    )
+def test_mandate_twin_gap_codes_retain_the_constraints_no_source_supplies() -> None:
+    """Sourcing every available Core product still leaves the mandate cash
+    band and turnover budget unsourced, because no product carries them
+    (issue #664). That residue is the point: it is what stops a consumer
+    reading an empty gap list as "all limits known"."""
+
+    assert _mandate_twin_field_gap_codes(
+        mandate=_mandate_binding(),
+        client_restriction_profile=_client_restriction_profile(),
+        sustainability_preference_profile=_sustainability_preference_profile(),
+        portfolio_cashflow_projection=_portfolio_cashflow_projection(),
+        client_income_needs_schedule=_client_income_needs_schedule(),
+        liquidity_reserve_requirement=_liquidity_reserve_requirement(),
+        planned_withdrawal_schedule=_planned_withdrawal_schedule(),
+        benchmark_assignment=_benchmark_assignment(),
+    ) == [
+        "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+        "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
+    ]
 
 
-def test_mandate_twin_constraint_set_projects_cash_band_and_active_restrictions() -> None:
+def test_mandate_twin_constraint_set_publishes_no_invented_band_or_turnover() -> None:
     constraints = _mandate_twin_constraint_set(
         mandate=_mandate_binding(
             rebalance_bands={
@@ -669,9 +682,15 @@ def test_mandate_twin_constraint_set_projects_cash_band_and_active_restrictions(
         ),
     )
 
-    assert constraints.cash_band_min_weight == Decimal("0.1200000000")
-    assert constraints.cash_band_max_weight == Decimal("0.1200000000")
-    assert constraints.turnover_budget == Decimal("0.15")
+    # Issue #664: Manage publishes no mandate cash band and no turnover
+    # budget, because no source states either. Absent is the honest value;
+    # a plausible number under Core lineage is what this pins against.
+    assert constraints.cash_band_min_weight is None
+    assert constraints.cash_band_max_weight is None
+    assert constraints.turnover_budget is None
+    # The rebalance cash RESERVE is real and survives under its own name,
+    # never reinterpreted as a band boundary.
+    assert constraints.cash_reserve_weight == Decimal("0.1200000000")
     assert constraints.restricted_instruments == ["EQ_US_AAPL", "EQ_US_MSFT"]
 
 
