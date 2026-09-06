@@ -69,6 +69,17 @@ class _FakeConnection:
             and " WHERE " in sql
         ):
             return _FakeCursor(None)
+        if (
+            sql.startswith("UPDATE dpm_mandate_snapshots")
+            and " jsonb_set(" in sql
+            and " WHERE " in sql
+        ):
+            # Migration 0023 retires the fabricated mandate limits from
+            # already-persisted twins. This fake models the run repository and
+            # not dpm_mandate_snapshots, so the statement is acknowledged here
+            # and proven for real in
+            # tests/integration/dpm/mandates/test_retire_fabricated_limits_postgres.py.
+            return _FakeCursor(None)
         if "FROM schema_migrations" in sql:
             namespace = args[0]
             rows = [

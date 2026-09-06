@@ -216,23 +216,24 @@ Required fields:
 
 Fields:
 
-1. `cash_band_min_weight`
-2. `cash_band_max_weight`
-3. `single_position_max_weight`
-4. `issuer_max_weight`
-5. `sector_max_weight`
-6. `region_max_weight`
-7. `currency_max_weight`
-8. `turnover_budget`
-9. `tax_budget_base`
-10. `max_tracking_error`
-11. `max_active_share`
-12. `minimum_trade_notional`
-13. `allowed_product_types`
-14. `restricted_instruments`
-15. `restricted_issuers`
-16. `restricted_sectors`
-17. `sustainability_exclusions`
+1. `cash_band_min_weight` (nullable; a contractual limit Core does not yet supply, reported as `MANDATE_CASH_BAND_NOT_YET_SOURCED`)
+2. `cash_band_max_weight` (nullable, same source gap)
+3. `cash_reserve_weight` (nullable; the source-owned rebalance cash reserve, an operating floor for rebalancing and never a mandate band boundary)
+4. `single_position_max_weight`
+5. `issuer_max_weight`
+6. `sector_max_weight`
+7. `region_max_weight`
+8. `currency_max_weight`
+9. `turnover_budget` (nullable; a contractual limit Core does not yet supply, reported as `MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED`)
+10. `tax_budget_base`
+11. `max_tracking_error`
+12. `max_active_share`
+13. `minimum_trade_notional`
+14. `allowed_product_types`
+15. `restricted_instruments`
+16. `restricted_issuers`
+17. `restricted_sectors`
+18. `sustainability_exclusions`
 
 ### 5.3 DpmMandateHealthSnapshot
 
