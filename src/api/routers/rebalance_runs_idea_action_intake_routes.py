@@ -188,10 +188,16 @@ def get_idea_management_action_outcomes_by_conversion_intent(
     conversion_intent_id: Annotated[str, Path(min_length=1, max_length=160)],
     portfolio_id: Annotated[str, Query(min_length=1, max_length=160)],
     principal: IdeaActionIntakePrincipal = Depends(require_idea_action_read_principal),
-    service: IdeaManagementActionService = Depends(_service),
 ) -> IdeaManagementActionOutcomeHistoryResponse:
     shared._assert_support_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params={"portfolio_id"})
+    if not principal.can_access_portfolio(portfolio_id):
+        raise idea_action_problem(
+            status_code=403,
+            reason_code="IDEA_ACTION_INTAKE_PORTFOLIO_SCOPE_FORBIDDEN",
+            detail="Trusted principal is not entitled to the requested portfolio.",
+        )
+    service = _service()
     try:
         return service.get_outcome_history_by_conversion_intent(
             portfolio_id=portfolio_id,

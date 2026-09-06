@@ -301,6 +301,36 @@ def test_conversion_intent_lookup_denies_scope_and_masks_absence() -> None:
     assert missing.json()["reasonCode"] == "IDEA_MANAGEMENT_ACTION_NOT_FOUND"
 
 
+def test_conversion_intent_lookup_denies_scope_before_repository_initialization(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_if_repository_is_resolved():
+        raise AssertionError("out-of-scope recovery must not initialize persistence")
+
+    monkeypatch.setattr(
+        idea_action_routes,
+        "get_idea_management_action_repository",
+        fail_if_repository_is_resolved,
+    )
+
+    with TestClient(app) as client:
+        forbidden = client.get(
+            (
+                "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
+                "conversion_intent_001/outcomes"
+            ),
+            params={"portfolio_id": PORTFOLIO_ID},
+            headers=_headers(
+                capabilities="manage.idea_action_intake.read",
+                portfolio_ids="PB_SG_OTHER_001",
+                idempotency_key="unused-read",
+            ),
+        )
+
+    assert forbidden.status_code == 403
+    assert forbidden.json()["reasonCode"] == "IDEA_ACTION_INTAKE_PORTFOLIO_SCOPE_FORBIDDEN"
+
+
 def test_concurrent_review_decision_rejects_stale_source_event_version() -> None:
     with TestClient(app) as client:
         intake = client.post(
