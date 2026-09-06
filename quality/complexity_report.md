@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-09-06T13:25:57+00:00`
+- Generated at: `2026-09-06T15:09:25+00:00`
 
 - Baseline source snapshot: `54c0f5e08bf801ee3c31707ddb2ce784648d122e`
 
-- Report source snapshot: `0672d153`
+- Report source snapshot: `212789e8+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -37,9 +37,9 @@
 | 1 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
 | 2 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
 | 3 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
-| 4 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
-| 5 | _campaign_workflow_labels_for_http_exception | src/api/routers/wave_campaign_workflow_telemetry.py | 11 | 21 |
-| 6 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 10 | 42 |
+| 4 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
+| 5 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
+| 6 | _campaign_workflow_labels_for_http_exception | src/api/routers/wave_campaign_workflow_telemetry.py | 11 | 21 |
 | 7 | list_definitions_by_workflow_projection | src/infrastructure/waves/campaign_definitions.py | 9 | 64 |
 | 8 | _workflow_projection_matches | src/infrastructure/waves/campaign_definitions.py | 9 | 38 |
 | 9 | _validate_postgres_review_action_parent | src/infrastructure/pm_quality/postgres.py | 9 | 36 |
