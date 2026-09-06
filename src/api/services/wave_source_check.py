@@ -11,12 +11,14 @@ def build_source_checked_wave(
     actor_id: str,
     correlation_id: str,
     mandate_repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> DpmRebalanceWave:
     classified_items = [
         classify_item_source_readiness(
             item=item,
             wave_as_of_date=wave.as_of_date,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         )
         for item in wave.items
     ]

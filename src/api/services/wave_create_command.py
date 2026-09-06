@@ -19,6 +19,7 @@ def create_persisted_wave(
     correlation_id: str,
     portfolios: list[dict[str, object]],
     idempotency_key: str,
+    tenant_id: str,
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
@@ -35,6 +36,7 @@ def create_persisted_wave(
         return existing, True
 
     preview = build_preview_wave(
+        tenant_id=tenant_id,
         trigger_type=trigger_type,
         trigger_id=trigger_id,
         rationale=rationale,

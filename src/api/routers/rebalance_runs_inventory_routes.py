@@ -4,6 +4,7 @@ from typing import Annotated, Optional, cast
 
 from fastapi import Query, Request, status
 
+from src.api.routers.mandate_tenant_query import require_mandate_tenant
 from src.api.observability import (
     ACTION_REGISTER_SUPPORTABILITY_SURFACE,
     record_action_register_supportability,
@@ -167,17 +168,30 @@ def get_dpm_supportability_summary(
             examples=["PB_SG_GLOBAL_BAL_001"],
         ),
     ] = None,
+    tenant_id: Annotated[
+        Optional[str],
+        Query(
+            description=(
+                "Tenant whose preserved mandate-health source-ref evidence is summarised. "
+                "Required whenever `portfolio_id` is supplied, because that evidence is stored "
+                "per tenant; omitting it there is refused rather than answered from an assumed "
+                "tenant."
+            ),
+            examples=["default"],
+        ),
+    ] = None,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmSupportabilitySummaryResponse:
     shared._assert_support_apis_enabled()
     shared._assert_supportability_summary_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params={"portfolio_id"})
+    shared._reject_unexpected_query_params(request, allowed_params={"portfolio_id", "tenant_id"})
     now = datetime.now().astimezone()
     source_refs = (
         source_refs_for_portfolio_mandate_health(
             repository=_mandate_repository_for_request(request),
             portfolio_id=portfolio_id,
             now=now,
+            tenant_id=require_mandate_tenant(tenant_id),
         )
         if portfolio_id is not None
         else []

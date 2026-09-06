@@ -753,6 +753,7 @@ class DpmWaveCampaignApplicationService:
             requested_as_of_date=wave_request.as_of_date,
         )
         wave, replay = wave_service.create_wave(
+            tenant_id=command.tenant_id,
             trigger_type=wave_request.trigger_type,
             trigger_id=wave_request.trigger_id,
             rationale=wave_request.rationale,

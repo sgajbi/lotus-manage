@@ -21,9 +21,13 @@ class DpmMonitoringRunOnceRequest(BaseModel):
         description="Business date used to evaluate mandate health.",
         examples=["2026-05-03"],
     )
-    tenant_id: Optional[str] = Field(
-        default=None,
-        description="Optional tenant context captured for audit and later Gateway orchestration.",
+    tenant_id: str = Field(
+        min_length=1,
+        description=(
+            "Tenant whose mandates are monitored. Required: the run reads mandate twins and "
+            "persists health evidence under this tenant, so it selects scope rather than only "
+            "annotating the audit record."
+        ),
         examples=["default"],
     )
     portfolio_manager_id: Optional[str] = Field(

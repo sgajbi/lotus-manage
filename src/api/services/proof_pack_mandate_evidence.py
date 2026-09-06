@@ -18,10 +18,11 @@ def resolve_mandate_evidence(
     mandate_id: str | None,
     portfolio_id: str,
     mandate_repository: DpmMandateRepository | None,
+    tenant_id: str,
 ) -> ProofPackMandateEvidence:
     if mandate_id is None or mandate_repository is None:
         return ProofPackMandateEvidence(twin=None, health=None, gap_codes=[])
-    twin = mandate_repository.get_latest_mandate(mandate_id=mandate_id)
+    twin = mandate_repository.get_latest_mandate(mandate_id=mandate_id, tenant_id=tenant_id)
     if twin is None:
         return ProofPackMandateEvidence(twin=None, health=None, gap_codes=[])
     if twin.portfolio_id != portfolio_id:
@@ -32,6 +33,8 @@ def resolve_mandate_evidence(
         )
     return ProofPackMandateEvidence(
         twin=twin,
-        health=mandate_repository.get_latest_health_snapshot(mandate_id=mandate_id),
+        health=mandate_repository.get_latest_health_snapshot(
+            mandate_id=mandate_id, tenant_id=tenant_id
+        ),
         gap_codes=[],
     )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import (
     get_construction_repository,
     get_mandate_repository,
@@ -49,6 +50,7 @@ def select_wave_item_alternative(
     wave_id: WaveIdPath,
     wave_item_id: WaveItemIdPath,
     request: DpmWaveSelectionRequest,
+    tenant_id: MandateTenantId,
     x_correlation_id: WaveCorrelationIdHeader = None,
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
@@ -57,6 +59,7 @@ def select_wave_item_alternative(
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
     return select_wave_item_alternative_response(
+        tenant_id=tenant_id,
         wave_id=wave_id,
         wave_item_id=wave_item_id,
         request=request,

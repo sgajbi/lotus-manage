@@ -20,6 +20,7 @@ def select_wave_item_alternative_response(
     wave_item_id: str,
     request: DpmWaveSelectionRequest,
     correlation_id: str,
+    tenant_id: str,
     construction_repository: ConstructionRepository,
     proof_pack_repository: DpmProofPackRepository,
     mandate_repository: DpmMandateRepository,
@@ -28,6 +29,7 @@ def select_wave_item_alternative_response(
 ) -> DpmWaveResponse:
     try:
         wave = wave_service.select_wave_item_alternative(
+            tenant_id=tenant_id,
             wave_id=wave_id,
             wave_item_id=wave_item_id,
             alternative_id=request.alternative_id,

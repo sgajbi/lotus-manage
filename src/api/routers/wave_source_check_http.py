@@ -16,11 +16,13 @@ def source_check_wave_response(
     wave_id: str,
     request: DpmWaveSourceCheckRequest,
     correlation_id: str,
+    tenant_id: str,
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> DpmWaveResponse:
     try:
         wave, replayed = wave_service.source_check_wave(
+            tenant_id=tenant_id,
             wave_id=wave_id,
             actor_id=request.actor_id,
             correlation_id=correlation_id,

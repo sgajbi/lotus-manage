@@ -11,6 +11,7 @@ from src.core.portfolio_memory.read_request import validate_portfolio_memory_rea
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     require_campaign_definition_tenant_id,
+    require_mandate_tenant_id,
 )
 from src.core.portfolio_memory.wave_collection import wave_memory_events
 
@@ -34,12 +35,14 @@ def collect_portfolio_memory_events(
         )
     )
 
-    if repositories.mandate_repository is not None:
+    mandate_tenant_id = require_mandate_tenant_id(tenant_id=tenant_id, repositories=repositories)
+    if repositories.mandate_repository is not None and mandate_tenant_id is not None:
         events.extend(
             mandate_memory_events(
                 portfolio_id=portfolio_id,
                 mandate_repository=repositories.mandate_repository,
                 limit=limit,
+                tenant_id=mandate_tenant_id,
             )
         )
 

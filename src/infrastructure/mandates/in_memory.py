@@ -59,25 +59,27 @@ def _mandate_version_sort_key(version: str) -> tuple[int, int, str, str]:
 class InMemoryDpmMandateRepository(DpmMandateRepository):
     def __init__(self) -> None:
         self._lock = Lock()
-        self._mandates_by_key: dict[tuple[str, str, date], DpmMandateDigitalTwin] = {}
-        self._health_snapshots: dict[str, DpmMandateHealthSnapshot] = {}
+        self._mandates_by_key: dict[tuple[str, str, str, date], DpmMandateDigitalTwin] = {}
+        self._health_snapshots: dict[tuple[str, str], DpmMandateHealthSnapshot] = {}
         self._monitoring_runs: dict[str, DpmMonitoringRun] = {}
         self._exceptions: dict[str, DpmMonitoringException] = {}
 
-    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin) -> None:
+    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin, *, tenant_id: str) -> None:
         with self._lock:
-            self._mandates_by_key[(twin.mandate_id, twin.mandate_version, twin.as_of_date)] = (
-                deepcopy(twin)
-            )
+            key = (tenant_id, twin.mandate_id, twin.mandate_version, twin.as_of_date)
+            self._mandates_by_key[key] = deepcopy(twin)
 
     def get_latest_mandate_by_portfolio(
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]:
         with self._lock:
             rows = [
-                twin for twin in self._mandates_by_key.values() if twin.portfolio_id == portfolio_id
+                twin
+                for key, twin in self._mandates_by_key.items()
+                if key[0] == tenant_id and twin.portfolio_id == portfolio_id
             ]
             latest = _latest_twin(rows)
             return deepcopy(latest) if latest is not None else None
@@ -87,12 +89,15 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         *,
         portfolio_id: str,
         as_of_date: date,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]:
         with self._lock:
             rows = [
                 twin
-                for twin in self._mandates_by_key.values()
-                if twin.portfolio_id == portfolio_id and twin.as_of_date <= as_of_date
+                for key, twin in self._mandates_by_key.items()
+                if key[0] == tenant_id
+                and twin.portfolio_id == portfolio_id
+                and twin.as_of_date <= as_of_date
             ]
             latest = _latest_twin(rows)
             return deepcopy(latest) if latest is not None else None
@@ -101,10 +106,13 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]:
         with self._lock:
             rows = [
-                twin for twin in self._mandates_by_key.values() if twin.mandate_id == mandate_id
+                twin
+                for key, twin in self._mandates_by_key.items()
+                if key[0] == tenant_id and twin.mandate_id == mandate_id
             ]
             latest = _latest_twin(rows)
             return deepcopy(latest) if latest is not None else None
@@ -113,10 +121,13 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> list[DpmMandateDigitalTwin]:
         with self._lock:
             rows = [
-                twin for twin in self._mandates_by_key.values() if twin.mandate_id == mandate_id
+                twin
+                for key, twin in self._mandates_by_key.items()
+                if key[0] == tenant_id and twin.mandate_id == mandate_id
             ]
             rows = sorted(
                 rows,
@@ -125,20 +136,21 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
             )
             return [deepcopy(row) for row in rows]
 
-    def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot) -> None:
+    def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot, *, tenant_id: str) -> None:
         with self._lock:
-            self._health_snapshots[snapshot.health_snapshot_id] = deepcopy(snapshot)
+            self._health_snapshots[(tenant_id, snapshot.health_snapshot_id)] = deepcopy(snapshot)
 
     def get_latest_health_snapshot(
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateHealthSnapshot]:
         with self._lock:
             rows = [
                 snapshot
-                for snapshot in self._health_snapshots.values()
-                if snapshot.mandate_id == mandate_id
+                for key, snapshot in self._health_snapshots.items()
+                if key[0] == tenant_id and snapshot.mandate_id == mandate_id
             ]
             if not rows:
                 return None
@@ -150,12 +162,15 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         *,
         mandate_id: str,
         as_of_date: date,
+        tenant_id: str,
     ) -> Optional[DpmMandateHealthSnapshot]:
         with self._lock:
             rows = [
                 snapshot
-                for snapshot in self._health_snapshots.values()
-                if snapshot.mandate_id == mandate_id and snapshot.as_of_date <= as_of_date
+                for key, snapshot in self._health_snapshots.items()
+                if key[0] == tenant_id
+                and snapshot.mandate_id == mandate_id
+                and snapshot.as_of_date <= as_of_date
             ]
             if not rows:
                 return None
@@ -286,9 +301,9 @@ def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> Optional[DpmMandateDigita
 
 
 def _stale_mandate_keys(
-    mandates: dict[tuple[str, str, date], DpmMandateDigitalTwin],
+    mandates: dict[tuple[str, str, str, date], DpmMandateDigitalTwin],
     cutoff_utc: datetime,
-) -> list[tuple[str, str, date]]:
+) -> list[tuple[str, str, str, date]]:
     return [
         key
         for key, twin in mandates.items()
@@ -297,9 +312,9 @@ def _stale_mandate_keys(
 
 
 def _stale_health_snapshot_keys(
-    snapshots: dict[str, DpmMandateHealthSnapshot],
+    snapshots: dict[tuple[str, str], DpmMandateHealthSnapshot],
     cutoff_utc: datetime,
-) -> list[str]:
+) -> list[tuple[str, str]]:
     return [key for key, snapshot in snapshots.items() if snapshot.calculated_at < cutoff_utc]
 
 

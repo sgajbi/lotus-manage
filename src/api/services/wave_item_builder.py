@@ -14,11 +14,14 @@ def build_wave_item(
     index: int,
     portfolio: dict[str, object],
     mandate_repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> DpmRebalanceWaveItem:
     portfolio_id = str(portfolio["portfolio_id"]).strip()
     mandate_id = optional_str(portfolio.get("mandate_id"))
     source_refs = source_refs_from_portfolio(portfolio)
-    latest_mandate = mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id)
+    latest_mandate = mandate_repository.get_latest_mandate_by_portfolio(
+        portfolio_id=portfolio_id, tenant_id=tenant_id
+    )
     if latest_mandate is not None:
         mandate_id = latest_mandate.mandate_id
         source_refs.append(

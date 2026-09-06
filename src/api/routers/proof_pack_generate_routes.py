@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import (
     get_construction_repository,
     get_mandate_repository,
@@ -50,6 +51,7 @@ from src.core.rebalance_runs.service import DpmRunSupportService
 )
 def generate_proof_pack(
     request: DpmProofPackGenerateRequest,
+    tenant_id: MandateTenantId,
     idempotency_key: Annotated[
         str,
         Header(
@@ -72,6 +74,7 @@ def generate_proof_pack(
     try:
         proof_pack = _generate_initial_proof_pack(
             request=request,
+            tenant_id=tenant_id,
             idempotency_key=idempotency_key,
             correlation_id=x_correlation_id,
             run_service=run_service,
@@ -102,6 +105,7 @@ def _generate_initial_proof_pack(
     request: DpmProofPackGenerateRequest,
     idempotency_key: str,
     correlation_id: str | None,
+    tenant_id: str,
     run_service: DpmRunSupportService,
     construction_repository: ConstructionRepository,
     mandate_repository: DpmMandateRepository,
@@ -114,6 +118,7 @@ def _generate_initial_proof_pack(
                 detail="DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED",
             )
         return proof_pack_service.generate_proof_pack_from_run(
+            tenant_id=tenant_id,
             rebalance_run_id=request.rebalance_run_id,
             actor_id=request.actor_id,
             reason=request.reason,
@@ -132,6 +137,7 @@ def _generate_initial_proof_pack(
             detail="DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED",
         )
     return proof_pack_service.generate_proof_pack_from_selected_alternative(
+        tenant_id=tenant_id,
         alternative_set_id=request.alternative_set_id,
         selected_alternative_id=request.selected_alternative_id,
         actor_id=request.actor_id,

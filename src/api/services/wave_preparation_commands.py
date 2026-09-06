@@ -19,6 +19,7 @@ def source_check_persisted_wave(
     wave_id: str,
     actor_id: str,
     correlation_id: str,
+    tenant_id: str,
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
@@ -34,6 +35,7 @@ def source_check_persisted_wave(
         return prepared.wave, True
 
     checked = build_source_checked_wave(
+        tenant_id=tenant_id,
         wave=prepared.wave,
         actor_id=actor_id,
         correlation_id=correlation_id,

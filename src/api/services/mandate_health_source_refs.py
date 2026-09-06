@@ -21,13 +21,18 @@ def source_refs_for_portfolio_mandate_health(
     repository: DpmMandateRepository,
     portfolio_id: str | None,
     now: datetime,
+    tenant_id: str,
 ) -> list[dict[str, object]]:
     if portfolio_id is None:
         return []
-    mandate = repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id)
+    mandate = repository.get_latest_mandate_by_portfolio(
+        portfolio_id=portfolio_id, tenant_id=tenant_id
+    )
     if mandate is None:
         return []
-    snapshot = repository.get_latest_health_snapshot(mandate_id=mandate.mandate_id)
+    snapshot = repository.get_latest_health_snapshot(
+        mandate_id=mandate.mandate_id, tenant_id=tenant_id
+    )
     if snapshot is None:
         return []
     metadata_by_ref = {

@@ -13,11 +13,12 @@ def persist_mandate_health_evidence(
     repository: DpmMandateRepository,
     health_snapshot: DpmMandateHealthSnapshot,
     monitoring_exceptions: list[DpmMonitoringException],
+    tenant_id: str,
     twin: DpmMandateDigitalTwin | None = None,
 ) -> None:
     if twin is not None:
-        repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(health_snapshot)
+        repository.save_mandate_snapshot(twin, tenant_id=tenant_id)
+    repository.save_health_snapshot(health_snapshot, tenant_id=tenant_id)
     for exception in monitoring_exceptions:
         repository.save_monitoring_exception(exception)
 

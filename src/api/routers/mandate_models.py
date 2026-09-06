@@ -97,9 +97,14 @@ class DpmMandateRefreshFromCoreRequest(BaseModel):
         description="Business date for resolving lotus-core mandate and target source products.",
         examples=["2026-05-03"],
     )
-    tenant_id: Optional[str] = Field(
-        default=None,
-        description="Optional tenant selector forwarded to lotus-core.",
+    tenant_id: str = Field(
+        min_length=1,
+        description=(
+            "Tenant that owns the refreshed mandate snapshot. Required: the snapshot and its "
+            "health evidence are stored under this tenant, and a refresh that cannot name one "
+            "would persist evidence no tenant can read. Also forwarded to lotus-core as the "
+            "source selector."
+        ),
         examples=["default"],
     )
     booking_center_code: Optional[str] = Field(
