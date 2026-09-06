@@ -1467,3 +1467,42 @@ def test_source_gaps_decide_the_overall_action_over_co_occurring_warnings() -> N
         if reason.reason_code in {"CASH_BAND_NOT_SOURCED", "TURNOVER_BUDGET_NOT_SOURCED"}
     }
     assert source_gap_actions == {MandateRecommendedAction.FIX_SOURCE_DATA}
+
+
+def test_a_blocking_finding_keeps_the_headline_over_a_source_gap() -> None:
+    """Source gaps outrank ordinary findings, not urgent ones.
+
+    A restricted instrument held in the portfolio is actionable now; an
+    unavailable mandate limit is not. Letting the source gap take the headline
+    while the mandate is BLOCKED would send an operator to source-data
+    remediation and bury the finding that actually needs them.
+
+    This is the boundary of the prioritization added for #664, and it is easy
+    to cross by accident because the source gap is unconditional for every
+    Core-compiled twin, so it co-occurs with everything.
+    """
+
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            twin=_twin(
+                constraints=DpmMandateConstraintSet(
+                    cash_reserve_weight=Decimal("0.02"),
+                    max_tracking_error=Decimal("0.05"),
+                ),
+                field_gap_codes=[
+                    "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+                    "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
+                ],
+            ),
+            restricted_held_instruments=["EQ_RESTRICTED"],
+        )
+    )
+
+    assert snapshot.health_state == MandateHealthState.BLOCKED
+    assert snapshot.recommended_action == MandateRecommendedAction.REVIEW_RESTRICTION
+
+    # The source gap is still reported; it just does not take the headline.
+    assert any(
+        reason.reason_code in {"CASH_BAND_NOT_SOURCED", "TURNOVER_BUDGET_NOT_SOURCED"}
+        for reason in snapshot.top_reasons
+    )
