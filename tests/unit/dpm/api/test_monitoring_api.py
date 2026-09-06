@@ -218,6 +218,7 @@ def test_monitoring_run_once_helpers_normalize_pm_book_selector_and_source_filte
         as_of_date=date(2026, 5, 3),
         portfolio_manager_id="PM_SG_DPM_001",
         portfolio_types=[" discretionary ", "", "ADVISORY"],
+        tenant_id="default",
     )
     membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
         _pm_book_membership_payload()
@@ -239,12 +240,14 @@ def test_monitoring_run_once_helpers_reject_incomplete_pm_book_selector_and_memb
     missing_selector = DpmMonitoringRunOnceRequest(
         mandate_ids=[],
         as_of_date=date(2026, 5, 3),
+        tenant_id="default",
     )
     missing_portfolio_types = DpmMonitoringRunOnceRequest(
         mandate_ids=[],
         as_of_date=date(2026, 5, 3),
         portfolio_manager_id="PM_SG_DPM_001",
         portfolio_types=[" "],
+        tenant_id="default",
     )
     incomplete_membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
         _pm_book_membership_payload(supportability_state="INCOMPLETE")
@@ -266,7 +269,7 @@ def test_monitoring_run_once_requires_explicit_or_pm_book_selector() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.post(
             "/api/v1/dpm/monitoring/run-once",
-            json={"mandate_ids": [], "as_of_date": "2026-05-03"},
+            json={"mandate_ids": [], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
 
     assert response.status_code == 422
