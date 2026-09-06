@@ -496,14 +496,31 @@ def _reason_from_score(score: DpmMandateDimensionScore) -> DpmMandateHealthReaso
         reason_code=score.reason_code,
         severity=severity,
         message=f"{score.dimension.value} requires attention: {score.reason_code}",
-        recommended_action=_recommended_action_for_dimension(score.dimension, score.state),
+        recommended_action=_recommended_action_for_dimension(
+            score.dimension, score.state, score.reason_code
+        ),
     )
+
+
+_SOURCE_GAP_REASON_CODES = frozenset(
+    {
+        "CASH_BAND_NOT_SOURCED",
+        "TURNOVER_BUDGET_NOT_SOURCED",
+    }
+)
 
 
 def _recommended_action_for_dimension(
     dimension: MandateHealthDimension,
     state: MandateHealthState,
+    reason_code: str = "",
 ) -> MandateRecommendedAction:
+    if reason_code in _SOURCE_GAP_REASON_CODES:
+        # An absent mandate limit is a source gap, not a portfolio problem
+        # (issue #664). Simulating a rebalance cannot produce a limit Core
+        # never supplied, so the generic pending-dimension action would send
+        # an operator somewhere that cannot resolve the finding.
+        return MandateRecommendedAction.FIX_SOURCE_DATA
     if dimension == MandateHealthDimension.SOURCE_READINESS:
         return MandateRecommendedAction.FIX_SOURCE_DATA
     if dimension == MandateHealthDimension.ELIGIBILITY_RESTRICTIONS:
