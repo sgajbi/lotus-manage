@@ -18,6 +18,7 @@ def test_mandate_memory_events_projects_latest_health_and_monitoring_exceptions(
         portfolio_id=PORTFOLIO_ID,
         mandate_repository=repository,
         limit=100,
+        tenant_id="tenant-test",
     )
 
     assert [event.event_type for event in events] == [
@@ -39,6 +40,7 @@ def test_mandate_memory_events_keeps_portfolio_exception_when_mandate_twin_absen
         portfolio_id=PORTFOLIO_ID,
         mandate_repository=repository,
         limit=100,
+        tenant_id="tenant-test",
     )
 
     assert [event.event_type for event in events] == ["MANDATE_MONITORING_EXCEPTION"]

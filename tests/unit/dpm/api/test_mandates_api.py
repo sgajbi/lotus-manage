@@ -446,7 +446,7 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
         "cashflow_projection",
         "benchmark_assignment",
     ]
-    assert repository.get_latest_mandate(mandate_id=MANDATE_ID) is not None
+    assert repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="tenant-test") is not None
 
 
 def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_health() -> None:
@@ -827,6 +827,7 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         repository=repository,
         portfolio_id=PORTFOLIO_ID,
         now=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
+        tenant_id="tenant-test",
     )
     assert {ref["productId"] for ref in source_refs} == {
         "lotus-risk:MandateRiskHealthContext:v1",
@@ -849,6 +850,7 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
             repository=repository,
             portfolio_id=None,
             now=now,
+            tenant_id="tenant-test",
         )
         == []
     )
@@ -857,6 +859,7 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
             repository=repository,
             portfolio_id=PORTFOLIO_ID,
             now=now,
+            tenant_id="tenant-test",
         )
         == []
     )
@@ -867,6 +870,7 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
             repository=repository,
             portfolio_id=PORTFOLIO_ID,
             now=now,
+            tenant_id="tenant-test",
         )
         == []
     )
@@ -942,6 +946,7 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
         repository=repository,
         portfolio_id=PORTFOLIO_ID,
         now=now,
+        tenant_id="tenant-test",
     )
 
     assert [ref["source_ref_status"] for ref in mixed_refs] == ["available", "unavailable"]

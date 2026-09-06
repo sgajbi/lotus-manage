@@ -42,6 +42,7 @@ from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories as _build_portfolio_memory_source_repositories,
     require_campaign_definition_tenant_id as _require_campaign_definition_tenant_id,
+    require_mandate_tenant_id as _require_mandate_tenant_id,
     require_pm_quality_tenant_id as _require_pm_quality_tenant_id,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
@@ -97,7 +98,19 @@ def _require_tenant_id_for_tenant_scoped_sources(
     )
     if pm_quality_tenant_id is not None:
         return pm_quality_tenant_id
-    return _require_campaign_definition_tenant_id(
+    campaign_tenant_id = _require_campaign_definition_tenant_id(
+        tenant_id=tenant_id,
+        repositories=repositories,
+    )
+    if campaign_tenant_id is not None:
+        return campaign_tenant_id
+    # Mandate snapshots and their health evidence are tenant-scoped too
+    # (issue #648), so they join this list rather than being checked
+    # separately downstream. Without this the caller's tenant is validated for
+    # the other families, found irrelevant to them, and discarded as None -
+    # which then reaches the mandate collector as an absent tenant even though
+    # the caller supplied one.
+    return _require_mandate_tenant_id(
         tenant_id=tenant_id,
         repositories=repositories,
     )

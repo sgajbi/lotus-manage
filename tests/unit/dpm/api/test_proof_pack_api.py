@@ -416,6 +416,7 @@ def test_generate_initial_proof_pack_validates_missing_source_fields() -> None:
             construction_repository=object(),
             mandate_repository=object(),
             proof_pack_repository=object(),
+            tenant_id="tenant-test",
         )
     assert missing_run.value.status_code == 422
     assert missing_run.value.detail == "DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED"
@@ -432,6 +433,7 @@ def test_generate_initial_proof_pack_validates_missing_source_fields() -> None:
             construction_repository=object(),
             mandate_repository=object(),
             proof_pack_repository=object(),
+            tenant_id="tenant-test",
         )
     assert missing_alternative.value.status_code == 422
     assert missing_alternative.value.detail == "DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED"
@@ -478,6 +480,7 @@ def test_generate_initial_proof_pack_dispatches_source_specific_services(
             construction_repository=construction_repository,
             mandate_repository=mandate_repository,
             proof_pack_repository=proof_pack_repository,
+            tenant_id="tenant-test",
         )
         is run_pack
     )
@@ -503,6 +506,7 @@ def test_generate_initial_proof_pack_dispatches_source_specific_services(
             construction_repository=construction_repository,
             mandate_repository=mandate_repository,
             proof_pack_repository=proof_pack_repository,
+            tenant_id="tenant-test",
         )
         is selected_pack
     )

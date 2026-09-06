@@ -75,6 +75,7 @@ def test_select_persisted_wave_item_alternative_records_selection_and_persists(
         mandate_repository=object(),  # type: ignore[arg-type]
         run_service=object(),  # type: ignore[arg-type]
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert selected is transitioned
