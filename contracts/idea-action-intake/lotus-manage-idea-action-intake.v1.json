@@ -13,6 +13,7 @@
   "durable_management_action_proven": true,
   "management_review_outcome_history_proven": true,
   "conversion_intent_owner_recovery_proven": true,
+  "outcome_history_request_fingerprint_proven": true,
   "downstream_execution_proven": false,
   "supported_feature_promoted": false,
   "receipt_outcomes": [
@@ -36,7 +37,7 @@
   ],
   "non_proof_boundaries": [
     "Proves a live executable action-intake receipt and one durable, portfolio-scoped PENDING_REVIEW management action for an accepted REVIEW_FOR_REBALANCE intent, including replay, rejection, conflict, restart, and append-only review-history behavior.",
-    "The exact conversion-intent outcome lookup is read-only, returns current Manage-owned history within trusted tenant, legal-entity, and portfolio scope, and never creates or repeats management work.",
+    "The exact conversion-intent outcome lookup is read-only, returns current Manage-owned history and the persisted owner request fingerprint within trusted tenant, legal-entity, and portfolio scope, and never creates or repeats management work.",
     "Does not grant suitability, mandate, rebalance, order, OMS, fill, settlement, or client-communication authority.",
     "An APPROVED management-review outcome does not prove rebalance execution, create orders or execution instructions, or prove fills, settlement, suitability, or client publication.",
     "Does not promote a supported feature, client-ready workflow, data-product certification, or downstream execution proof."

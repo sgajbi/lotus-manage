@@ -154,8 +154,9 @@ Strategic downstream consumption should use:
     `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes` expose and advance
     Manage-owned review history. `GET
     /api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent?conversion_intent_id=...&portfolio_id=...`
-    provides exact, read-only recovery of current owner history after an upstream response-loss
-    window; it cannot create or repeat management work. The surface remains not-certified:
+    provides exact, read-only recovery of current owner history and the persisted Manage request
+    fingerprint after an upstream response-loss window; it cannot create or repeat management
+    work, and consumers must not recompute that owner commitment. The surface remains not-certified:
     local/dev trusted headers are
     not production IdP binding, and management review is not execution proof.
 
