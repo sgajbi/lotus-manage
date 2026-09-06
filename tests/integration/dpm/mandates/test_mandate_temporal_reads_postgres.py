@@ -20,6 +20,11 @@ from __future__ import annotations
 
 import os
 import uuid
+
+from tests.support.mandate_version_corpus import (
+    EXPECTED_CORPUS_ORDER,
+    SHARED_ORDERING_CORPUS,
+)
 from contextlib import closing
 from datetime import date
 from decimal import Decimal
@@ -379,5 +384,39 @@ def test_numerically_equal_versions_are_separated_by_raw_text(
         latest = repository.get_latest_mandate(mandate_id=mandate_id)
         assert latest is not None
         assert latest.mandate_version == "1"
+    finally:
+        _clear(repository, mandate_id)
+
+
+def test_postgres_orders_the_shared_corpus_exactly_as_the_memory_store_does(
+    repository: PostgresDpmMandateRepository,
+) -> None:
+    """The other half of the one ordering contract.
+
+    tests/unit/dpm/infrastructure/test_mandate_version_ordering.py asserts this
+    same corpus and this same expected order in memory. Asserting it here on a
+    real engine is what makes the agreement a fact rather than an assumption:
+    the regex anchoring, the collation, and the leading-zero handling are all
+    engine behaviour that a Python test cannot establish.
+    """
+
+    mandate_id = f"MANDATE_CORPUS_{uuid.uuid4().hex[:8]}"
+    portfolio_id = f"PF_CORPUS_{uuid.uuid4().hex[:8]}"
+    try:
+        for version in SHARED_ORDERING_CORPUS:
+            repository.save_mandate_snapshot(
+                _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=version)
+            )
+
+        listed = [
+            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+        ]
+        assert listed == list(EXPECTED_CORPUS_ORDER)
+
+        # The same expression decides the single-row reads, so the head of the
+        # list and the latest read must be the same value.
+        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        assert latest is not None
+        assert latest.mandate_version == EXPECTED_CORPUS_ORDER[0]
     finally:
         _clear(repository, mandate_id)

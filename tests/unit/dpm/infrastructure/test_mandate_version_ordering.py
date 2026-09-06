@@ -21,6 +21,10 @@ from __future__ import annotations
 import sys
 
 from src.infrastructure.mandates.in_memory import _mandate_version_sort_key
+from tests.support.mandate_version_corpus import (
+    EXPECTED_CORPUS_ORDER,
+    SHARED_ORDERING_CORPUS,
+)
 
 
 def _newest_first(versions: list[str]) -> list[str]:
@@ -97,3 +101,34 @@ def test_the_key_shape_matches_the_three_sql_ordering_elements() -> None:
     assert non_numeric_rank == 0
     assert raw_text == "v2"
     assert non_numeric_rank < numeric_rank
+
+
+def test_a_trailing_newline_does_not_make_a_version_numeric() -> None:
+    """Python's '$' also matches immediately before a trailing newline.
+
+    re.match(r'^[0-9]+$', '9\n') therefore succeeds, and the newline counts
+    toward the key's length, so '9\n' would order above '10'. PostgreSQL's '~'
+    anchors at the true end of the string and treats the value as non-numeric,
+    sorting it last. The two stores would pick different latest snapshots for
+    the same rows, which is the failure this whole contract exists to prevent.
+    """
+
+    assert _newest_first(["9\n", "10"]) == ["10", "9\n"]
+
+    # It is non-numeric, so it sorts behind every well-formed digit string.
+    assert _newest_first(["9\n", "1"]) == ["1", "9\n"]
+
+    numeric_rank, _, _, _ = _mandate_version_sort_key("9\n")
+    assert numeric_rank == 0
+
+
+def test_the_shared_ordering_corpus_is_ordered_as_the_contract_states() -> None:
+    """The corpus both backends are checked against, ordered here in memory.
+
+    The PostgreSQL half asserts the same expected order in
+    tests/integration/dpm/mandates/test_mandate_temporal_reads_postgres.py, so
+    a change to either implementation that breaks the agreement fails on one
+    side or the other rather than passing quietly on both.
+    """
+
+    assert _newest_first(list(SHARED_ORDERING_CORPUS)) == list(EXPECTED_CORPUS_ORDER)
