@@ -127,7 +127,7 @@ def teardown_function() -> None:
 def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin()
-    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(twin, tenant_id="default")
 
     with _client(repository) as client:
         run_response = client.post(
@@ -160,7 +160,7 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
 
 def test_monitoring_run_once_resolves_pm_book_from_core(monkeypatch) -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(_twin(), tenant_id="default")
     resolver = _PmBookResolver(_pm_book_membership_payload())
     monkeypatch.setattr(
         "src.api.routers.monitoring.build_core_resolver_client",
@@ -383,7 +383,7 @@ def test_monitoring_run_once_maps_core_resolver_source_failures(monkeypatch) -> 
 def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin()
-    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(twin, tenant_id="default")
 
     with _client(repository) as client:
         run_response = client.post(
@@ -556,7 +556,7 @@ def test_command_center_exposes_degraded_and_blocked_source_readiness_states() -
 
 def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(_twin(), tenant_id="default")
 
     with _client(repository) as client:
         missing_run_once = client.post(

@@ -146,9 +146,9 @@ def _save_ready_health(
                 target_weights={"CASH": Decimal("0.05")},
                 cash_weight=Decimal("0.05"),
             )
-        )
-    ,
-            tenant_id="default",)
+        ),
+        tenant_id="default",
+    )
 
 
 def _request() -> dict[str, object]:
@@ -1897,9 +1897,9 @@ def test_bulk_review_campaign_preview_exhausts_core_portfolio_universe_candidate
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     mandate_repository.save_mandate_snapshot(
-        _twin(mandate_id=second_mandate_id, portfolio_id=second_portfolio_id)
-    ,
-            tenant_id="default",)
+        _twin(mandate_id=second_mandate_id, portfolio_id=second_portfolio_id),
+        tenant_id="default",
+    )
     second_candidate = {
         "portfolio_id": second_portfolio_id,
         "mandate_id": second_mandate_id,
@@ -6739,7 +6739,9 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         detail = client.get("/api/v1/rebalance/waves/dwv_read_001")
         items = client.get("/api/v1/rebalance/waves/dwv_read_001/items")
         proof_pack = client.get("/api/v1/rebalance/waves/dwv_read_001/proof-pack")
-        report_input = client.get("/api/v1/rebalance/waves/dwv_read_001/report-input?tenant_id=default")
+        report_input = client.get(
+            "/api/v1/rebalance/waves/dwv_read_001/report-input?tenant_id=default"
+        )
         missing = client.get("/api/v1/rebalance/waves/dwv_missing")
 
     assert search.status_code == 200
@@ -7039,7 +7041,9 @@ def test_wave_report_input_rejects_external_execution_claims() -> None:
 
     with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
         proof_pack = client.get("/api/v1/rebalance/waves/dwv_external_claim/proof-pack")
-        report_input = client.get("/api/v1/rebalance/waves/dwv_external_claim/report-input?tenant_id=default")
+        report_input = client.get(
+            "/api/v1/rebalance/waves/dwv_external_claim/report-input?tenant_id=default"
+        )
 
     assert proof_pack.status_code == 200
     proof_payload = proof_pack.json()
@@ -7064,8 +7068,12 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     detail = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}"]["get"]
     items = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/items"]["get"]
     proof_pack = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/proof-pack"]["get"]
-    report_input = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/report-input?tenant_id=default"]["get"]
-    source_check = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default"]["post"]
+    report_input = openapi["paths"][
+        "/api/v1/rebalance/waves/{wave_id}/report-input?tenant_id=default"
+    ]["get"]
+    source_check = openapi["paths"][
+        "/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default"
+    ]["post"]
     approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
     stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
     handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]

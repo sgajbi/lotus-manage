@@ -92,7 +92,9 @@ def _seed_mandate_evidence(repository: InMemoryDpmMandateRepository) -> None:
         }
     )
     repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
-    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test")
+    repository.save_health_snapshot(
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test"
+    )
 
 
 def _generate_selected_alternative(client: TestClient) -> tuple[str, str]:
@@ -187,7 +189,9 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert "| `ai_refs` | `READY` |" in markdown.text
     assert "| `mandate_context` | `PENDING_REVIEW` |" in markdown.text
 
-    report = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/report-input?tenant_id=tenant-test")
+    report = client.get(
+        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/report-input?tenant_id=tenant-test"
+    )
     assert report.status_code == 200
     report_input = report.json()
     assert report_input["proof_pack_id"] == proof_pack["proof_pack_id"]

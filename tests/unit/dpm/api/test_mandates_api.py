@@ -515,7 +515,9 @@ def test_read_mandate_by_portfolio_and_by_id_use_persisted_state() -> None:
     repository.save_mandate_snapshot(_twin(version="3"), tenant_id="tenant-test")
 
     with _client(repository) as client:
-        by_portfolio = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?tenant_id=tenant-test")
+        by_portfolio = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?tenant_id=tenant-test"
+        )
         by_id = client.get(f"/api/v1/mandates/{MANDATE_ID}?tenant_id=tenant-test")
 
     assert by_portfolio.status_code == 200
@@ -552,9 +554,15 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
     repository.save_health_snapshot(future_health, tenant_id="tenant-test")
 
     with _client(repository) as client:
-        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-15&tenant_id=tenant-test")
-        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-15&tenant_id=tenant-test")
-        latest_mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?tenant_id=tenant-test")
+        mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-15&tenant_id=tenant-test"
+        )
+        health = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-15&tenant_id=tenant-test"
+        )
+        latest_mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?tenant_id=tenant-test"
+        )
         latest_health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id=tenant-test")
 
     assert mandate.status_code == 200
@@ -572,13 +580,17 @@ def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidenc
     twin = _twin(version="2", as_of=date(2026, 4, 10))
     repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
     repository.save_health_snapshot(
-        calculate_mandate_health(DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11")))
-    ,
-            tenant_id="tenant-test",)
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11"))),
+        tenant_id="tenant-test",
+    )
 
     with _client(repository) as client:
-        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-09&tenant_id=tenant-test")
-        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-09&tenant_id=tenant-test")
+        mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-09&tenant_id=tenant-test"
+        )
+        health = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-09&tenant_id=tenant-test"
+        )
 
     assert mandate.status_code == 404
     assert mandate.json()["detail"] == "DPM_MANDATE_NOT_FOUND"
@@ -588,8 +600,12 @@ def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidenc
 
 def test_temporal_read_queries_reject_invalid_business_dates() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
-        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=not-a-date&tenant_id=tenant-test")
-        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-02-30&tenant_id=tenant-test")
+        mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=not-a-date&tenant_id=tenant-test"
+        )
+        health = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-02-30&tenant_id=tenant-test"
+        )
 
     assert mandate.status_code == 422
     assert health.status_code == 422
@@ -646,8 +662,12 @@ def test_missing_mandate_versions_return_404() -> None:
 
 def test_mandate_diff_identifies_material_constraint_changes() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test")
-    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(
+        _twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test"
+    )
+    repository.save_mandate_snapshot(
+        _twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test"
+    )
 
     with _client(repository) as client:
         response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?tenant_id=tenant-test")
@@ -666,13 +686,23 @@ def test_mandate_diff_identifies_material_constraint_changes() -> None:
 
 def test_mandate_diff_with_explicit_versions_and_missing_version_errors() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test")
-    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(
+        _twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test"
+    )
+    repository.save_mandate_snapshot(
+        _twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test"
+    )
 
     with _client(repository) as client:
-        explicit = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&to_version=3&tenant_id=tenant-test")
-        missing = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=1&to_version=3&tenant_id=tenant-test")
-        partial = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&tenant_id=tenant-test")
+        explicit = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&to_version=3&tenant_id=tenant-test"
+        )
+        missing = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=1&to_version=3&tenant_id=tenant-test"
+        )
+        partial = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&tenant_id=tenant-test"
+        )
 
     assert explicit.status_code == 200
     assert explicit.json()["from_version"] == "2"
@@ -938,9 +968,9 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
                 "calculated_at": datetime(2026, 5, 3, 9, 0),
                 "source_analytics_posture": posture,
             }
-        )
-    ,
-            tenant_id="tenant-test",)
+        ),
+        tenant_id="tenant-test",
+    )
 
     mixed_refs = source_refs_for_portfolio_mandate_health(
         repository=repository,
