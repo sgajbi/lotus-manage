@@ -41,7 +41,6 @@ def preview_wave(
     tenant_id: str,
 ) -> DpmRebalanceWave:
     return wave_preview.build_preview_wave(
-        tenant_id=tenant_id,
         trigger_type=trigger_type,
         trigger_id=trigger_id,
         rationale=rationale,
@@ -50,6 +49,7 @@ def preview_wave(
         correlation_id=correlation_id,
         portfolios=portfolios,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -313,6 +313,7 @@ def get_report_input(
     proof_pack_repository: DpmProofPackRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
+    tenant_id: str | None = None,
 ) -> DpmWaveReportInput:
     return wave_read_model_queries.wave_report_input_for_id(
         wave_id=wave_id,
@@ -320,4 +321,5 @@ def get_report_input(
         proof_pack_repository=proof_pack_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )

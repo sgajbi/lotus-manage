@@ -22,9 +22,11 @@ def build_report_portfolio_memory_context(
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
     mandate_repository: DpmMandateRepository | None,
+    tenant_id: str | None,
 ) -> DpmPortfolioMemoryReportContext:
     return build_report_portfolio_memory_context_from_sources(
         portfolio_id=portfolio_id,
+        tenant_id=tenant_id,
         repositories=build_portfolio_memory_source_repositories(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
@@ -38,9 +40,11 @@ def build_report_portfolio_memory_context_from_sources(
     *,
     portfolio_id: str,
     repositories: PortfolioMemorySourceRepositories,
+    tenant_id: str | None = None,
 ) -> DpmPortfolioMemoryReportContext:
     memory = build_portfolio_memory_from_sources(
         portfolio_id=portfolio_id,
         repositories=repositories,
+        tenant_id=tenant_id,
     )
     return build_portfolio_memory_report_context(memory)

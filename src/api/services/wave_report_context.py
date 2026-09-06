@@ -15,6 +15,7 @@ def portfolio_memory_context_for_report(
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository | None,
     mandate_repository: DpmMandateRepository | None,
+    tenant_id: str | None,
 ) -> DpmPortfolioMemoryReportContext | None:
     if proof_pack_repository is None or outcome_review_repository is None or not wave.items:
         return None
@@ -25,6 +26,7 @@ def portfolio_memory_context_for_report(
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 

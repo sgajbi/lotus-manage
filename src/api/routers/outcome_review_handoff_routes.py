@@ -1,5 +1,6 @@
 from fastapi import Depends
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
@@ -33,6 +34,7 @@ from src.core.waves.repository import DpmWaveRepository
     ),
 )
 def get_outcome_review_report_input_endpoint(
+    tenant_id: MandateTenantId,
     outcome_review_id: str,
     repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
@@ -46,6 +48,7 @@ def get_outcome_review_report_input_endpoint(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         )
     except DpmOutcomeReviewNotFoundError as exc:
         raise outcome_review_not_found_http_exception() from exc
@@ -65,6 +68,7 @@ def get_outcome_review_report_input_endpoint(
     ),
 )
 def get_outcome_review_ai_evidence_input_endpoint(
+    tenant_id: MandateTenantId,
     outcome_review_id: str,
     repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
@@ -78,6 +82,7 @@ def get_outcome_review_ai_evidence_input_endpoint(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         )
     except DpmOutcomeReviewNotFoundError as exc:
         raise outcome_review_not_found_http_exception() from exc

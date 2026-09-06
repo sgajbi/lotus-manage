@@ -20,6 +20,7 @@ def test_build_report_portfolio_memory_context_from_sources_matches_facade() -> 
     from_sources = build_report_portfolio_memory_context_from_sources(
         portfolio_id=PORTFOLIO_ID,
         repositories=repositories,
+        tenant_id="tenant-test",
     )
     from_facade = build_report_portfolio_memory_context(
         portfolio_id=PORTFOLIO_ID,
@@ -27,6 +28,7 @@ def test_build_report_portfolio_memory_context_from_sources_matches_facade() -> 
         wave_repository=wave_repository,
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
+        tenant_id="tenant-test",
     )
 
     assert from_sources == from_facade

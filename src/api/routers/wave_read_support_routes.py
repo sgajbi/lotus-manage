@@ -4,6 +4,7 @@ import logging
 
 from fastapi import APIRouter, Depends, status
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
@@ -77,6 +78,7 @@ def get_wave_proof_pack_posture(
     },
 )
 def get_wave_report_input(
+    tenant_id: MandateTenantId,
     wave_id: WaveIdPath,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
@@ -89,6 +91,7 @@ def get_wave_report_input(
         proof_pack_repository=proof_pack_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 

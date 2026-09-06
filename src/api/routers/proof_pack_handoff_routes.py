@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, Path, status
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
@@ -32,6 +33,7 @@ from src.core.waves.repository import DpmWaveRepository
     },
 )
 def get_proof_pack_report_input(
+    tenant_id: MandateTenantId,
     proof_pack_id: Annotated[
         str,
         Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
@@ -48,6 +50,7 @@ def get_proof_pack_report_input(
             wave_repository=wave_repository,
             outcome_review_repository=outcome_review_repository,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         )
     except PROOF_PACK_ROUTE_ERRORS as exc:
         raise proof_pack_http_exception(exc) from exc
@@ -65,6 +68,7 @@ def get_proof_pack_report_input(
     },
 )
 def get_proof_pack_ai_evidence_input(
+    tenant_id: MandateTenantId,
     proof_pack_id: Annotated[
         str,
         Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
@@ -81,6 +85,7 @@ def get_proof_pack_ai_evidence_input(
             wave_repository=wave_repository,
             outcome_review_repository=outcome_review_repository,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         )
     except PROOF_PACK_ROUTE_ERRORS as exc:
         raise proof_pack_http_exception(exc) from exc

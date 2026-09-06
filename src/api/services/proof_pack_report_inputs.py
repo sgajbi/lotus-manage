@@ -20,6 +20,7 @@ def build_proof_pack_report_input(
     wave_repository: DpmWaveRepository | None,
     outcome_review_repository: DpmOutcomeReviewRepository | None,
     mandate_repository: DpmMandateRepository | None,
+    tenant_id: str | None,
 ) -> DpmProofPackReportInput:
     return build_report_input(
         proof_pack,
@@ -29,6 +30,7 @@ def build_proof_pack_report_input(
             wave_repository=wave_repository,
             outcome_review_repository=outcome_review_repository,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         ),
     )
 
@@ -40,6 +42,7 @@ def build_proof_pack_ai_evidence_input(
     wave_repository: DpmWaveRepository | None,
     outcome_review_repository: DpmOutcomeReviewRepository | None,
     mandate_repository: DpmMandateRepository | None,
+    tenant_id: str | None,
 ) -> DpmProofPackAiEvidenceInput:
     return build_ai_evidence_input(
         proof_pack,
@@ -49,6 +52,7 @@ def build_proof_pack_ai_evidence_input(
             wave_repository=wave_repository,
             outcome_review_repository=outcome_review_repository,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         ),
     )
 
@@ -60,6 +64,7 @@ def portfolio_memory_context_for_report(
     wave_repository: DpmWaveRepository | None,
     outcome_review_repository: DpmOutcomeReviewRepository | None,
     mandate_repository: DpmMandateRepository | None,
+    tenant_id: str | None,
 ) -> DpmPortfolioMemoryReportContext | None:
     if wave_repository is None or outcome_review_repository is None:
         return None
@@ -69,6 +74,7 @@ def portfolio_memory_context_for_report(
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 

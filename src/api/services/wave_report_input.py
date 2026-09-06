@@ -21,6 +21,7 @@ def build_report_input_for_wave(
     proof_pack_repository: DpmProofPackRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
+    tenant_id: str | None = None,
 ) -> DpmWaveReportInput:
     try:
         return build_wave_report_input(
@@ -33,6 +34,7 @@ def build_report_input_for_wave(
                 wave_repository=wave_repository,
                 outcome_review_repository=outcome_review_repository,
                 mandate_repository=mandate_repository,
+                tenant_id=tenant_id,
             ),
         )
     except DpmWaveReportInputBoundaryError as exc:

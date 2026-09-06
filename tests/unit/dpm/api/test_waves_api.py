@@ -4987,7 +4987,7 @@ def test_wave_preview_rejects_empty_source_owned_portfolio_set() -> None:
 
 def test_wave_report_input_returns_not_found_for_unknown_wave() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
-        response = client.get("/api/v1/rebalance/waves/dwv_missing/report-input")
+        response = client.get("/api/v1/rebalance/waves/dwv_missing/report-input?tenant_id=default")
 
     assert response.status_code == 404
     assert _error_reason_code(response) == "DPM_WAVE_NOT_FOUND"
@@ -6739,7 +6739,7 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         detail = client.get("/api/v1/rebalance/waves/dwv_read_001")
         items = client.get("/api/v1/rebalance/waves/dwv_read_001/items")
         proof_pack = client.get("/api/v1/rebalance/waves/dwv_read_001/proof-pack")
-        report_input = client.get("/api/v1/rebalance/waves/dwv_read_001/report-input")
+        report_input = client.get("/api/v1/rebalance/waves/dwv_read_001/report-input?tenant_id=default")
         missing = client.get("/api/v1/rebalance/waves/dwv_missing")
 
     assert search.status_code == 200
@@ -6960,7 +6960,7 @@ def test_bulk_review_campaign_wave_report_input_carries_universe_boundary() -> N
 
     with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
         report_input = client.get(
-            "/api/v1/rebalance/waves/dwv_campaign_report_boundary/report-input"
+            "/api/v1/rebalance/waves/dwv_campaign_report_boundary/report-input?tenant_id=default"
         )
 
     assert report_input.status_code == 200
@@ -7039,7 +7039,7 @@ def test_wave_report_input_rejects_external_execution_claims() -> None:
 
     with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
         proof_pack = client.get("/api/v1/rebalance/waves/dwv_external_claim/proof-pack")
-        report_input = client.get("/api/v1/rebalance/waves/dwv_external_claim/report-input")
+        report_input = client.get("/api/v1/rebalance/waves/dwv_external_claim/report-input?tenant_id=default")
 
     assert proof_pack.status_code == 200
     proof_payload = proof_pack.json()
@@ -7064,7 +7064,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     detail = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}"]["get"]
     items = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/items"]["get"]
     proof_pack = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/proof-pack"]["get"]
-    report_input = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/report-input"]["get"]
+    report_input = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/report-input?tenant_id=default"]["get"]
     source_check = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default"]["post"]
     approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
     stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
