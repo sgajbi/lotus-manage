@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-06T12:19:01.553659+00:00",
+  "generatedAt": "2026-09-07T00:15:59.781133+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2100,8 +2100,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
-        "string"
+        "object"
       ]
     },
     {
@@ -2115,8 +2114,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
-        "string"
+        "object"
       ]
     },
     {
@@ -2149,6 +2147,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.cash_reserve_weight",
+      "canonicalTerm": "cash_reserve_weight",
+      "preferredName": "cash_reserve_weight",
+      "description": "dpm mandate constraint set output field: cash reserve weight.",
+      "example": "cash_reserve_weight_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -58212,7 +58224,7 @@
             "name": "constraints.cash_band_min_weight",
             "location": "body",
             "required": false,
-            "type": "string",
+            "type": "object",
             "semanticId": "lotus.cash_band_min_weight",
             "attributeRef": "#/attributeCatalog/lotus.cash_band_min_weight"
           },
@@ -58220,9 +58232,17 @@
             "name": "constraints.cash_band_max_weight",
             "location": "body",
             "required": false,
-            "type": "string",
+            "type": "object",
             "semanticId": "lotus.cash_band_max_weight",
             "attributeRef": "#/attributeCatalog/lotus.cash_band_max_weight"
+          },
+          {
+            "name": "constraints.cash_reserve_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_weight",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_weight"
           },
           {
             "name": "constraints.single_position_max_weight",
@@ -58619,7 +58639,7 @@
             "name": "constraints.cash_band_min_weight",
             "location": "body",
             "required": false,
-            "type": "string",
+            "type": "object",
             "semanticId": "lotus.cash_band_min_weight",
             "attributeRef": "#/attributeCatalog/lotus.cash_band_min_weight"
           },
@@ -58627,9 +58647,17 @@
             "name": "constraints.cash_band_max_weight",
             "location": "body",
             "required": false,
-            "type": "string",
+            "type": "object",
             "semanticId": "lotus.cash_band_max_weight",
             "attributeRef": "#/attributeCatalog/lotus.cash_band_max_weight"
+          },
+          {
+            "name": "constraints.cash_reserve_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_weight",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_weight"
           },
           {
             "name": "constraints.single_position_max_weight",
@@ -59263,7 +59291,7 @@
             "name": "mandate.constraints.cash_band_min_weight",
             "location": "body",
             "required": false,
-            "type": "string",
+            "type": "object",
             "semanticId": "lotus.cash_band_min_weight",
             "attributeRef": "#/attributeCatalog/lotus.cash_band_min_weight"
           },
@@ -59271,9 +59299,17 @@
             "name": "mandate.constraints.cash_band_max_weight",
             "location": "body",
             "required": false,
-            "type": "string",
+            "type": "object",
             "semanticId": "lotus.cash_band_max_weight",
             "attributeRef": "#/attributeCatalog/lotus.cash_band_max_weight"
+          },
+          {
+            "name": "mandate.constraints.cash_reserve_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_weight",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_weight"
           },
           {
             "name": "mandate.constraints.single_position_max_weight",
@@ -60708,6 +60744,14 @@
             "type": "object",
             "semanticId": "lotus.cash_band_max_weight",
             "attributeRef": "#/attributeCatalog/lotus.cash_band_max_weight"
+          },
+          {
+            "name": "twin.constraints.cash_reserve_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_weight",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_weight"
           },
           {
             "name": "twin.constraints.single_position_max_weight",
