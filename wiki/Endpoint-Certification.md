@@ -777,6 +777,9 @@ Route:
 - `POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes`
 - `GET /api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent?conversion_intent_id={conversion_intent_id}&portfolio_id={portfolio_id}`
 
+Both history reads return the persisted Manage-owned `request_fingerprint`; recovery consumers
+must not recompute or invent that owner commitment.
+
 Purpose:
 
 Source-safe realization for `lotus-idea` conversion intents. An accepted

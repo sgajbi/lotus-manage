@@ -264,6 +264,7 @@ def test_conversion_intent_lookup_recovers_current_owner_history_without_mutatio
     assert recovered.status_code == 200
     assert recovered.json() == approved.json()
     assert replayed.json() == recovered.json()
+    assert recovered.json()["request_fingerprint"] == intake["request_fingerprint"]
     assert recovered.json()["source_event_version"] == 2
     assert [event["event_type"] for event in recovered.json()["events"]] == [
         "INTAKE_ACCEPTED",
@@ -336,6 +337,7 @@ def test_conversion_intent_lookup_recovers_normalized_opaque_intake_identifiers(
     assert recovered.status_code == 200
     assert recovered.json()["conversion_intent_id"] == "vendor/123"
     assert recovered.json()["portfolio_id"] == PORTFOLIO_ID
+    assert recovered.json()["request_fingerprint"] == accepted.json()["request_fingerprint"]
 
 
 def test_conversion_intent_lookup_denies_scope_before_repository_initialization(

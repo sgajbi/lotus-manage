@@ -10,6 +10,7 @@ from src.core.rebalance_runs.idea_management_action import (
     create_idea_management_action,
     record_idea_management_review_decision,
 )
+from src.core.rebalance_runs.idea_action_intake import idea_management_action_history
 from src.core.rebalance_runs.idea_management_action_repository import (
     IdeaManagementActionRepositoryConflictError,
 )
@@ -129,6 +130,11 @@ def test_postgres_realization_survives_restart_replays_and_fences_stale_writer()
         conversion_intent_id=original.conversion_intent_id,
     )
     assert recovered_by_conversion == after_restart
+    assert recovered_by_conversion.request_fingerprint == original.request_fingerprint
+    assert (
+        idea_management_action_history(recovered_by_conversion).request_fingerprint
+        == original.request_fingerprint
+    )
     assert (
         restarted_repository.get_by_conversion_intent(
             tenant_id=original.tenant_id,

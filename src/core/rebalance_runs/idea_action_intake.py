@@ -207,6 +207,7 @@ class IdeaManagementActionOutcomeHistoryResponse(BaseModel):
     portfolio_id: str
     idea_candidate_id: str
     conversion_intent_id: str
+    request_fingerprint: str = Field(pattern=r"^sha256:[a-f0-9]{12}$")
     status: DpmWorkflowStatus
     source_event_version: int = Field(ge=1)
     events: tuple[IdeaManagementActionEvent, ...]
@@ -305,6 +306,7 @@ def idea_management_action_history(
         portfolio_id=action.portfolio_id,
         idea_candidate_id=action.idea_candidate_id,
         conversion_intent_id=action.conversion_intent_id,
+        request_fingerprint=action.request_fingerprint,
         status=action.status,
         source_event_version=action.source_event_version,
         events=action.events,

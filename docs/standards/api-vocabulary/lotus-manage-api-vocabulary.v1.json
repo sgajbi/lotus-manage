@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-06T00:39:40.052075+00:00",
+  "generatedAt": "2026-09-06T00:57:15.631183+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -52099,6 +52099,14 @@
             "attributeRef": "#/attributeCatalog/lotus.conversion_intent_id"
           },
           {
+            "name": "request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
             "name": "status",
             "location": "body",
             "required": true,
@@ -52418,6 +52426,14 @@
             "attributeRef": "#/attributeCatalog/lotus.conversion_intent_id"
           },
           {
+            "name": "request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
             "name": "status",
             "location": "body",
             "required": true,
@@ -52719,6 +52735,14 @@
             "type": "string",
             "semanticId": "lotus.conversion_intent_id",
             "attributeRef": "#/attributeCatalog/lotus.conversion_intent_id"
+          },
+          {
+            "name": "request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
           },
           {
             "name": "status",
