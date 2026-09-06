@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, cast
 
 from pydantic import BaseModel, Field
@@ -45,6 +45,18 @@ class DpmMandateDiff(BaseModel):
         description="Newer mandate version used as the comparison target.",
         examples=["3"],
     )
+    from_as_of_date: date = Field(
+        description=(
+            "Business date of the observation used as the comparison baseline. A mandate "
+            "version can be observed on several dates, so the version alone does not "
+            "identify which row was compared."
+        ),
+        examples=["2026-04-30"],
+    )
+    to_as_of_date: date = Field(
+        description="Business date of the observation used as the comparison target.",
+        examples=["2026-05-03"],
+    )
     changed_fields: list[DpmMandateFieldChange] = Field(
         description="Changed mandate fields, ordered by field path for deterministic review.",
     )
@@ -78,6 +90,8 @@ def build_mandate_diff(
         compared_at=datetime.now(timezone.utc),
         from_version=previous.mandate_version,
         to_version=current.mandate_version,
+        from_as_of_date=previous.as_of_date,
+        to_as_of_date=current.as_of_date,
         changed_fields=diff_payloads(
             previous.model_dump(mode="json"),
             current.model_dump(mode="json"),
@@ -137,15 +151,49 @@ def _requested_mandate_diff_version_pair(
 def _latest_mandate_diff_version_pair(
     versions: list[DpmMandateDigitalTwin],
 ) -> tuple[DpmMandateDigitalTwin, DpmMandateDigitalTwin]:
-    if len(versions) < 2:
+    """The newest observation, against the newest observation of the previous
+    DISTINCT version (issue #647).
+
+    `versions` is ordered newest-first and may contain the same
+    mandate_version more than once, because an unchanged binding can be
+    re-observed on a later business date. Taking versions[1] blindly can
+    compare a version against another observation of itself and report "no
+    changes", which is indistinguishable from a mandate that genuinely did
+    not change.
+    """
+
+    if not versions:
         raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
-    return versions[1], versions[0]
+    current = versions[0]
+    previous = next(
+        (
+            candidate
+            for candidate in versions[1:]
+            if candidate.mandate_version != current.mandate_version
+        ),
+        None,
+    )
+    if previous is None:
+        # Every observation is of one version: there is no version change to
+        # diff, and saying so is more truthful than an empty change list.
+        raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
+    return previous, current
 
 
 def _mandate_version_index(
     versions: list[DpmMandateDigitalTwin],
 ) -> dict[str, DpmMandateDigitalTwin]:
-    return {version.mandate_version: version for version in versions}
+    """Map each mandate version to its LATEST observation (issue #647).
+
+    `versions` is ordered newest-first, so the first occurrence of a version
+    is its most recent observation. A dict comprehension would let the last -
+    that is, the oldest - entry win.
+    """
+
+    index: dict[str, DpmMandateDigitalTwin] = {}
+    for version in versions:
+        index.setdefault(version.mandate_version, version)
+    return index
 
 
 def iter_changed_fields(

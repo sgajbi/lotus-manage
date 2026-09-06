@@ -24,6 +24,19 @@ class _MonitoringExceptionListQuery:
     args: tuple[Any, ...]
 
 
+# Issue #646: mandate_version is a TEXT column holding an integer rendered by
+# str(binding_version), so ordering by it directly is lexicographic - "9"
+# sorts above "10" and every read after version 9 resolves to the wrong row.
+# Compare numerically, and keep the column's own order as the tie-break for
+# any value that is not a plain integer so a malformed row can never abort the
+# query. The matching expression index lives in migration 0022.
+_MANDATE_VERSION_ORDER = (
+    "CASE WHEN mandate_version ~ '^[0-9]+$' "
+    "THEN mandate_version::bigint ELSE NULL END DESC NULLS LAST, "
+    "mandate_version DESC"
+)
+
+
 class PostgresDpmMandateRepository:
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
@@ -84,11 +97,11 @@ class PostgresDpmMandateRepository:
         *,
         portfolio_id: str,
     ) -> Optional[DpmMandateDigitalTwin]:
-        query = """
+        query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
             WHERE portfolio_id = %s
-            ORDER BY as_of_date DESC, mandate_version DESC, mandate_id DESC
+            ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}, mandate_id DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
@@ -101,11 +114,11 @@ class PostgresDpmMandateRepository:
         portfolio_id: str,
         as_of_date: date,
     ) -> Optional[DpmMandateDigitalTwin]:
-        query = """
+        query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
             WHERE portfolio_id = %s AND as_of_date <= %s
-            ORDER BY as_of_date DESC, mandate_version DESC, mandate_id DESC
+            ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}, mandate_id DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
@@ -113,11 +126,11 @@ class PostgresDpmMandateRepository:
         return _to_twin(row)
 
     def get_latest_mandate(self, *, mandate_id: str) -> Optional[DpmMandateDigitalTwin]:
-        query = """
+        query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
             WHERE mandate_id = %s
-            ORDER BY as_of_date DESC, mandate_version DESC
+            ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}
             LIMIT 1
         """
         with closing(self._connect()) as connection:
@@ -125,11 +138,11 @@ class PostgresDpmMandateRepository:
         return _to_twin(row)
 
     def list_mandate_versions(self, *, mandate_id: str) -> list[DpmMandateDigitalTwin]:
-        query = """
+        query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
             WHERE mandate_id = %s
-            ORDER BY as_of_date DESC, mandate_version DESC
+            ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}
         """
         with closing(self._connect()) as connection:
             rows = connection.execute(query, (mandate_id,)).fetchall()

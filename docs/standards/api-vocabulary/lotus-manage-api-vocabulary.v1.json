@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-06T00:57:15.631183+00:00",
+  "generatedAt": "2026-09-06T12:19:01.553659+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5773,6 +5773,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.from_as_of_date",
+      "canonicalTerm": "from_as_of_date",
+      "preferredName": "from_as_of_date",
+      "description": "Business date of the observation used as the comparison baseline. A mandate version can be observed on several dates, so the version alone does not identify which row was compared.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -15393,6 +15407,20 @@
       "preferredName": "title",
       "description": "Business title for the section.",
       "example": "sample_title",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.to_as_of_date",
+      "canonicalTerm": "to_as_of_date",
+      "preferredName": "to_as_of_date",
+      "description": "Business date of the observation used as the comparison target.",
+      "example": "2026-03-02",
       "type": "string",
       "locations": [
         "body"
@@ -58951,6 +58979,22 @@
             "type": "string",
             "semanticId": "lotus.to_version",
             "attributeRef": "#/attributeCatalog/lotus.to_version"
+          },
+          {
+            "name": "from_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.from_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.from_as_of_date"
+          },
+          {
+            "name": "to_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.to_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.to_as_of_date"
           },
           {
             "name": "changed_fields",
