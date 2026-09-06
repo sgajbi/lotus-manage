@@ -148,7 +148,7 @@ def _save_ready_health(
             )
         )
     ,
-            tenant_id="tenant-test",)
+            tenant_id="default",)
 
 
 def _request() -> dict[str, object]:
@@ -972,7 +972,7 @@ def teardown_function() -> None:
 
 def test_wave_preview_returns_source_backed_and_blocked_items_without_persistence() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
 
     with _client(mandate_repository, wave_repository) as client:
@@ -1029,7 +1029,7 @@ def test_wave_create_persists_and_replays_by_idempotency_key() -> None:
 
 def test_pm_book_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     resolver = _PmBookResolver(_pm_book_membership_payload())
     monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
 
@@ -1070,7 +1070,7 @@ def test_pm_book_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
 
 def test_pm_book_wave_create_persists_resolved_source_owned_cohort(monkeypatch) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
     resolver = _PmBookResolver(_pm_book_membership_payload())
     monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
@@ -1181,7 +1181,7 @@ def test_pm_book_wave_preview_maps_source_resolution_failures(
 
 def test_cio_model_change_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     resolver = _CioModelChangeResolver(_cio_model_change_cohort_payload())
     monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
 
@@ -1222,7 +1222,7 @@ def test_cio_model_change_wave_preview_resolves_source_owned_cohort(monkeypatch)
 
 def test_cio_model_change_wave_create_persists_resolved_source_owned_cohort(monkeypatch) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
     resolver = _CioModelChangeResolver(_cio_model_change_cohort_payload())
     monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
@@ -1332,7 +1332,7 @@ def test_cio_model_change_wave_preview_maps_source_resolution_failures(
 
 def test_risk_event_wave_preview_resolves_source_owned_cohort() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     risk_authority = _RiskEventAuthority()
 
     with _client(
@@ -1387,7 +1387,7 @@ def test_risk_event_wave_preview_resolves_source_owned_cohort() -> None:
 
 def test_risk_event_wave_create_persists_resolved_source_owned_cohort() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
     risk_authority = _RiskEventAuthority()
 
@@ -1412,7 +1412,7 @@ def test_risk_event_wave_create_persists_resolved_source_owned_cohort() -> None:
 
 def test_tactical_house_view_wave_preview_resolves_advise_owned_cohort() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     advise_authority = _TacticalHouseViewAuthority()
 
     with _client(
@@ -1496,7 +1496,7 @@ def test_tactical_house_view_wave_preview_resolves_advise_owned_cohort() -> None
 
 def test_tactical_house_view_wave_create_persists_resolved_advise_owned_cohort() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
 
     with _client(
@@ -1785,7 +1785,7 @@ def test_bulk_review_campaign_definition_replay_validates_candidate_source_contr
 
 def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
 
     with _client(mandate_repository, InMemoryDpmWaveRepository()) as client:
         response = client.post(
@@ -1820,7 +1820,7 @@ def test_bulk_review_campaign_preview_can_resolve_core_portfolio_universe_candid
     monkeypatch,
 ) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     resolver = _DpmPortfolioUniverseResolver(_dpm_portfolio_universe_candidate_payload())
     monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
 
@@ -1895,11 +1895,11 @@ def test_bulk_review_campaign_preview_exhausts_core_portfolio_universe_candidate
     second_portfolio_id = "PB_SG_GLOBAL_BAL_002"
     second_mandate_id = "MANDATE_PB_SG_GLOBAL_BAL_002"
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     mandate_repository.save_mandate_snapshot(
         _twin(mandate_id=second_mandate_id, portfolio_id=second_portfolio_id)
     ,
-            tenant_id="tenant-test",)
+            tenant_id="default",)
     second_candidate = {
         "portfolio_id": second_portfolio_id,
         "mandate_id": second_mandate_id,
@@ -1982,7 +1982,7 @@ def test_bulk_review_campaign_create_persists_core_portfolio_universe_candidates
     monkeypatch,
 ) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
     resolver = _DpmPortfolioUniverseResolver(_dpm_portfolio_universe_candidate_payload())
     monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
@@ -2014,7 +2014,7 @@ def test_bulk_review_campaign_preview_preserves_core_universe_batch_lineage(
     monkeypatch,
 ) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     resolver = _DpmPortfolioUniverseResolver(
         _dpm_portfolio_universe_candidate_payload(
             content_hash=DPM_PORTFOLIO_UNIVERSE_CURRENT_CONTENT_HASH,
@@ -2183,7 +2183,7 @@ def test_bulk_review_campaign_preview_fails_closed_for_core_universe_dependency_
 
 def test_bulk_review_campaign_preview_preserves_governance_evidence() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     request = {
         **_bulk_review_campaign_request(),
         "campaign_governance": _bulk_review_campaign_governance(),
@@ -2211,7 +2211,7 @@ def test_bulk_review_campaign_preview_preserves_governance_evidence() -> None:
 
 def test_bulk_review_campaign_definition_can_feed_preview_without_inline_candidates() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
     with _client(
@@ -2589,7 +2589,7 @@ def test_bulk_review_campaign_definition_launch_package_fails_closed_when_not_re
 
 def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
@@ -2676,7 +2676,7 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
 
 def test_bulk_review_campaign_definition_launch_retry_repairs_missing_audit() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
     campaign_repository = _FailOnceCampaignLaunchAuditRepository()
 
@@ -2784,7 +2784,7 @@ def test_bulk_review_campaign_launch_and_readiness_telemetry_is_bounded(monkeypa
         lambda **labels: captured.append(labels),
     )
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
@@ -4274,7 +4274,7 @@ def test_bulk_review_campaign_mutation_telemetry_is_bounded(monkeypatch) -> None
 
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
     with _client(
@@ -4378,7 +4378,7 @@ def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> Non
 
 def test_bulk_review_campaign_definition_supersession_blocks_old_version() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
     with _client(
@@ -4613,7 +4613,7 @@ def test_bulk_review_campaign_definition_put_maps_domain_validation_errors() -> 
 
 def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
-    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="default")
     wave_repository = InMemoryDpmWaveRepository()
 
     with _client(mandate_repository, wave_repository) as client:
@@ -4979,7 +4979,7 @@ def test_wave_preview_rejects_empty_source_owned_portfolio_set() -> None:
             correlation_id="corr-empty",
             portfolios=[],
             mandate_repository=InMemoryDpmMandateRepository(),
-            tenant_id="tenant-test",
+            tenant_id="default",
         )
 
     assert exc_info.value.code == "AFFECTED_PORTFOLIO_SET_EMPTY"
@@ -5000,8 +5000,8 @@ def test_wave_source_check_classifies_mixed_items_and_attaches_authoritative_ref
         mandate_id="MANDATE_PB_SG_NEEDS_HEALTH_002",
         portfolio_id="PB_SG_NEEDS_HEALTH_002",
     )
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
-    mandate_repository.save_mandate_snapshot(degraded_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
+    mandate_repository.save_mandate_snapshot(degraded_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
     source_check_request = {
@@ -5032,12 +5032,12 @@ def test_wave_source_check_classifies_mixed_items_and_attaches_authoritative_ref
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
             headers={"X-Correlation-Id": "corr-source-check-001"},
         )
         replayed = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
 
@@ -5088,7 +5088,7 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
 
     with _client(mandate_repository, wave_repository) as client:
         missing = client.post(
-            "/api/v1/rebalance/waves/dwv_missing/source-check",
+            "/api/v1/rebalance/waves/dwv_missing/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         draft = client.post(
@@ -5101,7 +5101,7 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
             request_hash=None,
         )
         invalid = client.post(
-            f"/api/v1/rebalance/waves/{draft.json()['wave']['wave_id']}/source-check",
+            f"/api/v1/rebalance/waves/{draft.json()['wave']['wave_id']}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
 
@@ -5114,7 +5114,7 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
 def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
     construction_repository = InMemoryConstructionRepository()
@@ -5135,7 +5135,7 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5207,7 +5207,7 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
 def test_wave_simulation_aggregates_source_owned_risk_and_performance_context() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5225,7 +5225,7 @@ def test_wave_simulation_aggregates_source_owned_risk_and_performance_context() 
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5296,7 +5296,7 @@ def test_wave_simulation_aggregates_source_owned_risk_and_performance_context() 
 def test_wave_simulation_preserves_blocked_items_and_degrades_missing_inputs() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5320,7 +5320,7 @@ def test_wave_simulation_preserves_blocked_items_and_degrades_missing_inputs() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         simulated = client.post(
@@ -5350,8 +5350,8 @@ def test_wave_simulation_reports_invalid_state_and_partial_result() -> None:
         mandate_id="MANDATE_PB_SG_READY_002",
         portfolio_id="PB_SG_READY_002",
     )
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
-    mandate_repository.save_mandate_snapshot(second_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
+    mandate_repository.save_mandate_snapshot(second_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     _save_ready_health(mandate_repository, second_twin)
     wave_repository = InMemoryDpmWaveRepository()
@@ -5386,7 +5386,7 @@ def test_wave_simulation_reports_invalid_state_and_partial_result() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         items_by_portfolio = {
@@ -5418,7 +5418,7 @@ def test_wave_simulation_reports_invalid_state_and_partial_result() -> None:
 def test_wave_simulation_degrades_generation_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5445,7 +5445,7 @@ def test_wave_simulation_degrades_generation_failure(monkeypatch: pytest.MonkeyP
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5473,7 +5473,7 @@ def test_wave_simulation_degrades_generation_failure(monkeypatch: pytest.MonkeyP
 def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5491,7 +5491,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5531,7 +5531,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -
 def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5557,7 +5557,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
             },
         )
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5605,8 +5605,8 @@ def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
         mandate_id="MANDATE_PB_SG_READY_003",
         portfolio_id="PB_SG_READY_003",
     )
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
-    mandate_repository.save_mandate_snapshot(second_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
+    mandate_repository.save_mandate_snapshot(second_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     _save_ready_health(mandate_repository, second_twin)
     wave_repository = InMemoryDpmWaveRepository()
@@ -5631,7 +5631,7 @@ def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         items_by_portfolio = {
@@ -5668,7 +5668,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
 ) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5695,7 +5695,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5732,7 +5732,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
 def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5750,7 +5750,7 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5856,7 +5856,7 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
 def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -5894,7 +5894,7 @@ def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> 
         )
         handoff_wave_id = handoff_ready.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{handoff_wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5957,8 +5957,8 @@ def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -
         mandate_id="MANDATE_PB_SG_READY_BUT_MISSING_INPUT",
         portfolio_id="PB_SG_READY_BUT_MISSING_INPUT",
     )
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
-    mandate_repository.save_mandate_snapshot(blocked_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
+    mandate_repository.save_mandate_snapshot(blocked_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     _save_ready_health(mandate_repository, blocked_twin)
     wave_repository = InMemoryDpmWaveRepository()
@@ -5983,7 +5983,7 @@ def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         items_by_portfolio = {
@@ -6082,7 +6082,7 @@ def test_wave_workflow_commands_reject_invalid_states_and_empty_eligibility() ->
 def test_wave_services_translate_durable_write_conflicts_to_governed_errors() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
 
     create_conflict_repository = _SaveConflictWaveRepository()
@@ -6098,7 +6098,7 @@ def test_wave_services_translate_durable_write_conflicts_to_governed_errors() ->
             idempotency_key="idem-conflict-create",
             mandate_repository=mandate_repository,
             wave_repository=create_conflict_repository,
-            tenant_id="tenant-test",
+            tenant_id="default",
         )
     assert create_exc.value.code == "WAVE_CREATE_CONFLICT"
 
@@ -6247,7 +6247,7 @@ def test_wave_selection_translates_durable_write_conflict_to_governed_error() ->
             mandate_repository=InMemoryDpmMandateRepository(),
             run_service=_run_service(),
             wave_repository=conflict_repository,
-            tenant_id="tenant-test",
+            tenant_id="default",
         )
 
     assert exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
@@ -6452,7 +6452,7 @@ def test_wave_append_event_rejects_identity_and_state_mismatches() -> None:
 def test_wave_supportability_reports_product_safe_operator_diagnostics() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
-    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-test")
+    mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="default")
     _save_ready_health(mandate_repository, ready_twin)
     wave_repository = InMemoryDpmWaveRepository()
 
@@ -6476,7 +6476,7 @@ def test_wave_supportability_reports_product_safe_operator_diagnostics() -> None
         )
         wave_id = created.json()["wave"]["wave_id"]
         client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default",
             json={"actor_id": "pm_001"},
         )
         supportability = client.get(f"/api/v1/rebalance/waves/{wave_id}/supportability")
@@ -7065,7 +7065,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     items = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/items"]["get"]
     proof_pack = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/proof-pack"]["get"]
     report_input = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/report-input"]["get"]
-    source_check = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/source-check"]["post"]
+    source_check = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=default"]["post"]
     approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
     stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
     handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]

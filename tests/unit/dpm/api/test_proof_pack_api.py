@@ -130,7 +130,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     run_id = _simulate_run(client)
 
     generated = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "rebalance_run_id": run_id,
@@ -160,7 +160,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert body["ai_evidence_input_url"].endswith("/ai-evidence-input")
 
     replay = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "rebalance_run_id": run_id,
@@ -281,7 +281,7 @@ def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
     alternative_set_id, selected_alternative_id = _generate_selected_alternative(client)
 
     response = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "SELECTED_ALTERNATIVE",
             "alternative_set_id": alternative_set_id,
@@ -320,7 +320,7 @@ def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(
     alternative_set_id, selected_alternative_id = _generate_selected_alternative(client)
 
     response = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "SELECTED_ALTERNATIVE",
             "alternative_set_id": alternative_set_id,
@@ -384,7 +384,7 @@ def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(
 
 def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None:
     missing_run = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "actor_id": "pm_api",
@@ -395,7 +395,7 @@ def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None
     assert missing_run.json()["detail"] == "DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED"
 
     missing_source = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "SELECTED_ALTERNATIVE",
             "actor_id": "pm_api",
@@ -535,7 +535,7 @@ def test_generate_proof_pack_preserves_governed_http_exceptions(
     )
 
     response = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "rebalance_run_id": run_id,
@@ -566,7 +566,7 @@ def test_generate_proof_pack_does_not_hide_unexpected_service_exceptions(
 
     with pytest.raises(RuntimeError, match="boom"):
         client.post(
-            "/api/v1/rebalance/proof-packs",
+            "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
             json={
                 "source_type": "REBALANCE_RUN",
                 "rebalance_run_id": run_id,
@@ -594,7 +594,7 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     openapi = client.get("/openapi.json").json()
 
     for path in [
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}/report-input",
@@ -602,7 +602,7 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     ]:
         assert path in openapi["paths"]
 
-    operation = openapi["paths"]["/api/v1/rebalance/proof-packs"]["post"]
+    operation = openapi["paths"]["/api/v1/rebalance/proof-packs?tenant_id=tenant-test"]["post"]
     assert operation["summary"] == "Generate a pre-trade proof pack"
     assert "Idempotency-Key" in str(operation["parameters"])
     assert "regime_stress_context" in str(operation["requestBody"])
