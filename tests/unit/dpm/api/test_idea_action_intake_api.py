@@ -301,6 +301,35 @@ def test_conversion_intent_lookup_denies_scope_and_masks_absence() -> None:
     assert missing.json()["reasonCode"] == "IDEA_MANAGEMENT_ACTION_NOT_FOUND"
 
 
+def test_conversion_intent_lookup_normalizes_the_accepted_intake_identifiers() -> None:
+    padded = _payload()
+    padded["portfolio_id"] = f"  {PORTFOLIO_ID}  "
+    padded["conversion_intent_id"] = "  conversion_intent_padded  "
+
+    with TestClient(app) as client:
+        accepted = client.post(
+            "/api/v1/rebalance/idea-action-intake",
+            json=padded,
+            headers=_headers(),
+        )
+        recovered = client.get(
+            (
+                "/api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
+                "%20%20conversion_intent_padded%20%20/outcomes"
+            ),
+            params={"portfolio_id": f"  {PORTFOLIO_ID}  "},
+            headers=_headers(
+                capabilities="manage.idea_action_intake.read",
+                idempotency_key="unused-read",
+            ),
+        )
+
+    assert accepted.status_code == 202
+    assert recovered.status_code == 200
+    assert recovered.json()["conversion_intent_id"] == "conversion_intent_padded"
+    assert recovered.json()["portfolio_id"] == PORTFOLIO_ID
+
+
 def test_conversion_intent_lookup_denies_scope_before_repository_initialization(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

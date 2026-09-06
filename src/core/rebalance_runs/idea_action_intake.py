@@ -106,6 +106,13 @@ IDEA_ACTION_INTAKE_ERROR_EXAMPLE: dict[str, Any] = {
 }
 
 
+def normalize_idea_action_identifier(value: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError("IDEA_ACTION_IDENTIFIER_REQUIRED")
+    return normalized
+
+
 class IdeaActionSourceRef(BaseModel):
     source_system: Literal["lotus-idea"]
     source_type: str = Field(min_length=1, max_length=160)
@@ -144,10 +151,7 @@ class IdeaActionIntakeRequest(BaseModel):
     @field_validator("portfolio_id", "idea_candidate_id", "conversion_intent_id")
     @classmethod
     def _trim_required_identifier(cls, value: str) -> str:
-        normalized = value.strip()
-        if not normalized:
-            raise ValueError("IDEA_ACTION_IDENTIFIER_REQUIRED")
-        return normalized
+        return normalize_idea_action_identifier(value)
 
 
 class IdeaActionIntakeResponse(BaseModel):

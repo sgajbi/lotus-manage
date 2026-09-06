@@ -29,6 +29,7 @@ from src.core.rebalance_runs.idea_action_intake import (
     IdeaActionIntakeScopeError,
     IdeaManagementActionDecisionRequest,
     IdeaManagementActionOutcomeHistoryResponse,
+    normalize_idea_action_identifier,
 )
 from src.core.rebalance_runs.idea_action_intake_authority import IdeaActionIntakePrincipal
 from src.core.rebalance_runs.idea_management_action import (
@@ -191,6 +192,15 @@ def get_idea_management_action_outcomes_by_conversion_intent(
 ) -> IdeaManagementActionOutcomeHistoryResponse:
     shared._assert_support_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params={"portfolio_id"})
+    try:
+        portfolio_id = normalize_idea_action_identifier(portfolio_id)
+        conversion_intent_id = normalize_idea_action_identifier(conversion_intent_id)
+    except ValueError as exc:
+        raise idea_action_problem(
+            status_code=422,
+            reason_code=str(exc),
+            detail="Idea action recovery identifiers are required.",
+        ) from exc
     if not principal.can_access_portfolio(portfolio_id):
         raise idea_action_problem(
             status_code=403,

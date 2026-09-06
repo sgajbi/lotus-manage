@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from contextlib import closing
+from collections.abc import Iterator
+from contextlib import closing, contextmanager
 from typing import Any
 
 from src.core.common.capabilities import has_psycopg
@@ -37,7 +38,7 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
         *,
         action: IdeaManagementAction,
     ) -> IdeaManagementActionCreateResult:
-        with closing(self._connect()) as connection:
+        with self._connection() as connection:
             inserted = connection.execute(
                 """
                 INSERT INTO dpm_idea_management_actions (
@@ -73,7 +74,7 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
         legal_entity_code: str,
         intake_id: str,
     ) -> IdeaManagementAction | None:
-        with closing(self._connect()) as connection:
+        with self._connection() as connection:
             row = connection.execute(
                 """
                 SELECT payload_json
@@ -94,7 +95,7 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
         portfolio_id: str,
         conversion_intent_id: str,
     ) -> IdeaManagementAction | None:
-        with closing(self._connect()) as connection:
+        with self._connection() as connection:
             row = connection.execute(
                 """
                 SELECT payload_json
@@ -118,7 +119,7 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
             raise IdeaManagementActionRepositoryConflictError(
                 "IDEA_MANAGEMENT_ACTION_VERSION_SEQUENCE_INVALID"
             )
-        with closing(self._connect()) as connection:
+        with self._connection() as connection:
             updated = connection.execute(
                 """
                 UPDATE dpm_idea_management_actions
@@ -209,9 +210,7 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
         )
 
     def _connect(self) -> Any:
-        """Every operation reaches PostgreSQL through here, so unavailability
-        is translated ONCE into the repository protocol's own error - callers
-        above the boundary never see a Postgres exception type."""
+        """Translate connection-establishment failures into the repository protocol."""
 
         psycopg, dict_row = _import_psycopg()
         try:
@@ -226,8 +225,21 @@ class PostgresIdeaManagementActionRepository(IdeaManagementActionRepository):
                 "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
             ) from exc
 
+    @contextmanager
+    def _connection(self) -> Iterator[Any]:
+        """Translate connection and statement failures at the repository boundary."""
+
+        psycopg, _ = _import_psycopg()
+        try:
+            with closing(self._connect()) as connection:
+                yield connection
+        except psycopg.Error as exc:
+            raise IdeaManagementActionRepositoryUnavailableError(
+                "IDEA_MANAGEMENT_ACTION_PERSISTENCE_UNAVAILABLE"
+            ) from exc
+
     def _init_db(self) -> None:
-        with closing(self._connect()) as connection:
+        with self._connection() as connection:
             apply_postgres_migrations(connection=connection, namespace="dpm")
 
 
