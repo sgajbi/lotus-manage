@@ -221,8 +221,8 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
         "/api/v1/rebalance/outcome-reviews/{outcome_review_id}",
         "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources",
         "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability",
-        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input?tenant_id=tenant-test",
-        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input?tenant_id=tenant-test",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input",
         "/api/v1/rebalance/runs/{rebalance_run_id}/outcome-review",
         "/api/v1/rebalance/waves/{wave_id}/outcome-reviews",
     ]
@@ -257,16 +257,16 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     assert "requestBody" in refresh
     assert "200" in refresh["responses"]
 
-    report = schema["paths"][
-        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input?tenant_id=tenant-test"
-    ]["get"]
+    report = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input"][
+        "get"
+    ]
     assert all(marker in report["description"] for marker in ["What:", "When:", "How:"])
     assert "DpmOutcomeClientCommunicationBoundaryEvidence" in schema["components"]["schemas"]
     report_schema = schema["components"]["schemas"]["DpmOutcomeReportInput"]
     assert "client_communication_boundary" in report_schema["properties"]
-    ai = schema["paths"][
-        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input?tenant_id=tenant-test"
-    ]["get"]
+    ai = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"][
+        "get"
+    ]
     assert all(marker in ai["description"] for marker in ["What:", "When:", "How:"])
     ai_schema = schema["components"]["schemas"]["DpmOutcomeAiEvidenceInput"]
     assert "client_communication_boundary" in ai_schema["properties"]

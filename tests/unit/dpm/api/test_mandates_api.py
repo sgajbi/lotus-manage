@@ -456,7 +456,11 @@ def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_he
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 200
@@ -480,7 +484,11 @@ def test_refresh_from_core_rejects_inactive_benchmark_assignment_without_local_m
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 200
@@ -500,7 +508,11 @@ def test_refresh_from_core_preserves_gap_when_optional_profile_is_incomplete() -
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 200
@@ -616,8 +628,8 @@ def test_temporal_read_queries_reject_invalid_business_dates() -> None:
 def test_temporal_read_queries_are_documented_as_optional_business_dates() -> None:
     schema = app.openapi()
     paths = (
-        "/api/v1/mandates/by-portfolio/{portfolio_id}?tenant_id=tenant-test",
-        "/api/v1/mandates/{mandate_id}/health?tenant_id=tenant-test",
+        "/api/v1/mandates/by-portfolio/{portfolio_id}",
+        "/api/v1/mandates/{mandate_id}/health",
     )
 
     for path in paths:
@@ -735,7 +747,11 @@ def test_refresh_maps_core_unavailable_to_503() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver(unavailable=True)) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 503
@@ -746,7 +762,11 @@ def test_refresh_maps_core_incomplete_to_424() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver(incomplete=True)) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 424
@@ -763,10 +783,10 @@ def test_missing_mandate_returns_404() -> None:
 def test_mandate_openapi_paths_are_documented() -> None:
     schema = app.openapi()
     expected_paths = {
-        "/api/v1/mandates/by-portfolio/{portfolio_id}?tenant_id=tenant-test",
-        "/api/v1/mandates/{mandate_id}?tenant_id=tenant-test",
-        "/api/v1/mandates/{mandate_id}/versions?tenant_id=tenant-test",
-        "/api/v1/mandates/{mandate_id}/diff?tenant_id=tenant-test",
+        "/api/v1/mandates/by-portfolio/{portfolio_id}",
+        "/api/v1/mandates/{mandate_id}",
+        "/api/v1/mandates/{mandate_id}/versions",
+        "/api/v1/mandates/{mandate_id}/diff",
         "/api/v1/mandates/{mandate_id}/refresh-from-core",
     }
 
@@ -783,7 +803,11 @@ def test_refresh_accepts_validation_errors_as_422() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver()) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "not-a-date"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "not-a-date",
+            },
         )
 
     assert response.status_code == 422
@@ -804,7 +828,11 @@ def test_response_contract_is_json_serializable() -> None:
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     httpx.Response(200, json=response.json())

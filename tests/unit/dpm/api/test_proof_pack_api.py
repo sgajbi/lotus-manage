@@ -601,12 +601,12 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
         "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md",
-        "/api/v1/rebalance/proof-packs/{proof_pack_id}/report-input?tenant_id=tenant-test",
-        "/api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input?tenant_id=tenant-test",
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}/report-input",
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input",
     ]:
         assert path in openapi["paths"]
 
-    operation = openapi["paths"]["/api/v1/rebalance/proof-packs?tenant_id=tenant-test"]["post"]
+    operation = openapi["paths"]["/api/v1/rebalance/proof-packs"]["post"]
     assert operation["summary"] == "Generate a pre-trade proof pack"
     assert "Idempotency-Key" in str(operation["parameters"])
     assert "regime_stress_context" in str(operation["requestBody"])
