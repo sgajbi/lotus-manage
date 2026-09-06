@@ -73,8 +73,8 @@ def _mandate_repository() -> InMemoryDpmMandateRepository:
     twin = _mandate_twin().model_copy(
         update={"mandate_id": "mandate_service", "portfolio_id": "pf_service_1"}
     )
-    repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)))
+    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
+    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test")
     return repository
 
 
@@ -83,8 +83,8 @@ def _mismatched_mandate_repository() -> InMemoryDpmMandateRepository:
     twin = _mandate_twin().model_copy(
         update={"mandate_id": "mandate_service", "portfolio_id": "different_portfolio"}
     )
-    repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)))
+    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
+    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test")
     return repository
 
 

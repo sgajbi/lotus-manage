@@ -93,9 +93,9 @@ def test_repository_persists_mandate_versions_idempotently_and_lists_latest() ->
     old_twin = _twin(version="1", as_of=date(2026, 5, 1))
     latest_twin = _twin(version="2", as_of=date(2026, 5, 3))
 
-    repository.save_mandate_snapshot(old_twin)
-    repository.save_mandate_snapshot(latest_twin)
-    repository.save_mandate_snapshot(latest_twin.model_copy(update={"risk_profile": "GROWTH"}))
+    repository.save_mandate_snapshot(old_twin, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(latest_twin, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(latest_twin.model_copy(update={"risk_profile": "GROWTH"}), tenant_id="tenant-test")
 
     by_portfolio = repository.get_latest_mandate_by_portfolio(portfolio_id="PB_SG_GLOBAL_BAL_001")
     by_mandate = repository.get_latest_mandate(mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001")
@@ -111,7 +111,7 @@ def test_repository_persists_mandate_versions_idempotently_and_lists_latest() ->
 
 def test_repository_returns_defensive_copies() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin())
+    repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
 
     stored = repository.get_latest_mandate(mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001")
     assert stored is not None
@@ -134,8 +134,8 @@ def test_repository_persists_latest_health_snapshot() -> None:
         }
     )
 
-    repository.save_health_snapshot(first)
-    repository.save_health_snapshot(second)
+    repository.save_health_snapshot(first, tenant_id="tenant-test")
+    repository.save_health_snapshot(second, tenant_id="tenant-test")
 
     latest = repository.get_latest_health_snapshot(mandate_id=twin.mandate_id)
     assert latest is not None
@@ -150,7 +150,7 @@ def test_repository_resolves_portfolio_mandate_at_or_before_business_date() -> N
     same_day_latest = _twin(version="3", as_of=date(2026, 4, 10))
     future = _twin(version="4", as_of=date(2026, 5, 3))
     for twin in (first, same_day_older, same_day_latest, future):
-        repository.save_mandate_snapshot(twin)
+        repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
 
     resolved = repository.get_mandate_by_portfolio_as_of(
         portfolio_id=first.portfolio_id,
@@ -175,8 +175,8 @@ def test_repository_preserves_same_binding_version_across_business_dates() -> No
         update={"risk_profile": "GROWTH"}
     )
 
-    repository.save_mandate_snapshot(historical)
-    repository.save_mandate_snapshot(current)
+    repository.save_mandate_snapshot(historical, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(current, tenant_id="tenant-test")
 
     assert (
         repository.get_mandate_by_portfolio_as_of(
@@ -219,7 +219,7 @@ def test_repository_resolves_health_snapshot_at_or_before_business_date() -> Non
         }
     )
     for snapshot in (first, same_day_older, same_day_latest, future):
-        repository.save_health_snapshot(snapshot)
+        repository.save_health_snapshot(snapshot, tenant_id="tenant-test")
 
     resolved = repository.get_health_snapshot_as_of(
         mandate_id=twin.mandate_id,
@@ -479,11 +479,11 @@ def test_postgres_monitoring_exception_page_returns_overfetch_cursor() -> None:
 def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_records() -> None:
     repository = InMemoryDpmMandateRepository()
     old_twin = _twin(as_of=date(2024, 1, 1))
-    repository.save_mandate_snapshot(old_twin)
+    repository.save_mandate_snapshot(old_twin, tenant_id="tenant-test")
     old_health = _health_snapshot(old_twin).model_copy(
         update={"calculated_at": datetime(2024, 1, 1, tzinfo=timezone.utc)}
     )
-    repository.save_health_snapshot(old_health)
+    repository.save_health_snapshot(old_health, tenant_id="tenant-test")
     old_exception = monitoring_exceptions_from_health(
         calculate_mandate_health(
             DpmMandateHealthInput(
@@ -922,9 +922,9 @@ def test_postgres_repository_persists_reads_versions_and_health(
     twin_v2 = _twin(version="2", as_of=date(2026, 5, 3))
     health = _health_snapshot(twin_v2)
 
-    repository.save_mandate_snapshot(twin_v1)
-    repository.save_mandate_snapshot(twin_v2)
-    repository.save_health_snapshot(health)
+    repository.save_mandate_snapshot(twin_v1, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(twin_v2, tenant_id="tenant-test")
+    repository.save_health_snapshot(health, tenant_id="tenant-test")
 
     assert store.migration_calls == 1
     assert repository.get_latest_mandate_by_portfolio(portfolio_id=twin_v2.portfolio_id) == twin_v2
@@ -950,7 +950,7 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
     selected = _twin(version="3", as_of=date(2026, 4, 10))
     future = _twin(version="4", as_of=date(2026, 5, 3))
     for twin in (first, same_day_older, selected, future):
-        repository.save_mandate_snapshot(twin)
+        repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
 
     same_day_older_health = _health_snapshot(selected).model_copy(
         update={
@@ -969,9 +969,9 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
             "calculated_at": datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
         }
     )
-    repository.save_health_snapshot(same_day_older_health)
-    repository.save_health_snapshot(selected_health)
-    repository.save_health_snapshot(future_health)
+    repository.save_health_snapshot(same_day_older_health, tenant_id="tenant-test")
+    repository.save_health_snapshot(selected_health, tenant_id="tenant-test")
+    repository.save_health_snapshot(future_health, tenant_id="tenant-test")
 
     assert (
         repository.get_mandate_by_portfolio_as_of(
@@ -1012,8 +1012,8 @@ def test_postgres_repository_preserves_same_binding_version_across_business_date
         update={"risk_profile": "GROWTH"}
     )
 
-    repository.save_mandate_snapshot(historical)
-    repository.save_mandate_snapshot(current)
+    repository.save_mandate_snapshot(historical, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(current, tenant_id="tenant-test")
 
     assert len(store.mandates) == 2
     assert (

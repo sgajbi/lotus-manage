@@ -164,8 +164,8 @@ def _repositories() -> tuple[
     )
     wave_repository.save_wave(wave=_wave(), idempotency_key=None, request_hash=None)
     outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
-    mandate_repository.save_mandate_snapshot(_mandate_twin())
-    mandate_repository.save_health_snapshot(_health_snapshot())
+    mandate_repository.save_mandate_snapshot(_mandate_twin(), tenant_id="tenant-test")
+    mandate_repository.save_health_snapshot(_health_snapshot(), tenant_id="tenant-test")
     mandate_repository.save_monitoring_exception(_monitoring_exception())
     return proof_pack_repository, wave_repository, outcome_repository, mandate_repository
 
