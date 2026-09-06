@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from src.api.routers.mandate_tenant_query import require_mandate_tenant
 from src.api.routers.wave_http_errors import wave_validation_http_exception
 from src.api.routers.wave_portfolio_resolution import resolve_portfolio_inputs_for_request
 from src.api.routers.wave_request_models import DpmWavePreviewRequest
@@ -38,6 +39,7 @@ def preview_wave_response(
             core_resolver_factory=core_resolver_factory,
         )
         wave = wave_service.preview_wave(
+            tenant_id=require_mandate_tenant(tenant_id),
             trigger_type=request.trigger_type,
             trigger_id=request.trigger_id,
             rationale=request.rationale,
@@ -76,6 +78,7 @@ def create_wave_response(
             core_resolver_factory=core_resolver_factory,
         )
         wave, replayed = wave_service.create_wave(
+            tenant_id=require_mandate_tenant(tenant_id),
             trigger_type=request.trigger_type,
             trigger_id=request.trigger_id,
             rationale=request.rationale,

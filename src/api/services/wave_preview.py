@@ -28,6 +28,7 @@ def build_preview_wave(
     correlation_id: str,
     portfolios: list[dict[str, object]],
     mandate_repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> DpmRebalanceWave:
     validate_trigger_or_raise(trigger_type, portfolios=portfolios)
     validated_trigger_type = cast(WaveTriggerType, trigger_type)
@@ -36,6 +37,7 @@ def build_preview_wave(
             index=index,
             portfolio=portfolio,
             mandate_repository=mandate_repository,
+            tenant_id=tenant_id,
         )
         for index, portfolio in enumerate(portfolios, start=1)
     ]

@@ -9,10 +9,15 @@ def classify_item_source_readiness(
     item: DpmRebalanceWaveItem,
     wave_as_of_date: str,
     mandate_repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> DpmRebalanceWaveItem:
-    twin = resolve_mandate_twin(item=item, mandate_repository=mandate_repository)
+    twin = resolve_mandate_twin(
+        item=item, mandate_repository=mandate_repository, tenant_id=tenant_id
+    )
     health = (
-        mandate_repository.get_latest_health_snapshot(mandate_id=twin.mandate_id)
+        mandate_repository.get_latest_health_snapshot(
+            mandate_id=twin.mandate_id, tenant_id=tenant_id
+        )
         if twin is not None
         else None
     )
@@ -28,12 +33,17 @@ def resolve_mandate_twin(
     *,
     item: DpmRebalanceWaveItem,
     mandate_repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> DpmMandateDigitalTwin | None:
     if item.mandate_id:
-        twin = mandate_repository.get_latest_mandate(mandate_id=item.mandate_id)
+        twin = mandate_repository.get_latest_mandate(
+            mandate_id=item.mandate_id, tenant_id=tenant_id
+        )
         if twin is not None and twin.portfolio_id == item.portfolio_id:
             return twin
-    return mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=item.portfolio_id)
+    return mandate_repository.get_latest_mandate_by_portfolio(
+        portfolio_id=item.portfolio_id, tenant_id=tenant_id
+    )
 
 
 __all__ = ["classify_item_source_readiness", "resolve_mandate_twin"]

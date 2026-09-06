@@ -17,6 +17,7 @@ from src.api.services.mandate_service import (
 from src.api.services.mandate_temporal_reads import get_mandate_health
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMandateHealthInput, DpmMandateHealthSnapshot
+from src.api.routers.mandate_tenant_query import MandateTenantId
 
 
 @router.get(
@@ -36,6 +37,7 @@ from src.core.mandates import DpmMandateHealthInput, DpmMandateHealthSnapshot
 )
 async def read_mandate_health(
     mandate_id: str,
+    tenant_id: MandateTenantId,
     as_of_date: date | None = Query(
         default=None,
         description=(
@@ -51,6 +53,7 @@ async def read_mandate_health(
             repository=repository,
             mandate_id=mandate_id,
             as_of_date=as_of_date,
+            tenant_id=tenant_id,
         )
     )
 
@@ -73,6 +76,7 @@ async def read_mandate_health(
 async def recalculate_health(
     mandate_id: str,
     request: DpmMandateHealthInput,
+    tenant_id: MandateTenantId,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateHealthSnapshot:
     try:
@@ -80,6 +84,7 @@ async def recalculate_health(
             repository=repository,
             mandate_id=mandate_id,
             health_input=request,
+            tenant_id=tenant_id,
         )
     except DpmMandateSourceIncompleteError as exc:
         raise mandate_source_incomplete_http_exception(exc) from exc

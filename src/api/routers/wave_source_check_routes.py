@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import get_mandate_repository, get_wave_repository
 from src.api.routers.wave_openapi_examples import SOURCE_CHECK_WAVE_EXAMPLE
 from src.api.routers.wave_request_models import DpmWaveSourceCheckRequest
@@ -77,11 +78,13 @@ router = APIRouter()
 def source_check_wave(
     wave_id: WaveIdPath,
     request: DpmWaveSourceCheckRequest,
+    tenant_id: MandateTenantId,
     x_correlation_id: WaveCorrelationIdHeader = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
     return source_check_wave_response(
+        tenant_id=tenant_id,
         wave_id=wave_id,
         request=request,
         correlation_id=x_correlation_id or f"corr_wave_source_check_{wave_id}",

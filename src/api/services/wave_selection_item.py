@@ -21,6 +21,7 @@ def with_selection_and_proof_pack(
     reason_code: str,
     comment: str | None,
     correlation_id: str,
+    tenant_id: str,
     generate_proof_pack: bool,
     construction_repository: ConstructionRepository,
     proof_pack_repository: DpmProofPackRepository,
@@ -50,6 +51,7 @@ def with_selection_and_proof_pack(
         )
     try:
         proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
+            tenant_id=tenant_id,
             alternative_set_id=str(item.alternative_set_id),
             selected_alternative_id=alternative_id,
             actor_id=actor_id,

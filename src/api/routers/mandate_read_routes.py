@@ -22,6 +22,7 @@ from src.api.services.mandate_service import (
 from src.api.services.mandate_temporal_reads import get_mandate_by_portfolio
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMandateDigitalTwin
+from src.api.routers.mandate_tenant_query import MandateTenantId
 
 
 @router.get(
@@ -45,6 +46,7 @@ from src.core.mandates import DpmMandateDigitalTwin
 )
 async def read_mandate_by_portfolio(
     portfolio_id: str,
+    tenant_id: MandateTenantId,
     as_of_date: date | None = Query(
         default=None,
         description=(
@@ -60,6 +62,7 @@ async def read_mandate_by_portfolio(
             repository=repository,
             portfolio_id=portfolio_id,
             as_of_date=as_of_date,
+            tenant_id=tenant_id,
         )
     )
 
@@ -83,10 +86,13 @@ async def read_mandate_by_portfolio(
 )
 async def read_mandate(
     mandate_id: str,
+    tenant_id: MandateTenantId,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateDigitalTwin:
     return read_mandate_with_not_found_http_mapping(
-        lambda: get_latest_mandate(repository=repository, mandate_id=mandate_id)
+        lambda: get_latest_mandate(
+            repository=repository, mandate_id=mandate_id, tenant_id=tenant_id
+        )
     )
 
 
@@ -109,10 +115,13 @@ async def read_mandate(
 )
 async def read_mandate_versions(
     mandate_id: str,
+    tenant_id: MandateTenantId,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> list[DpmMandateDigitalTwin]:
     return read_mandate_with_not_found_http_mapping(
-        lambda: list_mandate_versions(repository=repository, mandate_id=mandate_id)
+        lambda: list_mandate_versions(
+            repository=repository, mandate_id=mandate_id, tenant_id=tenant_id
+        )
     )
 
 
@@ -158,6 +167,7 @@ async def read_mandate_versions(
 )
 async def read_mandate_diff(
     mandate_id: str,
+    tenant_id: MandateTenantId,
     from_version: Optional[str] = Query(
         default=None,
         description="Optional older version to compare. Must be supplied with `to_version`.",
@@ -177,6 +187,7 @@ async def read_mandate_diff(
                 mandate_id=mandate_id,
                 from_version=from_version,
                 to_version=to_version,
+                tenant_id=tenant_id,
             )
         )
     except DpmMandateDiffUnavailableError as exc:

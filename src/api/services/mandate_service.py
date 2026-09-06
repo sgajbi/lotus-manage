@@ -58,7 +58,7 @@ def refresh_mandate_from_core(
     portfolio_id: str,
     mandate_id: str,
     as_of_date: date,
-    tenant_id: Optional[str],
+    tenant_id: str,
     booking_center_code: Optional[str],
     model_portfolio_id: Optional[str],
     reference_currency: Optional[str],
@@ -80,6 +80,7 @@ def refresh_mandate_from_core(
 
     persist_mandate_health_evidence(
         repository=repository,
+        tenant_id=tenant_id,
         twin=refresh_result.twin,
         health_snapshot=refresh_result.health_snapshot,
         monitoring_exceptions=refresh_result.monitoring_exceptions,
@@ -92,8 +93,11 @@ def get_latest_mandate_by_portfolio(
     *,
     repository: DpmMandateRepository,
     portfolio_id: str,
+    tenant_id: str,
 ) -> DpmMandateDigitalTwin:
-    twin = repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id)
+    twin = repository.get_latest_mandate_by_portfolio(
+        portfolio_id=portfolio_id, tenant_id=tenant_id
+    )
     if twin is None:
         raise DpmMandateNotFoundError("DPM_MANDATE_NOT_FOUND")
     return twin
@@ -103,8 +107,9 @@ def get_latest_mandate(
     *,
     repository: DpmMandateRepository,
     mandate_id: str,
+    tenant_id: str,
 ) -> DpmMandateDigitalTwin:
-    twin = repository.get_latest_mandate(mandate_id=mandate_id)
+    twin = repository.get_latest_mandate(mandate_id=mandate_id, tenant_id=tenant_id)
     if twin is None:
         raise DpmMandateNotFoundError("DPM_MANDATE_NOT_FOUND")
     return twin
@@ -114,8 +119,9 @@ def list_mandate_versions(
     *,
     repository: DpmMandateRepository,
     mandate_id: str,
+    tenant_id: str,
 ) -> list[DpmMandateDigitalTwin]:
-    versions = repository.list_mandate_versions(mandate_id=mandate_id)
+    versions = repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=tenant_id)
     if not versions:
         raise DpmMandateNotFoundError("DPM_MANDATE_NOT_FOUND")
     return versions
@@ -125,8 +131,9 @@ def get_latest_mandate_health(
     *,
     repository: DpmMandateRepository,
     mandate_id: str,
+    tenant_id: str,
 ) -> DpmMandateHealthSnapshot:
-    snapshot = repository.get_latest_health_snapshot(mandate_id=mandate_id)
+    snapshot = repository.get_latest_health_snapshot(mandate_id=mandate_id, tenant_id=tenant_id)
     if snapshot is None:
         raise DpmMandateHealthNotFoundError("DPM_MANDATE_HEALTH_NOT_FOUND")
     return snapshot
@@ -137,12 +144,14 @@ def recalculate_mandate_health(
     repository: DpmMandateRepository,
     mandate_id: str,
     health_input: DpmMandateHealthInput,
+    tenant_id: str,
 ) -> DpmMandateHealthSnapshot:
     if health_input.twin.mandate_id != mandate_id:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
     health_result = calculate_mandate_health_result(health_input)
     persist_mandate_health_evidence(
         repository=repository,
+        tenant_id=tenant_id,
         twin=health_input.twin,
         health_snapshot=health_result.snapshot,
         monitoring_exceptions=health_result.monitoring_exceptions,
@@ -156,6 +165,7 @@ def run_mandate_monitoring_once(
     mandate_ids: list[str],
     as_of_date: date,
     filters: dict[str, str],
+    tenant_id: str,
 ) -> DpmMonitoringRun:
     requested_at = datetime.now(timezone.utc)
     monitoring_run_id = monitoring_run_id_for(requested_at)
@@ -166,9 +176,11 @@ def run_mandate_monitoring_once(
         resolve_twin=lambda mandate_id: get_latest_mandate(
             repository=repository,
             mandate_id=mandate_id,
+            tenant_id=tenant_id,
         ),
         persist_result=lambda twin, snapshot, exceptions: persist_mandate_health_evidence(
             repository=repository,
+            tenant_id=tenant_id,
             twin=twin,
             health_snapshot=snapshot,
             monitoring_exceptions=exceptions,
@@ -292,8 +304,9 @@ def diff_mandate_versions(
     mandate_id: str,
     from_version: Optional[str],
     to_version: Optional[str],
+    tenant_id: str,
 ) -> DpmMandateDiff:
-    versions = repository.list_mandate_versions(mandate_id=mandate_id)
+    versions = repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=tenant_id)
     if not versions:
         raise DpmMandateNotFoundError("DPM_MANDATE_NOT_FOUND")
 

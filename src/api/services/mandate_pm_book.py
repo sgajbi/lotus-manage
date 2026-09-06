@@ -9,11 +9,14 @@ def mandate_ids_from_pm_book_membership(
     *,
     repository: DpmMandateRepository,
     membership: DpmCorePortfolioManagerBookMembershipResponse,
+    tenant_id: str,
 ) -> list[str]:
     mandate_ids: list[str] = []
     missing_portfolio_ids: list[str] = []
     for member in membership.members:
-        twin = repository.get_latest_mandate_by_portfolio(portfolio_id=member.portfolio_id)
+        twin = repository.get_latest_mandate_by_portfolio(
+            portfolio_id=member.portfolio_id, tenant_id=tenant_id
+        )
         if twin is None:
             missing_portfolio_ids.append(member.portfolio_id)
             continue

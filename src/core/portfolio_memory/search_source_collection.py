@@ -27,6 +27,7 @@ from src.core.portfolio_memory.read_request import validate_portfolio_memory_rea
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     require_campaign_definition_tenant_id,
+    require_mandate_tenant_id,
 )
 from src.core.portfolio_memory.wave_projection import wave_events
 
@@ -96,11 +97,14 @@ def collect_portfolio_memory_search_events(
         events_by_portfolio_id=events_by_portfolio_id,
         limit=limit,
     )
-    _collect_mandate_health_events(
-        repositories=repositories,
-        candidates=candidates,
-        events_by_portfolio_id=events_by_portfolio_id,
-    )
+    mandate_tenant_id = require_mandate_tenant_id(tenant_id=tenant_id, repositories=repositories)
+    if mandate_tenant_id is not None:
+        _collect_mandate_health_events(
+            repositories=repositories,
+            candidates=candidates,
+            events_by_portfolio_id=events_by_portfolio_id,
+            tenant_id=mandate_tenant_id,
+        )
     _collect_construction_events(
         repositories=repositories,
         candidates=candidates,
@@ -220,17 +224,18 @@ def _collect_mandate_health_events(
     repositories: PortfolioMemorySourceRepositories,
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
+    tenant_id: str,
 ) -> None:
     if repositories.mandate_repository is None:
         return
     for portfolio_id in sorted(candidates):
         twin = repositories.mandate_repository.get_latest_mandate_by_portfolio(
-            portfolio_id=portfolio_id
+            portfolio_id=portfolio_id, tenant_id=tenant_id
         )
         if twin is None:
             continue
         health_snapshot = repositories.mandate_repository.get_latest_health_snapshot(
-            mandate_id=twin.mandate_id
+            mandate_id=twin.mandate_id, tenant_id=tenant_id
         )
         if health_snapshot is not None:
             events_by_portfolio_id[portfolio_id].append(
