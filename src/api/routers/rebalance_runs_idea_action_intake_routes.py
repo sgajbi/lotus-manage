@@ -173,7 +173,7 @@ def get_idea_management_action_outcomes(
 
 
 @shared.router.get(
-    "/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes",
+    "/rebalance/idea-action-intakes/outcomes/by-conversion-intent",
     response_model=IdeaManagementActionOutcomeHistoryResponse,
     summary="Get Manage-owned Outcome History by Idea Conversion Intent",
     description=(
@@ -186,12 +186,15 @@ def get_idea_management_action_outcomes(
 )
 def get_idea_management_action_outcomes_by_conversion_intent(
     request: Request,
-    conversion_intent_id: Annotated[str, Path(min_length=1, max_length=160)],
+    conversion_intent_id: Annotated[str, Query(min_length=1, max_length=160)],
     portfolio_id: Annotated[str, Query(min_length=1, max_length=160)],
     principal: IdeaActionIntakePrincipal = Depends(require_idea_action_read_principal),
 ) -> IdeaManagementActionOutcomeHistoryResponse:
     shared._assert_support_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params={"portfolio_id"})
+    shared._reject_unexpected_query_params(
+        request,
+        allowed_params={"conversion_intent_id", "portfolio_id"},
+    )
     try:
         portfolio_id = normalize_idea_action_identifier(portfolio_id)
         conversion_intent_id = normalize_idea_action_identifier(conversion_intent_id)

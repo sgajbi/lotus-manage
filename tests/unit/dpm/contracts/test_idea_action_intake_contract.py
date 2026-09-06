@@ -34,8 +34,8 @@ def test_idea_action_intake_contract_preserves_manage_authority_boundary() -> No
     assert contract["management_review_outcome_history_proven"] is True
     assert contract["conversion_intent_owner_recovery_proven"] is True
     assert contract["conversion_intent_outcome_history_route"] == (
-        "GET /api/v1/rebalance/idea-action-intakes/by-conversion-intent/"
-        "{conversion_intent_id}/outcomes?portfolio_id={portfolio_id}"
+        "GET /api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent?"
+        "conversion_intent_id={conversion_intent_id}&portfolio_id={portfolio_id}"
     )
     assert contract["downstream_execution_proven"] is False
     assert contract["supported_feature_promoted"] is False

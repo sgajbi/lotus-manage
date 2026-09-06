@@ -24,7 +24,7 @@
   "outcome_read_capability": "manage.idea_action_intake.read",
   "outcome_review_capability": "manage.idea_action_intake.review",
   "outcome_history_route": "GET /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
-  "conversion_intent_outcome_history_route": "GET /api/v1/rebalance/idea-action-intakes/by-conversion-intent/{conversion_intent_id}/outcomes?portfolio_id={portfolio_id}",
+  "conversion_intent_outcome_history_route": "GET /api/v1/rebalance/idea-action-intakes/outcomes/by-conversion-intent?conversion_intent_id={conversion_intent_id}&portfolio_id={portfolio_id}",
   "outcome_decision_route": "POST /api/v1/rebalance/idea-action-intakes/{intake_id}/outcomes",
   "outcome_history_contract_version": "lotus-manage.idea-action-outcome-history.v1",
   "local_dev_principal_source": "trusted_headers_until_production_idp_available",
