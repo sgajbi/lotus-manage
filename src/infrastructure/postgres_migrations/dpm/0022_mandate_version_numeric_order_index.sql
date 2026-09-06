@@ -9,7 +9,7 @@ CREATE INDEX IF NOT EXISTS idx_dpm_mandate_snapshots_portfolio_version_numeric
     ON dpm_mandate_snapshots (
         portfolio_id,
         as_of_date DESC,
-        (CASE WHEN mandate_version ~ '^[0-9]+$' THEN mandate_version::bigint ELSE NULL END) DESC,
+        (CASE WHEN mandate_version ~ '^[0-9]{1,18}$' THEN mandate_version::bigint ELSE NULL END) DESC,
         mandate_id DESC
     );
 
@@ -18,5 +18,5 @@ CREATE INDEX IF NOT EXISTS idx_dpm_mandate_snapshots_mandate_version_numeric
     ON dpm_mandate_snapshots (
         mandate_id,
         as_of_date DESC,
-        (CASE WHEN mandate_version ~ '^[0-9]+$' THEN mandate_version::bigint ELSE NULL END) DESC
+        (CASE WHEN mandate_version ~ '^[0-9]{1,18}$' THEN mandate_version::bigint ELSE NULL END) DESC
     );

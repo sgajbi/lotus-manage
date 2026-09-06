@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from copy import deepcopy
 from datetime import date, datetime, timezone
 from threading import Lock
@@ -14,14 +16,23 @@ from src.core.mandates import (
 )
 
 
+_MANDATE_VERSION_NUMERIC = re.compile(r"^[0-9]{1,18}$")
+
+
 def _mandate_version_sort_key(version: str) -> tuple[int, int, str]:
     """Numeric ordering for a TEXT mandate version (issue #646).
 
-    Mirrors the PostgreSQL expression: plain integers compare numerically,
-    anything else sorts last deterministically by its own text.
+    Mirrors the PostgreSQL expression exactly: 1-18 ASCII digits compare
+    numerically, anything else sorts last deterministically by its own text.
+
+    The grammar is a regex rather than str.isdigit() on purpose. isdigit()
+    accepts Unicode digits such as Arabic-Indic numerals and superscripts,
+    which PostgreSQL's [0-9] class rejects, so the two stores would disagree
+    about whether a version is numeric and therefore about which mandate is
+    current. The 18-digit bound mirrors the bigint cast on the SQL side.
     """
 
-    if version.isdigit():
+    if _MANDATE_VERSION_NUMERIC.match(version):
         return (1, int(version), "")
     return (0, 0, version)
 

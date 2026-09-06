@@ -275,3 +275,69 @@ def test_a_requested_version_resolves_to_its_latest_observation(
         assert diff.to_as_of_date == date(2026, 5, 3)
     finally:
         _clear(repository, mandate_id)
+
+
+def test_a_version_beyond_bigint_range_does_not_abort_the_read(
+    repository: PostgresDpmMandateRepository,
+) -> None:
+    """The guard bounds the numeric grammar at 18 digits for a reason.
+
+    mandate_version is TEXT, so a longer digit string is representable. An
+    unbounded `^[0-9]+$` would pass such a value into ::bigint, raise 22003,
+    and abort the read for EVERY caller - a worse failure than the mis-ordering
+    the guard was added to prevent. It must sort last instead.
+    """
+
+    mandate_id = f"MANDATE_BIGINT_{uuid.uuid4().hex[:8]}"
+    portfolio_id = f"PF_BIGINT_{uuid.uuid4().hex[:8]}"
+    beyond_bigint = "9" * 30
+    try:
+        repository.save_mandate_snapshot(
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=beyond_bigint)
+        )
+        repository.save_mandate_snapshot(
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="12")
+        )
+
+        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        assert latest is not None
+        assert latest.mandate_version == "12"
+        listed = [
+            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+        ]
+        assert listed == ["12", beyond_bigint]
+    finally:
+        _clear(repository, mandate_id)
+
+
+def test_both_stores_agree_on_which_versions_are_numeric(
+    repository: PostgresDpmMandateRepository,
+) -> None:
+    """PostgreSQL's [0-9] and Python's str.isdigit() disagree: isdigit accepts
+    Arabic-Indic numerals and superscripts. If the memory store used it, the
+    two backends would disagree about which mandate is current."""
+
+    from src.infrastructure.mandates.in_memory import _mandate_version_sort_key
+
+    unicode_digit = "٣"  # Arabic-Indic three, isdigit() is True
+    assert unicode_digit.isdigit()
+    # Memory treats it as non-numeric, matching PostgreSQL's [0-9] class.
+    assert _mandate_version_sort_key(unicode_digit)[0] == 0
+    assert _mandate_version_sort_key("3")[0] == 1
+    assert _mandate_version_sort_key("9" * 30)[0] == 0
+
+    mandate_id = f"MANDATE_UNICODE_{uuid.uuid4().hex[:8]}"
+    portfolio_id = f"PF_UNICODE_{uuid.uuid4().hex[:8]}"
+    try:
+        repository.save_mandate_snapshot(
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=unicode_digit)
+        )
+        repository.save_mandate_snapshot(
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="2")
+        )
+        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        assert latest is not None
+        # PostgreSQL sorts the non-ASCII version last, exactly as memory does.
+        assert latest.mandate_version == "2"
+    finally:
+        _clear(repository, mandate_id)

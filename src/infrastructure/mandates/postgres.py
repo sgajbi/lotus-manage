@@ -30,8 +30,16 @@ class _MonitoringExceptionListQuery:
 # Compare numerically, and keep the column's own order as the tie-break for
 # any value that is not a plain integer so a malformed row can never abort the
 # query. The matching expression index lives in migration 0022.
+# Accepts 1-18 ASCII digits. The upper bound matters: mandate_version is TEXT,
+# so a longer digit string is representable, and casting it would overflow
+# bigint with 22003 and abort the read for every caller - the exact failure the
+# guard exists to prevent. Eighteen digits sits inside bigint's 19-digit range.
+# The in-memory store applies the identical grammar, so the two backends cannot
+# disagree about whether a version is numeric.
+_MANDATE_VERSION_NUMERIC_PATTERN = "^[0-9]{1,18}$"
+
 _MANDATE_VERSION_ORDER = (
-    "CASE WHEN mandate_version ~ '^[0-9]+$' "
+    f"CASE WHEN mandate_version ~ '{_MANDATE_VERSION_NUMERIC_PATTERN}' "
     "THEN mandate_version::bigint ELSE NULL END DESC NULLS LAST, "
     "mandate_version DESC"
 )
