@@ -14,6 +14,18 @@ from src.core.mandates import (
 )
 
 
+def _mandate_version_sort_key(version: str) -> tuple[int, int, str]:
+    """Numeric ordering for a TEXT mandate version (issue #646).
+
+    Mirrors the PostgreSQL expression: plain integers compare numerically,
+    anything else sorts last deterministically by its own text.
+    """
+
+    if version.isdigit():
+        return (1, int(version), "")
+    return (0, 0, version)
+
+
 class InMemoryDpmMandateRepository(DpmMandateRepository):
     def __init__(self) -> None:
         self._lock = Lock()
@@ -76,7 +88,11 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
             rows = [
                 twin for twin in self._mandates_by_key.values() if twin.mandate_id == mandate_id
             ]
-            rows = sorted(rows, key=lambda row: (row.as_of_date, row.mandate_version), reverse=True)
+            rows = sorted(
+                rows,
+                key=lambda row: (row.as_of_date, _mandate_version_sort_key(row.mandate_version)),
+                reverse=True,
+            )
             return [deepcopy(row) for row in rows]
 
     def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot) -> None:
@@ -229,7 +245,14 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
 def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> Optional[DpmMandateDigitalTwin]:
     if not rows:
         return None
-    return max(rows, key=lambda row: (row.as_of_date, row.mandate_version, row.mandate_id))
+    return max(
+        rows,
+        key=lambda row: (
+            row.as_of_date,
+            _mandate_version_sort_key(row.mandate_version),
+            row.mandate_id,
+        ),
+    )
 
 
 def _stale_mandate_keys(
