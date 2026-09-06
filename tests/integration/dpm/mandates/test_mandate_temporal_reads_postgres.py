@@ -280,12 +280,15 @@ def test_a_requested_version_resolves_to_its_latest_observation(
 def test_a_version_beyond_bigint_range_does_not_abort_the_read(
     repository: PostgresDpmMandateRepository,
 ) -> None:
-    """The guard bounds the numeric grammar at 18 digits for a reason.
+    """The storage contract for mandate_version is unrestricted TEXT, so a
+    version longer than bigint is a legitimate value and must order as the
+    large number it is.
 
-    mandate_version is TEXT, so a longer digit string is representable. An
-    unbounded `^[0-9]+$` would pass such a value into ::bigint, raise 22003,
-    and abort the read for EVERY caller - a worse failure than the mis-ordering
-    the guard was added to prevent. It must sort last instead.
+    A bigint cast is a narrowing assumption about data the contract permits:
+    it either overflows with 22003 and aborts the read for every caller, or -
+    if the grammar is length-bounded to avoid that - demotes a legitimately
+    huge version to the non-numeric tail, ordering it BELOW a two-digit one.
+    NUMERIC is arbitrary precision, so neither failure is possible.
     """
 
     mandate_id = f"MANDATE_BIGINT_{uuid.uuid4().hex[:8]}"
@@ -301,11 +304,12 @@ def test_a_version_beyond_bigint_range_does_not_abort_the_read(
 
         latest = repository.get_latest_mandate(mandate_id=mandate_id)
         assert latest is not None
-        assert latest.mandate_version == "12"
+        # 10^30 - 1 really is larger than 12, and the read must say so.
+        assert latest.mandate_version == beyond_bigint
         listed = [
             twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
         ]
-        assert listed == ["12", beyond_bigint]
+        assert listed == [beyond_bigint, "12"]
     finally:
         _clear(repository, mandate_id)
 
@@ -324,7 +328,8 @@ def test_both_stores_agree_on_which_versions_are_numeric(
     # Memory treats it as non-numeric, matching PostgreSQL's [0-9] class.
     assert _mandate_version_sort_key(unicode_digit)[0] == 0
     assert _mandate_version_sort_key("3")[0] == 1
-    assert _mandate_version_sort_key("9" * 30)[0] == 0
+    # A 30-digit version is numeric under the unrestricted storage contract.
+    assert _mandate_version_sort_key("9" * 30)[0] == 1
 
     mandate_id = f"MANDATE_UNICODE_{uuid.uuid4().hex[:8]}"
     portfolio_id = f"PF_UNICODE_{uuid.uuid4().hex[:8]}"
