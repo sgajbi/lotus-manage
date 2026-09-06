@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 from decimal import Decimal
 
 from src.core.dpm_source_context import (
@@ -1258,3 +1259,32 @@ def test_core_resolver_payload_and_shelf_attribute_normalization_edges():
     }
     assert _shelf_attribute_value(False) == "false"
     assert _shelf_attribute_value(None) == ""
+
+
+def test_a_negative_binding_version_is_refused_at_the_boundary() -> None:
+    """A version counter has no meaningful negative value.
+
+    binding_version is rendered to TEXT with str() and stored as
+    mandate_version, which orders digit-only values by magnitude and everything
+    else by raw text. '-2' and '-1' both fall outside the digit grammar, so the
+    text fallback puts '-2' first and the numerically older binding resolves as
+    the latest one. Both stores agree on that, which makes it worse rather than
+    better: it is consistently wrong.
+
+    Refusing at ingestion keeps the ordering rules describing real data instead
+    of inventing a signed grammar for values that should not exist.
+    """
+
+    with pytest.raises(ValidationError) as refusal:
+        DpmCoreMandateBindingResponse.model_validate(
+            _core_mandate_binding_payload(binding_version=-1)
+        )
+
+    assert "binding_version" in str(refusal.value)
+
+    # Zero and above remain acceptable: the constraint rejects only the
+    # meaningless case, and does not assume versions start at one.
+    accepted = DpmCoreMandateBindingResponse.model_validate(
+        _core_mandate_binding_payload(binding_version=0)
+    )
+    assert accepted.binding_version == 0
