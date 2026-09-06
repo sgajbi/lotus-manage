@@ -16,7 +16,7 @@ from src.core.mandates import (
 )
 
 
-_MANDATE_VERSION_NUMERIC = re.compile(r"^[0-9]{1,18}$")
+_MANDATE_VERSION_NUMERIC = re.compile(r"^[0-9]+$")
 
 
 def _mandate_version_sort_key(version: str) -> tuple[int, int, str]:
@@ -29,7 +29,9 @@ def _mandate_version_sort_key(version: str) -> tuple[int, int, str]:
     accepts Unicode digits such as Arabic-Indic numerals and superscripts,
     which PostgreSQL's [0-9] class rejects, so the two stores would disagree
     about whether a version is numeric and therefore about which mandate is
-    current. The 18-digit bound mirrors the bigint cast on the SQL side.
+    current. Neither side bounds the length: the storage contract is
+    unrestricted, SQL casts to arbitrary-precision NUMERIC, and Python ints
+    are unbounded, so a long version orders as the number it is.
     """
 
     if _MANDATE_VERSION_NUMERIC.match(version):
