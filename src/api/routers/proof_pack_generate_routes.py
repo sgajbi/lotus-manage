@@ -1,4 +1,5 @@
 from __future__ import annotations
+from urllib.parse import quote
 
 from typing import Annotated
 
@@ -89,6 +90,7 @@ def generate_proof_pack(
             include_ai_evidence_input=request.include_ai_evidence_input,
         )
         return _to_generate_response(
+            tenant_id=tenant_id,
             proof_pack=proof_pack,
             include_markdown=request.include_markdown,
             include_report_input=request.include_report_input,
@@ -159,11 +161,23 @@ def _to_generate_response(
     include_markdown: bool,
     include_report_input: bool,
     include_ai_evidence_input: bool,
+    tenant_id: str,
 ) -> DpmProofPackGenerateResponse:
+    """Build the response, with usable handoff links (issue #648).
+
+    The report-input and ai-evidence-input endpoints now require a tenant, so a
+    link that omits it is refused with 422 the moment a consumer follows it.
+    Handing back a URL the service will reject is worse than omitting it: the
+    consumer has no way to tell a broken link from a genuine refusal.
+    """
+
     base = f"/api/v1/rebalance/proof-packs/{proof_pack.proof_pack_id}"
+    scope = f"?tenant_id={quote(tenant_id, safe='')}"
     return DpmProofPackGenerateResponse(
         proof_pack=proof_pack,
         markdown_url=f"{base}/summary.md" if include_markdown else None,
-        report_input_url=f"{base}/report-input" if include_report_input else None,
-        ai_evidence_input_url=f"{base}/ai-evidence-input" if include_ai_evidence_input else None,
+        report_input_url=f"{base}/report-input{scope}" if include_report_input else None,
+        ai_evidence_input_url=(
+            f"{base}/ai-evidence-input{scope}" if include_ai_evidence_input else None
+        ),
     )

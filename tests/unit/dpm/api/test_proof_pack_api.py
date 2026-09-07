@@ -159,8 +159,12 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert proof_pack["source_hashes"]["mandate_twin"].startswith("sha256:")
     assert proof_pack["source_hashes"]["mandate_health"].startswith("sha256:")
     assert body["markdown_url"].endswith("/summary.md")
-    assert body["report_input_url"].endswith("/report-input")
-    assert body["ai_evidence_input_url"].endswith("/ai-evidence-input")
+    # The handoff link carries the tenant, because the endpoint it points at
+    # requires one (issue #648) - a link without it is refused the moment a
+    # consumer follows it, and a broken link is indistinguishable from a
+    # genuine refusal.
+    assert body["report_input_url"].endswith("/report-input?tenant_id=tenant-test")
+    assert body["ai_evidence_input_url"].endswith("/ai-evidence-input?tenant_id=tenant-test")
 
     replay = client.post(
         "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",

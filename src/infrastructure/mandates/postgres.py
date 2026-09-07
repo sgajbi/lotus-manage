@@ -553,18 +553,29 @@ def _monitoring_exception_list_query(
             where_clauses.append(f"{column} = %s")
             args.append(value)
     if cursor is not None:
+        # The cursor subqueries resolve an exception id to its detected_at, and
+        # they are fenced too (issue #648). Unfenced, a caller could page using
+        # another tenant's exception id: the subquery would find that row's
+        # timestamp and silently anchor this tenant's page to it, revealing
+        # ordering information about evidence the caller cannot read.
         where_clauses.append(
             """
             (
-                detected_at < (SELECT detected_at FROM dpm_monitoring_exceptions WHERE exception_id = %s)
+                detected_at < (
+                    SELECT detected_at FROM dpm_monitoring_exceptions
+                    WHERE tenant_id = %s AND exception_id = %s
+                )
                 OR (
-                    detected_at = (SELECT detected_at FROM dpm_monitoring_exceptions WHERE exception_id = %s)
+                    detected_at = (
+                        SELECT detected_at FROM dpm_monitoring_exceptions
+                        WHERE tenant_id = %s AND exception_id = %s
+                    )
                     AND exception_id < %s
                 )
             )
             """
         )
-        args.extend([cursor, cursor, cursor])
+        args.extend([tenant_id, cursor, tenant_id, cursor, cursor])
     where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
     args.append(limit + 1)
     return _MonitoringExceptionListQuery(
