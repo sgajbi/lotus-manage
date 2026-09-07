@@ -28,6 +28,11 @@ MANDATE_TENANT_QUERY_DESCRIPTION = (
 MandateTenantId = Annotated[
     str,
     Query(
+        # min_length alone admits "%20": whitespace is a character. The pattern
+        # requires at least one non-whitespace character, so a padded or blank
+        # value is refused at the boundary rather than becoming a tenant that
+        # no legitimate caller can ever match again.
+        pattern=r"^\s*\S.*$",
         min_length=1,
         description=MANDATE_TENANT_QUERY_DESCRIPTION,
         examples=["default"],
@@ -50,6 +55,8 @@ def require_mandate_tenant(tenant_id: str | None) -> str:
 
     if tenant_id is None or not tenant_id.strip():
         raise DpmMandateTenantRequiredError("DPM_MANDATE_TENANT_REQUIRED")
+    # Normalised, so " alpha" and "alpha" are one tenant rather than two. An
+    # unnormalised pad would silently partition a tenant's own evidence.
     return tenant_id.strip()
 
 
