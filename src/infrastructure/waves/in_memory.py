@@ -10,6 +10,7 @@ from src.core.waves.repository import (
     DpmWaveIdempotencyConflictError,
     DpmWaveRepository,
     DpmWaveVersionConflictError,
+    wave_idempotency_mapping_key,
 )
 
 
@@ -25,18 +26,27 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
         wave: DpmRebalanceWave,
         idempotency_key: str | None,
         request_hash: str | None,
+        tenant_id: str,
     ) -> None:
+        # The caller's key is namespaced by tenant before it is stored, so two
+        # tenants presenting one key hold two independent mappings instead of
+        # colliding on this index (issue #648).
+        mapping_key = (
+            None
+            if idempotency_key is None
+            else wave_idempotency_mapping_key(tenant_id=tenant_id, idempotency_key=idempotency_key)
+        )
         with self._lock:
             _raise_if_idempotency_conflict(
                 idempotency_index=self._idempotency_index,
-                idempotency_key=idempotency_key,
+                idempotency_key=mapping_key,
                 wave_id=wave.wave_id,
                 request_hash=request_hash,
             )
             _raise_if_wave_exists(waves=self._waves, wave_id=wave.wave_id)
             _index_idempotency_key(
                 idempotency_index=self._idempotency_index,
-                idempotency_key=idempotency_key,
+                idempotency_key=mapping_key,
                 wave_id=wave.wave_id,
                 request_hash=request_hash,
             )
@@ -47,9 +57,19 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
             wave = self._waves.get(wave_id)
             return deepcopy(wave) if wave is not None else None
 
-    def get_wave_by_idempotency(self, *, idempotency_key: str) -> DpmRebalanceWave | None:
+    def get_wave_by_idempotency(
+        self, *, idempotency_key: str, tenant_id: str
+    ) -> DpmRebalanceWave | None:
+        # Previously this looked up the caller's raw key, so a caller presenting
+        # another tenant's caller-chosen key was served that tenant's wave
+        # (issue #648). Deriving the mapping key means another tenant's mapping
+        # is simply not found, rather than found and refused - a refusal would
+        # disclose that some other tenant holds that key.
+        mapping_key = wave_idempotency_mapping_key(
+            tenant_id=tenant_id, idempotency_key=idempotency_key
+        )
         with self._lock:
-            indexed = self._idempotency_index.get(idempotency_key)
+            indexed = self._idempotency_index.get(mapping_key)
             if indexed is None:
                 return None
             wave_id, _request_hash = indexed

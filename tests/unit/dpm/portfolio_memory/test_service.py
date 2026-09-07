@@ -206,7 +206,9 @@ def test_search_portfolio_memory_from_sources_batches_source_family_scans() -> N
         retention_expires_at=None,
     )
     wave_repository = _CountingWaveRepository()
-    wave_repository.save_wave(wave=_wave(), idempotency_key=None, request_hash=None)
+    wave_repository.save_wave(
+        wave=_wave(), idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
     outcome_repository = _CountingOutcomeReviewRepository()
     outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
     score_run_repository = _CountingScoreRunRepository()

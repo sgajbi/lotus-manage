@@ -14,12 +14,14 @@ def save_wave_or_raise(
     wave: DpmRebalanceWave,
     idempotency_key: str | None,
     request_hash: str | None,
+    tenant_id: str,
 ) -> None:
     try:
         wave_repository.save_wave(
             wave=wave,
             idempotency_key=idempotency_key,
             request_hash=request_hash,
+            tenant_id=tenant_id,
         )
     except (DpmWaveAlreadyExistsError, DpmWaveIdempotencyConflictError) as exc:
         raise DpmWaveValidationError("WAVE_CREATE_CONFLICT", str(exc)) from exc

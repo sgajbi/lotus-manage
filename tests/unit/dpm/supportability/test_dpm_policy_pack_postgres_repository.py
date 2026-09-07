@@ -83,6 +83,14 @@ class _FakeConnection:
             # Migration 0025 fences monitoring exceptions by tenant
             # (issue #648); this fake models a different table.
             return _FakeCursor()
+        # Schema statements from apply_postgres_migrations. Migration files
+        # open with a comment block, so a startswith check on the keyword
+        # never matches - look for the statement keyword anywhere.
+        if any(
+            keyword in sql
+            for keyword in ("CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "schema_migrations")
+        ):
+            return _FakeCursor()
         raise AssertionError(f"Unhandled SQL: {sql}")
 
     def commit(self):

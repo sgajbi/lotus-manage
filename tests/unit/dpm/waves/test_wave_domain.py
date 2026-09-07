@@ -127,7 +127,9 @@ def test_wave_transition_requires_matching_event_identity_and_target_state() -> 
 def test_in_memory_wave_repository_is_defensive_and_version_guarded() -> None:
     repository = InMemoryDpmWaveRepository()
     wave = _wave()
-    repository.save_wave(wave=wave, idempotency_key="idem-1", request_hash="hash-1")
+    repository.save_wave(
+        wave=wave, idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
+    )
 
     loaded = repository.get_wave(wave_id=wave.wave_id)
     assert loaded is not None
@@ -151,7 +153,9 @@ def test_in_memory_wave_repository_is_defensive_and_version_guarded() -> None:
 
 def test_in_memory_wave_repository_enforces_idempotency_conflict() -> None:
     repository = InMemoryDpmWaveRepository()
-    repository.save_wave(wave=_wave(), idempotency_key="idem-1", request_hash="hash-1")
+    repository.save_wave(
+        wave=_wave(), idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
+    )
 
     conflicting = _wave().model_copy(update={"wave_id": "dwv_002"}, deep=True)
     with pytest.raises(DpmWaveIdempotencyConflictError):
@@ -159,24 +163,31 @@ def test_in_memory_wave_repository_enforces_idempotency_conflict() -> None:
             wave=conflicting,
             idempotency_key="idem-1",
             request_hash="hash-2",
+            tenant_id="tenant-test",
         )
 
 
 def test_in_memory_wave_repository_rejects_duplicate_wave_id() -> None:
     repository = InMemoryDpmWaveRepository()
     wave = _wave()
-    repository.save_wave(wave=wave, idempotency_key="idem-1", request_hash="hash-1")
+    repository.save_wave(
+        wave=wave, idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
+    )
 
     with pytest.raises(DpmWaveAlreadyExistsError):
-        repository.save_wave(wave=wave, idempotency_key="idem-2", request_hash="hash-2")
+        repository.save_wave(
+            wave=wave, idempotency_key="idem-2", request_hash="hash-2", tenant_id="tenant-test"
+        )
 
 
 def test_in_memory_wave_repository_replays_idempotent_wave() -> None:
     repository = InMemoryDpmWaveRepository()
     wave = _wave()
-    repository.save_wave(wave=wave, idempotency_key="idem-1", request_hash="hash-1")
+    repository.save_wave(
+        wave=wave, idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
+    )
 
-    replay = repository.get_wave_by_idempotency(idempotency_key="idem-1")
+    replay = repository.get_wave_by_idempotency(idempotency_key="idem-1", tenant_id="tenant-test")
 
     assert replay == wave
 
@@ -236,7 +247,9 @@ def test_in_memory_wave_repository_lists_filtered_sorted_defensive_pages() -> No
     other_state = _wave().model_copy(update={"wave_id": "dwv_other", "state": "CREATED"}, deep=True)
 
     for wave in [older, newer, other_state]:
-        repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+        repository.save_wave(
+            wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+        )
 
     first_page = repository.list_waves(
         state="DRAFT",
@@ -369,10 +382,15 @@ class _FakeWaveConnection:
             }
             return _FakeCursor(rowcount=1)
         if "INSERT INTO dpm_rebalance_wave_idempotency" in sql:
+            # The tenant must be written with the mapping, or a fake that
+            # ignored it would keep passing after the column stopped being
+            # populated (issue #648).
+            assert "tenant_id" in sql, sql
             self.idempotency[str(args[0])] = {
                 "idempotency_key": args[0],
                 "wave_id": args[1],
                 "request_hash": args[2],
+                "tenant_id": args[4],
             }
             return _FakeCursor(rowcount=1)
         if "INSERT INTO dpm_rebalance_wave_events" in sql:
@@ -385,8 +403,12 @@ class _FakeWaveConnection:
         if "SELECT wave_json FROM dpm_rebalance_waves WHERE wave_id = %s" in sql:
             return _FakeCursor(self.waves.get(str(args[0])))
         if "SELECT w.wave_json FROM dpm_rebalance_wave_idempotency" in sql:
+            # Asserted, not merely tolerated: a fake that dispatches on a
+            # substring silently stops filtering when the clause changes, and
+            # its fallback is "no filter" rather than "no result".
+            assert "i.tenant_id = %s" in sql, sql
             indexed = self.idempotency.get(str(args[0]))
-            if indexed is None:
+            if indexed is None or indexed.get("tenant_id") != args[1]:
                 return _FakeCursor()
             return _FakeCursor(self.waves.get(str(indexed["wave_id"])))
         if "SELECT wave_json FROM dpm_rebalance_waves" in sql and "ORDER BY created_at DESC" in sql:
@@ -408,6 +430,14 @@ class _FakeWaveConnection:
                 }
             )
             return _FakeCursor(rowcount=1)
+        # Schema statements from apply_postgres_migrations. Migration files
+        # open with a comment block, so a startswith check on the keyword
+        # never matches - look for the statement keyword anywhere.
+        if any(
+            keyword in sql
+            for keyword in ("CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "schema_migrations")
+        ):
+            return _FakeCursor()
         raise AssertionError(f"Unexpected SQL: {sql}")
 
     def commit(self) -> None:
@@ -451,6 +481,7 @@ def test_postgres_wave_insert_helpers_preserve_durable_create_contract() -> None
         wave=wave,
         idempotency_key="idem-1",
         request_hash="hash-1",
+        tenant_id="tenant-test",
     )
     postgres_module._insert_new_events(connection=fake, wave=wave)  # noqa: SLF001
 
@@ -477,9 +508,11 @@ def test_postgres_wave_repository_roundtrip_idempotency_and_update() -> None:
         event=_event("DRAFT", "PREVIEWED"),
     )
 
-    repository.save_wave(wave=wave, idempotency_key="idem-1", request_hash="hash-1")
+    repository.save_wave(
+        wave=wave, idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
+    )
     loaded = repository.get_wave(wave_id=wave.wave_id)
-    replay = repository.get_wave_by_idempotency(idempotency_key="idem-1")
+    replay = repository.get_wave_by_idempotency(idempotency_key="idem-1", tenant_id="tenant-test")
     updated = apply_wave_transition(
         wave=wave,
         to_state="CREATED",
@@ -500,15 +533,20 @@ def test_postgres_wave_repository_conflicts() -> None:
     fake = _FakeWaveConnection()
     repository = _postgres_repository(fake)
     wave = _wave()
-    repository.save_wave(wave=wave, idempotency_key="idem-1", request_hash="hash-1")
+    repository.save_wave(
+        wave=wave, idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
+    )
 
     with pytest.raises(DpmWaveAlreadyExistsError):
-        repository.save_wave(wave=wave, idempotency_key="idem-2", request_hash="hash-2")
+        repository.save_wave(
+            wave=wave, idempotency_key="idem-2", request_hash="hash-2", tenant_id="tenant-test"
+        )
     with pytest.raises(DpmWaveIdempotencyConflictError):
         repository.save_wave(
             wave=wave.model_copy(update={"wave_id": "dwv_002"}, deep=True),
             idempotency_key="idem-1",
             request_hash="hash-2",
+            tenant_id="tenant-test",
         )
     with pytest.raises(DpmWaveVersionConflictError):
         repository.update_wave(wave=wave, expected_version=99)
@@ -518,7 +556,9 @@ def test_postgres_wave_payload_accepts_non_string_json() -> None:
     fake = _FakeWaveConnection()
     repository = _postgres_repository(fake)
     wave = _wave()
-    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    repository.save_wave(
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
     fake.waves[wave.wave_id]["wave_json"] = wave.model_dump(mode="json")
 
     assert repository.get_wave(wave_id=wave.wave_id) == wave
@@ -528,14 +568,19 @@ def test_postgres_wave_repository_returns_none_for_missing_reads() -> None:
     repository = _postgres_repository(_FakeWaveConnection())
 
     assert repository.get_wave(wave_id="dwv_missing") is None
-    assert repository.get_wave_by_idempotency(idempotency_key="idem-missing") is None
+    assert (
+        repository.get_wave_by_idempotency(idempotency_key="idem-missing", tenant_id="tenant-test")
+        is None
+    )
 
 
 def test_postgres_wave_repository_list_applies_durable_filters() -> None:
     fake = _FakeWaveConnection()
     repository = _postgres_repository(fake)
     wave = _wave()
-    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    repository.save_wave(
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
 
     listed = repository.list_waves(
         state="DRAFT",

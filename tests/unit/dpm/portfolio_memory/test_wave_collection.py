@@ -5,7 +5,9 @@ from tests.unit.dpm.api.test_portfolio_memory_api import PORTFOLIO_ID, _wave
 
 def test_wave_memory_events_projects_matching_wave_events() -> None:
     repository = InMemoryDpmWaveRepository()
-    repository.save_wave(wave=_wave(), idempotency_key=None, request_hash=None)
+    repository.save_wave(
+        wave=_wave(), idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
 
     events = wave_memory_events(
         portfolio_id=PORTFOLIO_ID,
@@ -36,6 +38,7 @@ def test_wave_memory_events_skips_waves_without_matching_portfolio_items() -> No
         ),
         idempotency_key=None,
         request_hash=None,
+        tenant_id="tenant-test",
     )
 
     events = wave_memory_events(
