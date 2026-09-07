@@ -35,6 +35,7 @@ def test_build_run_proof_pack_passes_resolved_mandate_and_workflow_inputs(
     monkeypatch.setattr(proof_pack_generation, "build_proof_pack_from_run", _build)
 
     result = build_run_proof_pack(
+        tenant_id="tenant-test",
         run=run,
         workflow_decisions=workflow_decisions,  # type: ignore[arg-type]
         actor_id="pm_generation",
@@ -86,6 +87,7 @@ def test_build_selected_alternative_proof_pack_passes_resolved_source_inputs(
     )
 
     result_pack = build_selected_alternative_proof_pack(
+        tenant_id="tenant-test",
         selected_source=selected_source,
         selected_alternative_id=alternative.alternative_id,
         actor_id="pm_generation",
