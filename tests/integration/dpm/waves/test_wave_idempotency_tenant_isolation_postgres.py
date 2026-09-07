@@ -140,3 +140,49 @@ def test_a_tenant_with_no_mapping_reads_nothing_for_a_key_another_tenant_holds(
     # simply break idempotency.
     owned = repository.get_wave_by_idempotency(idempotency_key=shared_key, tenant_id=TENANT_A)
     assert owned is not None and owned.wave_id == wave_a.wave_id
+
+
+def test_mappings_written_before_the_tenant_column_are_quarantined_not_defaulted(
+    repository: PostgresDpmWaveRepository,
+) -> None:
+    """The upgrade path, asserted rather than described in a migration comment.
+
+    Migration 0026 adds tenant_id nullable with no backfill. A mapping written
+    before it keeps its raw caller-chosen key and carries no tenant, so it is
+    reachable from no tenant at all - including one literally named "default",
+    which is the value a backfill would most plausibly have chosen. Attributing
+    those rows to an assumed tenant is what would let one tenant replay a wave
+    it never created.
+    """
+
+    import psycopg
+    from psycopg.rows import dict_row
+
+    legacy_key = f"legacy-{uuid.uuid4().hex[:10]}"
+    wave = _wave(wave_id=f"dwv_{uuid.uuid4().hex[:10]}", portfolio_id="PB_LEGACY_001")
+    repository.save_wave(
+        wave=wave, idempotency_key=legacy_key, request_hash="legacy-hash", tenant_id=TENANT_A
+    )
+
+    # Reduce the stored mapping to its pre-migration shape: the caller's raw
+    # key, with no tenant.
+    with psycopg.connect(_DSN, row_factory=dict_row) as connection:
+        connection.execute(
+            "UPDATE dpm_rebalance_wave_idempotency SET idempotency_key = %s, tenant_id = NULL"
+            " WHERE wave_id = %s",
+            (legacy_key, wave.wave_id),
+        )
+        connection.commit()
+        stored = connection.execute(
+            "SELECT tenant_id FROM dpm_rebalance_wave_idempotency WHERE idempotency_key = %s",
+            (legacy_key,),
+        ).fetchone()
+
+    # Preserved for deliberate attribution, not deleted.
+    assert stored is not None
+    assert stored["tenant_id"] is None
+
+    for tenant in (TENANT_A, TENANT_B, "default", ""):
+        assert (
+            repository.get_wave_by_idempotency(idempotency_key=legacy_key, tenant_id=tenant) is None
+        ), tenant
