@@ -26,6 +26,10 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
     "quality-baseline.yml": {"contents": "read"},
     "demo-certification.yml": {"contents": "read"},
     "pr-auto-merge.yml": {"contents": "read"},
+    # Reads history and run listings only; it must never be able to dispatch or
+    # write, because a watchdog that can create the evidence it audits could
+    # report coverage it manufactured (issue #659).
+    "main-gate-coverage-audit.yml": {"actions": "read", "contents": "read"},
 }
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)
 WORKFLOW_JOB_PATTERN = re.compile(r"(?m)^  [A-Za-z0-9_-]+:\s*$")
@@ -46,13 +50,23 @@ IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
         '--jq .object.sha 2>/dev/null)"; then'
     ),
 )
-IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION = (
-    'if [ "$existing_ref_sha" != "$MERGE_COMMIT_SHA" ]; then'
+# The dispatcher pins one run per revision the merged PR put on main (issue
+# #659), so the pinned SHA is the loop's `$revision` rather than the PR head.
+# Both forms are accepted here because this gate answers "is the dispatch
+# pinned and immutable" - whether it covers EVERY merged commit is a different
+# claim, owned by tests/unit/test_main_gate_commit_coverage.py. Collapsing the
+# two would let one control's pass be read as the other's.
+IMMUTABLE_DISPATCH_REF_PINNED_SHA_VARIABLES = ("$MERGE_COMMIT_SHA", "$revision")
+IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITIONS = tuple(
+    f'if [ "$existing_ref_sha" != "{variable}" ]; then'
+    for variable in IMMUTABLE_DISPATCH_REF_PINNED_SHA_VARIABLES
 )
 IMMUTABLE_DISPATCH_REF_CREATION_CONDITION = 'if [ -z "$existing_ref_sha" ]; then'
 IMMUTABLE_DISPATCH_REF_CREATION_COMMAND = 'gh api "repos/$GITHUB_REPOSITORY/git/refs"'
 IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD = '-f ref="refs/tags/$dispatch_ref"'
-IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD = '-f sha="$MERGE_COMMIT_SHA"'
+IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELDS = tuple(
+    f'-f sha="{variable}"' for variable in IMMUTABLE_DISPATCH_REF_PINNED_SHA_VARIABLES
+)
 MAIN_RELEASABILITY_DISPATCH_COMMAND = "gh workflow run main-releasability.yml"
 MAIN_RELEASABILITY_DISPATCH_TOKENS = (
     (
@@ -78,6 +92,34 @@ MAIN_RELEASABILITY_DISPATCH_TOKENS = (
         "$dispatch_ref",
         "-f",
         "expected_sha=$MERGE_COMMIT_SHA",
+        "-f",
+        "triggering_pr=$PR_NUMBER",
+    ),
+    # Per-revision dispatch (issue #659): one pinned run for every commit the
+    # merged PR put on main, not only its head.
+    (
+        "gh",
+        "workflow",
+        "run",
+        "main-releasability.yml",
+        "--repo",
+        "$GITHUB_REPOSITORY",
+        "--ref",
+        "$dispatch_ref",
+        "-f",
+        "expected_sha=$revision",
+    ),
+    (
+        "gh",
+        "workflow",
+        "run",
+        "main-releasability.yml",
+        "--repo",
+        "$GITHUB_REPOSITORY",
+        "--ref",
+        "$dispatch_ref",
+        "-f",
+        "expected_sha=$revision",
         "-f",
         "triggering_pr=$PR_NUMBER",
     ),
@@ -366,7 +408,7 @@ def _is_exact_immutable_ref_creation_command(command: str) -> bool:
         and not _has_disallowed_immutable_ref_creation_shell_control(command)
         and not _has_disallowed_immutable_ref_creation_override(command)
         and IMMUTABLE_DISPATCH_REF_CREATION_REF_FIELD in command
-        and IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELD in command
+        and any(field in command for field in IMMUTABLE_DISPATCH_REF_CREATION_SHA_FIELDS)
     )
 
 
@@ -505,7 +547,10 @@ def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
         stripped_line = line.strip()
         if condition_depth == 1 and stripped_line.startswith("existing_ref_sha="):
             return False
-        if stripped_line != IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITION or condition_depth != 1:
+        if (
+            stripped_line not in IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITIONS
+            or condition_depth != 1
+        ):
             if _opens_nested_shell_scope(stripped_line):
                 condition_depth += 1
             if _closes_nested_shell_scope(stripped_line):
