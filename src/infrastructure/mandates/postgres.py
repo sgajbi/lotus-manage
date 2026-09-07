@@ -99,7 +99,7 @@ class PostgresDpmMandateRepository:
             connection.execute(
                 query,
                 (
-                    _mandate_snapshot_id(twin),
+                    _mandate_snapshot_id(twin, tenant_id=tenant_id),
                     twin.mandate_id,
                     twin.portfolio_id,
                     twin.mandate_version,
@@ -592,8 +592,23 @@ def _import_psycopg() -> tuple[Any, Any]:
     return psycopg, dict_row
 
 
-def _mandate_snapshot_id(twin: DpmMandateDigitalTwin) -> str:
-    return f"ms_{twin.mandate_id}_{twin.mandate_version}_{twin.as_of_date.isoformat()}"
+def _mandate_snapshot_id(twin: DpmMandateDigitalTwin, *, tenant_id: str) -> str:
+    """Derive the snapshot's primary key, tenant included (issue #648).
+
+    The tenant is part of the key because it is part of the identity. Without
+    it two tenants holding the same mandate id, version and business date -
+    which is exactly the case tenant scoping exists to separate - derive the
+    same primary key, and the second write fails with a unique violation on
+    dpm_mandate_snapshots_pkey before the tenant-scoped upsert target is ever
+    consulted. Scoping every read while leaving the key tenant-blind makes the
+    two tenants collide instead of leak, which is a better failure and still a
+    failure.
+
+    Pre-upgrade rows keep their old ids. They carry no tenant, so they are
+    quarantined rather than addressable, and nothing re-derives their key.
+    """
+
+    return f"ms_{tenant_id}_{twin.mandate_id}_{twin.mandate_version}_{twin.as_of_date.isoformat()}"
 
 
 def _source_hash(payload_json: str) -> str:
