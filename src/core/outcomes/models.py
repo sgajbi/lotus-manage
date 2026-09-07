@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
+from src.core.common.identity_examples import PROOF_PACK_ID_EXAMPLE
 
 OutcomeDimension = Literal[
     "DRIFT_REDUCTION",
@@ -398,7 +399,9 @@ class DpmExpectedOutcomeSnapshot(BaseModel):
         description="Selected RFC-0039 alternative identifier.",
         examples=["alt_min_turnover"],
     )
-    proof_pack_id: str = Field(description="RFC-0040 proof-pack identifier.", examples=["dpp_001"])
+    proof_pack_id: str = Field(
+        description="RFC-0040 proof-pack identifier.", examples=[PROOF_PACK_ID_EXAMPLE]
+    )
     wave_id: str | None = Field(
         default=None,
         description="RFC-0041 wave identifier when the expected snapshot is wave-linked.",

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+from src.core.common.identity_examples import PROOF_PACK_ID_EXAMPLE
 
 WaveTriggerType = Literal[
     "EXPLICIT_PORTFOLIO_LIST",
@@ -209,7 +210,7 @@ class DpmRebalanceWaveItem(BaseModel):
     proof_pack_id: str | None = Field(
         default=None,
         description="RFC-0040 proof-pack id when linked.",
-        examples=["dpp_wave_001"],
+        examples=[PROOF_PACK_ID_EXAMPLE],
     )
     diagnostics: dict[str, Any] = Field(
         default_factory=dict,

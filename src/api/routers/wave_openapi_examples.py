@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from src.api.routers.mandate_models import HEALTH_SNAPSHOT_ID_EXAMPLE
+from src.core.common.identity_examples import HEALTH_SNAPSHOT_ID_EXAMPLE
 
 
 WAVE_EXAMPLE = {

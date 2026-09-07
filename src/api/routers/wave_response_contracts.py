@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from src.api.services import wave_service
 from src.core.waves import DpmRebalanceWave
+from src.core.common.identity_examples import PROOF_PACK_ID_EXAMPLE
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
@@ -162,7 +163,7 @@ class DpmWaveProofPackRef(BaseModel):
     proof_pack_id: str | None = Field(
         default=None,
         description="Linked RFC-0040 proof-pack id when generated.",
-        examples=["dpp_001"],
+        examples=[PROOF_PACK_ID_EXAMPLE],
     )
     item_state: str = Field(description="Current item state.", examples=["PROOF_PACK_READY"])
     proof_pack_state: str | None = Field(
