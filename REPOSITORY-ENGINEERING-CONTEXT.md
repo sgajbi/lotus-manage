@@ -1140,13 +1140,43 @@ Important validation expectations:
     uses `LOTUS_AUTOMERGE_TOKEN`, queues `gh pr merge --auto --rebase --delete-branch`, skips
     cleanly with a warning when the token is absent, and is protected by `make workflow-policy-gate`.
     The helper must not authenticate with `GITHUB_TOKEN` or queue merge commits.
-11. Exact-main releasability follows the governed merged-PR dispatcher posture:
-    `.github/workflows/merged-pr-main-releasability.yml` listens for merged `main` pull requests
-    and dispatches `.github/workflows/main-releasability.yml` against `main`. The main
-    releasability workflow keeps manual `workflow_dispatch` support but must not also carry a
-    direct `push` trigger, because that creates duplicate automatic proof runs for the same merged
-    SHA. `make workflow-policy-gate` enforces both the dispatcher contract and the duplicate-trigger
-    prohibition.
+11. Exact-main releasability is **per commit, not per merged pull request**
+    (issue #659). `.github/workflows/merged-pr-main-releasability.yml` listens for merged `main`
+    pull requests and dispatches `.github/workflows/main-releasability.yml` once for **every
+    revision the pull request put on main**, each pinned to its own immutable
+    `main-releasability-<sha>` tag. Dispatching only the head left 38 of 40 recent commits with no
+    verdict at all: this repository merges by rebase, so a merged PR of N commits puts N on main,
+    and a commit that was never the head still becomes the deployed tree on rollback and bisect.
+    A run that is never created is not a failure, so nothing else reports the loss.
+
+    Three constraints govern any future change here:
+
+    - **Rebase-only merging is a prerequisite, not an assumption.** The enumeration is correct only
+      because squash and merge-commit are disabled. The dispatcher asserts
+      `[squash, merge, rebase] == [false, false, true]` and fails loudly if that changes, because
+      gating the wrong trees while reporting success is worse than the gap it closes.
+    - **Enumeration and dispatch are separate jobs on purpose.** The dispatch step must stay a flat
+      lookup / conditional ref creation / dispatch sequence: `scripts/workflow_policy_gate.py`
+      validates that structure, and wrapping it in a shell loop nests it out of that control's
+      reach. A matrix fed from the enumerating job's output gives one un-nested dispatch per
+      revision, runs sequentially so concurrent tag creation cannot race, and keeps the dispatched
+      SHA bound to the merge event.
+    - **One coherent SHA binding.** The ref name, the mismatch check, the created ref SHA and the
+      dispatched `expected_sha` must all use the same variable. A mixed binding checks out one
+      revision and asserts against another; the resulting failure is a *verdict*, which the
+      coverage audit would count as evaluation - falsely reporting coverage.
+
+    `.github/workflows/main-gate-coverage-audit.yml` runs `scripts/audit_main_gate_coverage.py`
+    daily with `--fail-on-gap` and is fail-closed by design: a missing `gh`, an unfetchable run
+    listing, or a cancelled run all fail rather than pass, because only a verdict-bearing run
+    (success or failure) evidences evaluation. Its permissions are read-only - a watchdog able to
+    dispatch could manufacture the coverage it audits.
+
+    The main releasability workflow keeps manual `workflow_dispatch` support but must not also
+    carry a direct `push` trigger, because that creates duplicate automatic proof runs for the same
+    merged SHA. `make workflow-policy-gate` enforces the dispatcher contract, the coherent binding
+    and the duplicate-trigger prohibition; `make test-family-inventory` requires new guard suites to
+    declare their family.
 
 ## Standards And RFCs That Govern This Repository
 

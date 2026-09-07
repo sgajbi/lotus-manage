@@ -57,6 +57,38 @@ IMMUTABLE_DISPATCH_REF_LOOKUP_CONDITIONS = (
 # claim, owned by tests/unit/test_main_gate_commit_coverage.py. Collapsing the
 # two would let one control's pass be read as the other's.
 IMMUTABLE_DISPATCH_REF_PINNED_SHA_VARIABLES = ("$MERGE_COMMIT_SHA", "$revision")
+
+
+def _pinned_sha_variable(dispatch_step_text: str) -> str | None:
+    """The one SHA variable this dispatcher pins with, or None if inconsistent.
+
+    Accepting the two variables INDEPENDENTLY at each point would let a mixed
+    dispatcher through: a ref named from `$revision` with `expected_sha` still
+    bound to `$MERGE_COMMIT_SHA` checks out one tree and asserts against
+    another. The gate's exact-revision assertion then fails, and a failure is a
+    verdict - so the coverage audit would count that revision as evaluated when
+    nothing evaluated it. Falsely reported coverage is the defect this whole
+    control exists to prevent, so the mode must be coherent across the ref
+    name, the mismatch check, the creation SHA and the dispatch input.
+    """
+
+    chosen: str | None = None
+    for variable in IMMUTABLE_DISPATCH_REF_PINNED_SHA_VARIABLES:
+        markers = (
+            f'dispatch_ref="main-releasability-${{{variable.lstrip("$")}}}"',
+            f'if [ "$existing_ref_sha" != "{variable}" ]; then',
+            f'-f sha="{variable}"',
+            f'-f expected_sha="{variable}"',
+        )
+        present = [marker for marker in markers if marker in dispatch_step_text]
+        if not present:
+            continue
+        if len(present) != len(markers) or chosen is not None:
+            return None
+        chosen = variable
+    return chosen
+
+
 IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITIONS = tuple(
     f'if [ "$existing_ref_sha" != "{variable}" ]; then'
     for variable in IMMUTABLE_DISPATCH_REF_PINNED_SHA_VARIABLES
@@ -1070,6 +1102,14 @@ def merged_pr_main_releasability_dispatch_violations(
             violations.append(
                 f"{dispatcher.as_posix()}: dispatcher must not set continue-on-error on "
                 "the governed main releasability dispatch step"
+            )
+        if dispatch_step_text and _pinned_sha_variable(dispatch_step_text) is None:
+            violations.append(
+                f"{dispatcher.as_posix()}: dispatcher must pin the ref name, the mismatch "
+                "check, the created ref SHA and the dispatched expected_sha with ONE "
+                "consistent SHA variable; a mixed binding checks out one revision and "
+                "asserts against another, and the resulting failure is a verdict the "
+                "coverage audit would count as evaluation"
             )
         dispatch_contract_text = _strip_shell_here_document_bodies(
             dispatch_step_text or dispatcher_text

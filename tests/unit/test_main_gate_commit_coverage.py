@@ -282,3 +282,53 @@ def test_the_dispatcher_asserts_it_enumerated_one_revision_per_commit() -> None:
     assert "max-parallel: 1" in dispatcher
     # One revision failing must not cancel the others' gate runs.
     assert "fail-fast: false" in dispatcher
+
+
+def test_a_mixed_sha_binding_is_rejected(tmp_path) -> None:
+    """One coherent pinning mode, not two accepted independently.
+
+    Accepting $MERGE_COMMIT_SHA and $revision at each point separately lets a
+    mixed dispatcher through: a ref named from $revision while expected_sha is
+    still bound to $MERGE_COMMIT_SHA checks out one tree and asserts against
+    another. The gate's exact-revision assertion then fails - and a failure is a
+    VERDICT, so the coverage audit would count that revision as evaluated when
+    nothing evaluated it.
+
+    Falsely reported coverage is the defect this whole change exists to remove,
+    so a permissive checker here would defeat its own purpose.
+    """
+
+    from scripts.workflow_policy_gate import merged_pr_main_releasability_dispatch_violations
+
+    workflow_dir = tmp_path / "workflows"
+    workflow_dir.mkdir()
+    mixed = (WORKFLOW_ROOT / "merged-pr-main-releasability.yml").read_text(encoding="utf-8")
+    mixed = mixed.replace('-f expected_sha="$revision"', '-f expected_sha="$MERGE_COMMIT_SHA"', 1)
+    assert '-f expected_sha="$MERGE_COMMIT_SHA"' in mixed, "mutation did not apply"
+    (workflow_dir / "merged-pr-main-releasability.yml").write_text(mixed, encoding="utf-8")
+    (workflow_dir / "main-releasability.yml").write_text(
+        (WORKFLOW_ROOT / "main-releasability.yml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+
+    violations = merged_pr_main_releasability_dispatch_violations(workflow_dir)
+
+    assert any("ONE consistent SHA variable" in violation for violation in violations), violations
+
+
+def test_a_coherent_single_commit_binding_is_still_accepted(tmp_path) -> None:
+    """Divergence half: coherence must not mean 'only the per-revision mode'.
+
+    A dispatcher pinning every point with $MERGE_COMMIT_SHA is internally
+    consistent and must stay valid - rejecting it would make the coherence rule
+    a disguised requirement for one implementation rather than a rule about
+    self-consistency.
+    """
+
+    from scripts.workflow_policy_gate import _pinned_sha_variable
+
+    head_bound = (WORKFLOW_ROOT / "merged-pr-main-releasability.yml").read_text(encoding="utf-8")
+    head_bound = head_bound.replace("$revision", "$MERGE_COMMIT_SHA").replace(
+        "${revision}", "${MERGE_COMMIT_SHA}"
+    )
+
+    assert _pinned_sha_variable(head_bound) == "$MERGE_COMMIT_SHA"
