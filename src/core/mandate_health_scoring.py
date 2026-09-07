@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
 from src.core.mandate_models import (
+    DpmMandateConstraintSet,
     DIMENSION_WEIGHTS,
     DpmMandateDimensionScore,
     DpmMandateHealthInput,
@@ -26,7 +27,9 @@ def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthS
     health_state = _mandate_health_state(dimension_scores)
     top_reasons = _top_mandate_health_reasons(dimension_scores)
     recommended_action = _overall_recommended_action(
-        health_state, top_reasons, field_gap_codes=input_.twin.field_gap_codes
+        health_state,
+        top_reasons,
+        has_unsourced_limit=_has_unsourced_contractual_limit(input_.twin.constraints),
     )
     return DpmMandateHealthSnapshot(
         health_snapshot_id=_mandate_health_snapshot_id(input_),
@@ -99,7 +102,16 @@ def _top_mandate_health_reasons(
         ),
         reverse=True,
     )
-    return reasons[:5]
+    top = reasons[:5]
+    # A source gap can decide the headline action, and if the ranking above has
+    # pushed every gap past the cut then no persisted exception explains why -
+    # monitoring_exceptions_from_health keeps only these five, so the operator
+    # sees FIX_SOURCE_DATA with nothing saying which limit is missing. Keep one
+    # by displacing the lowest-ranked operational reason.
+    gaps = [reason for reason in reasons if reason.reason_code in _SOURCE_GAP_REASON_CODES]
+    if gaps and not any(reason.reason_code in _SOURCE_GAP_REASON_CODES for reason in top):
+        top = top[:-1] + [gaps[0]]
+    return top
 
 
 def _mandate_health_snapshot_id(input_: DpmMandateHealthInput) -> str:
@@ -550,19 +562,29 @@ def _recommended_action_for_dimension(
     return MandateRecommendedAction.REVIEW_MANDATE
 
 
-_SOURCE_GAP_FIELD_CODES = frozenset(
-    {
-        "MANDATE_CASH_BAND_NOT_YET_SOURCED",
-        "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
-    }
-)
+def _has_unsourced_contractual_limit(constraints: DpmMandateConstraintSet) -> bool:
+    """Whether a contractual limit this engine assesses against is unavailable.
+
+    Read from the constraint values rather than from field_gap_codes. The gap
+    codes are optional annotation - a valid /health/recalculate payload can
+    leave them at their default [] while genuinely omitting the cash band - so
+    trusting them would make the headline action depend on whether the caller
+    happened to describe the absence rather than on the absence itself. The
+    constraint being None IS the fact; the code is a label for it.
+    """
+
+    return (
+        constraints.cash_band_min_weight is None
+        or constraints.cash_band_max_weight is None
+        or constraints.turnover_budget is None
+    )
 
 
 def _overall_recommended_action(
     health_state: MandateHealthState,
     reasons: list[DpmMandateHealthReason],
     *,
-    field_gap_codes: list[str] | None = None,
+    has_unsourced_limit: bool = False,
 ) -> MandateRecommendedAction:
     if health_state == MandateHealthState.READY:
         return MandateRecommendedAction.NONE
@@ -588,10 +610,9 @@ def _overall_recommended_action(
     # remains unavailable - sending an operator to simulate against a band that
     # does not exist. The absence is a fact about the twin, so it is read from
     # the twin.
-    declared_gaps = set(field_gap_codes or [])
     if health_state != MandateHealthState.BLOCKED and (
-        any(reason.reason_code in _SOURCE_GAP_REASON_CODES for reason in reasons)
-        or declared_gaps & _SOURCE_GAP_FIELD_CODES
+        has_unsourced_limit
+        or any(reason.reason_code in _SOURCE_GAP_REASON_CODES for reason in reasons)
     ):
         return MandateRecommendedAction.FIX_SOURCE_DATA
     if reasons:

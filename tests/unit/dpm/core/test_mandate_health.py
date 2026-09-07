@@ -1530,7 +1530,11 @@ def test_cashflow_pressure_does_not_hide_an_unavailable_cash_band() -> None:
                     turnover_budget=Decimal("0.15"),
                     max_tracking_error=Decimal("0.05"),
                 ),
-                field_gap_codes=["MANDATE_CASH_BAND_NOT_YET_SOURCED"],
+                # Deliberately NO field_gap_codes. A valid /health/recalculate
+                # payload can omit the band and leave the codes at their
+                # default [], so inferring from the annotation would make the
+                # headline depend on whether the caller described the absence
+                # rather than on the absence itself.
             ),
             projected_net_cashflow=Decimal("-1000"),
         )
@@ -1545,29 +1549,30 @@ def test_cashflow_pressure_does_not_hide_an_unavailable_cash_band() -> None:
     assert snapshot.recommended_action == MandateRecommendedAction.FIX_SOURCE_DATA
 
 
-def test_unconditional_source_gaps_do_not_crowd_out_operational_warnings() -> None:
-    """Always-present findings must yield the limited reason slots.
+def test_unconditional_source_gaps_yield_slots_but_keep_one_explaining_the_action() -> None:
+    """The cut favours news, while still explaining the headline.
 
     top_reasons keeps five and monitoring_exceptions_from_health persists only
-    those, so the cut is real. The two source gaps are unconditional for every
-    Core-compiled twin, so ranking them level with operational findings of the
-    same severity permanently consumes two slots and drops genuinely new
-    warnings out of the exception APIs.
+    those, so the cut is real. Two competing requirements meet here:
 
-    This deliberately produces MORE findings than the cut allows. An earlier
-    version of this test produced exactly five and therefore truncated
-    nothing, so it passed with the ranking removed - it asserted an order
-    without ever exercising the loss that order exists to prevent.
+    - the two source gaps are unconditional for every Core-compiled twin, so
+      ranking them level with operational findings permanently consumes two of
+      the five slots and drops genuinely new warnings out of the exception
+      APIs entirely;
+    - but a source gap can decide the headline action, and if every gap is cut
+      then the operator sees FIX_SOURCE_DATA with no persisted exception
+      saying which limit is missing.
+
+    So operational findings take the slots, except one reserved for a single
+    gap when a gap is what chose the action. This deliberately produces more
+    findings than the cut allows; an earlier version produced exactly five,
+    truncated nothing, and therefore passed with the ranking removed.
     """
 
     snapshot = calculate_mandate_health(
         _ready_input(
             twin=_twin(
                 constraints=DpmMandateConstraintSet(max_tracking_error=Decimal("0.05")),
-                field_gap_codes=[
-                    "MANDATE_CASH_BAND_NOT_YET_SOURCED",
-                    "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
-                ],
                 review_policy=DpmMandateReviewPolicy(next_review_due_date=date(2020, 1, 1)),
             ),
             current_weights={"EQ_US_AAPL": Decimal("0.72"), "FI_US_TREASURY_10Y": Decimal("0.28")},
@@ -1582,10 +1587,14 @@ def test_unconditional_source_gaps_do_not_crowd_out_operational_warnings() -> No
     assert len(codes) == 5, "the cut must actually bite for this test to mean anything"
 
     gaps = {"CASH_BAND_NOT_SOURCED", "TURNOVER_BUDGET_NOT_SOURCED"}
-    # The operational findings survive the cut; the unconditional gaps are what
-    # gives way, because they are true of every Core-compiled twin and so carry
-    # no news.
-    assert "ALLOCATION_DRIFT" in codes
-    assert "MANDATE_REVIEW_OVERDUE" in codes
-    assert "TRACKING_ERROR_ABOVE_LIMIT" in codes
+    # Operational findings hold every slot but the last.
     assert not gaps & set(codes[:4]), f"a source gap took an operational slot: {codes}"
+    assert "ALLOCATION_DRIFT" in codes
+    assert "TRACKING_ERROR_ABOVE_LIMIT" in codes
+    assert "PERFORMANCE_UNDER_REVIEW" in codes
+
+    # And exactly one gap survives, so the headline is explained rather than
+    # asserted. Without it an operator reads FIX_SOURCE_DATA and finds no
+    # exception naming the missing limit.
+    assert snapshot.recommended_action == MandateRecommendedAction.FIX_SOURCE_DATA
+    assert len(gaps & set(codes)) == 1, f"the action is unexplained: {codes}"
