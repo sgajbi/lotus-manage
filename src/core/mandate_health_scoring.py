@@ -25,7 +25,9 @@ def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthS
     dimension_scores = _mandate_health_dimension_scores(input_)
     health_state = _mandate_health_state(dimension_scores)
     top_reasons = _top_mandate_health_reasons(dimension_scores)
-    recommended_action = _overall_recommended_action(health_state, top_reasons)
+    recommended_action = _overall_recommended_action(
+        health_state, top_reasons, field_gap_codes=input_.twin.field_gap_codes
+    )
     return DpmMandateHealthSnapshot(
         health_snapshot_id=_mandate_health_snapshot_id(input_),
         mandate_id=input_.twin.mandate_id,
@@ -83,7 +85,20 @@ def _top_mandate_health_reasons(
     dimension_scores: list[DpmMandateDimensionScore],
 ) -> list[DpmMandateHealthReason]:
     reasons = [_reason_from_score(score) for score in dimension_scores if score.score < 100]
-    reasons.sort(key=lambda reason: _severity_rank(reason.severity), reverse=True)
+    # Severity first, then operational findings ahead of source gaps of the
+    # same severity (issue #664). The two source gaps are unconditional for
+    # every Core-compiled twin, so without this they permanently occupy two of
+    # the five slots and push genuinely new warnings - workflow, cadence,
+    # model freshness - out of top_reasons and therefore out of the persisted
+    # monitoring exceptions. An always-present finding should not crowd out
+    # the ones that are actually news.
+    reasons.sort(
+        key=lambda reason: (
+            _severity_rank(reason.severity),
+            0 if reason.reason_code in _SOURCE_GAP_REASON_CODES else 1,
+        ),
+        reverse=True,
+    )
     return reasons[:5]
 
 
@@ -535,9 +550,19 @@ def _recommended_action_for_dimension(
     return MandateRecommendedAction.REVIEW_MANDATE
 
 
+_SOURCE_GAP_FIELD_CODES = frozenset(
+    {
+        "MANDATE_CASH_BAND_NOT_YET_SOURCED",
+        "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
+    }
+)
+
+
 def _overall_recommended_action(
     health_state: MandateHealthState,
     reasons: list[DpmMandateHealthReason],
+    *,
+    field_gap_codes: list[str] | None = None,
 ) -> MandateRecommendedAction:
     if health_state == MandateHealthState.READY:
         return MandateRecommendedAction.NONE
@@ -555,8 +580,18 @@ def _overall_recommended_action(
     # mandate is BLOCKED would bury the finding that actually needs them. The
     # severity-sorted reason keeps the headline whenever the mandate is
     # blocked.
-    if health_state != MandateHealthState.BLOCKED and any(
-        reason.reason_code in _SOURCE_GAP_REASON_CODES for reason in reasons
+    # The gap is read from the twin's field_gap_codes as well as the reasons,
+    # because another condition in the same dimension can supply the reason and
+    # hide it (issue #664). A negative projected cashflow returns
+    # PROJECTED_CASHFLOW_PRESSURE before the unsourced-band check runs, and the
+    # headline would then say SIMULATE_REBALANCE while the contractual limit
+    # remains unavailable - sending an operator to simulate against a band that
+    # does not exist. The absence is a fact about the twin, so it is read from
+    # the twin.
+    declared_gaps = set(field_gap_codes or [])
+    if health_state != MandateHealthState.BLOCKED and (
+        any(reason.reason_code in _SOURCE_GAP_REASON_CODES for reason in reasons)
+        or declared_gaps & _SOURCE_GAP_FIELD_CODES
     ):
         return MandateRecommendedAction.FIX_SOURCE_DATA
     if reasons:
