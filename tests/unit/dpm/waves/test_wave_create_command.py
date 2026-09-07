@@ -104,6 +104,7 @@ def test_create_persisted_wave_promotes_preview_and_persists_request_hash(
     assert wave.state == "CREATED"
     assert repository.idempotency_key == "idem-create-command"
     assert repository.request_hash == create_wave_request_hash(
+        tenant_id="tenant-test",
         trigger_type="EXPLICIT_PORTFOLIO_LIST",
         trigger_id="manual-create-command",
         rationale="Create command persists.",

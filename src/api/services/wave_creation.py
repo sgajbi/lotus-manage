@@ -16,9 +16,26 @@ def create_wave_request_hash(
     as_of_date: str,
     actor_id: str,
     portfolios: list[dict[str, object]],
+    tenant_id: str,
 ) -> str:
+    """Hash the create request, tenant included (issue #648).
+
+    Idempotency keys are caller-chosen, so two tenants can present the same
+    one. Without the tenant in the hash, the second tenant's request matches
+    the first's stored hash and is served as a REPLAY - it receives the other
+    tenant's wave. With it, the hashes differ and the reuse surfaces as an
+    idempotency conflict instead.
+
+    This closes the cross-tenant replay. It is not full wave isolation: the
+    wave aggregate has no tenant of its own, so a conflict still reveals that
+    some other tenant used that key, and a wave can still be read or
+    transitioned by wave id alone. That needs a tenant on the wave itself and
+    is tracked separately.
+    """
+
     return request_hash(
         {
+            "tenant_id": tenant_id,
             "trigger_type": trigger_type,
             "trigger_id": trigger_id,
             "rationale": rationale,
