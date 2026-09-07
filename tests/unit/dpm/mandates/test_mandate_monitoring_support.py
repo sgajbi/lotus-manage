@@ -58,6 +58,7 @@ def test_aggregate_monitoring_results_updates_distribution_and_calls_callbacks()
         monitoring_run_id="dmr_test",
         resolve_twin=resolve_twin,
         persist_result=persist_snapshot,
+        tenant_id="tenant-test",
     )
 
     assert resolved == mandate_ids

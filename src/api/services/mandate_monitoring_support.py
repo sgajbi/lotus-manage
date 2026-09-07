@@ -27,6 +27,7 @@ def aggregate_monitoring_results(
     monitoring_run_id: str,
     resolve_twin: ResolveMandate,
     persist_result: PersistMonitoringResult,
+    tenant_id: str,
 ) -> DpmMonitoringRunAccumulator:
     accumulator = DpmMonitoringRunAccumulator.empty()
     for mandate_id in mandate_ids:
@@ -35,6 +36,7 @@ def aggregate_monitoring_results(
             twin=twin,
             as_of_date=as_of_date,
             monitoring_run_id=monitoring_run_id,
+            tenant_id=tenant_id,
         )
         persist_result(twin, result.health_snapshot, result.monitoring_exceptions)
         accumulator.record(result)

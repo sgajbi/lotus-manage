@@ -63,7 +63,8 @@ def _health_snapshot(twin: DpmMandateDigitalTwin) -> DpmMandateHealthSnapshot:
                 "FI_US_TREASURY_10Y": Decimal("0.40"),
             },
             cash_weight=Decimal("0.05"),
-        )
+        ),
+        tenant_id="default",
     )
 
 
@@ -279,7 +280,8 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.05"),
             restricted_held_instruments=["EQ_RESTRICTED"],
-        )
+        ),
+        tenant_id="default",
     )
     exceptions = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)
     assert exceptions
@@ -343,7 +345,8 @@ def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> 
             current_weights={"EQ_US_AAPL": Decimal("0.60")},
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.50"),
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
     selected_run_exception = exception.model_copy(
@@ -385,7 +388,8 @@ def test_in_memory_monitoring_exception_helpers_filter_sort_and_page() -> None:
             current_weights={"EQ_US_AAPL": Decimal("0.60")},
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.50"),
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
     selected_old = exception.model_copy(
@@ -493,7 +497,8 @@ def test_postgres_monitoring_exception_page_returns_overfetch_cursor() -> None:
             current_weights={"EQ_US_AAPL": Decimal("0.60")},
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.50"),
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
     first = exception.model_copy(update={"exception_id": "me_first"})
@@ -523,7 +528,8 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
                 cash_weight=Decimal("0.50"),
                 current_weights={"EQ_US_AAPL": Decimal("0.60")},
                 target_weights={"EQ_US_AAPL": Decimal("0.60")},
-            )
+            ),
+            tenant_id="default",
         ),
         source_lineage=[],
     )[0].model_copy(update={"detected_at": datetime(2024, 1, 1, tzinfo=timezone.utc)})
@@ -610,7 +616,8 @@ def test_in_memory_retention_exception_helper_keeps_active_exceptions() -> None:
                 cash_weight=Decimal("0.50"),
                 current_weights={"EQ_US_AAPL": Decimal("0.60")},
                 target_weights={"EQ_US_AAPL": Decimal("0.60")},
-            )
+            ),
+            tenant_id="default",
         ),
         source_lineage=[],
     )[0].model_copy(update={"detected_at": cutoff - timedelta(days=1)})
@@ -1124,7 +1131,8 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.05"),
             restricted_held_instruments=["EQ_RESTRICTED"],
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)[0]
     exception = exception.model_copy(

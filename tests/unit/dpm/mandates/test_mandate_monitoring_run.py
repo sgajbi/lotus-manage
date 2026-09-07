@@ -91,6 +91,7 @@ def test_calculate_monitoring_run_mandate_result_uses_requested_as_of_date_and_r
         twin=_twin(),
         as_of_date=date(2026, 5, 3),
         monitoring_run_id="dmr_20260503_083004_123456",
+        tenant_id="default",
     )
 
     assert isinstance(result, DpmMonitoringRunMandateResult)
@@ -107,6 +108,7 @@ def test_monitoring_run_accumulator_counts_health_source_and_exceptions() -> Non
         twin=_twin(),
         as_of_date=date(2026, 5, 3),
         monitoring_run_id="dmr_20260503_083004_123456",
+        tenant_id="default",
     )
     accumulator = DpmMonitoringRunAccumulator.empty()
 

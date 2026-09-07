@@ -930,7 +930,7 @@ def test_build_health_input_uses_source_backed_profile_and_cashflow_risk_signals
         portfolio_cashflow_projection=_portfolio_cashflow_projection(),
     ).model_copy(update={"cash_weight": Decimal("0.05")})
 
-    snapshot = calculate_mandate_health(health_input)
+    snapshot = calculate_mandate_health(health_input, tenant_id="tenant-test")
 
     assert (
         _dimension(snapshot, MandateHealthDimension.ELIGIBILITY_RESTRICTIONS).reason_code
@@ -1018,7 +1018,7 @@ def test_sustainability_review_ignores_missing_inactive_and_control_free_prefere
 
 
 def test_ready_mandate_has_all_ready_dimensions_and_no_recommended_action() -> None:
-    snapshot = calculate_mandate_health(_ready_input())
+    snapshot = calculate_mandate_health(_ready_input(), tenant_id="tenant-test")
 
     assert snapshot.health_state == MandateHealthState.READY
     assert snapshot.health_score == 100
@@ -1051,7 +1051,8 @@ def test_unsourced_contractual_limits_keep_health_out_of_ready() -> None:
                     "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED",
                 ],
             )
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     # 1. The two dimensions that exist to check those limits report that they
@@ -1103,10 +1104,15 @@ def test_mandate_constraints_reject_invalid_ratio_and_cash_band() -> None:
 
 def test_health_source_staleness_risk_ready_and_workflow_blocked_edges() -> None:
     stale_snapshot = calculate_mandate_health(
-        _ready_input(source_readiness_state="DEGRADED", stale_source_families=["PRICE"])
+        _ready_input(source_readiness_state="DEGRADED", stale_source_families=["PRICE"]),
+        tenant_id="tenant-test",
     )
-    risk_ready_snapshot = calculate_mandate_health(_ready_input(tracking_error=Decimal("0.01")))
-    workflow_blocked_snapshot = calculate_mandate_health(_ready_input(workflow_blocked=True))
+    risk_ready_snapshot = calculate_mandate_health(
+        _ready_input(tracking_error=Decimal("0.01")), tenant_id="tenant-test"
+    )
+    workflow_blocked_snapshot = calculate_mandate_health(
+        _ready_input(workflow_blocked=True), tenant_id="tenant-test"
+    )
 
     assert _dimension(stale_snapshot, MandateHealthDimension.SOURCE_READINESS).reason_code == (
         "DPM_SOURCE_STALE"
@@ -1121,7 +1127,8 @@ def test_health_source_staleness_risk_ready_and_workflow_blocked_edges() -> None
 
 def test_mandate_health_preserves_risk_performance_source_analytics_posture() -> None:
     snapshot = calculate_mandate_health(
-        _ready_input(tracking_error=Decimal("0.08"), performance_under_review=True)
+        _ready_input(tracking_error=Decimal("0.08"), performance_under_review=True),
+        tenant_id="tenant-test",
     )
 
     posture = snapshot.source_analytics_posture
@@ -1191,7 +1198,8 @@ def test_mandate_health_preserves_source_product_health_contexts() -> None:
                 "benchmark_context": {"benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40"},
                 "reason_codes": ["ACTIVE_RETURN_BELOW_THRESHOLD"],
             },
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     posture = snapshot.source_analytics_posture
@@ -1373,7 +1381,7 @@ def test_each_health_dimension_generates_domain_specific_attention(
     state: MandateHealthState,
     action: MandateRecommendedAction,
 ) -> None:
-    snapshot = calculate_mandate_health(_ready_input(**overrides))
+    snapshot = calculate_mandate_health(_ready_input(**overrides), tenant_id="tenant-test")
 
     dimension_score = _dimension(snapshot, dimension)
     assert dimension_score.reason_code == reason_code
@@ -1384,7 +1392,9 @@ def test_each_health_dimension_generates_domain_specific_attention(
 
 
 def test_hard_gate_overrides_high_remaining_scores() -> None:
-    snapshot = calculate_mandate_health(_ready_input(restricted_held_instruments=["EQ_RESTRICTED"]))
+    snapshot = calculate_mandate_health(
+        _ready_input(restricted_held_instruments=["EQ_RESTRICTED"]), tenant_id="tenant-test"
+    )
 
     assert snapshot.health_state == MandateHealthState.BLOCKED
     assert snapshot.recommended_action == MandateRecommendedAction.REVIEW_RESTRICTION
@@ -1392,7 +1402,9 @@ def test_hard_gate_overrides_high_remaining_scores() -> None:
 
 
 def test_turnover_near_limit_is_pending_review_not_blocked() -> None:
-    snapshot = calculate_mandate_health(_ready_input(turnover_budget_used=Decimal("0.13")))
+    snapshot = calculate_mandate_health(
+        _ready_input(turnover_budget_used=Decimal("0.13")), tenant_id="tenant-test"
+    )
 
     assert snapshot.health_state == MandateHealthState.PENDING_REVIEW
     assert _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER).reason_code == (
@@ -1403,7 +1415,8 @@ def test_turnover_near_limit_is_pending_review_not_blocked() -> None:
 def test_monitoring_exceptions_are_derived_from_health_reasons_with_lineage() -> None:
     twin = _twin()
     snapshot = calculate_mandate_health(
-        _ready_input(twin=twin, restricted_held_instruments=["EQ_RESTRICTED"])
+        _ready_input(twin=twin, restricted_held_instruments=["EQ_RESTRICTED"]),
+        tenant_id="tenant-test",
     )
 
     exceptions = monitoring_exceptions_from_health(
@@ -1450,7 +1463,8 @@ def test_source_gaps_decide_the_overall_action_over_co_occurring_warnings() -> N
                 "EQ_US_AAPL": Decimal("0.72"),
                 "FI_US_TREASURY_10Y": Decimal("0.28"),
             },
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     assert snapshot.recommended_action == MandateRecommendedAction.FIX_SOURCE_DATA
@@ -1495,7 +1509,8 @@ def test_a_blocking_finding_keeps_the_headline_over_a_source_gap() -> None:
                 ],
             ),
             restricted_held_instruments=["EQ_RESTRICTED"],
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     assert snapshot.health_state == MandateHealthState.BLOCKED
@@ -1537,7 +1552,8 @@ def test_cashflow_pressure_does_not_hide_an_unavailable_cash_band() -> None:
                 # rather than on the absence itself.
             ),
             projected_net_cashflow=Decimal("-1000"),
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     # Cashflow pressure is still what this dimension reports, which is true.
@@ -1580,7 +1596,8 @@ def test_unconditional_source_gaps_yield_slots_but_keep_one_explaining_the_actio
             missing_source_families=["PRICE_COVERAGE"],
             tracking_error=Decimal("0.08"),
             performance_under_review=True,
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     codes = [reason.reason_code for reason in snapshot.top_reasons]

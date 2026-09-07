@@ -106,7 +106,7 @@ def test_build_mandate_refresh_result_from_core_resolves_sources_and_health(
         captured["health_input"] = kwargs
         return SimpleNamespace(source="health_input")
 
-    def _calculate(health_input: object) -> DpmMandateHealthCalculationResult:
+    def _calculate(health_input: object, *, tenant_id: str) -> DpmMandateHealthCalculationResult:
         captured["calculate"] = health_input
         return DpmMandateHealthCalculationResult(
             snapshot=snapshot,
@@ -193,7 +193,7 @@ def test_build_mandate_refresh_result_from_core_uses_binding_model_when_not_over
     monkeypatch.setattr(
         mandate_refresh,
         "calculate_mandate_health_result",
-        lambda _health_input: DpmMandateHealthCalculationResult(
+        lambda _health_input, *, tenant_id: DpmMandateHealthCalculationResult(
             snapshot=_snapshot(),
             monitoring_exceptions=[],
         ),
