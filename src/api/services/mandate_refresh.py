@@ -44,7 +44,7 @@ def build_mandate_refresh_result_from_core(
     portfolio_id: str,
     mandate_id: str,
     as_of_date: date,
-    tenant_id: Optional[str],
+    tenant_id: str,
     booking_center_code: Optional[str],
     model_portfolio_id: Optional[str],
     reference_currency: Optional[str],
@@ -106,6 +106,7 @@ def build_mandate_refresh_result_from_core(
             market_data_coverage=market_data_coverage,
             optional_sources=optional_sources,
         ),
+        tenant_id=tenant_id,
     )
     return DpmMandateRefreshResult(
         twin=twin,
@@ -117,8 +118,11 @@ def build_mandate_refresh_result_from_core(
 def _health_result_for_refresh(
     *,
     health_input: dict[str, Any],
+    tenant_id: str,
 ) -> DpmMandateHealthCalculationResult:
-    return calculate_mandate_health_result(build_health_input_from_core_sources(**health_input))
+    return calculate_mandate_health_result(
+        build_health_input_from_core_sources(**health_input), tenant_id=tenant_id
+    )
 
 
 __all__ = ["DpmMandateRefreshResult", "build_mandate_refresh_result_from_core"]

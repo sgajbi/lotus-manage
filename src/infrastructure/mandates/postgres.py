@@ -13,6 +13,7 @@ from src.core.mandates import (
     DpmMonitoringException,
     DpmMonitoringRun,
 )
+from src.core.common.derived_identity import derived_identity
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -608,7 +609,13 @@ def _mandate_snapshot_id(twin: DpmMandateDigitalTwin, *, tenant_id: str) -> str:
     quarantined rather than addressable, and nothing re-derives their key.
     """
 
-    return f"ms_{tenant_id}_{twin.mandate_id}_{twin.mandate_version}_{twin.as_of_date.isoformat()}"
+    return derived_identity(
+        "ms",
+        tenant_id,
+        twin.mandate_id,
+        twin.mandate_version,
+        twin.as_of_date.isoformat(),
+    )
 
 
 def _source_hash(payload_json: str) -> str:

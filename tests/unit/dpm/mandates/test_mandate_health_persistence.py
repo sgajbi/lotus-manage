@@ -24,7 +24,9 @@ class _CapturingMandateRepository:
 def test_persist_mandate_health_evidence_saves_optional_twin_snapshot_and_exceptions() -> None:
     repository = _CapturingMandateRepository()
     twin = _twin()
-    health_result = calculate_mandate_health_result(DpmMandateHealthInput(twin=twin))
+    health_result = calculate_mandate_health_result(
+        DpmMandateHealthInput(twin=twin), tenant_id="tenant-test"
+    )
 
     persist_mandate_health_evidence(
         repository=repository,  # type: ignore[arg-type]
@@ -42,7 +44,9 @@ def test_persist_mandate_health_evidence_saves_optional_twin_snapshot_and_except
 def test_persist_mandate_health_evidence_supports_health_only_monitoring_results() -> None:
     repository = _CapturingMandateRepository()
     twin = _twin()
-    health_result = calculate_mandate_health_result(DpmMandateHealthInput(twin=twin))
+    health_result = calculate_mandate_health_result(
+        DpmMandateHealthInput(twin=twin), tenant_id="tenant-test"
+    )
 
     persist_mandate_health_evidence(
         repository=repository,  # type: ignore[arg-type]

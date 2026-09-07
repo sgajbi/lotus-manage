@@ -75,7 +75,8 @@ def _mandate_repository() -> InMemoryDpmMandateRepository:
     )
     repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
     repository.save_health_snapshot(
-        calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test"
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin), tenant_id="tenant-test"),
+        tenant_id="tenant-test",
     )
     return repository
 
@@ -87,7 +88,8 @@ def _mismatched_mandate_repository() -> InMemoryDpmMandateRepository:
     )
     repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
     repository.save_health_snapshot(
-        calculate_mandate_health(DpmMandateHealthInput(twin=twin)), tenant_id="tenant-test"
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin), tenant_id="tenant-test"),
+        tenant_id="tenant-test",
     )
     return repository
 

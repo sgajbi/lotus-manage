@@ -69,9 +69,11 @@ def calculate_monitoring_run_mandate_result(
     twin: DpmMandateDigitalTwin,
     as_of_date: date,
     monitoring_run_id: str,
+    tenant_id: str,
 ) -> DpmMonitoringRunMandateResult:
     snapshot = calculate_mandate_health(
-        DpmMandateHealthInput(twin=twin.model_copy(update={"as_of_date": as_of_date}))
+        DpmMandateHealthInput(twin=twin.model_copy(update={"as_of_date": as_of_date})),
+        tenant_id=tenant_id,
     )
     exceptions = monitoring_exceptions_from_health(
         snapshot,

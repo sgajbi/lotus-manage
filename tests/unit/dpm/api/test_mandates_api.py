@@ -545,7 +545,8 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
     repository.save_mandate_snapshot(historical, tenant_id="tenant-test")
     repository.save_mandate_snapshot(future, tenant_id="tenant-test")
     historical_health = calculate_mandate_health(
-        DpmMandateHealthInput(twin=historical, cash_weight=Decimal("0.11"))
+        DpmMandateHealthInput(twin=historical, cash_weight=Decimal("0.11")),
+        tenant_id="default",
     ).model_copy(
         update={
             "health_snapshot_id": "mh_20260410",
@@ -554,7 +555,8 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
         }
     )
     future_health = calculate_mandate_health(
-        DpmMandateHealthInput(twin=future, cash_weight=Decimal("0.08"))
+        DpmMandateHealthInput(twin=future, cash_weight=Decimal("0.08")),
+        tenant_id="default",
     ).model_copy(
         update={
             "health_snapshot_id": "mh_20260503",
@@ -592,7 +594,9 @@ def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidenc
     twin = _twin(version="2", as_of=date(2026, 4, 10))
     repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
     repository.save_health_snapshot(
-        calculate_mandate_health(DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11"))),
+        calculate_mandate_health(
+            DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11")), tenant_id="default"
+        ),
         tenant_id="tenant-test",
     )
 
@@ -984,7 +988,8 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
                 "threshold_breached": False,
                 "request_fingerprint": "sha256:risk-context",
             },
-        )
+        ),
+        tenant_id="default",
     )
     risk_ref = health_snapshot.source_analytics_posture.source_context_refs[0]
     posture = health_snapshot.source_analytics_posture.model_copy(

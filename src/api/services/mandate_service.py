@@ -148,7 +148,7 @@ def recalculate_mandate_health(
 ) -> DpmMandateHealthSnapshot:
     if health_input.twin.mandate_id != mandate_id:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
-    health_result = calculate_mandate_health_result(health_input)
+    health_result = calculate_mandate_health_result(health_input, tenant_id=tenant_id)
     persist_mandate_health_evidence(
         repository=repository,
         tenant_id=tenant_id,
@@ -170,6 +170,7 @@ def run_mandate_monitoring_once(
     requested_at = datetime.now(timezone.utc)
     monitoring_run_id = monitoring_run_id_for(requested_at)
     accumulator = mandate_monitoring_support.aggregate_monitoring_results(
+        tenant_id=tenant_id,
         mandate_ids=mandate_ids,
         as_of_date=as_of_date,
         monitoring_run_id=monitoring_run_id,
