@@ -85,9 +85,9 @@ def register_wave_create_preview_routes(
         },
     )
     def preview_wave(
+        x_tenant_id: WaveTenantIdHeader,
         request: DpmWavePreviewRequest,
         x_correlation_id: WaveCorrelationIdHeader = None,
-        x_tenant_id: WaveTenantIdHeader = None,
         mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
         advise_authority_client: AdviseAuthorityClient | None = Depends(
             get_advise_authority_client
@@ -168,10 +168,10 @@ def register_wave_create_preview_routes(
         },
     )
     def create_wave(
+        x_tenant_id: WaveTenantIdHeader,
         request: DpmWavePreviewRequest,
         idempotency_key: WaveCreateIdempotencyKeyHeader,
         x_correlation_id: WaveCorrelationIdHeader = None,
-        x_tenant_id: WaveTenantIdHeader = None,
         mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
         wave_repository: DpmWaveRepository = Depends(get_wave_repository),
         advise_authority_client: AdviseAuthorityClient | None = Depends(

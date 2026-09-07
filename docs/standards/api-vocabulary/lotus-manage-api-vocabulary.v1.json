@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-07T02:50:37.095508+00:00",
+  "generatedAt": "2026-09-07T03:37:52.543409+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -20552,6 +20552,18 @@
       "attributeRef": "#/attributeCatalog/lotus.campaign_version"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required: wave preview, create, source-check and selection all read tenant-scoped mandate evidence, and a request that does not state its tenant is refused rather than answered from an assumed one. Also required when resolving persisted bulk-review campaign definitions.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "x_correlation_id",
       "kind": "request_option",
       "location": "header",
@@ -20567,9 +20579,9 @@
       "name": "x_tenant_id",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Trusted tenant id. Required when resolving persisted bulk-review campaign definitions.",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required: wave preview, create, source-check and selection all read tenant-scoped mandate evidence, and a request that does not state its tenant is refused rather than answered from an assumed one. Also required when resolving persisted bulk-review campaign definitions.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_tenant_id",
@@ -20598,18 +20610,6 @@
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
-    },
-    {
-      "name": "x_tenant_id",
-      "kind": "request_option",
-      "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Trusted tenant id. Required when resolving persisted bulk-review campaign definitions.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.x_tenant_id",
-      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "state",
@@ -98860,20 +98860,20 @@
       "request": {
         "fields": [
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
             "type": "object",
             "semanticId": "lotus.x_correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
-          },
-          {
-            "name": "x-tenant-id",
-            "location": "header",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.x_tenant_id",
-            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "trigger_type",
@@ -100307,6 +100307,14 @@
       "request": {
         "fields": [
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "idempotency-key",
             "location": "header",
             "required": true,
@@ -100321,14 +100329,6 @@
             "type": "object",
             "semanticId": "lotus.x_correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
-          },
-          {
-            "name": "x-tenant-id",
-            "location": "header",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.x_tenant_id",
-            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "trigger_type",
