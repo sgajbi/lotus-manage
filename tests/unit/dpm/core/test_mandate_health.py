@@ -1422,6 +1422,7 @@ def test_monitoring_exceptions_are_derived_from_health_reasons_with_lineage() ->
     exceptions = monitoring_exceptions_from_health(
         snapshot,
         source_lineage=twin.source_lineage,
+        tenant_id="tenant-test",
     )
 
     assert exceptions

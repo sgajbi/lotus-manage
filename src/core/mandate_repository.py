@@ -62,7 +62,9 @@ class DpmMandateRepository(Protocol):
         tenant_id: str,
     ) -> Optional[DpmMandateHealthSnapshot]: ...
 
-    def save_monitoring_exception(self, exception: DpmMonitoringException) -> None: ...
+    def save_monitoring_exception(
+        self, exception: DpmMonitoringException, *, tenant_id: str
+    ) -> None: ...
 
     def save_monitoring_run(self, run: DpmMonitoringRun) -> None: ...
 
@@ -89,6 +91,7 @@ class DpmMandateRepository(Protocol):
         state: Optional[str],
         limit: int,
         cursor: Optional[str],
+        tenant_id: str,
     ) -> tuple[list[DpmMonitoringException], Optional[str]]: ...
 
     def resolve_monitoring_exception(
@@ -97,6 +100,7 @@ class DpmMandateRepository(Protocol):
         exception_id: str,
         resolved_at: datetime,
         resolution_reason: str,
+        tenant_id: str,
     ) -> Optional[DpmMonitoringException]: ...
 
     def purge_mandate_records_before(self, *, cutoff: datetime) -> int: ...

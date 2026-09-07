@@ -79,6 +79,10 @@ class _FakeConnection:
             existed = args[0] in self.policy_packs
             self.policy_packs.pop(args[0], None)
             return _FakeCursor(rowcount=1 if existed else 0)
+        if "dpm_monitoring_exceptions" in sql and ("ALTER TABLE" in sql or "CREATE INDEX" in sql):
+            # Migration 0025 fences monitoring exceptions by tenant
+            # (issue #648); this fake models a different table.
+            return _FakeCursor()
         raise AssertionError(f"Unhandled SQL: {sql}")
 
     def commit(self):

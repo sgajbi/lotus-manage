@@ -77,6 +77,7 @@ def calculate_monitoring_run_mandate_result(
     )
     exceptions = monitoring_exceptions_from_health(
         snapshot,
+        tenant_id=tenant_id,
         source_lineage=twin.source_lineage,
     )
     return DpmMonitoringRunMandateResult(

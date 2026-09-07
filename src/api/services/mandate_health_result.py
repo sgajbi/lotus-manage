@@ -25,6 +25,7 @@ def calculate_mandate_health_result(
         snapshot=snapshot,
         monitoring_exceptions=monitoring_exceptions_from_health(
             snapshot,
+            tenant_id=tenant_id,
             source_lineage=health_input.twin.source_lineage,
         ),
     )

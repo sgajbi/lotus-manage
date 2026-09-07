@@ -273,7 +273,9 @@ class PostgresDpmMandateRepository:
             return None
         return load_model_json(DpmMandateHealthSnapshot, _payload(row))
 
-    def save_monitoring_exception(self, exception: DpmMonitoringException) -> None:
+    def save_monitoring_exception(
+        self, exception: DpmMonitoringException, *, tenant_id: str
+    ) -> None:
         query = """
             INSERT INTO dpm_monitoring_exceptions (
                 exception_id,
@@ -293,8 +295,9 @@ class PostgresDpmMandateRepository:
                 resolution_reason,
                 resolved_by,
                 payload_json,
-                detected_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                detected_at,
+                tenant_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (exception_id) DO UPDATE SET
                 state=excluded.state,
                 resolved_at=excluded.resolved_at,
@@ -328,6 +331,7 @@ class PostgresDpmMandateRepository:
                     None,
                     dump_model_json(exception),
                     exception.detected_at.isoformat(),
+                    tenant_id,
                 ),
             )
             connection.commit()
@@ -442,8 +446,10 @@ class PostgresDpmMandateRepository:
         state: Optional[str],
         limit: int,
         cursor: Optional[str],
+        tenant_id: str,
     ) -> tuple[list[DpmMonitoringException], Optional[str]]:
         query = _monitoring_exception_list_query(
+            tenant_id=tenant_id,
             monitoring_run_id=monitoring_run_id,
             mandate_id=mandate_id,
             portfolio_id=portfolio_id,
@@ -462,10 +468,14 @@ class PostgresDpmMandateRepository:
         exception_id: str,
         resolved_at: datetime,
         resolution_reason: str,
+        tenant_id: str,
     ) -> Optional[DpmMonitoringException]:
-        query = "SELECT payload_json FROM dpm_monitoring_exceptions WHERE exception_id = %s"
+        query = (
+            "SELECT payload_json FROM dpm_monitoring_exceptions"
+            " WHERE tenant_id = %s AND exception_id = %s"
+        )
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (exception_id,)).fetchone()
+            row = connection.execute(query, (tenant_id, exception_id)).fetchone()
         if row is None:
             return None
         current = load_model_json(DpmMonitoringException, _payload(row))
@@ -476,7 +486,7 @@ class PostgresDpmMandateRepository:
                 "resolution_reason": resolution_reason,
             }
         )
-        self.save_monitoring_exception(resolved)
+        self.save_monitoring_exception(resolved, tenant_id=tenant_id)
         return resolved
 
     def purge_mandate_records_before(self, *, cutoff: datetime) -> int:
@@ -522,6 +532,7 @@ def _to_twin(row: Any) -> Optional[DpmMandateDigitalTwin]:
 
 def _monitoring_exception_list_query(
     *,
+    tenant_id: str,
     monitoring_run_id: Optional[str],
     mandate_id: Optional[str],
     portfolio_id: Optional[str],
@@ -529,8 +540,9 @@ def _monitoring_exception_list_query(
     limit: int,
     cursor: Optional[str],
 ) -> _MonitoringExceptionListQuery:
-    where_clauses: list[str] = []
-    args: list[Any] = []
+    # The tenant fence leads every exception read (issue #648).
+    where_clauses: list[str] = ["tenant_id = %s"]
+    args: list[Any] = [tenant_id]
     for column, value in (
         ("monitoring_run_id", monitoring_run_id),
         ("mandate_id", mandate_id),

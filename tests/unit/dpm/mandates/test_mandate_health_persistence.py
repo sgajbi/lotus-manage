@@ -17,7 +17,7 @@ class _CapturingMandateRepository:
     def save_health_snapshot(self, snapshot: object, *, tenant_id: str) -> None:
         self.saved_snapshots.append(snapshot)
 
-    def save_monitoring_exception(self, exception: object) -> None:
+    def save_monitoring_exception(self, exception: object, *, tenant_id: str) -> None:
         self.saved_exceptions.append(exception)
 
 

@@ -226,6 +226,7 @@ def list_monitoring_runs(
 
 def list_monitoring_exceptions(
     *,
+    tenant_id: str,
     repository: DpmMandateRepository,
     mandate_id: Optional[str],
     portfolio_id: Optional[str],
@@ -234,6 +235,7 @@ def list_monitoring_exceptions(
     cursor: Optional[str],
 ) -> tuple[list[DpmMonitoringException], Optional[str]]:
     return repository.list_monitoring_exceptions(
+        tenant_id=tenant_id,
         monitoring_run_id=None,
         mandate_id=mandate_id,
         portfolio_id=portfolio_id,
@@ -245,11 +247,13 @@ def list_monitoring_exceptions(
 
 def resolve_monitoring_exception(
     *,
+    tenant_id: str,
     repository: DpmMandateRepository,
     exception_id: str,
     resolution_reason: str,
 ) -> DpmMonitoringException:
     resolved = repository.resolve_monitoring_exception(
+        tenant_id=tenant_id,
         exception_id=exception_id,
         resolved_at=datetime.now(timezone.utc),
         resolution_reason=resolution_reason,
@@ -262,7 +266,7 @@ def resolve_monitoring_exception(
 def get_command_center_summary(
     *,
     repository: DpmMandateRepository,
-    tenant_id: Optional[str],
+    tenant_id: str,
     portfolio_manager_id: Optional[str],
     book_id: Optional[str],
     as_of_date: Optional[date],
@@ -278,6 +282,7 @@ def get_command_center_summary(
         as_of_date=as_of_date,
     )
     active_exceptions, _ = repository.list_monitoring_exceptions(
+        tenant_id=tenant_id,
         monitoring_run_id=latest_run.monitoring_run_id if latest_run else None,
         mandate_id=None,
         portfolio_id=None,

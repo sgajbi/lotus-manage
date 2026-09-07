@@ -283,9 +283,11 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
         ),
         tenant_id="default",
     )
-    exceptions = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)
+    exceptions = monitoring_exceptions_from_health(
+        snapshot, source_lineage=twin.source_lineage, tenant_id="default"
+    )
     assert exceptions
-    repository.save_monitoring_exception(exceptions[0])
+    repository.save_monitoring_exception(exceptions[0], tenant_id="default")
 
     rows, cursor = repository.list_monitoring_exceptions(
         monitoring_run_id=None,
@@ -294,6 +296,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
         state="ACTIVE",
         limit=1,
         cursor=None,
+        tenant_id="default",
     )
     assert cursor is None
     assert rows[0].dimension == MandateHealthDimension.ELIGIBILITY_RESTRICTIONS
@@ -302,6 +305,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
         exception_id=rows[0].exception_id,
         resolved_at=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
         resolution_reason="PM_CONFIRMED_EXIT_REQUIRED",
+        tenant_id="default",
     )
     assert resolved is not None
     assert resolved.state == "RESOLVED"
@@ -314,6 +318,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
         state="ACTIVE",
         limit=10,
         cursor=None,
+        tenant_id="default",
     )
     assert active_rows == []
 
@@ -324,6 +329,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
         state=None,
         limit=10,
         cursor="UNKNOWN_CURSOR",
+        tenant_id="default",
     )
     assert missing_cursor_rows == []
     assert missing_cursor is None
@@ -332,6 +338,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
         exception_id="UNKNOWN_EXCEPTION",
         resolved_at=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
         resolution_reason="NOT_FOUND",
+        tenant_id="default",
     )
     assert missing_resolution is None
 
@@ -348,7 +355,9 @@ def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> 
         ),
         tenant_id="default",
     )
-    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
+    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[], tenant_id="default")[
+        0
+    ]
     selected_run_exception = exception.model_copy(
         update={
             "exception_id": "me_selected_run",
@@ -364,8 +373,8 @@ def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> 
         }
     )
 
-    repository.save_monitoring_exception(unrelated_newer_exception)
-    repository.save_monitoring_exception(selected_run_exception)
+    repository.save_monitoring_exception(unrelated_newer_exception, tenant_id="default")
+    repository.save_monitoring_exception(selected_run_exception, tenant_id="default")
 
     rows, cursor = repository.list_monitoring_exceptions(
         monitoring_run_id="dmr_selected",
@@ -374,6 +383,7 @@ def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> 
         state="ACTIVE",
         limit=1,
         cursor=None,
+        tenant_id="default",
     )
 
     assert [row.exception_id for row in rows] == ["me_selected_run"]
@@ -391,7 +401,9 @@ def test_in_memory_monitoring_exception_helpers_filter_sort_and_page() -> None:
         ),
         tenant_id="default",
     )
-    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
+    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[], tenant_id="default")[
+        0
+    ]
     selected_old = exception.model_copy(
         update={
             "exception_id": "me_selected_old",
@@ -462,6 +474,7 @@ def test_in_memory_monitoring_exception_helpers_filter_sort_and_page() -> None:
 
 def test_postgres_monitoring_exception_query_combines_filters_and_cursor() -> None:
     query = mandate_postgres._monitoring_exception_list_query(
+        tenant_id="tenant-test",
         monitoring_run_id="dmr_selected",
         mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -477,7 +490,10 @@ def test_postgres_monitoring_exception_query_combines_filters_and_cursor() -> No
     assert "state = %s" in query.sql
     assert "exception_id < %s" in query.sql
     assert "ORDER BY detected_at DESC, exception_id DESC" in query.sql
+    # The tenant fence leads every exception read (issue #648), so it is the
+    # first bound argument.
     assert query.args == (
+        "tenant-test",
         "dmr_selected",
         "MANDATE_PB_SG_GLOBAL_BAL_001",
         "PB_SG_GLOBAL_BAL_001",
@@ -500,7 +516,9 @@ def test_postgres_monitoring_exception_page_returns_overfetch_cursor() -> None:
         ),
         tenant_id="default",
     )
-    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
+    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[], tenant_id="default")[
+        0
+    ]
     first = exception.model_copy(update={"exception_id": "me_first"})
     second = exception.model_copy(update={"exception_id": "me_second"})
 
@@ -532,12 +550,14 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
             tenant_id="default",
         ),
         source_lineage=[],
+        tenant_id="default",
     )[0].model_copy(update={"detected_at": datetime(2024, 1, 1, tzinfo=timezone.utc)})
-    repository.save_monitoring_exception(old_exception)
+    repository.save_monitoring_exception(old_exception, tenant_id="default")
     repository.resolve_monitoring_exception(
         exception_id=old_exception.exception_id,
         resolved_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
         resolution_reason="OLD_EXCEPTION_RESOLVED",
+        tenant_id="default",
     )
 
     purged = repository.purge_mandate_records_before(
@@ -562,6 +582,7 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
         state=None,
         limit=10,
         cursor=None,
+        tenant_id="default",
     )
     assert rows == []
 
@@ -620,6 +641,7 @@ def test_in_memory_retention_exception_helper_keeps_active_exceptions() -> None:
             tenant_id="default",
         ),
         source_lineage=[],
+        tenant_id="default",
     )[0].model_copy(update={"detected_at": cutoff - timedelta(days=1)})
     active_exception = base_exception.model_copy(update={"exception_id": "active_old"})
     resolved_exception = base_exception.model_copy(
@@ -891,6 +913,8 @@ class _FakeConnection:
         if normalized.startswith("insert into dpm_monitoring_exceptions"):
             self.store.exceptions[str(params[0])] = {
                 "exception_id": params[0],
+                # tenant_id is the last INSERT column (issue #648).
+                "tenant_id": params[18],
                 "monitoring_run_id": params[1],
                 "mandate_id": params[2],
                 "portfolio_id": params[3],
@@ -903,9 +927,17 @@ class _FakeConnection:
             return _FakeResult(rowcount=1)
         if (
             "select payload_json from dpm_monitoring_exceptions" in normalized
-            and "where exception_id" in normalized
+            # Matches on the clause the tenant-scoped SQL actually contains.
+            # The previous "where exception_id" test stopped matching when the
+            # tenant fence was added, and this branch simply stopped running.
+            and "exception_id = %s" in normalized
         ):
-            exception_row: dict[str, Any] | None = self.store.exceptions.get(str(params[0]))
+            # The tenant now leads the bound arguments, so the exception id
+            # is second and the row must belong to the requesting tenant.
+            assert "where tenant_id = %s" in normalized, normalized
+            exception_row: dict[str, Any] | None = self.store.exceptions.get(str(params[1]))
+            if exception_row is not None and exception_row.get("tenant_id") != params[0]:
+                exception_row = None
             return (
                 _FakeResult(rows=[{"payload_json": exception_row["payload_json"]}])
                 if exception_row is not None
@@ -913,7 +945,11 @@ class _FakeConnection:
             )
         if "select payload_json, exception_id from dpm_monitoring_exceptions" in normalized:
             rows = list(self.store.exceptions.values())
-            arg_index = 0
+            # Every exception read is tenant-fenced and the tenant is the
+            # first bound argument, so the positional walk starts after it.
+            assert "tenant_id = %s" in normalized, normalized
+            rows = [row for row in rows if row.get("tenant_id") == params[0]]
+            arg_index = 1
             if "monitoring_run_id = %s" in normalized:
                 rows = [row for row in rows if row["monitoring_run_id"] == params[arg_index]]
                 arg_index += 1
@@ -1134,7 +1170,9 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         ),
         tenant_id="default",
     )
-    exception = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)[0]
+    exception = monitoring_exceptions_from_health(
+        snapshot, source_lineage=twin.source_lineage, tenant_id="default"
+    )[0]
     exception = exception.model_copy(
         update={
             "monitoring_run_id": "dmr_selected",
@@ -1151,8 +1189,8 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         }
     )
 
-    repository.save_monitoring_exception(exception)
-    repository.save_monitoring_exception(second_exception)
+    repository.save_monitoring_exception(exception, tenant_id="default")
+    repository.save_monitoring_exception(second_exception, tenant_id="default")
     assert store.exceptions[exception.exception_id]["measured_value_json"] == '"0.12"'
     assert store.exceptions[exception.exception_id]["threshold_value_json"] == "0"
     assert store.exceptions[second_exception.exception_id]["measured_value_json"] is None
@@ -1164,6 +1202,7 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         state="ACTIVE",
         limit=1,
         cursor=None,
+        tenant_id="default",
     )
     cursor_page, cursor_page_next = repository.list_monitoring_exceptions(
         monitoring_run_id=None,
@@ -1172,6 +1211,7 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         state="ACTIVE",
         limit=1,
         cursor=page[0].exception_id,
+        tenant_id="default",
     )
     selected_run_page, selected_run_cursor = repository.list_monitoring_exceptions(
         monitoring_run_id="dmr_selected",
@@ -1180,16 +1220,19 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         state="ACTIVE",
         limit=1,
         cursor=None,
+        tenant_id="default",
     )
     resolved = repository.resolve_monitoring_exception(
         exception_id=page[0].exception_id,
         resolved_at=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
         resolution_reason="PM_CONFIRMED_EXIT_REQUIRED",
+        tenant_id="default",
     )
     missing = repository.resolve_monitoring_exception(
         exception_id="UNKNOWN",
         resolved_at=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
         resolution_reason="NOT_FOUND",
+        tenant_id="default",
     )
     removed = repository.purge_mandate_records_before(
         cutoff=datetime(2026, 5, 4, tzinfo=timezone.utc)

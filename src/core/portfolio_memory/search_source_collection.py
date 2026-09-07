@@ -75,6 +75,7 @@ def collect_portfolio_memory_search_events(
         limit=limit,
     )
     _collect_mandate_exception_events(
+        tenant_id=require_mandate_tenant_id(tenant_id=tenant_id, repositories=repositories) or "",
         repositories=repositories,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
@@ -202,11 +203,13 @@ def _collect_mandate_exception_events(
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
     limit: int,
+    tenant_id: str,
 ) -> None:
     if repositories.mandate_repository is None:
         return
 
     exceptions, _cursor = repositories.mandate_repository.list_monitoring_exceptions(
+        tenant_id=tenant_id,
         monitoring_run_id=None,
         mandate_id=None,
         portfolio_id=None,
