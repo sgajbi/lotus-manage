@@ -8,6 +8,10 @@ from typing import Any, cast
 import pytest
 from fastapi.testclient import TestClient
 
+from src.api.routers.mandate_tenant_query import (
+    DpmMandateTenantRequiredError,
+    require_mandate_tenant,
+)
 from src.api.dependencies import (
     get_advise_authority_client,
     get_campaign_definition_repository,
@@ -7662,7 +7666,14 @@ def test_wave_preview_refuses_rather_than_omitting_mandate_evidence_without_a_te
         )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "DPM_MANDATE_TENANT_REQUIRED"
+
+    # Refused by the declared contract now that the header is required, which
+    # is the earlier and better of the two refusals. The domain guard remains
+    # the backstop for callers that reach the handler with a blank tenant, and
+    # is asserted directly rather than through a request that can no longer
+    # get past the schema.
+    with pytest.raises(DpmMandateTenantRequiredError):
+        require_mandate_tenant("   ")
 
     # The same request with a tenant succeeds and finds the evidence, so the
     # refusal is about the missing tenant rather than anything else.

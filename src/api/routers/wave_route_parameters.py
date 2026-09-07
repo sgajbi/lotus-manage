@@ -49,10 +49,18 @@ WaveCorrelationIdHeader = Annotated[
     ),
 ]
 WaveTenantIdHeader = Annotated[
-    str | None,
+    str,
     Header(
+        min_length=1,
+        # Declared required because the handler refuses an absent tenant with
+        # 422 (issue #648). Leaving it optional published a contract that
+        # disagreed with the behaviour: every generated client and integration
+        # test would have been built to omit a header the service rejects.
         description=(
-            "Trusted tenant id. Required when resolving persisted bulk-review campaign definitions."
+            "Trusted tenant id. Required: wave preview, create, source-check and selection all "
+            "read tenant-scoped mandate evidence, and a request that does not state its tenant is "
+            "refused rather than answered from an assumed one. Also required when resolving "
+            "persisted bulk-review campaign definitions."
         ),
         examples=["tenant-sg"],
     ),
