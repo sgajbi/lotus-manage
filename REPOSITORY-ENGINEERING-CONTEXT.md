@@ -976,8 +976,11 @@ Current repository posture:
     the first qualifying record. Omitting the query remains a backward-compatible latest-state
     read. This source contract enables Gateway historical mandate comparison without allowing
     Gateway or Workbench to reconstruct or relabel Manage evidence. Persisted mandate snapshot
-    identity is `(mandate_id, mandate_version, as_of_date)`, so an unchanged source binding version
-    cannot overwrite a prior business-date observation; same-date replays remain idempotent.
+    identity is `(tenant_id, mandate_id, mandate_version, as_of_date)` (issue #648), so an unchanged
+    source binding version cannot overwrite a prior business-date observation, and two tenants
+    holding the same mandate id, version and date hold separate rows rather than overwriting one
+    another; same-date replays within a tenant remain idempotent. Rows persisted before the tenant
+    fence carry a NULL tenant, match no scoped read, and are quarantined rather than defaulted.
 
 ## Architecture And Module Map
 
