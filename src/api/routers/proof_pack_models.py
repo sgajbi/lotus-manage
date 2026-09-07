@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from src.core.construction.models import AuthoritativeRegimeStressContext
 from src.core.proof_packs.models import DpmPreTradeProofPack
 from src.core.common.identity_examples import (
+    EXAMPLE_REBALANCE_RUN_ID,
     EXAMPLE_TENANT_ID,
     PROOF_PACK_ID_EXAMPLE,
 )
@@ -18,7 +19,10 @@ PROOF_PACK_EXAMPLE = {
     "portfolio_id": "PB_SG_GLOBAL_BAL_001",
     "mandate_id": "mandate_001",
     "source_type": "REBALANCE_RUN",
-    "rebalance_run_id": "rr_001",
+    # The run the id is actually derived from. Showing a different run made the
+    # example unreproducible: a consumer deriving from rr_001 gets a different
+    # id than the one displayed beside it.
+    "rebalance_run_id": EXAMPLE_REBALANCE_RUN_ID,
     "alternative_set_id": None,
     "selected_alternative_id": None,
     "as_of_date": "2026-05-03",
