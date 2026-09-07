@@ -598,7 +598,7 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     openapi = client.get("/openapi.json").json()
 
     for path in [
-        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
+        "/api/v1/rebalance/proof-packs",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md",
         "/api/v1/rebalance/proof-packs/{proof_pack_id}/report-input",

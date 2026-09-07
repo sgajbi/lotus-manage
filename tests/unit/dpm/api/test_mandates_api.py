@@ -446,7 +446,7 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
         "cashflow_projection",
         "benchmark_assignment",
     ]
-    assert repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="tenant-test") is not None
+    assert repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="default") is not None
 
 
 def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_health() -> None:
