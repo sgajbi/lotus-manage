@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from src.api.routers.mandate_tenant_query import NormalisedTenantId
 from src.api.services.mandate_service import DpmMandateRefreshResult
 from src.core.mandates import (
     DpmMandateDigitalTwin,
@@ -107,7 +108,7 @@ class DpmMandateRefreshFromCoreRequest(BaseModel):
         description="Business date for resolving lotus-core mandate and target source products.",
         examples=["2026-05-03"],
     )
-    tenant_id: str = Field(
+    tenant_id: NormalisedTenantId = Field(
         min_length=1,
         description=(
             "Tenant that owns the refreshed mandate snapshot. Required: the snapshot and its "

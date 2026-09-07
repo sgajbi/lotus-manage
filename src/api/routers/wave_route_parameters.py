@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from pydantic import AfterValidator
+
 from fastapi import Header, Path, Query
 
 from src.core.waves import CampaignDefinitionStatus
+from src.api.routers.mandate_tenant_query import normalise_mandate_tenant
 
 CampaignDefinitionIdPath = Annotated[
     str,
@@ -51,6 +54,12 @@ WaveCorrelationIdHeader = Annotated[
 WaveTenantIdHeader = Annotated[
     str,
     Header(
+        # Same boundary rule as the query form: min_length alone admits a
+        # whitespace-only header, and padding must normalise rather than open a
+        # private namespace nothing later reads. Unanchored deliberately - see
+        # mandate_tenant_query for why an anchored form disagrees with the
+        # validator on a trailing newline.
+        pattern=r"\S",
         min_length=1,
         # Declared required because the handler refuses an absent tenant with
         # 422 (issue #648). Leaving it optional published a contract that
@@ -64,6 +73,7 @@ WaveTenantIdHeader = Annotated[
         ),
         examples=["tenant-sg"],
     ),
+    AfterValidator(normalise_mandate_tenant),
 ]
 WaveCreateIdempotencyKeyHeader = Annotated[
     str,
