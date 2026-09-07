@@ -2191,6 +2191,11 @@ def test_rebalance_run_proof_pack_id_uses_stable_run_identity() -> None:
     assert pack.proof_pack_id == proof_pack_id_for_rebalance_run(
         tenant_id="tenant-test", rebalance_run_id=run.rebalance_run_id
     )
+    # A convergence assertion needs a divergence case or it measures collision:
+    # a derivation that returned a constant would satisfy the line above.
+    assert pack.proof_pack_id != proof_pack_id_for_rebalance_run(
+        tenant_id="tenant-other", rebalance_run_id=run.rebalance_run_id
+    )
 
 
 def test_selected_alternative_proof_pack_captures_method_trace_and_selection_event() -> None:
@@ -2229,6 +2234,14 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
     assert pack.source_type == "SELECTED_ALTERNATIVE"
     assert pack.proof_pack_id == proof_pack_id_for_selected_alternative(
         tenant_id="tenant-test",
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=alternative.alternative_id,
+    )
+    # The divergence half: without it this passes for a derivation that
+    # collapses every tenant onto one id, which is the defect the tenant was
+    # added to prevent.
+    assert pack.proof_pack_id != proof_pack_id_for_selected_alternative(
+        tenant_id="tenant-other",
         alternative_set_id=alternative_set.alternative_set_id,
         selected_alternative_id=alternative.alternative_id,
     )
