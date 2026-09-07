@@ -38,6 +38,7 @@ def preview_wave(
     correlation_id: str,
     portfolios: list[dict[str, object]],
     mandate_repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> DpmRebalanceWave:
     return wave_preview.build_preview_wave(
         trigger_type=trigger_type,
@@ -48,6 +49,7 @@ def preview_wave(
         correlation_id=correlation_id,
         portfolios=portfolios,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -61,10 +63,12 @@ def create_wave(
     correlation_id: str,
     portfolios: list[dict[str, object]],
     idempotency_key: str,
+    tenant_id: str,
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_create_command.create_persisted_wave(
+        tenant_id=tenant_id,
         trigger_type=trigger_type,
         trigger_id=trigger_id,
         rationale=rationale,
@@ -83,10 +87,12 @@ def source_check_wave(
     wave_id: str,
     actor_id: str,
     correlation_id: str,
+    tenant_id: str,
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_preparation_commands.source_check_persisted_wave(
+        tenant_id=tenant_id,
         wave_id=wave_id,
         actor_id=actor_id,
         correlation_id=correlation_id,
@@ -129,6 +135,7 @@ def select_wave_item_alternative(
     reason_code: str,
     comment: str | None,
     correlation_id: str,
+    tenant_id: str,
     generate_proof_pack: bool,
     construction_repository: ConstructionRepository,
     proof_pack_repository: DpmProofPackRepository,
@@ -137,6 +144,7 @@ def select_wave_item_alternative(
     wave_repository: DpmWaveRepository,
 ) -> DpmRebalanceWave:
     return wave_selection_command.select_persisted_wave_item_alternative(
+        tenant_id=tenant_id,
         wave_id=wave_id,
         wave_item_id=wave_item_id,
         alternative_id=alternative_id,
@@ -305,6 +313,7 @@ def get_report_input(
     proof_pack_repository: DpmProofPackRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
+    tenant_id: str | None = None,
 ) -> DpmWaveReportInput:
     return wave_read_model_queries.wave_report_input_for_id(
         wave_id=wave_id,
@@ -312,4 +321,5 @@ def get_report_input(
         proof_pack_repository=proof_pack_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )

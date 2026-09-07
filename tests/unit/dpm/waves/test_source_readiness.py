@@ -72,7 +72,8 @@ def test_source_readiness_health_classification_helpers_preserve_posture() -> No
             current_weights={"CASH": Decimal("0.05")},
             target_weights={"CASH": Decimal("0.05")},
             cash_weight=Decimal("0.05"),
-        )
+        ),
+        tenant_id="tenant-test",
     )
     stale_health = ready_health.model_copy(update={"as_of_date": date(2026, 5, 2)})
     blocked_health = calculate_mandate_health(
@@ -82,7 +83,8 @@ def test_source_readiness_health_classification_helpers_preserve_posture() -> No
             target_weights={"CASH": Decimal("0.05")},
             cash_weight=Decimal("0.05"),
             source_readiness_state="UNAVAILABLE",
-        )
+        ),
+        tenant_id="tenant-test",
     )
     degraded_health = calculate_mandate_health(
         DpmMandateHealthInput(
@@ -91,7 +93,8 @@ def test_source_readiness_health_classification_helpers_preserve_posture() -> No
             target_weights={"CASH": Decimal("0.05")},
             cash_weight=Decimal("0.05"),
             source_readiness_state="DEGRADED",
-        )
+        ),
+        tenant_id="tenant-test",
     )
     review_health = calculate_mandate_health(
         DpmMandateHealthInput(
@@ -100,7 +103,8 @@ def test_source_readiness_health_classification_helpers_preserve_posture() -> No
             target_weights={"CASH": Decimal("0.05")},
             cash_weight=Decimal("0.05"),
             approval_required=True,
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     assert _health_is_stale(health=stale_health, wave_as_of_date="2026-05-03")
@@ -170,7 +174,8 @@ def test_source_readiness_degrades_missing_or_stale_health() -> None:
             current_weights={"CASH": Decimal("0.05")},
             target_weights={"CASH": Decimal("0.05")},
             cash_weight=Decimal("0.05"),
-        )
+        ),
+        tenant_id="tenant-test",
     )
     stale = classify_wave_item_source_readiness(
         item=_item(),
@@ -239,7 +244,7 @@ def test_source_readiness_classifies_blocked_degraded_review_and_ready_health() 
             item=_item(),
             wave_as_of_date="2026-05-03",
             mandate_twin=twin_without_lineage_record,
-            mandate_health=calculate_mandate_health(health_input),
+            mandate_health=calculate_mandate_health(health_input, tenant_id="tenant-test"),
         )
         for health_input, _state, _reason in cases
     ]

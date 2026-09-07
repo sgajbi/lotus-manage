@@ -164,8 +164,8 @@ def _repositories() -> tuple[
     )
     wave_repository.save_wave(wave=_wave(), idempotency_key=None, request_hash=None)
     outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
-    mandate_repository.save_mandate_snapshot(_mandate_twin())
-    mandate_repository.save_health_snapshot(_health_snapshot())
+    mandate_repository.save_mandate_snapshot(_mandate_twin(), tenant_id=TENANT_ID)
+    mandate_repository.save_health_snapshot(_health_snapshot(), tenant_id=TENANT_ID)
     mandate_repository.save_monitoring_exception(_monitoring_exception())
     return proof_pack_repository, wave_repository, outcome_repository, mandate_repository
 
@@ -993,6 +993,7 @@ def test_portfolio_memory_rejects_inconsistent_aggregate_metadata() -> None:
         mandate_repository=mandate_repository,
         construction_repository=construction_repository,
         generated_at=datetime(2026, 5, 22, 10, 0, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
 
     inconsistent_count = memory.model_dump(mode="json")
@@ -1057,6 +1058,7 @@ def test_portfolio_memory_hashes_exclude_generated_at_for_audit_replay() -> None
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
         generated_at=first_generated_at,
+        tenant_id=TENANT_ID,
     )
     later_memory = build_portfolio_memory(
         portfolio_id=PORTFOLIO_ID,
@@ -1065,6 +1067,7 @@ def test_portfolio_memory_hashes_exclude_generated_at_for_audit_replay() -> None
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
         generated_at=later_generated_at,
+        tenant_id=TENANT_ID,
     )
     first_page = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
@@ -1075,6 +1078,7 @@ def test_portfolio_memory_hashes_exclude_generated_at_for_audit_replay() -> None
         event_type="WAVE_HANDOFF_READY",
         source_system="lotus-manage",
         generated_at=first_generated_at,
+        tenant_id=TENANT_ID,
     )
     later_page = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
@@ -1085,6 +1089,7 @@ def test_portfolio_memory_hashes_exclude_generated_at_for_audit_replay() -> None
         event_type="WAVE_HANDOFF_READY",
         source_system="lotus-manage",
         generated_at=later_generated_at,
+        tenant_id=TENANT_ID,
     )
 
     assert first_memory.generated_at != later_memory.generated_at
@@ -1103,6 +1108,7 @@ def test_portfolio_memory_event_lookup_hash_excludes_generated_at() -> None:
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
         generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
     later_memory = build_portfolio_memory(
         portfolio_id=PORTFOLIO_ID,
@@ -1111,6 +1117,7 @@ def test_portfolio_memory_event_lookup_hash_excludes_generated_at() -> None:
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
         generated_at=datetime(2026, 5, 21, 11, 0, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
     event_id = "memory:wave:dwv_001:handoff:dwh_001"
     support_boundary = "Manage-local lookup test boundary."
@@ -1151,6 +1158,7 @@ def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> Non
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
         generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
 
     full_context = build_portfolio_memory_report_context(memory, event_limit=12)
@@ -1211,6 +1219,7 @@ def test_portfolio_memory_report_context_rejects_inconsistent_bounded_metadata()
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
         generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
     context = build_portfolio_memory_report_context(memory, event_limit=2)
 
@@ -1857,6 +1866,7 @@ def test_portfolio_memory_search_page_rejects_inconsistent_metadata() -> None:
         event_type="WAVE_HANDOFF_READY",
         source_system="lotus-manage",
         generated_at=datetime(2026, 5, 22, 10, 30, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
 
     inconsistent_returned = page.model_dump(mode="json")
@@ -2450,6 +2460,7 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
         outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
         mandate_repository=InMemoryDpmMandateRepository(),
         portfolio_ids=["EMPTY_PORTFOLIO"],
+        tenant_id=TENANT_ID,
     )
     with pytest.raises(ValueError, match="UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE"):
         search_portfolio_memory(
@@ -2459,6 +2470,7 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
             mandate_repository=mandate_repository,
             portfolio_ids=[PORTFOLIO_ID],
             event_type="NOT_A_MEMORY_EVENT",
+            tenant_id=TENANT_ID,
         )
     state_filtered = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
@@ -2467,6 +2479,7 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
         mandate_repository=mandate_repository,
         portfolio_ids=[PORTFOLIO_ID],
         supportability_state="BLOCKED",
+        tenant_id=TENANT_ID,
     )
     source_filtered = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
@@ -2475,6 +2488,7 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
         mandate_repository=mandate_repository,
         portfolio_ids=[PORTFOLIO_ID],
         source_system="not-a-source-system",
+        tenant_id=TENANT_ID,
     )
     blank_source_unfiltered = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
@@ -2483,6 +2497,7 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
         mandate_repository=mandate_repository,
         portfolio_ids=[PORTFOLIO_ID],
         source_system=" ",
+        tenant_id=TENANT_ID,
     )
 
     assert empty_filtered.returned_count == 0
@@ -2501,6 +2516,7 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
         mandate_repository=InMemoryDpmMandateRepository(),
         portfolio_ids=["EMPTY_PORTFOLIO", " "],
         supportability_state="EMPTY",
+        tenant_id=TENANT_ID,
     )
     default_filtered = search_portfolio_memory(
         proof_pack_repository=InMemoryDpmProofPackRepository(),
@@ -2508,6 +2524,7 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
         outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
         mandate_repository=InMemoryDpmMandateRepository(),
         portfolio_ids=["EMPTY_PORTFOLIO"],
+        tenant_id=TENANT_ID,
     )
 
     assert empty_filtered.returned_count == 1

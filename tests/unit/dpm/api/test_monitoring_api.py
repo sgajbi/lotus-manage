@@ -127,7 +127,7 @@ def teardown_function() -> None:
 def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin()
-    repository.save_mandate_snapshot(twin)
+    repository.save_mandate_snapshot(twin, tenant_id="default")
 
     with _client(repository) as client:
         run_response = client.post(
@@ -160,7 +160,7 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
 
 def test_monitoring_run_once_resolves_pm_book_from_core(monkeypatch) -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin())
+    repository.save_mandate_snapshot(_twin(), tenant_id="default")
     resolver = _PmBookResolver(_pm_book_membership_payload())
     monkeypatch.setattr(
         "src.api.routers.monitoring.build_core_resolver_client",
@@ -218,6 +218,7 @@ def test_monitoring_run_once_helpers_normalize_pm_book_selector_and_source_filte
         as_of_date=date(2026, 5, 3),
         portfolio_manager_id="PM_SG_DPM_001",
         portfolio_types=[" discretionary ", "", "ADVISORY"],
+        tenant_id="default",
     )
     membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
         _pm_book_membership_payload()
@@ -239,12 +240,14 @@ def test_monitoring_run_once_helpers_reject_incomplete_pm_book_selector_and_memb
     missing_selector = DpmMonitoringRunOnceRequest(
         mandate_ids=[],
         as_of_date=date(2026, 5, 3),
+        tenant_id="default",
     )
     missing_portfolio_types = DpmMonitoringRunOnceRequest(
         mandate_ids=[],
         as_of_date=date(2026, 5, 3),
         portfolio_manager_id="PM_SG_DPM_001",
         portfolio_types=[" "],
+        tenant_id="default",
     )
     incomplete_membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
         _pm_book_membership_payload(supportability_state="INCOMPLETE")
@@ -266,7 +269,7 @@ def test_monitoring_run_once_requires_explicit_or_pm_book_selector() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.post(
             "/api/v1/dpm/monitoring/run-once",
-            json={"mandate_ids": [], "as_of_date": "2026-05-03"},
+            json={"mandate_ids": [], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
 
     assert response.status_code == 422
@@ -383,7 +386,7 @@ def test_monitoring_run_once_maps_core_resolver_source_failures(monkeypatch) -> 
 def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin()
-    repository.save_mandate_snapshot(twin)
+    repository.save_mandate_snapshot(twin, tenant_id="default")
 
     with _client(repository) as client:
         run_response = client.post(
@@ -556,17 +559,17 @@ def test_command_center_exposes_degraded_and_blocked_source_readiness_states() -
 
 def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin())
+    repository.save_mandate_snapshot(_twin(), tenant_id="default")
 
     with _client(repository) as client:
         missing_run_once = client.post(
             "/api/v1/dpm/monitoring/run-once",
-            json={"mandate_ids": ["UNKNOWN"], "as_of_date": "2026-05-03"},
+            json={"mandate_ids": ["UNKNOWN"], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
         missing_run = client.get("/api/v1/dpm/monitoring/runs/UNKNOWN")
         client.post(
             "/api/v1/dpm/monitoring/run-once",
-            json={"mandate_ids": [MANDATE_ID], "as_of_date": "2026-05-03"},
+            json={"mandate_ids": [MANDATE_ID], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
         exception_id = client.get("/api/v1/dpm/exceptions").json()["items"][0]["exception_id"]
         resolved = client.post(

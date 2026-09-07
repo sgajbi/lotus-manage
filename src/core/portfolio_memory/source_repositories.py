@@ -66,6 +66,18 @@ def require_campaign_definition_tenant_id(
     return tenant_id.strip()
 
 
+def require_mandate_tenant_id(
+    *,
+    tenant_id: str | None,
+    repositories: PortfolioMemorySourceRepositories,
+) -> str | None:
+    if repositories.mandate_repository is None:
+        return None
+    if tenant_id is None or not tenant_id.strip():
+        raise ValueError("tenant_id is required when portfolio memory includes mandate sources")
+    return tenant_id.strip()
+
+
 def build_portfolio_memory_source_repositories(
     *,
     proof_pack_repository: DpmProofPackRepository,

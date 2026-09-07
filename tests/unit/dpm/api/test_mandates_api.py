@@ -446,7 +446,7 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
         "cashflow_projection",
         "benchmark_assignment",
     ]
-    assert repository.get_latest_mandate(mandate_id=MANDATE_ID) is not None
+    assert repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="default") is not None
 
 
 def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_health() -> None:
@@ -456,7 +456,11 @@ def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_he
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 200
@@ -480,7 +484,11 @@ def test_refresh_from_core_rejects_inactive_benchmark_assignment_without_local_m
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 200
@@ -500,7 +508,11 @@ def test_refresh_from_core_preserves_gap_when_optional_profile_is_incomplete() -
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 200
@@ -512,11 +524,13 @@ def test_refresh_from_core_preserves_gap_when_optional_profile_is_incomplete() -
 
 def test_read_mandate_by_portfolio_and_by_id_use_persisted_state() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="3"))
+    repository.save_mandate_snapshot(_twin(version="3"), tenant_id="tenant-test")
 
     with _client(repository) as client:
-        by_portfolio = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}")
-        by_id = client.get(f"/api/v1/mandates/{MANDATE_ID}")
+        by_portfolio = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?tenant_id=tenant-test"
+        )
+        by_id = client.get(f"/api/v1/mandates/{MANDATE_ID}?tenant_id=tenant-test")
 
     assert by_portfolio.status_code == 200
     assert by_portfolio.json()["mandate_version"] == "3"
@@ -528,10 +542,11 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
     repository = InMemoryDpmMandateRepository()
     historical = _twin(version="2", as_of=date(2026, 4, 10))
     future = _twin(version="3", as_of=date(2026, 5, 3))
-    repository.save_mandate_snapshot(historical)
-    repository.save_mandate_snapshot(future)
+    repository.save_mandate_snapshot(historical, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(future, tenant_id="tenant-test")
     historical_health = calculate_mandate_health(
-        DpmMandateHealthInput(twin=historical, cash_weight=Decimal("0.11"))
+        DpmMandateHealthInput(twin=historical, cash_weight=Decimal("0.11")),
+        tenant_id="default",
     ).model_copy(
         update={
             "health_snapshot_id": "mh_20260410",
@@ -540,7 +555,8 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
         }
     )
     future_health = calculate_mandate_health(
-        DpmMandateHealthInput(twin=future, cash_weight=Decimal("0.08"))
+        DpmMandateHealthInput(twin=future, cash_weight=Decimal("0.08")),
+        tenant_id="default",
     ).model_copy(
         update={
             "health_snapshot_id": "mh_20260503",
@@ -548,14 +564,20 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
             "calculated_at": datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
         }
     )
-    repository.save_health_snapshot(historical_health)
-    repository.save_health_snapshot(future_health)
+    repository.save_health_snapshot(historical_health, tenant_id="tenant-test")
+    repository.save_health_snapshot(future_health, tenant_id="tenant-test")
 
     with _client(repository) as client:
-        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-15")
-        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-15")
-        latest_mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}")
-        latest_health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
+        mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-15&tenant_id=tenant-test"
+        )
+        health = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-15&tenant_id=tenant-test"
+        )
+        latest_mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?tenant_id=tenant-test"
+        )
+        latest_health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id=tenant-test")
 
     assert mandate.status_code == 200
     assert mandate.json()["mandate_version"] == "2"
@@ -570,14 +592,21 @@ def test_temporal_mandate_and_health_reads_exclude_future_evidence() -> None:
 def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidence() -> None:
     repository = InMemoryDpmMandateRepository()
     twin = _twin(version="2", as_of=date(2026, 4, 10))
-    repository.save_mandate_snapshot(twin)
+    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
     repository.save_health_snapshot(
-        calculate_mandate_health(DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11")))
+        calculate_mandate_health(
+            DpmMandateHealthInput(twin=twin, cash_weight=Decimal("0.11")), tenant_id="default"
+        ),
+        tenant_id="tenant-test",
     )
 
     with _client(repository) as client:
-        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-09")
-        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-09")
+        mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=2026-04-09&tenant_id=tenant-test"
+        )
+        health = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-04-09&tenant_id=tenant-test"
+        )
 
     assert mandate.status_code == 404
     assert mandate.json()["detail"] == "DPM_MANDATE_NOT_FOUND"
@@ -587,8 +616,12 @@ def test_temporal_mandate_and_health_reads_return_typed_404_before_first_evidenc
 
 def test_temporal_read_queries_reject_invalid_business_dates() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
-        mandate = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=not-a-date")
-        health = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-02-30")
+        mandate = client.get(
+            f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?as_of_date=not-a-date&tenant_id=tenant-test"
+        )
+        health = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/health?as_of_date=2026-02-30&tenant_id=tenant-test"
+        )
 
     assert mandate.status_code == 422
     assert health.status_code == 422
@@ -617,7 +650,7 @@ def test_temporal_read_queries_are_documented_as_optional_business_dates() -> No
 
 def test_missing_mandate_by_portfolio_returns_404() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
-        response = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}")
+        response = client.get(f"/api/v1/mandates/by-portfolio/{PORTFOLIO_ID}?tenant_id=tenant-test")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "DPM_MANDATE_NOT_FOUND"
@@ -625,11 +658,11 @@ def test_missing_mandate_by_portfolio_returns_404() -> None:
 
 def test_mandate_versions_are_returned_newest_first() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2"))
-    repository.save_mandate_snapshot(_twin(version="3"))
+    repository.save_mandate_snapshot(_twin(version="2"), tenant_id="tenant-test")
+    repository.save_mandate_snapshot(_twin(version="3"), tenant_id="tenant-test")
 
     with _client(repository) as client:
-        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/versions")
+        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/versions?tenant_id=tenant-test")
 
     assert response.status_code == 200
     assert [row["mandate_version"] for row in response.json()] == ["3", "2"]
@@ -637,7 +670,7 @@ def test_mandate_versions_are_returned_newest_first() -> None:
 
 def test_missing_mandate_versions_return_404() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
-        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/versions")
+        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/versions?tenant_id=tenant-test")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "DPM_MANDATE_NOT_FOUND"
@@ -645,11 +678,15 @@ def test_missing_mandate_versions_return_404() -> None:
 
 def test_mandate_diff_identifies_material_constraint_changes() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")))
-    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")))
+    repository.save_mandate_snapshot(
+        _twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test"
+    )
+    repository.save_mandate_snapshot(
+        _twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test"
+    )
 
     with _client(repository) as client:
-        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff")
+        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?tenant_id=tenant-test")
 
     assert response.status_code == 200
     body = response.json()
@@ -665,13 +702,23 @@ def test_mandate_diff_identifies_material_constraint_changes() -> None:
 
 def test_mandate_diff_with_explicit_versions_and_missing_version_errors() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="2", turnover_budget=Decimal("0.10")))
-    repository.save_mandate_snapshot(_twin(version="3", turnover_budget=Decimal("0.15")))
+    repository.save_mandate_snapshot(
+        _twin(version="2", turnover_budget=Decimal("0.10")), tenant_id="tenant-test"
+    )
+    repository.save_mandate_snapshot(
+        _twin(version="3", turnover_budget=Decimal("0.15")), tenant_id="tenant-test"
+    )
 
     with _client(repository) as client:
-        explicit = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&to_version=3")
-        missing = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=1&to_version=3")
-        partial = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2")
+        explicit = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&to_version=3&tenant_id=tenant-test"
+        )
+        missing = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=1&to_version=3&tenant_id=tenant-test"
+        )
+        partial = client.get(
+            f"/api/v1/mandates/{MANDATE_ID}/diff?from_version=2&tenant_id=tenant-test"
+        )
 
     assert explicit.status_code == 200
     assert explicit.json()["from_version"] == "2"
@@ -683,7 +730,7 @@ def test_mandate_diff_with_explicit_versions_and_missing_version_errors() -> Non
 
 def test_missing_mandate_diff_returns_404() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
-        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff")
+        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?tenant_id=tenant-test")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "DPM_MANDATE_NOT_FOUND"
@@ -691,10 +738,10 @@ def test_missing_mandate_diff_returns_404() -> None:
 
 def test_mandate_diff_requires_two_versions() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin(version="3"))
+    repository.save_mandate_snapshot(_twin(version="3"), tenant_id="tenant-test")
 
     with _client(repository) as client:
-        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff")
+        response = client.get(f"/api/v1/mandates/{MANDATE_ID}/diff?tenant_id=tenant-test")
 
     assert response.status_code == 409
     assert response.json()["detail"] == "DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS"
@@ -704,7 +751,11 @@ def test_refresh_maps_core_unavailable_to_503() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver(unavailable=True)) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 503
@@ -715,7 +766,11 @@ def test_refresh_maps_core_incomplete_to_424() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver(incomplete=True)) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     assert response.status_code == 424
@@ -724,7 +779,7 @@ def test_refresh_maps_core_incomplete_to_424() -> None:
 
 def test_missing_mandate_returns_404() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
-        response = client.get(f"/api/v1/mandates/{MANDATE_ID}")
+        response = client.get(f"/api/v1/mandates/{MANDATE_ID}?tenant_id=tenant-test")
 
     assert response.status_code == 404
 
@@ -752,7 +807,11 @@ def test_refresh_accepts_validation_errors_as_422() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver()) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "not-a-date"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "not-a-date",
+            },
         )
 
     assert response.status_code == 422
@@ -773,7 +832,11 @@ def test_response_contract_is_json_serializable() -> None:
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
         )
 
     httpx.Response(200, json=response.json())
@@ -807,10 +870,10 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
 
     with _client(repository) as client:
         recalculated = client.post(
-            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate",
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tenant-test",
             json=health_input.model_dump(mode="json"),
         )
-        latest = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
+        latest = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id=tenant-test")
 
     assert recalculated.status_code == 200
     assert recalculated.json()["health_state"] == "PENDING_REVIEW"
@@ -826,6 +889,7 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         repository=repository,
         portfolio_id=PORTFOLIO_ID,
         now=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
+        tenant_id="tenant-test",
     )
     assert {ref["productId"] for ref in source_refs} == {
         "lotus-risk:MandateRiskHealthContext:v1",
@@ -848,6 +912,7 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
             repository=repository,
             portfolio_id=None,
             now=now,
+            tenant_id="tenant-test",
         )
         == []
     )
@@ -856,16 +921,18 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
             repository=repository,
             portfolio_id=PORTFOLIO_ID,
             now=now,
+            tenant_id="tenant-test",
         )
         == []
     )
 
-    repository.save_mandate_snapshot(_twin())
+    repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
     assert (
         source_refs_for_portfolio_mandate_health(
             repository=repository,
             portfolio_id=PORTFOLIO_ID,
             now=now,
+            tenant_id="tenant-test",
         )
         == []
     )
@@ -921,7 +988,8 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
                 "threshold_breached": False,
                 "request_fingerprint": "sha256:risk-context",
             },
-        )
+        ),
+        tenant_id="default",
     )
     risk_ref = health_snapshot.source_analytics_posture.source_context_refs[0]
     posture = health_snapshot.source_analytics_posture.model_copy(
@@ -933,13 +1001,15 @@ def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineag
                 "calculated_at": datetime(2026, 5, 3, 9, 0),
                 "source_analytics_posture": posture,
             }
-        )
+        ),
+        tenant_id="tenant-test",
     )
 
     mixed_refs = source_refs_for_portfolio_mandate_health(
         repository=repository,
         portfolio_id=PORTFOLIO_ID,
         now=now,
+        tenant_id="tenant-test",
     )
 
     assert [ref["source_ref_status"] for ref in mixed_refs] == ["available", "unavailable"]
@@ -955,9 +1025,9 @@ def test_health_read_and_recalculate_error_mapping() -> None:
     health_input = DpmMandateHealthInput(twin=wrong_twin, cash_weight=Decimal("0.05"))
 
     with _client(InMemoryDpmMandateRepository()) as client:
-        missing = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
+        missing = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id=tenant-test")
         mismatch = client.post(
-            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate",
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tenant-test",
             json=health_input.model_dump(mode="json"),
         )
 

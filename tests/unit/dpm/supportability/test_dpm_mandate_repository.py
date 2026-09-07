@@ -63,7 +63,8 @@ def _health_snapshot(twin: DpmMandateDigitalTwin) -> DpmMandateHealthSnapshot:
                 "FI_US_TREASURY_10Y": Decimal("0.40"),
             },
             cash_weight=Decimal("0.05"),
-        )
+        ),
+        tenant_id="default",
     )
 
 
@@ -93,13 +94,21 @@ def test_repository_persists_mandate_versions_idempotently_and_lists_latest() ->
     old_twin = _twin(version="1", as_of=date(2026, 5, 1))
     latest_twin = _twin(version="2", as_of=date(2026, 5, 3))
 
-    repository.save_mandate_snapshot(old_twin)
-    repository.save_mandate_snapshot(latest_twin)
-    repository.save_mandate_snapshot(latest_twin.model_copy(update={"risk_profile": "GROWTH"}))
+    repository.save_mandate_snapshot(old_twin, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(latest_twin, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(
+        latest_twin.model_copy(update={"risk_profile": "GROWTH"}), tenant_id="tenant-test"
+    )
 
-    by_portfolio = repository.get_latest_mandate_by_portfolio(portfolio_id="PB_SG_GLOBAL_BAL_001")
-    by_mandate = repository.get_latest_mandate(mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001")
-    versions = repository.list_mandate_versions(mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001")
+    by_portfolio = repository.get_latest_mandate_by_portfolio(
+        portfolio_id="PB_SG_GLOBAL_BAL_001", tenant_id="tenant-test"
+    )
+    by_mandate = repository.get_latest_mandate(
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001", tenant_id="tenant-test"
+    )
+    versions = repository.list_mandate_versions(
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001", tenant_id="tenant-test"
+    )
 
     assert by_portfolio is not None
     assert by_portfolio.mandate_version == "2"
@@ -111,13 +120,17 @@ def test_repository_persists_mandate_versions_idempotently_and_lists_latest() ->
 
 def test_repository_returns_defensive_copies() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_twin())
+    repository.save_mandate_snapshot(_twin(), tenant_id="tenant-test")
 
-    stored = repository.get_latest_mandate(mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001")
+    stored = repository.get_latest_mandate(
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001", tenant_id="tenant-test"
+    )
     assert stored is not None
     stored.risk_profile = "MUTATED"
 
-    reloaded = repository.get_latest_mandate(mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001")
+    reloaded = repository.get_latest_mandate(
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001", tenant_id="tenant-test"
+    )
     assert reloaded is not None
     assert reloaded.risk_profile == "BALANCED"
 
@@ -134,10 +147,12 @@ def test_repository_persists_latest_health_snapshot() -> None:
         }
     )
 
-    repository.save_health_snapshot(first)
-    repository.save_health_snapshot(second)
+    repository.save_health_snapshot(first, tenant_id="tenant-test")
+    repository.save_health_snapshot(second, tenant_id="tenant-test")
 
-    latest = repository.get_latest_health_snapshot(mandate_id=twin.mandate_id)
+    latest = repository.get_latest_health_snapshot(
+        mandate_id=twin.mandate_id, tenant_id="tenant-test"
+    )
     assert latest is not None
     assert latest.health_snapshot_id == "mh_second"
     assert latest.health_score == 91
@@ -150,11 +165,12 @@ def test_repository_resolves_portfolio_mandate_at_or_before_business_date() -> N
     same_day_latest = _twin(version="3", as_of=date(2026, 4, 10))
     future = _twin(version="4", as_of=date(2026, 5, 3))
     for twin in (first, same_day_older, same_day_latest, future):
-        repository.save_mandate_snapshot(twin)
+        repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
 
     resolved = repository.get_mandate_by_portfolio_as_of(
         portfolio_id=first.portfolio_id,
         as_of_date=date(2026, 4, 10),
+        tenant_id="tenant-test",
     )
 
     assert resolved == same_day_latest
@@ -162,10 +178,16 @@ def test_repository_resolves_portfolio_mandate_at_or_before_business_date() -> N
         repository.get_mandate_by_portfolio_as_of(
             portfolio_id=first.portfolio_id,
             as_of_date=date(2026, 3, 31),
+            tenant_id="tenant-test",
         )
         is None
     )
-    assert repository.get_latest_mandate_by_portfolio(portfolio_id=first.portfolio_id) == future
+    assert (
+        repository.get_latest_mandate_by_portfolio(
+            portfolio_id=first.portfolio_id, tenant_id="tenant-test"
+        )
+        == future
+    )
 
 
 def test_repository_preserves_same_binding_version_across_business_dates() -> None:
@@ -175,17 +197,23 @@ def test_repository_preserves_same_binding_version_across_business_dates() -> No
         update={"risk_profile": "GROWTH"}
     )
 
-    repository.save_mandate_snapshot(historical)
-    repository.save_mandate_snapshot(current)
+    repository.save_mandate_snapshot(historical, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(current, tenant_id="tenant-test")
 
     assert (
         repository.get_mandate_by_portfolio_as_of(
             portfolio_id=historical.portfolio_id,
             as_of_date=historical.as_of_date,
+            tenant_id="tenant-test",
         )
         == historical
     )
-    assert repository.get_latest_mandate_by_portfolio(portfolio_id=current.portfolio_id) == current
+    assert (
+        repository.get_latest_mandate_by_portfolio(
+            portfolio_id=current.portfolio_id, tenant_id="tenant-test"
+        )
+        == current
+    )
 
 
 def test_repository_resolves_health_snapshot_at_or_before_business_date() -> None:
@@ -219,11 +247,12 @@ def test_repository_resolves_health_snapshot_at_or_before_business_date() -> Non
         }
     )
     for snapshot in (first, same_day_older, same_day_latest, future):
-        repository.save_health_snapshot(snapshot)
+        repository.save_health_snapshot(snapshot, tenant_id="tenant-test")
 
     resolved = repository.get_health_snapshot_as_of(
         mandate_id=twin.mandate_id,
         as_of_date=date(2026, 4, 10),
+        tenant_id="tenant-test",
     )
 
     assert resolved == same_day_latest
@@ -231,10 +260,14 @@ def test_repository_resolves_health_snapshot_at_or_before_business_date() -> Non
         repository.get_health_snapshot_as_of(
             mandate_id=twin.mandate_id,
             as_of_date=date(2026, 3, 31),
+            tenant_id="tenant-test",
         )
         is None
     )
-    assert repository.get_latest_health_snapshot(mandate_id=twin.mandate_id) == future
+    assert (
+        repository.get_latest_health_snapshot(mandate_id=twin.mandate_id, tenant_id="tenant-test")
+        == future
+    )
 
 
 def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
@@ -247,7 +280,8 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.05"),
             restricted_held_instruments=["EQ_RESTRICTED"],
-        )
+        ),
+        tenant_id="default",
     )
     exceptions = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)
     assert exceptions
@@ -311,7 +345,8 @@ def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> 
             current_weights={"EQ_US_AAPL": Decimal("0.60")},
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.50"),
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
     selected_run_exception = exception.model_copy(
@@ -353,7 +388,8 @@ def test_in_memory_monitoring_exception_helpers_filter_sort_and_page() -> None:
             current_weights={"EQ_US_AAPL": Decimal("0.60")},
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.50"),
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
     selected_old = exception.model_copy(
@@ -461,7 +497,8 @@ def test_postgres_monitoring_exception_page_returns_overfetch_cursor() -> None:
             current_weights={"EQ_US_AAPL": Decimal("0.60")},
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.50"),
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
     first = exception.model_copy(update={"exception_id": "me_first"})
@@ -479,11 +516,11 @@ def test_postgres_monitoring_exception_page_returns_overfetch_cursor() -> None:
 def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_records() -> None:
     repository = InMemoryDpmMandateRepository()
     old_twin = _twin(as_of=date(2024, 1, 1))
-    repository.save_mandate_snapshot(old_twin)
+    repository.save_mandate_snapshot(old_twin, tenant_id="tenant-test")
     old_health = _health_snapshot(old_twin).model_copy(
         update={"calculated_at": datetime(2024, 1, 1, tzinfo=timezone.utc)}
     )
-    repository.save_health_snapshot(old_health)
+    repository.save_health_snapshot(old_health, tenant_id="tenant-test")
     old_exception = monitoring_exceptions_from_health(
         calculate_mandate_health(
             DpmMandateHealthInput(
@@ -491,7 +528,8 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
                 cash_weight=Decimal("0.50"),
                 current_weights={"EQ_US_AAPL": Decimal("0.60")},
                 target_weights={"EQ_US_AAPL": Decimal("0.60")},
-            )
+            ),
+            tenant_id="default",
         ),
         source_lineage=[],
     )[0].model_copy(update={"detected_at": datetime(2024, 1, 1, tzinfo=timezone.utc)})
@@ -507,8 +545,16 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
     )
 
     assert purged == 3
-    assert repository.get_latest_mandate(mandate_id=old_twin.mandate_id) is None
-    assert repository.get_latest_health_snapshot(mandate_id=old_twin.mandate_id) is None
+    assert (
+        repository.get_latest_mandate(mandate_id=old_twin.mandate_id, tenant_id="tenant-test")
+        is None
+    )
+    assert (
+        repository.get_latest_health_snapshot(
+            mandate_id=old_twin.mandate_id, tenant_id="tenant-test"
+        )
+        is None
+    )
     rows, _ = repository.list_monitoring_exceptions(
         monitoring_run_id=None,
         mandate_id=old_twin.mandate_id,
@@ -570,7 +616,8 @@ def test_in_memory_retention_exception_helper_keeps_active_exceptions() -> None:
                 cash_weight=Decimal("0.50"),
                 current_weights={"EQ_US_AAPL": Decimal("0.60")},
                 target_weights={"EQ_US_AAPL": Decimal("0.60")},
-            )
+            ),
+            tenant_id="default",
         ),
         source_lineage=[],
     )[0].model_copy(update={"detected_at": cutoff - timedelta(days=1)})
@@ -696,7 +743,7 @@ class _FakeResult:
 
 class _FakePostgresStore:
     def __init__(self) -> None:
-        self.mandates: dict[tuple[str, str, str], dict[str, Any]] = {}
+        self.mandates: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.health: dict[str, dict[str, Any]] = {}
         self.monitoring_runs: dict[str, dict[str, Any]] = {}
         self.exceptions: dict[str, dict[str, Any]] = {}
@@ -727,17 +774,29 @@ class _FakeConnection:
                 "mandate_version": params[3],
                 "as_of_date": params[4],
                 "payload_json": params[7],
+                # tenant_id is the last INSERT column (issue #648).
+                "tenant_id": params[10],
             }
-            self.store.mandates[(str(params[1]), str(params[3]), str(params[4]))] = row
+            self.store.mandates[
+                (str(params[10]), str(params[1]), str(params[3]), str(params[4]))
+            ] = row
             return _FakeResult(rowcount=1)
         if "from dpm_mandate_snapshots" in normalized:
             rows = list(self.store.mandates.values())
-            if "where portfolio_id" in normalized:
-                rows = [row for row in rows if row["portfolio_id"] == params[0]]
-            if "where mandate_id" in normalized:
-                rows = [row for row in rows if row["mandate_id"] == params[0]]
+            # Every read is tenant-scoped (issue #648) and the tenant is the
+            # first bound parameter. Matching the real WHERE clause matters:
+            # this fake previously keyed on "where mandate_id", which the
+            # tenant-scoped SQL no longer contains, so it silently stopped
+            # filtering at all and answered every lookup with the first stored
+            # row - including lookups for identifiers that do not exist.
+            assert "where tenant_id = %s" in normalized, normalized
+            rows = [row for row in rows if row["tenant_id"] == params[0]]
+            if "and portfolio_id = %s" in normalized:
+                rows = [row for row in rows if row["portfolio_id"] == params[1]]
+            if "and mandate_id = %s" in normalized:
+                rows = [row for row in rows if row["mandate_id"] == params[1]]
             if "as_of_date <= %s" in normalized:
-                rows = [row for row in rows if row["as_of_date"] <= params[1]]
+                rows = [row for row in rows if row["as_of_date"] <= params[2]]
             rows = sorted(
                 rows,
                 key=lambda row: (
@@ -756,12 +815,19 @@ class _FakeConnection:
                 "as_of_date": params[3],
                 "created_at": params[10],
                 "payload_json": params[9],
+                # tenant_id is the last INSERT column (issue #648).
+                "tenant_id": params[11],
             }
             return _FakeResult(rowcount=1)
         if "from dpm_mandate_health_snapshots" in normalized:
-            rows = [row for row in self.store.health.values() if row["mandate_id"] == params[0]]
+            assert "where tenant_id = %s" in normalized, normalized
+            rows = [
+                row
+                for row in self.store.health.values()
+                if row["tenant_id"] == params[0] and row["mandate_id"] == params[1]
+            ]
             if "as_of_date <= %s" in normalized:
-                rows = [row for row in rows if row["as_of_date"] <= params[1]]
+                rows = [row for row in rows if row["as_of_date"] <= params[2]]
                 rows = sorted(
                     rows,
                     key=lambda row: (
@@ -922,23 +988,40 @@ def test_postgres_repository_persists_reads_versions_and_health(
     twin_v2 = _twin(version="2", as_of=date(2026, 5, 3))
     health = _health_snapshot(twin_v2)
 
-    repository.save_mandate_snapshot(twin_v1)
-    repository.save_mandate_snapshot(twin_v2)
-    repository.save_health_snapshot(health)
+    repository.save_mandate_snapshot(twin_v1, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(twin_v2, tenant_id="tenant-test")
+    repository.save_health_snapshot(health, tenant_id="tenant-test")
 
     assert store.migration_calls == 1
-    assert repository.get_latest_mandate_by_portfolio(portfolio_id=twin_v2.portfolio_id) == twin_v2
-    assert repository.get_latest_mandate(mandate_id=twin_v2.mandate_id) == twin_v2
+    assert (
+        repository.get_latest_mandate_by_portfolio(
+            portfolio_id=twin_v2.portfolio_id, tenant_id="tenant-test"
+        )
+        == twin_v2
+    )
+    assert (
+        repository.get_latest_mandate(mandate_id=twin_v2.mandate_id, tenant_id="tenant-test")
+        == twin_v2
+    )
     assert [
         row.mandate_version
-        for row in repository.list_mandate_versions(mandate_id=twin_v2.mandate_id)
+        for row in repository.list_mandate_versions(
+            mandate_id=twin_v2.mandate_id, tenant_id="tenant-test"
+        )
     ] == [
         "2",
         "1",
     ]
-    assert repository.get_latest_mandate(mandate_id="UNKNOWN") is None
-    assert repository.get_latest_health_snapshot(mandate_id=twin_v2.mandate_id) == health
-    assert repository.get_latest_health_snapshot(mandate_id="UNKNOWN") is None
+    assert repository.get_latest_mandate(mandate_id="UNKNOWN", tenant_id="tenant-test") is None
+    assert (
+        repository.get_latest_health_snapshot(
+            mandate_id=twin_v2.mandate_id, tenant_id="tenant-test"
+        )
+        == health
+    )
+    assert (
+        repository.get_latest_health_snapshot(mandate_id="UNKNOWN", tenant_id="tenant-test") is None
+    )
 
 
 def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
@@ -950,7 +1033,7 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
     selected = _twin(version="3", as_of=date(2026, 4, 10))
     future = _twin(version="4", as_of=date(2026, 5, 3))
     for twin in (first, same_day_older, selected, future):
-        repository.save_mandate_snapshot(twin)
+        repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
 
     same_day_older_health = _health_snapshot(selected).model_copy(
         update={
@@ -969,14 +1052,15 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
             "calculated_at": datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
         }
     )
-    repository.save_health_snapshot(same_day_older_health)
-    repository.save_health_snapshot(selected_health)
-    repository.save_health_snapshot(future_health)
+    repository.save_health_snapshot(same_day_older_health, tenant_id="tenant-test")
+    repository.save_health_snapshot(selected_health, tenant_id="tenant-test")
+    repository.save_health_snapshot(future_health, tenant_id="tenant-test")
 
     assert (
         repository.get_mandate_by_portfolio_as_of(
             portfolio_id=selected.portfolio_id,
             as_of_date=date(2026, 4, 10),
+            tenant_id="tenant-test",
         )
         == selected
     )
@@ -984,6 +1068,7 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
         repository.get_mandate_by_portfolio_as_of(
             portfolio_id=selected.portfolio_id,
             as_of_date=date(2026, 3, 31),
+            tenant_id="tenant-test",
         )
         is None
     )
@@ -991,6 +1076,7 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
         repository.get_health_snapshot_as_of(
             mandate_id=selected.mandate_id,
             as_of_date=date(2026, 4, 10),
+            tenant_id="tenant-test",
         )
         == selected_health
     )
@@ -998,6 +1084,7 @@ def test_postgres_repository_resolves_temporal_mandate_and_health_reads(
         repository.get_health_snapshot_as_of(
             mandate_id=selected.mandate_id,
             as_of_date=date(2026, 3, 31),
+            tenant_id="tenant-test",
         )
         is None
     )
@@ -1012,18 +1099,24 @@ def test_postgres_repository_preserves_same_binding_version_across_business_date
         update={"risk_profile": "GROWTH"}
     )
 
-    repository.save_mandate_snapshot(historical)
-    repository.save_mandate_snapshot(current)
+    repository.save_mandate_snapshot(historical, tenant_id="tenant-test")
+    repository.save_mandate_snapshot(current, tenant_id="tenant-test")
 
     assert len(store.mandates) == 2
     assert (
         repository.get_mandate_by_portfolio_as_of(
             portfolio_id=historical.portfolio_id,
             as_of_date=historical.as_of_date,
+            tenant_id="tenant-test",
         )
         == historical
     )
-    assert repository.get_latest_mandate_by_portfolio(portfolio_id=current.portfolio_id) == current
+    assert (
+        repository.get_latest_mandate_by_portfolio(
+            portfolio_id=current.portfolio_id, tenant_id="tenant-test"
+        )
+        == current
+    )
 
 
 def test_postgres_repository_lists_resolves_and_purges_exceptions(
@@ -1038,7 +1131,8 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
             target_weights={"EQ_US_AAPL": Decimal("0.60")},
             cash_weight=Decimal("0.05"),
             restricted_held_instruments=["EQ_RESTRICTED"],
-        )
+        ),
+        tenant_id="default",
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)[0]
     exception = exception.model_copy(

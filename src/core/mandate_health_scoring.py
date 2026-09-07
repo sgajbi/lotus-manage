@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
+from src.core.common.derived_identity import derived_identity
 from src.core.mandate_models import (
     DpmMandateConstraintSet,
     DIMENSION_WEIGHTS,
@@ -22,7 +23,9 @@ from src.core.mandate_models import (
 )
 
 
-def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthSnapshot:
+def calculate_mandate_health(
+    input_: DpmMandateHealthInput, *, tenant_id: str
+) -> DpmMandateHealthSnapshot:
     dimension_scores = _mandate_health_dimension_scores(input_)
     health_state = _mandate_health_state(dimension_scores)
     top_reasons = _top_mandate_health_reasons(dimension_scores)
@@ -32,7 +35,7 @@ def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthS
         has_unsourced_limit=_has_unsourced_contractual_limit(input_.twin.constraints),
     )
     return DpmMandateHealthSnapshot(
-        health_snapshot_id=_mandate_health_snapshot_id(input_),
+        health_snapshot_id=_mandate_health_snapshot_id(input_, tenant_id=tenant_id),
         mandate_id=input_.twin.mandate_id,
         portfolio_id=input_.twin.portfolio_id,
         as_of_date=input_.twin.as_of_date,
@@ -114,9 +117,23 @@ def _top_mandate_health_reasons(
     return top
 
 
-def _mandate_health_snapshot_id(input_: DpmMandateHealthInput) -> str:
-    as_of = input_.twin.as_of_date.strftime("%Y%m%d")
-    return f"mh_{as_of}_{input_.twin.portfolio_id.lower()}"
+def _mandate_health_snapshot_id(input_: DpmMandateHealthInput, *, tenant_id: str) -> str:
+    """Derive the health snapshot's key, tenant included (issue #648).
+
+    Health snapshots upsert on health_snapshot_id alone. Without the tenant,
+    two tenants calculating health for the same portfolio and business date
+    derive the same id, and the second write replaces the first's payload
+    while leaving its tenant_id - so one tenant reads the other's scores,
+    breaches and reason codes, and the other reads nothing. Scoping the reads
+    does not help when the key itself collides.
+    """
+
+    return derived_identity(
+        "mh",
+        tenant_id,
+        input_.twin.portfolio_id,
+        input_.twin.as_of_date.isoformat(),
+    )
 
 
 def _mandate_health_evidence_refs(input_: DpmMandateHealthInput) -> list[str]:

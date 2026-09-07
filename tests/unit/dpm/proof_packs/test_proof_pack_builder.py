@@ -1000,7 +1000,9 @@ def test_mandate_context_section_payload_blocks_missing_identity() -> None:
 
 def test_mandate_context_section_payload_projects_health_evidence() -> None:
     mandate_twin = _mandate_twin()
-    mandate_health = calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin))
+    mandate_health = calculate_mandate_health(
+        DpmMandateHealthInput(twin=mandate_twin), tenant_id="tenant-test"
+    )
 
     state, summary, facts, metrics, reason_codes = builder_module._mandate_context_section_payload(
         mandate_id=mandate_twin.mandate_id,
@@ -1630,7 +1632,9 @@ def test_direct_run_proof_pack_generates_every_section_with_truthful_states() ->
         created_at=CREATED_AT,
         mandate_id="mandate_001",
         mandate_twin=_mandate_twin(),
-        mandate_health=calculate_mandate_health(DpmMandateHealthInput(twin=_mandate_twin())),
+        mandate_health=calculate_mandate_health(
+            DpmMandateHealthInput(twin=_mandate_twin()), tenant_id="tenant-test"
+        ),
         workflow_decisions=[decision],
     )
 
@@ -1716,7 +1720,9 @@ def test_mandate_context_state_follows_health_and_source_readiness(
     expected_section_state: str,
 ) -> None:
     mandate_twin = _mandate_twin()
-    mandate_health = calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin)).model_copy(
+    mandate_health = calculate_mandate_health(
+        DpmMandateHealthInput(twin=mandate_twin), tenant_id="tenant-test"
+    ).model_copy(
         update={
             "health_state": health_state,
             "source_readiness_state": source_readiness_state,
@@ -2073,7 +2079,9 @@ def test_source_refs_preserve_manage_artifact_and_mandate_supportability() -> No
         alternatives=[alternative],
     )
     mandate_twin = _mandate_twin().model_copy(update={"field_gap_codes": ["MISSING_REVIEW"]})
-    mandate_health = calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin))
+    mandate_health = calculate_mandate_health(
+        DpmMandateHealthInput(twin=mandate_twin), tenant_id="tenant-test"
+    )
 
     refs = builder_module._source_refs(
         run=run,
@@ -2132,7 +2140,9 @@ def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
         "created_at": CREATED_AT,
         "mandate_id": "mandate_001",
         "mandate_twin": mandate_twin,
-        "mandate_health": calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin)),
+        "mandate_health": calculate_mandate_health(
+            DpmMandateHealthInput(twin=mandate_twin), tenant_id="tenant-test"
+        ),
     }
 
     first = build_proof_pack_from_run(**kwargs)

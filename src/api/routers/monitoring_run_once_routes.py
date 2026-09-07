@@ -59,6 +59,7 @@ async def run_once(
     return read_mandate_with_not_found_http_mapping(
         lambda: run_mandate_monitoring_once(
             repository=repository,
+            tenant_id=request.tenant_id,
             mandate_ids=mandate_ids,
             as_of_date=request.as_of_date,
             filters=_monitoring_run_filters(
@@ -126,6 +127,7 @@ def _mandate_ids_from_pm_book_selector(
     mandate_ids = _mandate_ids_from_pm_book_membership(
         repository=repository,
         membership=membership,
+        tenant_id=request.tenant_id,
     )
     return mandate_ids, _pm_book_source_filters(membership)
 
@@ -152,11 +154,13 @@ def _mandate_ids_from_pm_book_membership(
     *,
     repository: DpmMandateRepository,
     membership: DpmCorePortfolioManagerBookMembershipResponse,
+    tenant_id: str,
 ) -> list[str]:
     try:
         return mandate_ids_from_pm_book_membership(
             repository=repository,
             membership=membership,
+            tenant_id=tenant_id,
         )
     except DpmMandateSourceIncompleteError as exc:
         raise monitoring_pm_book_mandate_snapshot_incomplete_http_exception(exc) from exc

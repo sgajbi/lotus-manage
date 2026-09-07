@@ -189,6 +189,7 @@ def test_search_portfolio_memory_from_sources_uses_repository_bundle() -> None:
         portfolio_ids=[PORTFOLIO_ID],
         event_type="PROOF_PACK_CREATED",
         generated_at=datetime(2026, 5, 31, 9, 0, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
 
     assert page.returned_count == 1
@@ -342,4 +343,5 @@ def test_build_portfolio_memory_from_sources_rejects_unsafe_event_limits(limit: 
                 mandate_repository=mandate_repository,
             ),
             limit=limit,
+            tenant_id=TENANT_ID,
         )

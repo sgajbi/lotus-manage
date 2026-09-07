@@ -36,7 +36,9 @@ def _twin() -> DpmMandateDigitalTwin:
 
 
 def test_calculate_mandate_health_result_returns_snapshot_and_exceptions() -> None:
-    result = calculate_mandate_health_result(DpmMandateHealthInput(twin=_twin()))
+    result = calculate_mandate_health_result(
+        DpmMandateHealthInput(twin=_twin()), tenant_id="tenant-test"
+    )
 
     assert isinstance(result, DpmMandateHealthCalculationResult)
     assert result.snapshot.mandate_id == "MANDATE_PB_SG_GLOBAL_BAL_001"

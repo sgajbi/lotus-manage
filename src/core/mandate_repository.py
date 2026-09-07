@@ -12,12 +12,13 @@ from src.core.mandates import (
 
 
 class DpmMandateRepository(Protocol):
-    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin) -> None: ...
+    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin, *, tenant_id: str) -> None: ...
 
     def get_latest_mandate_by_portfolio(
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]: ...
 
     def get_mandate_by_portfolio_as_of(
@@ -25,26 +26,32 @@ class DpmMandateRepository(Protocol):
         *,
         portfolio_id: str,
         as_of_date: date,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]: ...
 
     def get_latest_mandate(
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]: ...
 
     def list_mandate_versions(
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> list[DpmMandateDigitalTwin]: ...
 
-    def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot) -> None: ...
+    def save_health_snapshot(
+        self, snapshot: DpmMandateHealthSnapshot, *, tenant_id: str
+    ) -> None: ...
 
     def get_latest_health_snapshot(
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateHealthSnapshot]: ...
 
     def get_health_snapshot_as_of(
@@ -52,6 +59,7 @@ class DpmMandateRepository(Protocol):
         *,
         mandate_id: str,
         as_of_date: date,
+        tenant_id: str,
     ) -> Optional[DpmMandateHealthSnapshot]: ...
 
     def save_monitoring_exception(self, exception: DpmMonitoringException) -> None: ...

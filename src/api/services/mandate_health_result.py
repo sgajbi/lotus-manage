@@ -18,9 +18,9 @@ class DpmMandateHealthCalculationResult:
 
 
 def calculate_mandate_health_result(
-    health_input: DpmMandateHealthInput,
+    health_input: DpmMandateHealthInput, *, tenant_id: str
 ) -> DpmMandateHealthCalculationResult:
-    snapshot = calculate_mandate_health(health_input)
+    snapshot = calculate_mandate_health(health_input, tenant_id=tenant_id)
     return DpmMandateHealthCalculationResult(
         snapshot=snapshot,
         monitoring_exceptions=monitoring_exceptions_from_health(

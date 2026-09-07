@@ -12,8 +12,11 @@ def _repository(*, mandate_id: str, portfolio_id: str) -> InMemoryDpmMandateRepo
             "portfolio_id": portfolio_id,
         }
     )
-    repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)))
+    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
+    repository.save_health_snapshot(
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin), tenant_id="tenant-test"),
+        tenant_id="tenant-test",
+    )
     return repository
 
 
@@ -25,11 +28,13 @@ def test_resolve_mandate_evidence_returns_empty_when_optional_inputs_are_missing
             mandate_id="mandate_evidence",
             portfolio_id="pf_mandate_evidence_1",
         ),
+        tenant_id="tenant-test",
     )
     without_repository = resolve_mandate_evidence(
         mandate_id="mandate_evidence",
         portfolio_id="pf_mandate_evidence_1",
         mandate_repository=None,
+        tenant_id="tenant-test",
     )
 
     assert without_mandate_id.twin is None
@@ -45,6 +50,7 @@ def test_resolve_mandate_evidence_returns_empty_when_snapshot_is_missing() -> No
         mandate_id="missing",
         portfolio_id="pf_mandate_evidence_1",
         mandate_repository=InMemoryDpmMandateRepository(),
+        tenant_id="tenant-test",
     )
 
     assert evidence.twin is None
@@ -60,6 +66,7 @@ def test_resolve_mandate_evidence_rejects_portfolio_mismatched_twin() -> None:
             mandate_id="mandate_evidence",
             portfolio_id="different_portfolio",
         ),
+        tenant_id="tenant-test",
     )
 
     assert evidence.twin is None
@@ -75,6 +82,7 @@ def test_resolve_mandate_evidence_returns_portfolio_matched_twin_and_health() ->
             mandate_id="mandate_evidence",
             portfolio_id="pf_mandate_evidence_1",
         ),
+        tenant_id="tenant-test",
     )
 
     assert evidence.twin is not None

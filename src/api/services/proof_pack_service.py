@@ -53,6 +53,7 @@ def generate_proof_pack_from_run(
     correlation_id: str | None,
     mandate_id: str | None,
     idempotency_key: str | None,
+    tenant_id: str,
     run_service: DpmRunSupportService,
     mandate_repository: DpmMandateRepository | None,
     proof_pack_repository: DpmProofPackRepository,
@@ -70,6 +71,7 @@ def generate_proof_pack_from_run(
         mandate_id=mandate_id,
         portfolio_id=run.portfolio_id,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
     proof_pack = build_run_proof_pack(
         run=run,
@@ -100,6 +102,7 @@ def generate_proof_pack_from_selected_alternative(
     correlation_id: str | None,
     mandate_id: str | None,
     idempotency_key: str | None,
+    tenant_id: str,
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     mandate_repository: DpmMandateRepository | None,
@@ -126,6 +129,7 @@ def generate_proof_pack_from_selected_alternative(
         mandate_id=mandate_id,
         portfolio_id=selected_source.alternative_set.portfolio_id,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
     proof_pack = build_selected_alternative_proof_pack(
         selected_source=selected_source,
@@ -208,6 +212,7 @@ def get_report_input(
     wave_repository: DpmWaveRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
+    tenant_id: str | None = None,
 ) -> DpmProofPackReportInput:
     proof_pack = get_proof_pack(
         proof_pack_id=proof_pack_id,
@@ -219,6 +224,7 @@ def get_report_input(
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -229,6 +235,7 @@ def get_ai_evidence_input(
     wave_repository: DpmWaveRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
+    tenant_id: str | None = None,
 ) -> DpmProofPackAiEvidenceInput:
     proof_pack = get_proof_pack(
         proof_pack_id=proof_pack_id,
@@ -240,6 +247,7 @@ def get_ai_evidence_input(
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 

@@ -10,6 +10,7 @@ class _MandateRepository:
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return None
 
@@ -67,6 +68,7 @@ def test_create_persisted_wave_replays_existing_idempotent_wave() -> None:
         idempotency_key="idem-create-command",
         mandate_repository=_MandateRepository(),  # type: ignore[arg-type]
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert wave is existing
@@ -93,6 +95,7 @@ def test_create_persisted_wave_promotes_preview_and_persists_request_hash(
         idempotency_key="idem-create-command",
         mandate_repository=_MandateRepository(),  # type: ignore[arg-type]
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert wave is repository.saved_wave

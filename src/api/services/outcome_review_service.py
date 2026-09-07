@@ -188,6 +188,7 @@ def get_report_input(
     proof_pack_repository: DpmProofPackRepository | None = None,
     wave_repository: DpmWaveRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
+    tenant_id: str | None = None,
 ) -> DpmOutcomeReportInput:
     review = get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
     return build_outcome_report_input(
@@ -196,6 +197,7 @@ def get_report_input(
         wave_repository=wave_repository,
         outcome_review_repository=repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -206,6 +208,7 @@ def get_ai_evidence_input(
     proof_pack_repository: DpmProofPackRepository | None = None,
     wave_repository: DpmWaveRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
+    tenant_id: str | None = None,
 ) -> DpmOutcomeAiEvidenceInput:
     review = get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
     return build_outcome_ai_evidence_input(
@@ -214,4 +217,5 @@ def get_ai_evidence_input(
         wave_repository=wave_repository,
         outcome_review_repository=repository,
         mandate_repository=mandate_repository,
+        tenant_id=tenant_id,
     )

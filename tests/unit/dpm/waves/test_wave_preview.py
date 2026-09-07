@@ -12,6 +12,7 @@ class _MandateRepository:
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return None
 
@@ -36,6 +37,7 @@ def test_build_preview_wave_constructs_previewed_wave_with_source_lineage() -> N
         correlation_id="corr_preview",
         portfolios=[{"portfolio_id": "PB_SG_PREVIEW", "source_refs": [_source_ref()]}],
         mandate_repository=_MandateRepository(),  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert re.fullmatch(r"dwv_preview_[0-9a-f]{12}", wave.wave_id)
@@ -60,6 +62,7 @@ def test_build_preview_wave_raises_governed_error_for_empty_source_set() -> None
             correlation_id="corr_preview",
             portfolios=[],
             mandate_repository=_MandateRepository(),  # type: ignore[arg-type]
+            tenant_id="tenant-test",
         )
 
     assert exc_info.value.code == "AFFECTED_PORTFOLIO_SET_EMPTY"

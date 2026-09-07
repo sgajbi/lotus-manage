@@ -13,6 +13,7 @@ from src.core.mandates import (
     DpmMonitoringException,
     DpmMonitoringRun,
 )
+from src.core.common.derived_identity import derived_identity
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -70,7 +71,7 @@ class PostgresDpmMandateRepository:
         self._dsn = dsn
         self._init_db()
 
-    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin) -> None:
+    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin, *, tenant_id: str) -> None:
         query = """
             INSERT INTO dpm_mandate_snapshots (
                 mandate_snapshot_id,
@@ -82,9 +83,10 @@ class PostgresDpmMandateRepository:
                 source_lineage_json,
                 payload_json,
                 created_at,
-                created_by
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (mandate_id, mandate_version, as_of_date) DO UPDATE SET
+                created_by,
+                tenant_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (tenant_id, mandate_id, mandate_version, as_of_date) DO UPDATE SET
                 portfolio_id=excluded.portfolio_id,
                 as_of_date=excluded.as_of_date,
                 source_hash=excluded.source_hash,
@@ -98,7 +100,7 @@ class PostgresDpmMandateRepository:
             connection.execute(
                 query,
                 (
-                    _mandate_snapshot_id(twin),
+                    _mandate_snapshot_id(twin, tenant_id=tenant_id),
                     twin.mandate_id,
                     twin.portfolio_id,
                     twin.mandate_version,
@@ -112,6 +114,7 @@ class PostgresDpmMandateRepository:
                     payload_json,
                     datetime.now().astimezone().isoformat(),
                     "lotus-manage",
+                    tenant_id,
                 ),
             )
             connection.commit()
@@ -120,16 +123,17 @@ class PostgresDpmMandateRepository:
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]:
         query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
-            WHERE portfolio_id = %s
+            WHERE tenant_id = %s AND portfolio_id = %s
             ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}, mandate_id DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (portfolio_id,)).fetchone()
+            row = connection.execute(query, (tenant_id, portfolio_id)).fetchone()
         return _to_twin(row)
 
     def get_mandate_by_portfolio_as_of(
@@ -137,42 +141,49 @@ class PostgresDpmMandateRepository:
         *,
         portfolio_id: str,
         as_of_date: date,
+        tenant_id: str,
     ) -> Optional[DpmMandateDigitalTwin]:
         query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
-            WHERE portfolio_id = %s AND as_of_date <= %s
+            WHERE tenant_id = %s AND portfolio_id = %s AND as_of_date <= %s
             ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}, mandate_id DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (portfolio_id, as_of_date.isoformat())).fetchone()
+            row = connection.execute(
+                query, (tenant_id, portfolio_id, as_of_date.isoformat())
+            ).fetchone()
         return _to_twin(row)
 
-    def get_latest_mandate(self, *, mandate_id: str) -> Optional[DpmMandateDigitalTwin]:
+    def get_latest_mandate(
+        self, *, mandate_id: str, tenant_id: str
+    ) -> Optional[DpmMandateDigitalTwin]:
         query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
-            WHERE mandate_id = %s
+            WHERE tenant_id = %s AND mandate_id = %s
             ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}
             LIMIT 1
         """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (mandate_id,)).fetchone()
+            row = connection.execute(query, (tenant_id, mandate_id)).fetchone()
         return _to_twin(row)
 
-    def list_mandate_versions(self, *, mandate_id: str) -> list[DpmMandateDigitalTwin]:
+    def list_mandate_versions(
+        self, *, mandate_id: str, tenant_id: str
+    ) -> list[DpmMandateDigitalTwin]:
         query = f"""
             SELECT payload_json
             FROM dpm_mandate_snapshots
-            WHERE mandate_id = %s
+            WHERE tenant_id = %s AND mandate_id = %s
             ORDER BY as_of_date DESC, {_MANDATE_VERSION_ORDER}
         """
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, (mandate_id,)).fetchall()
+            rows = connection.execute(query, (tenant_id, mandate_id)).fetchall()
         return [load_model_json(DpmMandateDigitalTwin, _payload(row)) for row in rows]
 
-    def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot) -> None:
+    def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot, *, tenant_id: str) -> None:
         query = """
             INSERT INTO dpm_mandate_health_snapshots (
                 health_snapshot_id,
@@ -185,8 +196,9 @@ class PostgresDpmMandateRepository:
                 source_readiness_state,
                 dimension_scores_json,
                 payload_json,
-                created_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                created_at,
+                tenant_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (health_snapshot_id) DO UPDATE SET
                 health_score=excluded.health_score,
                 health_state=excluded.health_state,
@@ -215,6 +227,7 @@ class PostgresDpmMandateRepository:
                     ),
                     dump_model_json(snapshot),
                     snapshot.calculated_at.isoformat(),
+                    tenant_id,
                 ),
             )
             connection.commit()
@@ -223,16 +236,17 @@ class PostgresDpmMandateRepository:
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMandateHealthSnapshot]:
         query = """
             SELECT payload_json
             FROM dpm_mandate_health_snapshots
-            WHERE mandate_id = %s
+            WHERE tenant_id = %s AND mandate_id = %s
             ORDER BY created_at DESC, health_snapshot_id DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (mandate_id,)).fetchone()
+            row = connection.execute(query, (tenant_id, mandate_id)).fetchone()
         if row is None:
             return None
         return load_model_json(DpmMandateHealthSnapshot, _payload(row))
@@ -242,16 +256,19 @@ class PostgresDpmMandateRepository:
         *,
         mandate_id: str,
         as_of_date: date,
+        tenant_id: str,
     ) -> Optional[DpmMandateHealthSnapshot]:
         query = """
             SELECT payload_json
             FROM dpm_mandate_health_snapshots
-            WHERE mandate_id = %s AND as_of_date <= %s
+            WHERE tenant_id = %s AND mandate_id = %s AND as_of_date <= %s
             ORDER BY as_of_date DESC, created_at DESC, health_snapshot_id DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (mandate_id, as_of_date.isoformat())).fetchone()
+            row = connection.execute(
+                query, (tenant_id, mandate_id, as_of_date.isoformat())
+            ).fetchone()
         if row is None:
             return None
         return load_model_json(DpmMandateHealthSnapshot, _payload(row))
@@ -576,8 +593,29 @@ def _import_psycopg() -> tuple[Any, Any]:
     return psycopg, dict_row
 
 
-def _mandate_snapshot_id(twin: DpmMandateDigitalTwin) -> str:
-    return f"ms_{twin.mandate_id}_{twin.mandate_version}_{twin.as_of_date.isoformat()}"
+def _mandate_snapshot_id(twin: DpmMandateDigitalTwin, *, tenant_id: str) -> str:
+    """Derive the snapshot's primary key, tenant included (issue #648).
+
+    The tenant is part of the key because it is part of the identity. Without
+    it two tenants holding the same mandate id, version and business date -
+    which is exactly the case tenant scoping exists to separate - derive the
+    same primary key, and the second write fails with a unique violation on
+    dpm_mandate_snapshots_pkey before the tenant-scoped upsert target is ever
+    consulted. Scoping every read while leaving the key tenant-blind makes the
+    two tenants collide instead of leak, which is a better failure and still a
+    failure.
+
+    Pre-upgrade rows keep their old ids. They carry no tenant, so they are
+    quarantined rather than addressable, and nothing re-derives their key.
+    """
+
+    return derived_identity(
+        "ms",
+        tenant_id,
+        twin.mandate_id,
+        twin.mandate_version,
+        twin.as_of_date.isoformat(),
+    )
 
 
 def _source_hash(payload_json: str) -> str:

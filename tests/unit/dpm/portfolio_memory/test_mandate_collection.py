@@ -10,14 +10,15 @@ from tests.unit.dpm.api.test_portfolio_memory_api import (
 
 def test_mandate_memory_events_projects_latest_health_and_monitoring_exceptions() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_mandate_snapshot(_mandate_twin())
-    repository.save_health_snapshot(_health_snapshot())
+    repository.save_mandate_snapshot(_mandate_twin(), tenant_id="tenant-test")
+    repository.save_health_snapshot(_health_snapshot(), tenant_id="tenant-test")
     repository.save_monitoring_exception(_monitoring_exception())
 
     events = mandate_memory_events(
         portfolio_id=PORTFOLIO_ID,
         mandate_repository=repository,
         limit=100,
+        tenant_id="tenant-test",
     )
 
     assert [event.event_type for event in events] == [
@@ -32,13 +33,14 @@ def test_mandate_memory_events_projects_latest_health_and_monitoring_exceptions(
 
 def test_mandate_memory_events_keeps_portfolio_exception_when_mandate_twin_absent() -> None:
     repository = InMemoryDpmMandateRepository()
-    repository.save_health_snapshot(_health_snapshot())
+    repository.save_health_snapshot(_health_snapshot(), tenant_id="tenant-test")
     repository.save_monitoring_exception(_monitoring_exception())
 
     events = mandate_memory_events(
         portfolio_id=PORTFOLIO_ID,
         mandate_repository=repository,
         limit=100,
+        tenant_id="tenant-test",
     )
 
     assert [event.event_type for event in events] == ["MANDATE_MONITORING_EXCEPTION"]

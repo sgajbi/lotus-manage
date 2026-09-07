@@ -91,8 +91,11 @@ def _seed_mandate_evidence(repository: InMemoryDpmMandateRepository) -> None:
             "review_policy": {"review_frequency": "QUARTERLY"},
         }
     )
-    repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)))
+    repository.save_mandate_snapshot(twin, tenant_id="tenant-test")
+    repository.save_health_snapshot(
+        calculate_mandate_health(DpmMandateHealthInput(twin=twin), tenant_id="tenant-test"),
+        tenant_id="tenant-test",
+    )
 
 
 def _generate_selected_alternative(client: TestClient) -> tuple[str, str]:
@@ -130,7 +133,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     run_id = _simulate_run(client)
 
     generated = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "rebalance_run_id": run_id,
@@ -160,7 +163,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert body["ai_evidence_input_url"].endswith("/ai-evidence-input")
 
     replay = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "rebalance_run_id": run_id,
@@ -187,7 +190,9 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert "| `ai_refs` | `READY` |" in markdown.text
     assert "| `mandate_context` | `PENDING_REVIEW` |" in markdown.text
 
-    report = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/report-input")
+    report = client.get(
+        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/report-input?tenant_id=tenant-test"
+    )
     assert report.status_code == 200
     report_input = report.json()
     assert report_input["proof_pack_id"] == proof_pack["proof_pack_id"]
@@ -256,7 +261,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     } >= {"PROOF_PACK_CREATED", "MANDATE_HEALTH_SNAPSHOT"}
 
     ai = client.get(
-        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/ai-evidence-input"
+        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/ai-evidence-input?tenant_id=tenant-test"
     )
     assert ai.status_code == 200
     ai_input = ai.json()
@@ -281,7 +286,7 @@ def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
     alternative_set_id, selected_alternative_id = _generate_selected_alternative(client)
 
     response = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "SELECTED_ALTERNATIVE",
             "alternative_set_id": alternative_set_id,
@@ -320,7 +325,7 @@ def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(
     alternative_set_id, selected_alternative_id = _generate_selected_alternative(client)
 
     response = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "SELECTED_ALTERNATIVE",
             "alternative_set_id": alternative_set_id,
@@ -384,7 +389,7 @@ def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(
 
 def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None:
     missing_run = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "actor_id": "pm_api",
@@ -395,7 +400,7 @@ def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None
     assert missing_run.json()["detail"] == "DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED"
 
     missing_source = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "SELECTED_ALTERNATIVE",
             "actor_id": "pm_api",
@@ -416,6 +421,7 @@ def test_generate_initial_proof_pack_validates_missing_source_fields() -> None:
             construction_repository=object(),
             mandate_repository=object(),
             proof_pack_repository=object(),
+            tenant_id="tenant-test",
         )
     assert missing_run.value.status_code == 422
     assert missing_run.value.detail == "DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED"
@@ -432,6 +438,7 @@ def test_generate_initial_proof_pack_validates_missing_source_fields() -> None:
             construction_repository=object(),
             mandate_repository=object(),
             proof_pack_repository=object(),
+            tenant_id="tenant-test",
         )
     assert missing_alternative.value.status_code == 422
     assert missing_alternative.value.detail == "DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED"
@@ -478,6 +485,7 @@ def test_generate_initial_proof_pack_dispatches_source_specific_services(
             construction_repository=construction_repository,
             mandate_repository=mandate_repository,
             proof_pack_repository=proof_pack_repository,
+            tenant_id="tenant-test",
         )
         is run_pack
     )
@@ -503,6 +511,7 @@ def test_generate_initial_proof_pack_dispatches_source_specific_services(
             construction_repository=construction_repository,
             mandate_repository=mandate_repository,
             proof_pack_repository=proof_pack_repository,
+            tenant_id="tenant-test",
         )
         is selected_pack
     )
@@ -531,7 +540,7 @@ def test_generate_proof_pack_preserves_governed_http_exceptions(
     )
 
     response = client.post(
-        "/api/v1/rebalance/proof-packs",
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
         json={
             "source_type": "REBALANCE_RUN",
             "rebalance_run_id": run_id,
@@ -562,7 +571,7 @@ def test_generate_proof_pack_does_not_hide_unexpected_service_exceptions(
 
     with pytest.raises(RuntimeError, match="boom"):
         client.post(
-            "/api/v1/rebalance/proof-packs",
+            "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
             json={
                 "source_type": "REBALANCE_RUN",
                 "rebalance_run_id": run_id,
@@ -577,8 +586,8 @@ def test_proof_pack_read_routes_return_404_for_missing_pack(client: TestClient) 
     for path in [
         "/api/v1/rebalance/proof-packs/missing",
         "/api/v1/rebalance/proof-packs/missing/summary.md",
-        "/api/v1/rebalance/proof-packs/missing/report-input",
-        "/api/v1/rebalance/proof-packs/missing/ai-evidence-input",
+        "/api/v1/rebalance/proof-packs/missing/report-input?tenant_id=tenant-test",
+        "/api/v1/rebalance/proof-packs/missing/ai-evidence-input?tenant_id=tenant-test",
     ]:
         response = client.get(path)
 

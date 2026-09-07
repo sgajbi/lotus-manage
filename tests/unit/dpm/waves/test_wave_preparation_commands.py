@@ -12,6 +12,7 @@ class _MandateRepository:
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return None
 
@@ -19,6 +20,7 @@ class _MandateRepository:
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return None
 
@@ -26,6 +28,7 @@ class _MandateRepository:
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> DpmMandateHealthSnapshot | None:
         return None
 
@@ -80,6 +83,7 @@ def test_source_check_persisted_wave_classifies_and_persists_transition() -> Non
         correlation_id="corr-source",
         mandate_repository=_MandateRepository(),  # type: ignore[arg-type]
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert replayed is False

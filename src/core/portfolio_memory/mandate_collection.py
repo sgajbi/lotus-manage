@@ -13,13 +13,18 @@ def mandate_memory_events(
     portfolio_id: str,
     mandate_repository: DpmMandateRepository,
     limit: int,
+    tenant_id: str,
 ) -> list[DpmPortfolioMemoryEvent]:
     """Collect mandate-health and mandate-monitoring memory events for one portfolio."""
 
-    twin = mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id)
+    twin = mandate_repository.get_latest_mandate_by_portfolio(
+        portfolio_id=portfolio_id, tenant_id=tenant_id
+    )
     events: list[DpmPortfolioMemoryEvent] = []
     if twin is not None:
-        health_snapshot = mandate_repository.get_latest_health_snapshot(mandate_id=twin.mandate_id)
+        health_snapshot = mandate_repository.get_latest_health_snapshot(
+            mandate_id=twin.mandate_id, tenant_id=tenant_id
+        )
         if health_snapshot is not None:
             events.append(
                 mandate_health_event(

@@ -118,7 +118,7 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert supportability_body["remediation_routes"] == []
 
             report = client.get(
-                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input"
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input?tenant_id=tenant-test"
             )
             assert report.status_code == 200
             report_input = report.json()
@@ -173,7 +173,7 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             )
 
             ai = client.get(
-                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input?tenant_id=tenant-test"
             )
             assert ai.status_code == 200
             ai_input = ai.json()
@@ -365,8 +365,8 @@ def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() ->
             for path in [
                 "/api/v1/rebalance/outcome-reviews/missing",
                 "/api/v1/rebalance/outcome-reviews/missing/supportability",
-                "/api/v1/rebalance/outcome-reviews/missing/report-input",
-                "/api/v1/rebalance/outcome-reviews/missing/ai-evidence-input",
+                "/api/v1/rebalance/outcome-reviews/missing/report-input?tenant_id=tenant-test",
+                "/api/v1/rebalance/outcome-reviews/missing/ai-evidence-input?tenant_id=tenant-test",
                 "/api/v1/rebalance/runs/missing/outcome-review",
             ]:
                 missing = client.get(path)
@@ -603,8 +603,12 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
         ]
         assert client_boundary["content_hash"].startswith("sha256:")
 
-        report = client.get("/api/v1/rebalance/outcome-reviews/dor_001/report-input")
-        ai = client.get("/api/v1/rebalance/outcome-reviews/dor_001/ai-evidence-input")
+        report = client.get(
+            "/api/v1/rebalance/outcome-reviews/dor_001/report-input?tenant_id=tenant-test"
+        )
+        ai = client.get(
+            "/api/v1/rebalance/outcome-reviews/dor_001/ai-evidence-input?tenant_id=tenant-test"
+        )
 
         assert report.status_code == 200
         assert ai.status_code == 200

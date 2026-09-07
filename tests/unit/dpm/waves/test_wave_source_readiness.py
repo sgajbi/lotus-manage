@@ -29,6 +29,7 @@ class _MandateRepository:
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return self._by_id.get(mandate_id)
 
@@ -36,6 +37,7 @@ class _MandateRepository:
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
     ) -> DpmMandateDigitalTwin | None:
         return self._by_portfolio.get(portfolio_id)
 
@@ -43,6 +45,7 @@ class _MandateRepository:
         self,
         *,
         mandate_id: str,
+        tenant_id: str,
     ) -> DpmMandateHealthSnapshot | None:
         return self._health_by_mandate.get(mandate_id)
 
@@ -95,6 +98,7 @@ def test_resolve_mandate_twin_uses_matching_mandate_id_first() -> None:
         resolve_mandate_twin(
             item=_item(),
             mandate_repository=_MandateRepository(by_id={twin.mandate_id: twin}),
+            tenant_id="tenant-test",
         )
         is twin
     )
@@ -111,6 +115,7 @@ def test_resolve_mandate_twin_falls_back_to_portfolio_when_id_mismatches_portfol
                 by_id={wrong_portfolio_twin.mandate_id: wrong_portfolio_twin},
                 by_portfolio={portfolio_twin.portfolio_id: portfolio_twin},
             ),
+            tenant_id="tenant-test",
         )
         is portfolio_twin
     )
@@ -127,6 +132,7 @@ def test_classify_item_source_readiness_loads_twin_and_health_from_repository() 
             by_id={twin.mandate_id: twin},
             health_by_mandate={twin.mandate_id: health},
         ),
+        tenant_id="tenant-test",
     )
 
     assert classified.state == "SOURCE_READY"
@@ -140,6 +146,7 @@ def test_classify_item_source_readiness_blocks_missing_twin() -> None:
         item=_item(mandate_id=None),
         wave_as_of_date="2026-05-03",
         mandate_repository=_MandateRepository(),
+        tenant_id="tenant-test",
     )
 
     assert classified.state == "SOURCE_BLOCKED"

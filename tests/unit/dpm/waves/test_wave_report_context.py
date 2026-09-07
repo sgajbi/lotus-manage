@@ -30,6 +30,7 @@ def test_portfolio_memory_context_for_report_returns_none_without_required_repos
             wave_repository=object(),  # type: ignore[arg-type]
             outcome_review_repository=object(),  # type: ignore[arg-type]
             mandate_repository=None,
+            tenant_id="tenant-test",
         )
         is None
     )
@@ -40,6 +41,7 @@ def test_portfolio_memory_context_for_report_returns_none_without_required_repos
             wave_repository=object(),  # type: ignore[arg-type]
             outcome_review_repository=object(),  # type: ignore[arg-type]
             mandate_repository=None,
+            tenant_id="tenant-test",
         )
         is None
     )
@@ -70,6 +72,7 @@ def test_portfolio_memory_context_for_report_uses_first_wave_item_portfolio(
         wave_repository=object(),  # type: ignore[arg-type]
         outcome_review_repository=object(),  # type: ignore[arg-type]
         mandate_repository=object(),  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert result is context
