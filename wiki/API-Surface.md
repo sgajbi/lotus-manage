@@ -303,10 +303,17 @@ Source-service callers must use the canonical snake_case query parameters `consu
 `tenant_id`. Gateway may expose camelCase on its public BFF contract, but direct calls into
 `lotus-manage` should not rely on Gateway naming.
 
-The tenant is not always a query parameter. Mandate and monitoring reads take `tenant_id` as
-above; the rebalance-wave lifecycle commands — preview, create, source-check and selection — take
-the tenant as the `X-Tenant-Id` header, one selector across all four. Either way the tenant is
-required and an absent one is refused rather than answered from an assumed tenant.
+The tenant is not always a query parameter. Mandate reads, monitoring-exception reads and the
+command centre take `tenant_id` as above; the rebalance-wave lifecycle commands — preview, create,
+source-check and selection — take the tenant as the `X-Tenant-Id` header, one selector across all
+four. On those surfaces the tenant is required and an absent one is refused rather than answered
+from an assumed tenant.
+
+It is not yet universal. Monitoring **run** reads — `GET /monitoring/runs` and
+`GET /monitoring/runs/{monitoring_run_id}` — still accept no tenant and read across tenants,
+because the monitoring-run aggregate carries no tenant of its own. Do not treat monitoring-run
+responses as tenant-fenced. That gap is tracked with the other unscoped wave and proof-pack
+aggregates.
 
 Endpoint certification details are tracked in [Endpoint Certification](Endpoint-Certification).
 

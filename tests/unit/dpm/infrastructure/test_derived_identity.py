@@ -27,6 +27,7 @@ from src.core.common.identity_examples import (
     PROOF_PACK_ALTERNATIVE_ID_EXAMPLE,
     PROOF_PACK_ID_EXAMPLE,
 )
+from src.api.routers.proof_pack_models import PROOF_PACK_EXAMPLE
 from src.core.proof_packs.identity import (
     proof_pack_id_for_rebalance_run,
     proof_pack_id_for_selected_alternative,
@@ -208,3 +209,28 @@ def test_no_published_example_still_carries_a_pre_hash_identity_shape() -> None:
         assert prefix in {"mh", "me", "dpp"}, name
         assert len(digest) == 32, f"{name} is not a 32-character digest: {value}"
         assert set(digest) <= set("0123456789abcdef"), f"{name} is not hex: {value}"
+
+
+def test_the_published_example_payload_derives_its_own_id_from_its_own_fields() -> None:
+    """An example must be internally consistent, not merely well-formed.
+
+    The earlier pin proved PROOF_PACK_ID_EXAMPLE is reproducible from
+    EXAMPLE_REBALANCE_RUN_ID. It did not check that the published example
+    payload SHOWS that run - and it did not: the payload displayed
+    rebalance_run_id "rr_001" beside an id derived from "drr_001", so a
+    consumer deriving from the run in front of them got a different id.
+
+    The shape invariant could not catch this either: the id was a correctly
+    formed 32-hex digest, just of different inputs. Only a cross-field check
+    reaches it, so this asserts the id against the payload's own values rather
+    than against the constants it was built from.
+    """
+
+    assert PROOF_PACK_EXAMPLE["proof_pack_id"] == proof_pack_id_for_rebalance_run(
+        tenant_id=EXAMPLE_TENANT_ID,
+        rebalance_run_id=str(PROOF_PACK_EXAMPLE["rebalance_run_id"]),
+    )
+    # Divergence half: a payload showing any other run must not match the id.
+    assert PROOF_PACK_EXAMPLE["proof_pack_id"] != proof_pack_id_for_rebalance_run(
+        tenant_id=EXAMPLE_TENANT_ID, rebalance_run_id="rr_001"
+    )
