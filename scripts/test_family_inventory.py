@@ -32,6 +32,9 @@ CONTRACT_GOVERNANCE_TOKENS = (
     "trust_telemetry",
     "workflow_policy",
     "ci_workflow",
+    # Per-commit main-gate coverage guards (issue #659): CI governance proof,
+    # the same family as the workflow-policy and coverage-gate suites.
+    "main_gate",
     "service_boundary",
     "service_layer_architecture_boundaries",
     "router_infrastructure",
