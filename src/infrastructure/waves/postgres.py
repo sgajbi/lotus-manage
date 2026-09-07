@@ -11,6 +11,7 @@ from src.core.waves.repository import (
     DpmWaveAlreadyExistsError,
     DpmWaveIdempotencyConflictError,
     DpmWaveVersionConflictError,
+    wave_idempotency_mapping_key,
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
@@ -32,20 +33,30 @@ class PostgresDpmWaveRepository:
         wave: DpmRebalanceWave,
         idempotency_key: str | None,
         request_hash: str | None,
+        tenant_id: str,
     ) -> None:
+        # Namespaced before storage so two tenants presenting one caller-chosen
+        # key hold independent mappings rather than colliding on the primary
+        # key (issue #648).
+        mapping_key = (
+            None
+            if idempotency_key is None
+            else wave_idempotency_mapping_key(tenant_id=tenant_id, idempotency_key=idempotency_key)
+        )
         with closing(self._connect()) as connection:
             _raise_if_idempotency_conflict(
                 connection=connection,
                 wave=wave,
-                idempotency_key=idempotency_key,
+                idempotency_key=mapping_key,
                 request_hash=request_hash,
             )
             _insert_wave_row(connection=connection, wave=wave)
             _insert_idempotency_marker(
                 connection=connection,
                 wave=wave,
-                idempotency_key=idempotency_key,
+                idempotency_key=mapping_key,
                 request_hash=request_hash,
+                tenant_id=tenant_id,
             )
             _insert_new_events(connection=connection, wave=wave)
             connection.commit()
@@ -64,7 +75,9 @@ class PostgresDpmWaveRepository:
             return None
         return load_model_json(DpmRebalanceWave, _payload(row))
 
-    def get_wave_by_idempotency(self, *, idempotency_key: str) -> DpmRebalanceWave | None:
+    def get_wave_by_idempotency(
+        self, *, idempotency_key: str, tenant_id: str
+    ) -> DpmRebalanceWave | None:
         with closing(self._connect()) as connection:
             row = connection.execute(
                 """
@@ -72,8 +85,14 @@ class PostgresDpmWaveRepository:
                 FROM dpm_rebalance_wave_idempotency i
                 JOIN dpm_rebalance_waves w ON w.wave_id = i.wave_id
                 WHERE i.idempotency_key = %s
+                  AND i.tenant_id = %s
                 """,
-                (idempotency_key,),
+                (
+                    wave_idempotency_mapping_key(
+                        tenant_id=tenant_id, idempotency_key=idempotency_key
+                    ),
+                    tenant_id,
+                ),
             ).fetchone()
         if row is None:
             return None
@@ -221,6 +240,7 @@ def _insert_idempotency_marker(
     wave: DpmRebalanceWave,
     idempotency_key: str | None,
     request_hash: str | None,
+    tenant_id: str,
 ) -> None:
     if idempotency_key is None:
         return
@@ -230,8 +250,9 @@ def _insert_idempotency_marker(
             idempotency_key,
             wave_id,
             request_hash,
-            created_at
-        ) VALUES (%s, %s, %s, %s)
+            created_at,
+            tenant_id
+        ) VALUES (%s, %s, %s, %s, %s)
         ON CONFLICT (idempotency_key) DO NOTHING
         """,
         (
@@ -239,6 +260,7 @@ def _insert_idempotency_marker(
             wave.wave_id,
             request_hash,
             datetime.now(timezone.utc),
+            tenant_id,
         ),
     )
 

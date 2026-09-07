@@ -162,7 +162,9 @@ def _repositories() -> tuple[
         idempotency_key=None,
         retention_expires_at=None,
     )
-    wave_repository.save_wave(wave=_wave(), idempotency_key=None, request_hash=None)
+    wave_repository.save_wave(
+        wave=_wave(), idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
     outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
     mandate_repository.save_mandate_snapshot(_mandate_twin(), tenant_id=TENANT_ID)
     mandate_repository.save_health_snapshot(_health_snapshot(), tenant_id=TENANT_ID)

@@ -31,6 +31,7 @@ class _WaveRepository:
         wave: DpmRebalanceWave,
         idempotency_key: str | None,
         request_hash: str | None,
+        tenant_id: str,
     ) -> None:
         if self.save_conflict is not None:
             raise self.save_conflict
@@ -54,6 +55,7 @@ def test_save_wave_or_raise_persists_idempotent_create_request() -> None:
         wave=wave,
         idempotency_key="idem-save",
         request_hash="sha256:request",
+        tenant_id="tenant-test",
     )
 
     assert repository.saved_wave is wave
@@ -77,6 +79,7 @@ def test_save_wave_or_raise_translates_create_conflicts(conflict: Exception) -> 
             wave=wave,
             idempotency_key="idem-save",
             request_hash="sha256:request",
+            tenant_id="tenant-test",
         )
 
     assert exc_info.value.code == "WAVE_CREATE_CONFLICT"

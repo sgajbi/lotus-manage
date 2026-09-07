@@ -443,6 +443,14 @@ class _FakeConnection:
             # table, so the statement is acknowledged here and proven
             # for real in the mandate integration lane.
             return _FakeCursor()
+        # Schema statements from apply_postgres_migrations. Migration files
+        # open with a comment block, so a startswith check on the keyword
+        # never matches - look for the statement keyword anywhere.
+        if any(
+            keyword in sql
+            for keyword in ("CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "schema_migrations")
+        ):
+            return _FakeCursor()
         raise AssertionError(f"Unexpected SQL: {sql}")
 
     def commit(self):

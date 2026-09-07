@@ -888,6 +888,7 @@ def _save_supportability_wave(
         ),
         idempotency_key=None,
         request_hash=None,
+        tenant_id="tenant-test",
     )
 
 
@@ -898,6 +899,7 @@ class _SaveConflictWaveRepository(InMemoryDpmWaveRepository):
         wave: DpmRebalanceWave,
         idempotency_key: str | None,
         request_hash: str | None,
+        tenant_id: str,
     ) -> None:
         raise DpmWaveAlreadyExistsError("duplicate durable wave id")
 
@@ -966,7 +968,9 @@ def _save_wave_for_service(
             source_degraded_item_count=1 if item.state == "SOURCE_DEGRADED" else 0,
         ),
     )
-    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    repository.save_wave(
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
     return wave
 
 
@@ -5106,6 +5110,7 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
             wave=DpmRebalanceWave.model_validate(draft.json()["wave"]),
             idempotency_key=None,
             request_hash=None,
+            tenant_id="tenant-test",
         )
         invalid = client.post(
             f"/api/v1/rebalance/waves/{draft.json()['wave']['wave_id']}/source-check",
@@ -6238,7 +6243,9 @@ def test_wave_selection_translates_durable_write_conflict_to_governed_error() ->
     assert simulated.items[0].alternative_set_id is not None
 
     conflict_repository = _VersionConflictWaveRepository()
-    conflict_repository.save_wave(wave=simulated, idempotency_key=None, request_hash=None)
+    conflict_repository.save_wave(
+        wave=simulated, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
 
     with pytest.raises(wave_service.DpmWaveValidationError) as exc:
         wave_service.select_wave_item_alternative(
@@ -6732,7 +6739,9 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
             )
         ],
     )
-    wave_repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    wave_repository.save_wave(
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
 
     with _client(mandate_repository, wave_repository) as client:
         search = client.get(
@@ -6966,7 +6975,9 @@ def test_bulk_review_campaign_wave_report_input_carries_universe_boundary() -> N
             )
         ],
     )
-    wave_repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    wave_repository.save_wave(
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
 
     with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
         report_input = client.get(
@@ -7045,7 +7056,9 @@ def test_wave_report_input_rejects_external_execution_claims() -> None:
             )
         ],
     )
-    wave_repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    wave_repository.save_wave(
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+    )
 
     with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
         proof_pack = client.get("/api/v1/rebalance/waves/dwv_external_claim/proof-pack")
