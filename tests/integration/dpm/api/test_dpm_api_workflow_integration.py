@@ -118,8 +118,17 @@ def test_supportability_summary_accepts_portfolio_scope() -> None:
             headers=headers,
         )
         assert simulate.status_code == 200
-        response = client.get(
+        # Portfolio-scoped supportability reaches tenant-scoped mandate-health
+        # source-ref evidence, so the tenant is required here (issue #648).
+        refused = client.get(
             f"/api/v1/rebalance/supportability/summary?portfolio_id={portfolio_id}"
+        )
+        assert refused.status_code == 422, "a portfolio-scoped read must state its tenant"
+        assert refused.json()["detail"] == "DPM_MANDATE_TENANT_REQUIRED"
+
+        response = client.get(
+            f"/api/v1/rebalance/supportability/summary"
+            f"?portfolio_id={portfolio_id}&tenant_id=tenant-integration"
         )
 
     assert response.status_code == 200
