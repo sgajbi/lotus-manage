@@ -163,7 +163,7 @@ def _repositories() -> tuple[
         retention_expires_at=None,
     )
     wave_repository.save_wave(
-        wave=_wave(), idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+        wave=_wave(), idempotency_key=None, request_hash=None, tenant_id=TENANT_ID
     )
     outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
     mandate_repository.save_mandate_snapshot(_mandate_twin(), tenant_id=TENANT_ID)
@@ -2005,6 +2005,7 @@ def test_portfolio_memory_search_counts_artifact_only_source_systems_and_types()
         event_type="PROOF_PACK_CREATED",
         source_system="lotus-report",
         source_type="REPORT_INPUT",
+        tenant_id=TENANT_ID,
     )
 
     assert page.returned_count == 1

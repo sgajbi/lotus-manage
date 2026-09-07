@@ -29,6 +29,7 @@ class _WaveRepository:
         as_of_date: str | None,
         limit: int,
         offset: int,
+        tenant_id: str,
     ) -> list[DpmRebalanceWave]:
         self.filters = {
             "state": state,
@@ -36,6 +37,7 @@ class _WaveRepository:
             "as_of_date": as_of_date,
             "limit": limit,
             "offset": offset,
+            "tenant_id": tenant_id,
         }
         return self.waves
 
@@ -95,9 +97,11 @@ def test_search_wave_summaries_projects_summary_fields_and_repository_filters() 
         as_of_date="2026-05-03",
         limit=10,
         offset=5,
+        tenant_id="tenant-sg",
     )
 
     assert repository.filters == {
+        "tenant_id": "tenant-sg",
         "state": "SOURCE_CHECKED",
         "trigger_type": "EXPLICIT_PORTFOLIO_LIST",
         "as_of_date": "2026-05-03",
@@ -119,6 +123,7 @@ def test_search_wave_summaries_filters_by_supportability_state() -> None:
             ]
         ),  # type: ignore[arg-type]
         supportability_state="blocked",
+        tenant_id="tenant-sg",
     )
 
     assert [summary["wave_id"] for summary in summaries] == ["dwv_blocked"]

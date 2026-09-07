@@ -14,11 +14,13 @@ def get_wave_detail_response(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> DpmWaveDetailResponse:
     try:
         payload = wave_service.retrieve_wave_detail(
             wave_id=wave_id,
             wave_repository=wave_repository,
+            tenant_id=tenant_id,
         )
     except wave_service.DpmWaveLookupError as exc:
         raise wave_lookup_http_exception(exc) from exc
@@ -29,11 +31,13 @@ def get_wave_items_response(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> DpmWaveItemsResponse:
     try:
         payload = wave_service.list_wave_items(
             wave_id=wave_id,
             wave_repository=wave_repository,
+            tenant_id=tenant_id,
         )
     except wave_service.DpmWaveLookupError as exc:
         raise wave_lookup_http_exception(exc) from exc
@@ -44,11 +48,13 @@ def get_wave_proof_pack_posture_response(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> DpmWaveProofPackPostureResponse:
     try:
         payload = wave_service.proof_pack_posture(
             wave_id=wave_id,
             wave_repository=wave_repository,
+            tenant_id=tenant_id,
         )
     except wave_service.DpmWaveLookupError as exc:
         raise wave_lookup_http_exception(exc) from exc

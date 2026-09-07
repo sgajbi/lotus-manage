@@ -72,6 +72,7 @@ class _CountingWaveRepository(InMemoryDpmWaveRepository):
         as_of_date: str | None = None,
         limit: int = 50,
         offset: int = 0,
+        tenant_id: str,
     ) -> list[DpmRebalanceWave]:
         self.list_calls += 1
         return super().list_waves(
@@ -80,6 +81,7 @@ class _CountingWaveRepository(InMemoryDpmWaveRepository):
             as_of_date=as_of_date,
             limit=limit,
             offset=offset,
+            tenant_id=tenant_id,
         )
 
 
@@ -321,6 +323,7 @@ def test_search_portfolio_memory_from_sources_supplements_explicit_portfolio_sou
         portfolio_ids=[PORTFOLIO_ID],
         source_scan_limit=2,
         generated_at=datetime(2026, 5, 31, 11, 0, tzinfo=timezone.utc),
+        tenant_id="tenant-test",
     )
 
     explicit_item = next(item for item in page.items if item.portfolio_id == PORTFOLIO_ID)

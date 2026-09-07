@@ -39,12 +39,12 @@ class _WaveRepository:
         self.updated_wave: DpmRebalanceWave | None = None
         self.expected_version: int | None = None
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         if wave_id == self.wave.wave_id:
             return self.wave
         return None
 
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
         self.updated_wave = wave
         self.expected_version = expected_version
 
@@ -106,6 +106,7 @@ def test_simulate_persisted_wave_blocks_missing_inputs_and_persists_transition()
         construction_repository=object(),  # type: ignore[arg-type]
         run_service=object(),  # type: ignore[arg-type]
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert replayed is False
@@ -128,6 +129,7 @@ def test_simulate_persisted_wave_replays_completed_simulation() -> None:
         construction_repository=object(),  # type: ignore[arg-type]
         run_service=object(),  # type: ignore[arg-type]
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-test",
     )
 
     assert simulated is wave

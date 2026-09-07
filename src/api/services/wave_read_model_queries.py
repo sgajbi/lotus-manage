@@ -13,8 +13,9 @@ def wave_supportability_for_id(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
-    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository, tenant_id=tenant_id)
     return wave_supportability_payload(wave)
 
 
@@ -22,8 +23,9 @@ def wave_detail_for_id(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
-    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository, tenant_id=tenant_id)
     return wave_detail_payload(wave)
 
 
@@ -31,8 +33,9 @@ def wave_items_for_id(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
-    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository, tenant_id=tenant_id)
     return wave_items_payload(wave)
 
 
@@ -40,8 +43,9 @@ def wave_proof_pack_posture_for_id(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
-    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository, tenant_id=tenant_id)
     return proof_pack_posture_for_wave(wave=wave)
 
 
@@ -49,19 +53,23 @@ def wave_report_input_for_id(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     proof_pack_repository: DpmProofPackRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
-    tenant_id: str | None = None,
 ) -> DpmWaveReportInput:
-    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    # The tenant was previously optional here with a None default. A fenced
+    # read cannot have an optional tenant: the default would silently mean
+    # "unscoped", which is the state issue #677 removes. It is now the
+    # required parameter above.
+    wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository, tenant_id=tenant_id)
     return build_report_input_for_wave(
         wave=wave,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         proof_pack_repository=proof_pack_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
-        tenant_id=tenant_id,
     )
 
 

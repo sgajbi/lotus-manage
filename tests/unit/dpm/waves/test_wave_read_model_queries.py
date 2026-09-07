@@ -21,7 +21,7 @@ class _WaveRepository:
         self.wave = wave
         self.requested_wave_ids: list[str] = []
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         self.requested_wave_ids.append(wave_id)
         if wave_id == self.wave.wave_id:
             return self.wave
@@ -67,18 +67,22 @@ def test_wave_read_model_queries_load_wave_before_projection() -> None:
     supportability = wave_supportability_for_id(
         wave_id=wave.wave_id,
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
     detail = wave_detail_for_id(
         wave_id=wave.wave_id,
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
     items = wave_items_for_id(
         wave_id=wave.wave_id,
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
     posture = wave_proof_pack_posture_for_id(
         wave_id=wave.wave_id,
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     assert repository.requested_wave_ids == [wave.wave_id] * 4
@@ -95,6 +99,7 @@ def test_wave_report_input_query_loads_wave_before_report_assembly() -> None:
     report_input = wave_report_input_for_id(
         wave_id=wave.wave_id,
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     assert repository.requested_wave_ids == [wave.wave_id]

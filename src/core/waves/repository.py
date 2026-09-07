@@ -49,8 +49,18 @@ class DpmWaveRepository(Protocol):
         call site; a mapping written without one is reachable by no tenant.
         """
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
-        """Return a wave by id, or None when absent."""
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
+        """Return this tenant's wave by id, or None when it is not theirs.
+
+        `tenant_id` is required rather than defaulted so mypy enumerates every
+        call site (issue #677). Before the fence this returned any wave to any
+        caller, and the transition path reads through here - so an unfenced
+        read led directly to an unfenced write.
+
+        A wave belonging to another tenant, or to none, returns None rather
+        than raising: a distinguishable refusal would disclose that the id
+        exists and belongs to someone.
+        """
 
     def get_wave_by_idempotency(
         self,
@@ -74,18 +84,33 @@ class DpmWaveRepository(Protocol):
     def list_waves(
         self,
         *,
+        tenant_id: str,
         state: str | None = None,
         trigger_type: str | None = None,
         as_of_date: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmRebalanceWave]:
-        """Return a bounded page of waves matching optional search filters."""
+        """Return a bounded page of THIS TENANT's waves matching the filters.
+
+        Placed first and required, so a caller cannot get a cross-tenant page
+        by omitting it (issue #677). The optional filters narrow within one
+        tenant; they never widen across tenants.
+        """
 
     def update_wave(
         self,
         *,
         wave: DpmRebalanceWave,
         expected_version: int,
+        tenant_id: str,
     ) -> None:
-        """Persist a wave update using optimistic concurrency."""
+        """Persist a wave update for this tenant using optimistic concurrency.
+
+        The tenant is part of the update predicate, not merely checked before
+        it: a check-then-write leaves a window, and this is the write half of
+        the transition path (issue #677). A wave belonging to another tenant
+        matches no row and raises the same version-conflict error as a stale
+        expected_version - deliberately indistinguishable, so a caller cannot
+        probe for another tenant's wave ids.
+        """

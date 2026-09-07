@@ -32,9 +32,21 @@ def update_wave_or_raise(
     wave_repository: DpmWaveRepository,
     wave: DpmRebalanceWave,
     expected_version: int,
+    tenant_id: str,
 ) -> None:
+    """Persist a wave update for this tenant.
+
+    The tenant reaches the repository so it can ride in the UPDATE predicate
+    rather than being checked before it (issue #677). A wave owned by another
+    tenant matches no row and surfaces as the same version conflict as a stale
+    expected_version - the caller cannot tell the two apart, which is what
+    stops the write path being used to probe for foreign wave ids.
+    """
+
     try:
-        wave_repository.update_wave(wave=wave, expected_version=expected_version)
+        wave_repository.update_wave(
+            wave=wave, expected_version=expected_version, tenant_id=tenant_id
+        )
     except DpmWaveVersionConflictError as exc:
         raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
 

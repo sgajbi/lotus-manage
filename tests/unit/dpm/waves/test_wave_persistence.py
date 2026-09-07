@@ -39,7 +39,7 @@ class _WaveRepository:
         self.idempotency_key = idempotency_key
         self.request_hash = request_hash
 
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
         if self.update_conflict:
             raise DpmWaveVersionConflictError("expected version mismatch")
         self.updated_wave = wave
@@ -94,6 +94,7 @@ def test_update_wave_or_raise_persists_with_expected_version() -> None:
         wave_repository=repository,  # type: ignore[arg-type]
         wave=wave,
         expected_version=3,
+        tenant_id="tenant-test",
     )
 
     assert repository.updated_wave is wave
@@ -108,6 +109,7 @@ def test_update_wave_or_raise_translates_version_conflict() -> None:
             wave_repository=_WaveRepository(update_conflict=True),  # type: ignore[arg-type]
             wave=wave,
             expected_version=3,
+            tenant_id="tenant-test",
         )
 
     assert exc_info.value.code == "DPM_WAVE_VERSION_CONFLICT"

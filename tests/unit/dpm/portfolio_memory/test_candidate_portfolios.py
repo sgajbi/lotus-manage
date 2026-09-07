@@ -62,6 +62,7 @@ def test_candidate_portfolio_ids_support_optional_repositories() -> None:
         pm_quality_score_run_repository=None,
         portfolio_ids=None,
         source_scan_limit=100,
+        tenant_id="tenant-sg",
     )
 
     assert candidates == [PORTFOLIO_ID]
@@ -78,6 +79,7 @@ def test_candidate_portfolio_ids_default_optional_repositories_to_empty_sources(
         outcome_review_repository=outcome_repository,
         portfolio_ids=None,
         source_scan_limit=100,
+        tenant_id="tenant-sg",
     )
 
     assert candidates == [PORTFOLIO_ID]

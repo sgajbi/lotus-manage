@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-07T06:51:25.026116+00:00",
+  "generatedAt": "2026-09-07T13:40:09.192745+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -20557,7 +20557,7 @@
       "location": "header",
       "required": true,
       "type": "string",
-      "description": "Trusted tenant id. Required: wave preview, create, source-check and selection all read tenant-scoped mandate evidence, and a request that does not state its tenant is refused rather than answered from an assumed one. Also required when resolving persisted bulk-review campaign definitions.",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_tenant_id",
@@ -20581,7 +20581,7 @@
       "location": "header",
       "required": true,
       "type": "string",
-      "description": "Trusted tenant id. Required: wave preview, create, source-check and selection all read tenant-scoped mandate evidence, and a request that does not state its tenant is refused rather than answered from an assumed one. Also required when resolving persisted bulk-review campaign definitions.",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_tenant_id",
@@ -20684,28 +20684,16 @@
       "attributeRef": "#/attributeCatalog/lotus.offset"
     },
     {
-      "name": "wave_id",
+      "name": "x_tenant_id",
       "kind": "request_option",
-      "location": "path",
+      "location": "header",
       "required": true,
       "type": "string",
-      "description": "Durable Manage rebalance wave identifier.",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
       "example": "ENTITY_001",
       "allowedValues": [],
-      "semanticId": "lotus.wave_id",
-      "attributeRef": "#/attributeCatalog/lotus.wave_id"
-    },
-    {
-      "name": "wave_id",
-      "kind": "request_option",
-      "location": "path",
-      "required": true,
-      "type": "string",
-      "description": "Durable Manage rebalance wave identifier.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.wave_id",
-      "attributeRef": "#/attributeCatalog/lotus.wave_id"
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "wave_id",
@@ -20725,7 +20713,55 @@
       "location": "header",
       "required": true,
       "type": "string",
-      "description": "Trusted tenant id. Required: wave preview, create, source-check and selection all read tenant-scoped mandate evidence, and a request that does not state its tenant is refused rather than answered from an assumed one. Also required when resolving persisted bulk-review campaign definitions.",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "wave_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Durable Manage rebalance wave identifier.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.wave_id",
+      "attributeRef": "#/attributeCatalog/lotus.wave_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "wave_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Durable Manage rebalance wave identifier.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.wave_id",
+      "attributeRef": "#/attributeCatalog/lotus.wave_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_tenant_id",
@@ -20754,6 +20790,18 @@
       "allowedValues": [],
       "semanticId": "lotus.wave_id",
       "attributeRef": "#/attributeCatalog/lotus.wave_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "x_correlation_id",
@@ -20797,7 +20845,7 @@
       "location": "header",
       "required": true,
       "type": "string",
-      "description": "Trusted tenant id. Required: wave preview, create, source-check and selection all read tenant-scoped mandate evidence, and a request that does not state its tenant is refused rather than answered from an assumed one. Also required when resolving persisted bulk-review campaign definitions.",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_tenant_id",
@@ -20828,52 +20876,16 @@
       "attributeRef": "#/attributeCatalog/lotus.wave_id"
     },
     {
-      "name": "x_correlation_id",
+      "name": "x_tenant_id",
       "kind": "request_option",
       "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Optional correlation id for wave supportability and audit traceability.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.x_correlation_id",
-      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
-    },
-    {
-      "name": "wave_id",
-      "kind": "request_option",
-      "location": "path",
       "required": true,
       "type": "string",
-      "description": "Durable Manage rebalance wave identifier.",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
       "example": "ENTITY_001",
       "allowedValues": [],
-      "semanticId": "lotus.wave_id",
-      "attributeRef": "#/attributeCatalog/lotus.wave_id"
-    },
-    {
-      "name": "x_correlation_id",
-      "kind": "request_option",
-      "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Optional correlation id for wave supportability and audit traceability.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.x_correlation_id",
-      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
-    },
-    {
-      "name": "wave_id",
-      "kind": "request_option",
-      "location": "path",
-      "required": true,
-      "type": "string",
-      "description": "Durable Manage rebalance wave identifier.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.wave_id",
-      "attributeRef": "#/attributeCatalog/lotus.wave_id"
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "x_correlation_id",
@@ -20900,6 +20912,18 @@
       "attributeRef": "#/attributeCatalog/lotus.wave_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "x_correlation_id",
       "kind": "request_option",
       "location": "header",
@@ -20924,6 +20948,30 @@
       "attributeRef": "#/attributeCatalog/lotus.wave_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "x_correlation_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional correlation id for wave supportability and audit traceability.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_correlation_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+    },
+    {
       "name": "wave_id",
       "kind": "request_option",
       "location": "path",
@@ -20936,16 +20984,28 @@
       "attributeRef": "#/attributeCatalog/lotus.wave_id"
     },
     {
-      "name": "tenant_id",
+      "name": "x_tenant_id",
       "kind": "request_option",
-      "location": "query",
+      "location": "header",
       "required": true,
       "type": "string",
-      "description": "Tenant whose mandate evidence is being read. Required: mandate snapshots and health snapshots are stored per tenant, and the same mandate id may exist under more than one tenant. Send it as the canonical snake_case query parameter `tenant_id`.",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
       "example": "ENTITY_001",
       "allowedValues": [],
-      "semanticId": "lotus.tenant_id",
-      "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "x_correlation_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional correlation id for wave supportability and audit traceability.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_correlation_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
     },
     {
       "name": "wave_id",
@@ -20958,6 +21018,66 @@
       "allowedValues": [],
       "semanticId": "lotus.wave_id",
       "attributeRef": "#/attributeCatalog/lotus.wave_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "wave_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Durable Manage rebalance wave identifier.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.wave_id",
+      "attributeRef": "#/attributeCatalog/lotus.wave_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "wave_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Durable Manage rebalance wave identifier.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.wave_id",
+      "attributeRef": "#/attributeCatalog/lotus.wave_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and a request that does not state its tenant is refused rather than answered from an assumed one. Waves persisted before tenant scoping carry no tenant and are reachable from none, including a tenant named `default`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "idempotency_key",
@@ -98145,6 +98265,14 @@
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           },
           {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "wave.version",
             "location": "body",
             "required": false,
@@ -99590,6 +99718,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "wave.version",
@@ -101047,6 +101183,14 @@
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           },
           {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "wave.version",
             "location": "body",
             "required": false,
@@ -101808,6 +101952,14 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -102175,6 +102327,14 @@
             "type": "string",
             "semanticId": "lotus.wave_id",
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -102347,6 +102507,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "wave.version",
@@ -103486,6 +103654,14 @@
             "type": "string",
             "semanticId": "lotus.wave_id",
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -104097,6 +104273,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "wave.version",
@@ -104820,6 +105004,14 @@
             "type": "string",
             "semanticId": "lotus.wave_id",
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "x-correlation-id",
@@ -107634,6 +107826,14 @@
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           },
           {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "wave.version",
             "location": "body",
             "required": false,
@@ -108593,6 +108793,14 @@
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           },
           {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "wave.version",
             "location": "body",
             "required": false,
@@ -109316,6 +109524,14 @@
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
@@ -109518,6 +109734,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "wave.version",
@@ -110243,6 +110467,14 @@
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
@@ -110445,6 +110677,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "wave.version",
@@ -111170,6 +111410,14 @@
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
@@ -111372,6 +111620,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "wave.version",
@@ -112097,6 +112353,14 @@
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
@@ -112299,6 +112563,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "wave.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "wave.version",
@@ -113022,6 +113294,14 @@
             "type": "string",
             "semanticId": "lotus.wave_id",
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -113471,12 +113751,12 @@
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
           },
           {
-            "name": "tenant_id",
-            "location": "query",
+            "name": "x-tenant-id",
+            "location": "header",
             "required": true,
             "type": "string",
-            "semanticId": "lotus.tenant_id",
-            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -114684,6 +114964,14 @@
             "type": "string",
             "semanticId": "lotus.wave_id",
             "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },

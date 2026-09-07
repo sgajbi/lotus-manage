@@ -520,6 +520,17 @@ class DpmRebalanceWave(BaseModel):
         examples=["pm_001"],
     )
     correlation_id: str = Field(description="Creation correlation id.", examples=["corr-wave-001"])
+    tenant_id: str | None = Field(
+        default=None,
+        description=(
+            "Tenant that owns this wave. Optional on the model and NOT NULL nowhere, because "
+            "waves persisted before the tenant fence (issue #677) carry none and must stay "
+            "unreachable rather than be assigned an assumed owner. Repository reads require a "
+            "tenant, so a wave without one is matched by no equality predicate - it is "
+            "quarantined, not public."
+        ),
+        examples=["tenant-sg"],
+    )
     version: int = Field(
         default=1,
         description="Optimistic concurrency version.",

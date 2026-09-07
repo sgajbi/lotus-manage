@@ -16,6 +16,8 @@ from src.infrastructure.rebalance_runs.postgres import (
     _json_dump,
 )
 
+from tests.support.postgres_migration_sql import is_migration_ddl
+
 
 class _FakeCursor:
     def __init__(self, row=None, rows=None, rowcount=0):
@@ -443,13 +445,7 @@ class _FakeConnection:
             # table, so the statement is acknowledged here and proven
             # for real in the mandate integration lane.
             return _FakeCursor()
-        # Schema statements from apply_postgres_migrations. Migration files
-        # open with a comment block, so a startswith check on the keyword
-        # never matches - look for the statement keyword anywhere.
-        if any(
-            keyword in sql
-            for keyword in ("CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "schema_migrations")
-        ):
+        if is_migration_ddl(sql):
             return _FakeCursor()
         raise AssertionError(f"Unexpected SQL: {sql}")
 

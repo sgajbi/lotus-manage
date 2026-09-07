@@ -17,12 +17,12 @@ class _WaveRepository:
         self.updated_wave: DpmRebalanceWave | None = None
         self.expected_version: int | None = None
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         if wave_id == self.wave.wave_id:
             return self.wave
         return None
 
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
         self.updated_wave = wave
         self.expected_version = expected_version
 
@@ -66,6 +66,7 @@ def test_approve_persisted_wave_builds_and_persists_approved_transition() -> Non
         comment=None,
         correlation_id="corr-approve",
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     assert replayed is False
@@ -85,6 +86,7 @@ def test_stage_handoff_and_cancel_persisted_wave_commands_update_expected_versio
         comment=None,
         correlation_id="corr-stage",
         wave_repository=stage_repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     handoff_repository = _WaveRepository(staged)
@@ -95,6 +97,7 @@ def test_stage_handoff_and_cancel_persisted_wave_commands_update_expected_versio
         comment=None,
         correlation_id="corr-handoff",
         wave_repository=handoff_repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     cancel_source = _wave(wave_id="dwv_lifecycle_cancel", state="STAGED", item_state="STAGED")
@@ -106,6 +109,7 @@ def test_stage_handoff_and_cancel_persisted_wave_commands_update_expected_versio
         comment=None,
         correlation_id="corr-cancel",
         wave_repository=cancel_repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     assert stage_replayed is False
@@ -130,6 +134,7 @@ def test_cancel_persisted_wave_replays_existing_cancelled_wave() -> None:
         comment=None,
         correlation_id="corr-cancel",
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     assert cancelled is wave

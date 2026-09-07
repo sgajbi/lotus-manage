@@ -14,7 +14,7 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveItemsResponse,
     DpmWaveSearchResponse,
 )
-from src.api.routers.wave_route_parameters import WaveIdPath
+from src.api.routers.wave_route_parameters import WaveIdPath, WaveTenantIdHeader
 from src.api.routers.wave_search_http import search_waves_response
 from src.core.waves import DpmWaveRepository
 
@@ -71,6 +71,7 @@ def register_wave_read_routes(router: APIRouter) -> None:
         },
     )
     def search_waves(
+        x_tenant_id: WaveTenantIdHeader,
         state: Annotated[
             str | None,
             Query(
@@ -108,6 +109,7 @@ def register_wave_read_routes(router: APIRouter) -> None:
     ) -> DpmWaveSearchResponse:
         return search_waves_response(
             wave_repository=wave_repository,
+            tenant_id=x_tenant_id,
             state=state,
             trigger_type=trigger_type,
             as_of_date=as_of_date,
@@ -134,11 +136,13 @@ def register_wave_read_routes(router: APIRouter) -> None:
     )
     def get_wave_detail(
         wave_id: WaveIdPath,
+        x_tenant_id: WaveTenantIdHeader,
         wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     ) -> DpmWaveDetailResponse:
         return get_wave_detail_response(
             wave_id=wave_id,
             wave_repository=wave_repository,
+            tenant_id=x_tenant_id,
         )
 
     @router.get(
@@ -159,9 +163,11 @@ def register_wave_read_routes(router: APIRouter) -> None:
     )
     def get_wave_items(
         wave_id: WaveIdPath,
+        x_tenant_id: WaveTenantIdHeader,
         wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     ) -> DpmWaveItemsResponse:
         return get_wave_items_response(
             wave_id=wave_id,
             wave_repository=wave_repository,
+            tenant_id=x_tenant_id,
         )

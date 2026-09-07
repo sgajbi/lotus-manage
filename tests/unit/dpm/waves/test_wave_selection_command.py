@@ -9,12 +9,12 @@ class _WaveRepository:
         self.updated_wave: DpmRebalanceWave | None = None
         self.expected_version: int | None = None
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         if wave_id == self.wave.wave_id:
             return self.wave
         return None
 
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
         self.updated_wave = wave
         self.expected_version = expected_version
 

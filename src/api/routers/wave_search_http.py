@@ -10,6 +10,7 @@ from src.core.waves import DpmWaveRepository
 def search_waves_response(
     *,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     state: str | None,
     trigger_type: str | None,
     as_of_date: str | None,
@@ -19,6 +20,7 @@ def search_waves_response(
 ) -> DpmWaveSearchResponse:
     items = wave_service.search_waves(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         state=state,
         trigger_type=trigger_type,
         as_of_date=as_of_date,

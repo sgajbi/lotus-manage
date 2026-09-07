@@ -50,12 +50,20 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
                 wave_id=wave.wave_id,
                 request_hash=request_hash,
             )
-            _store_wave(waves=self._waves, wave=wave)
+            # Stamped from the argument, so a caller cannot persist a wave
+            # claiming one tenant while the record says another.
+            _store_wave(waves=self._waves, wave=wave.model_copy(update={"tenant_id": tenant_id}))
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         with self._lock:
             wave = self._waves.get(wave_id)
-            return deepcopy(wave) if wave is not None else None
+            # None rather than a distinguishable refusal: telling a caller that
+            # the id exists but is someone else's is itself cross-tenant
+            # information (issue #677). A wave with no tenant - persisted before
+            # the fence - matches no caller and is quarantined, not public.
+            if wave is None or wave.tenant_id != tenant_id:
+                return None
+            return deepcopy(wave)
 
     def get_wave_by_idempotency(
         self, *, idempotency_key: str, tenant_id: str
@@ -79,6 +87,7 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
     def list_waves(
         self,
         *,
+        tenant_id: str,
         state: str | None = None,
         trigger_type: str | None = None,
         as_of_date: str | None = None,
@@ -86,20 +95,33 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
         offset: int = 0,
     ) -> list[DpmRebalanceWave]:
         with self._lock:
+            # Tenant applied BEFORE paging, not after: filtering a page would
+            # let another tenant's waves consume the limit and silently shorten
+            # this caller's results (issue #677).
+            owned = [wave for wave in self._waves.values() if wave.tenant_id == tenant_id]
             waves = _filtered_waves(
-                waves=self._waves.values(),
+                waves=owned,
                 state=state,
                 trigger_type=trigger_type,
                 as_of_date=as_of_date,
             )
             return _copied_wave_page(waves=waves, limit=limit, offset=offset)
 
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
         with self._lock:
             current = self._waves.get(wave.wave_id)
-            if current is None or current.version != expected_version:
+            # The tenant is part of the same guarded comparison as the version,
+            # so there is no window between checking ownership and writing. A
+            # foreign wave raises the SAME error as a stale version, on purpose:
+            # a distinct error would let a caller probe for wave ids it does not
+            # own (issue #677).
+            if (
+                current is None
+                or current.version != expected_version
+                or current.tenant_id != tenant_id
+            ):
                 raise DpmWaveVersionConflictError("DPM_WAVE_VERSION_CONFLICT")
-            self._waves[wave.wave_id] = deepcopy(wave)
+            self._waves[wave.wave_id] = deepcopy(wave.model_copy(update={"tenant_id": tenant_id}))
 
 
 def _raise_if_idempotency_conflict(

@@ -38,6 +38,7 @@ def simulate_wave_response(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     risk_authority_client: RiskAuthorityClient | None,
 ) -> DpmWaveResponse:
     try:
@@ -50,6 +51,7 @@ def simulate_wave_response(
             construction_repository=construction_repository,
             run_service=run_service,
             wave_repository=wave_repository,
+            tenant_id=tenant_id,
             risk_authority_client=risk_authority_client,
         )
     except wave_service.DpmWaveLookupError as exc:

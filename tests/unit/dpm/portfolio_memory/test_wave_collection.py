@@ -10,9 +10,7 @@ def test_wave_memory_events_projects_matching_wave_events() -> None:
     )
 
     events = wave_memory_events(
-        portfolio_id=PORTFOLIO_ID,
-        wave_repository=repository,
-        limit=100,
+        portfolio_id=PORTFOLIO_ID, wave_repository=repository, limit=100, tenant_id="tenant-test"
     )
 
     assert [event.event_type for event in events] == [
@@ -42,9 +40,7 @@ def test_wave_memory_events_skips_waves_without_matching_portfolio_items() -> No
     )
 
     events = wave_memory_events(
-        portfolio_id=PORTFOLIO_ID,
-        wave_repository=repository,
-        limit=100,
+        portfolio_id=PORTFOLIO_ID, wave_repository=repository, limit=100, tenant_id="tenant-test"
     )
 
     assert events == []

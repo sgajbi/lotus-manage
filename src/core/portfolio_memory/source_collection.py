@@ -12,6 +12,7 @@ from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     require_campaign_definition_tenant_id,
     require_mandate_tenant_id,
+    require_wave_tenant_id,
 )
 from src.core.portfolio_memory.wave_collection import wave_memory_events
 
@@ -57,6 +58,7 @@ def collect_portfolio_memory_events(
 
     events.extend(
         wave_memory_events(
+            tenant_id=require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories),
             portfolio_id=portfolio_id,
             wave_repository=repositories.wave_repository,
             limit=limit,

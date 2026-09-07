@@ -10,7 +10,7 @@ class _WaveRepository:
         self.wave = wave
         self.requested_wave_ids: list[str] = []
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         self.requested_wave_ids.append(wave_id)
         return self.wave
 
@@ -22,6 +22,7 @@ def test_get_wave_or_raise_returns_loaded_wave() -> None:
     loaded = get_wave_or_raise(
         wave_id="dwv_lookup",
         wave_repository=repository,  # type: ignore[arg-type]
+        tenant_id="tenant-sg",
     )
 
     assert loaded is wave
@@ -35,6 +36,7 @@ def test_get_wave_or_raise_raises_governed_lookup_error_for_missing_wave() -> No
         get_wave_or_raise(
             wave_id="dwv_missing",
             wave_repository=repository,  # type: ignore[arg-type]
+            tenant_id="tenant-sg",
         )
 
     assert exc_info.value.code == "DPM_WAVE_NOT_FOUND"

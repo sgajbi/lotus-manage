@@ -30,6 +30,7 @@ def test_collect_portfolio_memory_events_collects_required_source_families() -> 
             outcome_review_repository=outcome_repository,
         ),
         limit=100,
+        tenant_id="tenant-sg",
     )
 
     event_types = {event.event_type for event in events}
@@ -82,6 +83,7 @@ def test_collect_portfolio_memory_events_skips_optional_empty_repositories() -> 
             construction_repository=InMemoryConstructionRepository(),
         ),
         limit=100,
+        tenant_id="tenant-sg",
     )
 
     assert "CONSTRUCTION_ALTERNATIVE_SET" not in {event.event_type for event in events}
@@ -104,4 +106,5 @@ def test_collect_portfolio_memory_events_rejects_unsafe_source_scan_limits(
                 outcome_review_repository=outcome_repository,
             ),
             limit=limit,
+            tenant_id="tenant-sg",
         )

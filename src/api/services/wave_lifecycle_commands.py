@@ -17,10 +17,12 @@ def approve_persisted_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     prepared = prepare_wave_transition(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         replay_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
         allowed_states={"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"},
         error_code="DPM_WAVE_APPROVAL_INVALID_STATE",
@@ -38,6 +40,7 @@ def approve_persisted_wave(
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         source_wave=prepared.wave,
         transitioned_wave=approved,
     )
@@ -52,10 +55,12 @@ def stage_persisted_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     prepared = prepare_wave_transition(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         replay_states={"STAGED", "HANDOFF_READY"},
         allowed_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
         error_code="DPM_WAVE_STAGE_INVALID_STATE",
@@ -73,6 +78,7 @@ def stage_persisted_wave(
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         source_wave=prepared.wave,
         transitioned_wave=staged,
     )
@@ -87,10 +93,12 @@ def handoff_persisted_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     prepared = prepare_wave_transition(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         replay_states={"HANDOFF_READY"},
         allowed_states={"STAGED"},
         error_code="DPM_WAVE_HANDOFF_INVALID_STATE",
@@ -108,6 +116,7 @@ def handoff_persisted_wave(
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         source_wave=prepared.wave,
         transitioned_wave=handoff_ready,
     )
@@ -122,10 +131,12 @@ def cancel_persisted_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     prepared = prepare_wave_transition(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         replay_states={"CANCELLED"},
         allowed_states=None,
         error_code="DPM_WAVE_CANCEL_INVALID_STATE",
@@ -143,6 +154,7 @@ def cancel_persisted_wave(
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         source_wave=prepared.wave,
         transitioned_wave=cancelled,
     )
