@@ -5039,12 +5039,12 @@ def test_wave_source_check_classifies_mixed_items_and_attaches_authoritative_ref
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
             headers={"X-Correlation-Id": "corr-source-check-001"},
         )
         replayed = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
 
@@ -5095,7 +5095,7 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
 
     with _client(mandate_repository, wave_repository) as client:
         missing = client.post(
-            "/api/v1/rebalance/waves/dwv_missing/source-check?tenant_id=tenant-sg",
+            "/api/v1/rebalance/waves/dwv_missing/source-check",
             json={"actor_id": "pm_001"},
         )
         draft = client.post(
@@ -5108,7 +5108,7 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
             request_hash=None,
         )
         invalid = client.post(
-            f"/api/v1/rebalance/waves/{draft.json()['wave']['wave_id']}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{draft.json()['wave']['wave_id']}/source-check",
             json={"actor_id": "pm_001"},
         )
 
@@ -5142,7 +5142,7 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5165,7 +5165,7 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
             json={"actor_id": "pm_001", "item_inputs": []},
         )
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5232,7 +5232,7 @@ def test_wave_simulation_aggregates_source_owned_risk_and_performance_context() 
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5327,7 +5327,7 @@ def test_wave_simulation_preserves_blocked_items_and_degrades_missing_inputs() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         simulated = client.post(
@@ -5393,7 +5393,7 @@ def test_wave_simulation_reports_invalid_state_and_partial_result() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         items_by_portfolio = {
@@ -5452,7 +5452,7 @@ def test_wave_simulation_degrades_generation_failure(monkeypatch: pytest.MonkeyP
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5498,7 +5498,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5515,7 +5515,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -
             },
         )
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5556,7 +5556,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         invalid_state = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5564,7 +5564,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
             },
         )
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5581,7 +5581,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
             },
         )
         missing_item = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5589,7 +5589,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
             },
         )
         bad_alternative = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
             json={
                 "alternative_id": "alt_unknown",
                 "actor_id": "pm_001",
@@ -5638,7 +5638,7 @@ def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         items_by_portfolio = {
@@ -5658,7 +5658,7 @@ def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
         )
         blocked_item_id = items_by_portfolio["PB_SG_READY_003"]["wave_item_id"]
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{blocked_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{blocked_item_id}/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5702,7 +5702,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5719,7 +5719,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
             },
         )
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5757,7 +5757,7 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5774,7 +5774,7 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
             },
         )
         client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5901,7 +5901,7 @@ def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> 
         )
         handoff_wave_id = handoff_ready.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{handoff_wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
@@ -5918,7 +5918,7 @@ def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> 
             },
         )
         client.post(
-            f"/api/v1/rebalance/waves/{handoff_wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/items/{wave_item_id}/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5990,7 +5990,7 @@ def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -
         )
         wave_id = created.json()["wave"]["wave_id"]
         checked = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         items_by_portfolio = {
@@ -6011,7 +6011,7 @@ def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -
             },
         )
         client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{ready_item_id}/select?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{ready_item_id}/select",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -6484,7 +6484,7 @@ def test_wave_supportability_reports_product_safe_operator_diagnostics() -> None
         )
         wave_id = created.json()["wave"]["wave_id"]
         client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
             json={"actor_id": "pm_001"},
         )
         supportability = client.get(f"/api/v1/rebalance/waves/{wave_id}/supportability")
@@ -7681,3 +7681,63 @@ def test_wave_preview_refuses_rather_than_omitting_mandate_evidence_without_a_te
         allowed = client.post("/api/v1/rebalance/waves/preview", json=_request())
     assert allowed.status_code == 200
     assert allowed.json()["wave"]["items"][0]["mandate_id"] == MANDATE_ID
+
+
+def test_the_wave_lifecycle_has_one_tenant_selector_and_refuses_without_it() -> None:
+    """Every wave lifecycle route must take the tenant the same documented way.
+
+    Preview and create require the X-Tenant-Id header, and that header's own
+    description says it covers source-check and selection too. Those two routes
+    were wired to a tenant_id QUERY parameter instead, so a caller following the
+    published contract had its header ignored and got 422 unless it also added a
+    second selector the contract never mentions.
+
+    The suite could not see this: the shared TestClient sets X-Tenant-Id on every
+    request, so the routes passed whether they read the header or the query, and
+    the ?tenant_id= in those URLs was asserting nothing. This test builds clients
+    that carry exactly one selector, so each half can fail on its own.
+    """
+
+    mandate_repository = InMemoryDpmMandateRepository()
+    twin = _twin()
+    mandate_repository.save_mandate_snapshot(twin, tenant_id="tenant-sg")
+    _save_ready_health(mandate_repository, twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(mandate_repository, wave_repository) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json=_request(),
+            headers={"Idempotency-Key": "idem-one-tenant-selector"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+
+    app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
+    app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    try:
+        # The documented header alone, with no query parameter anywhere.
+        with TestClient(app, headers={"X-Tenant-Id": "tenant-sg"}) as header_only:
+            accepted = header_only.post(
+                f"/api/v1/rebalance/waves/{wave_id}/source-check",
+                json={"actor_id": "pm_001"},
+            )
+        # The query parameter the routes used to require, and no header.
+        with TestClient(app) as query_only:
+            query_selector = query_only.post(
+                f"/api/v1/rebalance/waves/{wave_id}/source-check?tenant_id=tenant-sg",
+                json={"actor_id": "pm_001"},
+            )
+        # Neither selector: refused, never answered from an assumed tenant.
+        with TestClient(app) as no_tenant:
+            unattributed = no_tenant.post(
+                f"/api/v1/rebalance/waves/{wave_id}/source-check",
+                json={"actor_id": "pm_001"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert accepted.status_code == 200
+    # Divergence half: the header must be what carried it. A route still reading
+    # the query would accept the second call and refuse the first.
+    assert query_selector.status_code == 422
+    assert unattributed.status_code == 422
