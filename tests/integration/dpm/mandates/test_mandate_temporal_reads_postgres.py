@@ -43,6 +43,8 @@ from src.infrastructure.mandates.postgres import PostgresDpmMandateRepository
 
 _DSN = os.getenv("DPM_POSTGRES_INTEGRATION_DSN", "").strip()
 
+TENANT_ID = "tenant-integration"
+
 pytestmark = pytest.mark.skipif(
     not _DSN, reason="DPM_POSTGRES_INTEGRATION_DSN is required for the temporal-read proof"
 )
@@ -96,26 +98,38 @@ def test_version_ten_wins_over_version_nine_on_the_same_business_date(
     portfolio_id = f"PF_ORDER_{uuid.uuid4().hex[:8]}"
     try:
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="9")
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="9"),
+            tenant_id=TENANT_ID,
         )
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="10")
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="10"),
+            tenant_id=TENANT_ID,
         )
 
-        assert repository.get_latest_mandate(mandate_id=mandate_id).mandate_version == "10"
         assert (
-            repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id).mandate_version
+            repository.get_latest_mandate(
+                mandate_id=mandate_id, tenant_id=TENANT_ID
+            ).mandate_version
+            == "10"
+        )
+        assert (
+            repository.get_latest_mandate_by_portfolio(
+                portfolio_id=portfolio_id, tenant_id=TENANT_ID
+            ).mandate_version
             == "10"
         )
         assert (
             repository.get_mandate_by_portfolio_as_of(
-                portfolio_id=portfolio_id, as_of_date=_AS_OF
+                portfolio_id=portfolio_id,
+                as_of_date=_AS_OF,
+                tenant_id=TENANT_ID,
             ).mandate_version
             == "10"
         )
         # The listing is newest-first, so the numeric order must hold there too.
         listed = [
-            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+            twin.mandate_version
+            for twin in repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         ]
         assert listed == ["10", "9"]
     finally:
@@ -134,15 +148,23 @@ def test_version_ordering_survives_a_non_integer_version(
     portfolio_id = f"PF_TEXTVER_{uuid.uuid4().hex[:8]}"
     try:
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="2024-R1")
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="2024-R1"),
+            tenant_id=TENANT_ID,
         )
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="7")
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="7"),
+            tenant_id=TENANT_ID,
         )
 
-        assert repository.get_latest_mandate(mandate_id=mandate_id).mandate_version == "7"
+        assert (
+            repository.get_latest_mandate(
+                mandate_id=mandate_id, tenant_id=TENANT_ID
+            ).mandate_version
+            == "7"
+        )
         listed = [
-            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+            twin.mandate_version
+            for twin in repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         ]
         assert listed == ["7", "2024-R1"]
     finally:
@@ -167,7 +189,8 @@ def test_a_repeated_version_is_not_diffed_against_itself(
                 version="3",
                 as_of=date(2026, 4, 30),
                 turnover="0.10",
-            )
+            ),
+            tenant_id=TENANT_ID,
         )
         # Version 4 changes the turnover budget...
         repository.save_mandate_snapshot(
@@ -177,7 +200,8 @@ def test_a_repeated_version_is_not_diffed_against_itself(
                 version="4",
                 as_of=date(2026, 5, 1),
                 turnover="0.20",
-            )
+            ),
+            tenant_id=TENANT_ID,
         )
         # ...and is then re-observed unchanged on a later business date. The
         # database accepts this only because 0020 relaxed the uniqueness key.
@@ -188,14 +212,18 @@ def test_a_repeated_version_is_not_diffed_against_itself(
                 version="4",
                 as_of=date(2026, 5, 3),
                 turnover="0.20",
-            )
+            ),
+            tenant_id=TENANT_ID,
         )
 
-        versions = repository.list_mandate_versions(mandate_id=mandate_id)
+        versions = repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         assert [twin.mandate_version for twin in versions] == ["4", "4", "3"]
 
         diff = build_mandate_diff_for_versions(
-            mandate_id=mandate_id, versions=versions, from_version=None, to_version=None
+            mandate_id=mandate_id,
+            versions=versions,
+            from_version=None,
+            to_version=None,
         )
 
         # The comparison crosses a real version boundary...
@@ -229,14 +257,18 @@ def test_repeated_observations_of_one_version_refuse_rather_than_report_no_chang
                     portfolio_id=portfolio_id,
                     version="5",
                     as_of=observed,
-                )
+                ),
+                tenant_id=TENANT_ID,
             )
-        versions = repository.list_mandate_versions(mandate_id=mandate_id)
+        versions = repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         assert len(versions) == 2
 
         with pytest.raises(DpmMandateDiffUnavailableError):
             build_mandate_diff_for_versions(
-                mandate_id=mandate_id, versions=versions, from_version=None, to_version=None
+                mandate_id=mandate_id,
+                versions=versions,
+                from_version=None,
+                to_version=None,
             )
     finally:
         _clear(repository, mandate_id)
@@ -259,7 +291,8 @@ def test_a_requested_version_resolves_to_its_latest_observation(
                 version="1",
                 as_of=date(2026, 4, 1),
                 turnover="0.10",
-            )
+            ),
+            tenant_id=TENANT_ID,
         )
         for observed in (date(2026, 4, 30), date(2026, 5, 3)):
             repository.save_mandate_snapshot(
@@ -269,12 +302,16 @@ def test_a_requested_version_resolves_to_its_latest_observation(
                     version="2",
                     as_of=observed,
                     turnover="0.20",
-                )
+                ),
+                tenant_id=TENANT_ID,
             )
 
-        versions = repository.list_mandate_versions(mandate_id=mandate_id)
+        versions = repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         diff = build_mandate_diff_for_versions(
-            mandate_id=mandate_id, versions=versions, from_version="1", to_version="2"
+            mandate_id=mandate_id,
+            versions=versions,
+            from_version="1",
+            to_version="2",
         )
 
         assert (diff.from_version, diff.to_version) == ("1", "2")
@@ -302,18 +339,21 @@ def test_a_version_beyond_bigint_range_does_not_abort_the_read(
     beyond_bigint = "9" * 30
     try:
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=beyond_bigint)
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=beyond_bigint),
+            tenant_id=TENANT_ID,
         )
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="12")
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="12"),
+            tenant_id=TENANT_ID,
         )
 
-        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        latest = repository.get_latest_mandate(mandate_id=mandate_id, tenant_id=TENANT_ID)
         assert latest is not None
         # 10^30 - 1 really is larger than 12, and the read must say so.
         assert latest.mandate_version == beyond_bigint
         listed = [
-            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+            twin.mandate_version
+            for twin in repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         ]
         assert listed == [beyond_bigint, "12"]
     finally:
@@ -341,12 +381,14 @@ def test_both_stores_agree_on_which_versions_are_numeric(
     portfolio_id = f"PF_UNICODE_{uuid.uuid4().hex[:8]}"
     try:
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=unicode_digit)
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=unicode_digit),
+            tenant_id=TENANT_ID,
         )
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="2")
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="2"),
+            tenant_id=TENANT_ID,
         )
-        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        latest = repository.get_latest_mandate(mandate_id=mandate_id, tenant_id=TENANT_ID)
         assert latest is not None
         # PostgreSQL sorts the non-ASCII version last, exactly as memory does.
         assert latest.mandate_version == "2"
@@ -374,15 +416,17 @@ def test_numerically_equal_versions_are_separated_by_raw_text(
         # produces the expected result.
         for version in ("01", "1", "001"):
             repository.save_mandate_snapshot(
-                _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=version)
+                _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=version),
+                tenant_id=TENANT_ID,
             )
 
         listed = [
-            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+            twin.mandate_version
+            for twin in repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         ]
         assert listed == ["1", "01", "001"]
 
-        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        latest = repository.get_latest_mandate(mandate_id=mandate_id, tenant_id=TENANT_ID)
         assert latest is not None
         assert latest.mandate_version == "1"
     finally:
@@ -406,17 +450,19 @@ def test_postgres_orders_the_shared_corpus_exactly_as_the_memory_store_does(
     try:
         for version in SHARED_ORDERING_CORPUS:
             repository.save_mandate_snapshot(
-                _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=version)
+                _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=version),
+                tenant_id=TENANT_ID,
             )
 
         listed = [
-            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+            twin.mandate_version
+            for twin in repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         ]
         assert listed == list(EXPECTED_CORPUS_ORDER)
 
         # The same expression decides the single-row reads, so the head of the
         # list and the latest read must be the same value.
-        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        latest = repository.get_latest_mandate(mandate_id=mandate_id, tenant_id=TENANT_ID)
         assert latest is not None
         assert latest.mandate_version == EXPECTED_CORPUS_ORDER[0]
     finally:
@@ -450,20 +496,23 @@ def test_a_long_but_indexable_version_round_trips_and_orders(
     long_version = "".join(rng.choice("123456789") for _ in range(2000))
     try:
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=long_version)
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version=long_version),
+            tenant_id=TENANT_ID,
         )
         repository.save_mandate_snapshot(
-            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="99999")
+            _twin(mandate_id=mandate_id, portfolio_id=portfolio_id, version="99999"),
+            tenant_id=TENANT_ID,
         )
 
-        latest = repository.get_latest_mandate(mandate_id=mandate_id)
+        latest = repository.get_latest_mandate(mandate_id=mandate_id, tenant_id=TENANT_ID)
         assert latest is not None
         # A 2000-digit number is larger than a 5-digit one, and the read must
         # say so rather than comparing the strings.
         assert latest.mandate_version == long_version
 
         listed = [
-            twin.mandate_version for twin in repository.list_mandate_versions(mandate_id=mandate_id)
+            twin.mandate_version
+            for twin in repository.list_mandate_versions(mandate_id=mandate_id, tenant_id=TENANT_ID)
         ]
         assert listed == [long_version, "99999"]
     finally:
