@@ -60,6 +60,9 @@ def _is_error_status(status_code: object) -> bool:
     return normalized.startswith(("4", "5")) or normalized == "default"
 
 
+TENANT_PARAMETER_DESCRIPTION = "Tenant whose preserved mandate-health source-ref evidence is summarised. Required whenever `portfolio_id` is supplied, because that evidence is stored per tenant; omitting it there is refused rather than answered from an assumed tenant."
+
+
 def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _guard_strict_validation()
     openapi = app.openapi()
@@ -898,7 +901,24 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
                 "Optional portfolio identifier used to scope run, operation, workflow, "
                 "lineage, and preserved mandate-health source-ref evidence."
             ),
-        }
+        },
+        {
+            # Issue #648. Mandate-health source-ref evidence is tenant-scoped,
+            # so the summary must state which tenant it is reading. It stays
+            # optional at the schema level because the endpoint answers
+            # without portfolio scope too; the pairing with portfolio_id is
+            # enforced in the handler and stated in the description.
+            "name": "tenant_id",
+            "in": "query",
+            "required": False,
+            "schema": {
+                "anyOf": [{"type": "string"}, {"type": "null"}],
+                "description": TENANT_PARAMETER_DESCRIPTION,
+                "examples": ["default"],
+                "title": "Tenant Id",
+            },
+            "description": TENANT_PARAMETER_DESCRIPTION,
+        },
     ]
     assert "422" in supportability_summary["responses"]
     assert supportability_summary["responses"]["503"]["description"] == (

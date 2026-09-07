@@ -5160,7 +5160,7 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
             json={"actor_id": "pm_001", "item_inputs": []},
         )
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5510,7 +5510,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -
             },
         )
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5551,7 +5551,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
         )
         wave_id = created.json()["wave"]["wave_id"]
         invalid_state = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5576,7 +5576,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
             },
         )
         missing_item = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5584,7 +5584,7 @@ def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
             },
         )
         bad_alternative = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_unknown",
                 "actor_id": "pm_001",
@@ -5653,7 +5653,7 @@ def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
         )
         blocked_item_id = items_by_portfolio["PB_SG_READY_003"]["wave_item_id"]
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{blocked_item_id}/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{blocked_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5714,7 +5714,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
             },
         )
         selected = client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5769,7 +5769,7 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
             },
         )
         client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -5913,7 +5913,7 @@ def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> 
             },
         )
         client.post(
-            f"/api/v1/rebalance/waves/{handoff_wave_id}/items/{wave_item_id}/select",
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/items/{wave_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -6006,7 +6006,7 @@ def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -
             },
         )
         client.post(
-            f"/api/v1/rebalance/waves/{wave_id}/items/{ready_item_id}/select",
+            f"/api/v1/rebalance/waves/{wave_id}/items/{ready_item_id}/select?tenant_id=tenant-sg",
             json={
                 "alternative_id": "alt_min_turnover",
                 "actor_id": "pm_001",
@@ -6116,6 +6116,7 @@ def test_wave_services_translate_durable_write_conflicts_to_governed_errors() ->
             wave_id="dwv_conflict_source",
             actor_id="pm_001",
             correlation_id="corr-conflict-source",
+            tenant_id="tenant-sg",
             mandate_repository=mandate_repository,
             wave_repository=source_repository,
         )

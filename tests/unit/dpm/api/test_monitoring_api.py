@@ -564,12 +564,12 @@ def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:
     with _client(repository) as client:
         missing_run_once = client.post(
             "/api/v1/dpm/monitoring/run-once",
-            json={"mandate_ids": ["UNKNOWN"], "as_of_date": "2026-05-03"},
+            json={"mandate_ids": ["UNKNOWN"], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
         missing_run = client.get("/api/v1/dpm/monitoring/runs/UNKNOWN")
         client.post(
             "/api/v1/dpm/monitoring/run-once",
-            json={"mandate_ids": [MANDATE_ID], "as_of_date": "2026-05-03"},
+            json={"mandate_ids": [MANDATE_ID], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
         exception_id = client.get("/api/v1/dpm/exceptions").json()["items"][0]["exception_id"]
         resolved = client.post(
