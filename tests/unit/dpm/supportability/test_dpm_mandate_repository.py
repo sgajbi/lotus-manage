@@ -498,7 +498,11 @@ def test_postgres_monitoring_exception_query_combines_filters_and_cursor() -> No
         "MANDATE_PB_SG_GLOBAL_BAL_001",
         "PB_SG_GLOBAL_BAL_001",
         "ACTIVE",
+        # The cursor subqueries resolve the anchor id within the tenant, so
+        # each carries the tenant before the cursor (issue #648).
+        "tenant-test",
         "me_cursor",
+        "tenant-test",
         "me_cursor",
         "me_cursor",
         26,
@@ -963,8 +967,10 @@ class _FakeConnection:
                 rows = [row for row in rows if row["state"] == params[arg_index]]
                 arg_index += 1
             if "exception_id < %s" in normalized:
-                cursor = params[arg_index]
-                arg_index += 3
+                # Five bound values now: (tenant, cursor) for each subquery
+                # plus the trailing cursor comparison.
+                cursor = params[arg_index + 1]
+                arg_index += 5
                 rows = [row for row in rows if row["exception_id"] < cursor]
             limit = int(params[-1])
             rows = sorted(
