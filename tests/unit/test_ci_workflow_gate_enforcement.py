@@ -304,7 +304,13 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "github.event.pull_request.base.ref == 'main'" in dispatcher_text
     assert "github.event.pull_request.merge_commit_sha" in dispatcher_text
     assert "contents: write" in dispatcher_text
-    assert 'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"' in dispatcher_text
+    # Per-commit dispatch (#659) pins each run to one merged revision; the
+    # PR-head form remains valid for a single-commit PR. Either is a pinned
+    # immutable ref, which is the property this asserts.
+    assert (
+        'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"' in dispatcher_text
+        or 'dispatch_ref="main-releasability-${revision}"' in dispatcher_text
+    )
     assert (
         'if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref"'
         in dispatcher_text
@@ -316,7 +322,10 @@ def test_merged_pr_main_releasability_dispatcher_is_governed() -> None:
     assert "gh workflow run main-releasability.yml" in dispatcher_text
     assert '--repo "$GITHUB_REPOSITORY"' in dispatcher_text
     assert '--ref "$dispatch_ref"' in dispatcher_text
-    assert '-f expected_sha="$MERGE_COMMIT_SHA"' in dispatcher_text
+    assert (
+        '-f expected_sha="$MERGE_COMMIT_SHA"' in dispatcher_text
+        or '-f expected_sha="$revision"' in dispatcher_text
+    )
     assert '-f triggering_pr="$PR_NUMBER"' in dispatcher_text
     assert "workflow_dispatch:" in main_trigger_section
     assert "expected_sha:" in main_trigger_section
@@ -2269,8 +2278,8 @@ def test_merged_pr_dispatch_gate_rejects_or_masked_brace_group(
     workflow_dir.mkdir()
     workflow_text = MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
     workflow_text = workflow_text.replace(
-        "        run: |\n",
-        "        run: |\n          {\n",
+        "        run: |\n          set -euo pipefail\n          dispatch_ref=",
+        "        run: |\n          {\n          set -euo pipefail\n          dispatch_ref=",
         1,
     ).replace(
         '            -f triggering_pr="$PR_NUMBER"',
@@ -2298,7 +2307,7 @@ def test_merged_pr_dispatch_gate_rejects_compound_prefixed_subshell(
     workflow_dir.mkdir()
     workflow_text = MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
     workflow_text = workflow_text.replace(
-        "        run: |\n",
+        "        run: |\n          set -euo pipefail\n          dispatch_ref=",
         "        run: |\n          false && (\n",
         1,
     ).replace(
@@ -2327,7 +2336,7 @@ def test_merged_pr_dispatch_gate_rejects_time_prefixed_compound_scope(
     workflow_dir.mkdir()
     workflow_text = MERGED_PR_DISPATCHER.read_text(encoding="utf-8")
     workflow_text = workflow_text.replace(
-        "        run: |\n",
+        "        run: |\n          set -euo pipefail\n          dispatch_ref=",
         "        run: |\n          time if false; then\n",
         1,
     ).replace(
@@ -2428,9 +2437,9 @@ def test_merged_pr_dispatch_gate_rejects_repository_variable_reassignment(
     workflow_dir.mkdir()
     (workflow_dir / "merged-pr-main-releasability.yml").write_text(
         MERGED_PR_DISPATCHER.read_text(encoding="utf-8").replace(
-            '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+            '          dispatch_ref="main-releasability-${revision}"',
             '          GITHUB_REPOSITORY="wrong/other"\n'
-            '          dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+            '          dispatch_ref="main-releasability-${revision}"',
             1,
         ),
         encoding="utf-8",

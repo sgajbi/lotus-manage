@@ -252,15 +252,33 @@ def test_the_dispatcher_passes_only_inputs_this_gate_declares() -> None:
     )
 
 
-def test_the_dispatcher_asserts_it_dispatched_one_run_per_commit() -> None:
-    """A loop that silently does nothing is the shape of the gap being closed.
+def test_the_dispatcher_asserts_it_enumerated_one_revision_per_commit() -> None:
+    """A loop that silently produces nothing is the shape of the gap being closed.
 
-    Enumerating revisions and then dispatching none would leave the dispatcher
-    job green with zero coverage created - indistinguishable, from the outside,
-    from the defect this issue reports.
+    Enumerating zero or too few revisions would leave the job green with no
+    coverage created - indistinguishable, from the outside, from the defect this
+    issue reports. The count is asserted against the PR's own commit count.
+
+    Enumeration and dispatch are separate jobs so the dispatch step stays a flat
+    lookup / conditional ref creation / dispatch sequence: workflow_policy_gate
+    validates that structure, and a shell `for` loop around it nests the whole
+    thing out of that control's reach.
     """
 
     dispatcher = (WORKFLOW_ROOT / "merged-pr-main-releasability.yml").read_text(encoding="utf-8")
 
-    assert 'if [ "$dispatched" -ne "$COMMIT_COUNT" ]; then' in dispatcher
-    assert "dispatched=$((dispatched + 1))" in dispatcher
+    assert 'if [ "$enumerated" -ne "$COMMIT_COUNT" ]; then' in dispatcher
+    assert "enumerated=$((enumerated + 1))" in dispatcher
+    # One dispatch job per enumerated revision, fed from the enumerating job so
+    # the dispatched SHA stays bound to the merge event rather than to anything
+    # a later edit could supply.
+    assert "revisions: ${{ steps.enumerate.outputs.revisions }}" in dispatcher
+    assert (
+        "revision: ${{ fromJson(needs.enumerate-merged-revisions.outputs.revisions) }}"
+        in dispatcher
+    )
+    # Sequential: concurrent jobs creating dispatch tags race on the refs API,
+    # and a failed tag creation drops a revision's gate run silently.
+    assert "max-parallel: 1" in dispatcher
+    # One revision failing must not cancel the others' gate runs.
+    assert "fail-fast: false" in dispatcher
