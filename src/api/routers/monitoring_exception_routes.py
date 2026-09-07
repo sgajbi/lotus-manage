@@ -4,6 +4,7 @@ from typing import Literal, Optional
 
 from fastapi import Depends, Query
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import get_mandate_repository
 from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
 from src.api.routers.monitoring import router
@@ -30,6 +31,7 @@ from src.core.mandates import DpmMonitoringException
     responses={200: {"description": "Bounded monitoring exception page."}},
 )
 async def read_exceptions(
+    tenant_id: MandateTenantId,
     mandate_id: Optional[str] = Query(default=None, description="Optional mandate id filter."),
     portfolio_id: Optional[str] = Query(default=None, description="Optional portfolio id filter."),
     state: Optional[Literal["ACTIVE", "RESOLVED"]] = Query(
@@ -42,6 +44,7 @@ async def read_exceptions(
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMonitoringExceptionPage:
     items, next_cursor = list_monitoring_exceptions(
+        tenant_id=tenant_id,
         repository=repository,
         mandate_id=mandate_id,
         portfolio_id=portfolio_id,
@@ -68,10 +71,12 @@ async def read_exceptions(
 async def resolve_exception(
     exception_id: str,
     request: DpmMonitoringExceptionResolveRequest,
+    tenant_id: MandateTenantId,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMonitoringException:
     return read_mandate_with_not_found_http_mapping(
         lambda: resolve_monitoring_exception(
+            tenant_id=tenant_id,
             repository=repository,
             exception_id=exception_id,
             resolution_reason=request.resolution_reason,

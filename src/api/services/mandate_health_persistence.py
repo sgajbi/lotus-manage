@@ -20,7 +20,7 @@ def persist_mandate_health_evidence(
         repository.save_mandate_snapshot(twin, tenant_id=tenant_id)
     repository.save_health_snapshot(health_snapshot, tenant_id=tenant_id)
     for exception in monitoring_exceptions:
-        repository.save_monitoring_exception(exception)
+        repository.save_monitoring_exception(exception, tenant_id=tenant_id)
 
 
 __all__ = ["persist_mandate_health_evidence"]

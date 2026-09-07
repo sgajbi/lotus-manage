@@ -166,7 +166,7 @@ def _repositories() -> tuple[
     outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
     mandate_repository.save_mandate_snapshot(_mandate_twin(), tenant_id=TENANT_ID)
     mandate_repository.save_health_snapshot(_health_snapshot(), tenant_id=TENANT_ID)
-    mandate_repository.save_monitoring_exception(_monitoring_exception())
+    mandate_repository.save_monitoring_exception(_monitoring_exception(), tenant_id=TENANT_ID)
     return proof_pack_repository, wave_repository, outcome_repository, mandate_repository
 
 

@@ -8,6 +8,7 @@ from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories,
     require_campaign_definition_tenant_id,
+    require_mandate_tenant_id,
     require_pm_quality_tenant_id,
 )
 from src.core.portfolio_memory.search_request import validate_portfolio_memory_source_scan_limit
@@ -56,7 +57,13 @@ def candidate_portfolio_ids_from_sources(
     candidates.update(_proof_pack_candidate_ids(repositories, source_scan_limit))
     candidates.update(_wave_candidate_ids(repositories, source_scan_limit))
     candidates.update(_outcome_review_candidate_ids(repositories, source_scan_limit))
-    candidates.update(_mandate_exception_candidate_ids(repositories, source_scan_limit))
+    candidates.update(
+        _mandate_exception_candidate_ids(
+            require_mandate_tenant_id(tenant_id=tenant_id, repositories=repositories),
+            repositories,
+            source_scan_limit,
+        )
+    )
     candidates.update(
         _campaign_definition_candidate_ids(
             require_campaign_definition_tenant_id(tenant_id=tenant_id, repositories=repositories),
@@ -114,12 +121,16 @@ def _outcome_review_candidate_ids(
 
 
 def _mandate_exception_candidate_ids(
+    tenant_id: str | None,
     repositories: PortfolioMemorySourceRepositories,
     source_scan_limit: int,
 ) -> set[str]:
     if repositories.mandate_repository is None:
         return set()
+    if tenant_id is None:
+        raise ValueError("tenant_id is required when portfolio memory includes mandate sources")
     exceptions, _cursor = repositories.mandate_repository.list_monitoring_exceptions(
+        tenant_id=tenant_id,
         monitoring_run_id=None,
         mandate_id=None,
         portfolio_id=None,

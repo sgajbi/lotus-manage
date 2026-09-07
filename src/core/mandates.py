@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Optional
 
+from src.core.common.derived_identity import derived_identity
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientIncomeNeedsScheduleResponse,
@@ -482,15 +483,23 @@ def monitoring_exceptions_from_health(
     snapshot: DpmMandateHealthSnapshot,
     *,
     source_lineage: list[DpmSourceProductLineage],
+    tenant_id: str,
 ) -> list[DpmMonitoringException]:
     detected_at = snapshot.calculated_at
     exceptions: list[DpmMonitoringException] = []
     for reason in snapshot.top_reasons:
         exceptions.append(
             DpmMonitoringException(
-                exception_id=(
-                    f"me_{snapshot.as_of_date.strftime('%Y%m%d')}_"
-                    f"{snapshot.portfolio_id.lower()}_{reason.dimension.value.lower()}"
+                # Tenant-scoped and injective (issue #648). Without the
+                # tenant, two tenants assessing the same portfolio, date and
+                # dimension derive the same id, and the second write replaces
+                # the first's payload and state.
+                exception_id=derived_identity(
+                    "me",
+                    tenant_id,
+                    snapshot.as_of_date.isoformat(),
+                    snapshot.portfolio_id,
+                    reason.dimension.value,
                 ),
                 mandate_id=snapshot.mandate_id,
                 portfolio_id=snapshot.portfolio_id,

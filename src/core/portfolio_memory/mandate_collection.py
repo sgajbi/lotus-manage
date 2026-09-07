@@ -34,6 +34,7 @@ def mandate_memory_events(
             )
 
     exceptions, _cursor = mandate_repository.list_monitoring_exceptions(
+        tenant_id=tenant_id,
         monitoring_run_id=None,
         mandate_id=twin.mandate_id if twin is not None else None,
         portfolio_id=portfolio_id,

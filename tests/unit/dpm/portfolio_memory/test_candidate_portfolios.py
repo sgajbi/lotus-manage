@@ -102,7 +102,7 @@ def test_candidate_portfolio_source_helpers_preserve_family_boundaries() -> None
         "PB_MANUAL_001",
         "PB_MANUAL_002",
     }
-    assert _mandate_exception_candidate_ids(repositories, 100) == {PORTFOLIO_ID}
+    assert _mandate_exception_candidate_ids(TENANT_ID, repositories, 100) == {PORTFOLIO_ID}
     assert _campaign_definition_candidate_ids(TENANT_ID, repositories, 100) == {PORTFOLIO_ID}
     assert _pm_quality_candidate_ids(TENANT_ID, repositories, 100) == {
         PORTFOLIO_ID,

@@ -5,6 +5,7 @@ from typing import Literal, Optional
 
 from fastapi import Depends, Query
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import get_mandate_repository
 from src.api.routers.monitoring import router
 from src.api.services.mandate_service import get_command_center_summary
@@ -30,15 +31,11 @@ from src.core.mandates import DpmCommandCenterSummary
     },
 )
 async def read_command_center(
+    tenant_id: MandateTenantId,
     portfolio_manager_id: Optional[str] = Query(
         default=None,
         description="Optional portfolio-manager id filter captured on monitoring runs.",
         examples=["PM_SG_DPM_001"],
-    ),
-    tenant_id: Optional[str] = Query(
-        default=None,
-        description="Optional tenant filter captured on monitoring runs.",
-        examples=["default"],
     ),
     as_of_date: Optional[date] = Query(
         default=None,

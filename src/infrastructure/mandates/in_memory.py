@@ -62,7 +62,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         self._mandates_by_key: dict[tuple[str, str, str, date], DpmMandateDigitalTwin] = {}
         self._health_snapshots: dict[tuple[str, str], DpmMandateHealthSnapshot] = {}
         self._monitoring_runs: dict[str, DpmMonitoringRun] = {}
-        self._exceptions: dict[str, DpmMonitoringException] = {}
+        self._exceptions: dict[tuple[str, str], DpmMonitoringException] = {}
 
     def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin, *, tenant_id: str) -> None:
         with self._lock:
@@ -180,9 +180,11 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
             )
             return deepcopy(latest)
 
-    def save_monitoring_exception(self, exception: DpmMonitoringException) -> None:
+    def save_monitoring_exception(
+        self, exception: DpmMonitoringException, *, tenant_id: str
+    ) -> None:
         with self._lock:
-            self._exceptions[exception.exception_id] = deepcopy(exception)
+            self._exceptions[(tenant_id, exception.exception_id)] = deepcopy(exception)
 
     def save_monitoring_run(self, run: DpmMonitoringRun) -> None:
         with self._lock:
@@ -232,10 +234,11 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         state: Optional[str],
         limit: int,
         cursor: Optional[str],
+        tenant_id: str,
     ) -> tuple[list[DpmMonitoringException], Optional[str]]:
         with self._lock:
             rows = _filtered_monitoring_exceptions(
-                list(self._exceptions.values()),
+                [exception for key, exception in self._exceptions.items() if key[0] == tenant_id],
                 monitoring_run_id=monitoring_run_id,
                 mandate_id=mandate_id,
                 portfolio_id=portfolio_id,
@@ -254,9 +257,10 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         exception_id: str,
         resolved_at: datetime,
         resolution_reason: str,
+        tenant_id: str,
     ) -> Optional[DpmMonitoringException]:
         with self._lock:
-            exception = self._exceptions.get(exception_id)
+            exception = self._exceptions.get((tenant_id, exception_id))
             if exception is None:
                 return None
             resolved = exception.model_copy(
@@ -266,7 +270,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
                     "resolution_reason": resolution_reason,
                 }
             )
-            self._exceptions[exception_id] = resolved
+            self._exceptions[(tenant_id, exception_id)] = resolved
             return deepcopy(resolved)
 
     def purge_mandate_records_before(self, *, cutoff: datetime) -> int:
@@ -326,9 +330,9 @@ def _stale_monitoring_run_keys(
 
 
 def _stale_resolved_exception_keys(
-    exceptions: dict[str, DpmMonitoringException],
+    exceptions: dict[tuple[str, str], DpmMonitoringException],
     cutoff_utc: datetime,
-) -> list[str]:
+) -> list[tuple[str, str]]:
     return [
         key
         for key, exception in exceptions.items()

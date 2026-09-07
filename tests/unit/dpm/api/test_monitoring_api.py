@@ -144,7 +144,7 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
         run_id = run_response.json()["monitoring_run_id"]
         run_detail = client.get(f"/api/v1/dpm/monitoring/runs/{run_id}")
         exceptions_response = client.get(
-            f"/api/v1/dpm/exceptions?mandate_id={MANDATE_ID}&portfolio_id={PORTFOLIO_ID}"
+            f"/api/v1/dpm/exceptions?mandate_id={MANDATE_ID}&portfolio_id={PORTFOLIO_ID}&tenant_id=default"
         )
 
     assert run_response.status_code == 200
@@ -412,7 +412,8 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
                 severity=MonitoringSeverity.INFO,
                 reason_code="SOURCE_READINESS_INFO",
                 recommended_action=MandateRecommendedAction.FIX_SOURCE_DATA,
-            )
+            ),
+            tenant_id="default",
         )
         repository.save_monitoring_exception(
             DpmMonitoringException(
@@ -426,7 +427,8 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
                 severity=MonitoringSeverity.CRITICAL,
                 reason_code="SOURCE_READINESS_BLOCKED",
                 recommended_action=MandateRecommendedAction.FIX_SOURCE_DATA,
-            )
+            ),
+            tenant_id="default",
         )
         repository.save_monitoring_exception(
             DpmMonitoringException(
@@ -440,7 +442,8 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
                 severity=MonitoringSeverity.CRITICAL,
                 reason_code="UNRELATED_LATER_RUN",
                 recommended_action=MandateRecommendedAction.FIX_SOURCE_DATA,
-            )
+            ),
+            tenant_id="default",
         )
         command_center = client.get(
             "/api/v1/dpm/command-center"
@@ -571,13 +574,15 @@ def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:
             "/api/v1/dpm/monitoring/run-once",
             json={"mandate_ids": [MANDATE_ID], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
-        exception_id = client.get("/api/v1/dpm/exceptions").json()["items"][0]["exception_id"]
+        exception_id = client.get("/api/v1/dpm/exceptions?tenant_id=default").json()["items"][0][
+            "exception_id"
+        ]
         resolved = client.post(
-            f"/api/v1/dpm/exceptions/{exception_id}/resolve",
+            f"/api/v1/dpm/exceptions/{exception_id}/resolve?tenant_id=default",
             json={"resolution_reason": "PM_CONFIRMED_EXIT_REQUIRED"},
         )
         missing_exception = client.post(
-            "/api/v1/dpm/exceptions/UNKNOWN/resolve",
+            "/api/v1/dpm/exceptions/UNKNOWN/resolve?tenant_id=default",
             json={"resolution_reason": "NOT_FOUND"},
         )
 

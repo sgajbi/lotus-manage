@@ -437,6 +437,12 @@ class _FakeConnection:
                 and row["target_entity_id"] not in target_entities
             ]
             return _FakeCursor()
+        if "dpm_monitoring_exceptions" in sql and ("ALTER TABLE" in sql or "CREATE INDEX" in sql):
+            # Migration 0025 puts the tenant fence on monitoring
+            # exceptions (issue #648). This fake models a different
+            # table, so the statement is acknowledged here and proven
+            # for real in the mandate integration lane.
+            return _FakeCursor()
         raise AssertionError(f"Unexpected SQL: {sql}")
 
     def commit(self):
