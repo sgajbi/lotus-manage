@@ -3,12 +3,10 @@ from src.api.services.wave_creation import (
     create_wave_request_hash,
     promote_preview_to_created_wave,
 )
-from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_persistence import save_wave_or_raise
 from src.api.services.wave_preview import build_preview_wave
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository
-from src.core.waves.repository import DpmWaveIdempotencyConflictError
 
 
 def create_persisted_wave(
@@ -34,18 +32,15 @@ def create_persisted_wave(
         actor_id=actor_id,
         portfolios=portfolios,
     )
-    # The hash is compared here, not only stored on save. Looking up by the
-    # caller-chosen key alone served whichever wave claimed that key first, so
-    # a second tenant reusing the key was handed the first tenant's wave as a
-    # replay (issue #648). The hash carries the tenant, so a mismatch is a
-    # conflict rather than a replay.
-    try:
-        existing = wave_repository.get_wave_by_idempotency(
-            idempotency_key=idempotency_key,
-            tenant_id=tenant_id,
-        )
-    except DpmWaveIdempotencyConflictError as exc:
-        raise DpmWaveValidationError("WAVE_CREATE_CONFLICT", str(exc)) from exc
+    # Looking up by the caller-chosen key alone served whichever wave claimed
+    # that key first, so a second tenant reusing the key was handed the first
+    # tenant's wave as a replay (issue #648). The lookup is now tenant-scoped:
+    # another tenant's mapping is not found rather than found and refused,
+    # because refusing would disclose that some other tenant holds that key.
+    existing = wave_repository.get_wave_by_idempotency(
+        idempotency_key=idempotency_key,
+        tenant_id=tenant_id,
+    )
     if existing is not None:
         return existing, True
 
