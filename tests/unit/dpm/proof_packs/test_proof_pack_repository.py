@@ -79,6 +79,7 @@ def _proof_pack(reason: str = "Rebalance back to target."):
         result_json=result.model_dump(mode="json"),
     )
     return build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=run,
         created_by="pm_repo",
         reason=reason,

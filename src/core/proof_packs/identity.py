@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Any
 
+from src.core.common.derived_identity import derived_identity
 from src.core.construction.models import (
     ConstructionAlternative,
     ConstructionAlternativeSelection,
@@ -17,14 +18,30 @@ class ProofPackSourceValidationError(ValueError):
     pass
 
 
-def proof_pack_id_for_rebalance_run(*, rebalance_run_id: str) -> str:
-    return rebalance_run_id.replace("rr_", "dpp_", 1)
+def proof_pack_id_for_rebalance_run(*, rebalance_run_id: str, tenant_id: str) -> str:
+    """Derive a proof-pack id for a rebalance run, tenant included (issue #648).
+
+    The id is the replay key: find_replayable_proof_pack looks a pack up by it
+    and returns the existing one instead of generating. Without the tenant, a
+    second tenant using the same rebalance run is handed the FIRST tenant's
+    proof pack - evidence about another client's portfolio, returned as its
+    own and indistinguishable from a legitimate replay.
+    """
+
+    return derived_identity("dpp", tenant_id, rebalance_run_id)
 
 
 def proof_pack_id_for_selected_alternative(
-    *, alternative_set_id: str, selected_alternative_id: str
+    *, alternative_set_id: str, selected_alternative_id: str, tenant_id: str
 ) -> str:
-    return f"dpp_{alternative_set_id}_{selected_alternative_id}"
+    """The same, for a selected construction alternative.
+
+    Also injective: the previous form joined both identifiers with an
+    underscore, which either may legally contain, so two distinct pairs could
+    produce one id.
+    """
+
+    return derived_identity("dpp", tenant_id, alternative_set_id, selected_alternative_id)
 
 
 def resolve_proof_pack_correlation_id(
@@ -125,12 +142,14 @@ def proof_pack_id(
     run: DpmRunRecord | None,
     alternative_set: ConstructionAlternativeSet | None,
     selected_alternative: ConstructionAlternative | None,
+    tenant_id: str,
 ) -> str:
     candidate = candidate_proof_pack_id(
         source_type=source_type,
         run=run,
         alternative_set=alternative_set,
         selected_alternative=selected_alternative,
+        tenant_id=tenant_id,
     )
     if candidate is not None:
         return candidate
@@ -143,31 +162,37 @@ def candidate_proof_pack_id(
     run: DpmRunRecord | None,
     alternative_set: ConstructionAlternativeSet | None,
     selected_alternative: ConstructionAlternative | None,
+    tenant_id: str,
 ) -> str | None:
     if source_type == "REBALANCE_RUN":
-        return run_source_proof_pack_id(run)
+        return run_source_proof_pack_id(run, tenant_id=tenant_id)
     if source_type == "SELECTED_ALTERNATIVE":
         return selected_alternative_source_proof_pack_id(
             alternative_set=alternative_set,
             selected_alternative=selected_alternative,
+            tenant_id=tenant_id,
         )
     return None
 
 
-def run_source_proof_pack_id(run: DpmRunRecord | None) -> str | None:
+def run_source_proof_pack_id(run: DpmRunRecord | None, *, tenant_id: str) -> str | None:
     if run is None:
         return None
-    return proof_pack_id_for_rebalance_run(rebalance_run_id=run.rebalance_run_id)
+    return proof_pack_id_for_rebalance_run(
+        rebalance_run_id=run.rebalance_run_id, tenant_id=tenant_id
+    )
 
 
 def selected_alternative_source_proof_pack_id(
     *,
     alternative_set: ConstructionAlternativeSet | None,
     selected_alternative: ConstructionAlternative | None,
+    tenant_id: str,
 ) -> str | None:
     if alternative_set is None or selected_alternative is None:
         return None
     return proof_pack_id_for_selected_alternative(
         alternative_set_id=alternative_set.alternative_set_id,
         selected_alternative_id=selected_alternative.alternative_id,
+        tenant_id=tenant_id,
     )

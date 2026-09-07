@@ -189,8 +189,10 @@ def build_proof_pack_from_run(
     mandate_evidence_gap_codes: list[str] | None = None,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
+    tenant_id: str,
 ) -> DpmPreTradeProofPack:
     return _build_proof_pack(
+        tenant_id=tenant_id,
         source_type="REBALANCE_RUN",
         run=run,
         alternative_set=None,
@@ -225,6 +227,7 @@ def build_proof_pack_from_selected_alternative(
     mandate_evidence_gap_codes: list[str] | None = None,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
+    tenant_id: str,
 ) -> DpmPreTradeProofPack:
     selected = _selected_alternative_for_proof_pack(
         alternative_set=alternative_set,
@@ -232,6 +235,7 @@ def build_proof_pack_from_selected_alternative(
         selection=selection,
     )
     return _build_proof_pack(
+        tenant_id=tenant_id,
         source_type="SELECTED_ALTERNATIVE",
         run=run,
         alternative_set=alternative_set,
@@ -304,8 +308,10 @@ def _build_proof_pack(
     mandate_evidence_gap_codes: list[str],
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
+    tenant_id: str,
 ) -> DpmPreTradeProofPack:
     context = _proof_pack_build_context(
+        tenant_id=tenant_id,
         source_type=source_type,
         run=run,
         alternative_set=alternative_set,
@@ -395,6 +401,7 @@ def _proof_pack_build_context(
     mandate_twin: DpmMandateDigitalTwin | None,
     mandate_health: DpmMandateHealthSnapshot | None,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
+    tenant_id: str,
 ) -> _ProofPackBuildContext:
     resolved_created_at = created_at or datetime.now(timezone.utc)
     source_context = _proof_pack_source_context(
@@ -419,6 +426,7 @@ def _proof_pack_build_context(
             run=run,
             alternative_set=alternative_set,
             selected_alternative=selected_alternative,
+            tenant_id=tenant_id,
         ),
         portfolio_id=_resolve_portfolio_id(run=run, alternative_set=alternative_set),
         correlation_id=_resolve_proof_pack_correlation_id(

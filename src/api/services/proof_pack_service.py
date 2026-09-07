@@ -60,7 +60,9 @@ def generate_proof_pack_from_run(
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
     existing = find_replayable_proof_pack(
-        proof_pack_id=proof_pack_id_for_rebalance_run(rebalance_run_id=rebalance_run_id),
+        proof_pack_id=proof_pack_id_for_rebalance_run(
+            rebalance_run_id=rebalance_run_id, tenant_id=tenant_id
+        ),
         idempotency_key=idempotency_key,
         proof_pack_repository=proof_pack_repository,
     )
@@ -74,6 +76,7 @@ def generate_proof_pack_from_run(
         tenant_id=tenant_id,
     )
     proof_pack = build_run_proof_pack(
+        tenant_id=tenant_id,
         run=run,
         workflow_decisions=run_service.list_workflow_decision_records(
             rebalance_run_id=rebalance_run_id
@@ -113,6 +116,7 @@ def generate_proof_pack_from_selected_alternative(
         proof_pack_id=proof_pack_id_for_selected_alternative(
             alternative_set_id=alternative_set_id,
             selected_alternative_id=selected_alternative_id,
+            tenant_id=tenant_id,
         ),
         idempotency_key=idempotency_key,
         proof_pack_repository=proof_pack_repository,
@@ -132,6 +136,7 @@ def generate_proof_pack_from_selected_alternative(
         tenant_id=tenant_id,
     )
     proof_pack = build_selected_alternative_proof_pack(
+        tenant_id=tenant_id,
         selected_source=selected_source,
         selected_alternative_id=selected_alternative_id,
         actor_id=actor_id,

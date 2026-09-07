@@ -21,8 +21,10 @@ def build_run_proof_pack(
     mandate_id: str | None,
     mandate_evidence: ProofPackMandateEvidence,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
+    tenant_id: str,
 ) -> DpmPreTradeProofPack:
     return build_proof_pack_from_run(
+        tenant_id=tenant_id,
         run=run,
         created_by=actor_id,
         reason=reason,
@@ -46,8 +48,10 @@ def build_selected_alternative_proof_pack(
     mandate_id: str | None,
     mandate_evidence: ProofPackMandateEvidence,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
+    tenant_id: str,
 ) -> DpmPreTradeProofPack:
     return build_proof_pack_from_selected_alternative(
+        tenant_id=tenant_id,
         alternative_set=selected_source.alternative_set,
         selected_alternative_id=selected_alternative_id,
         run=selected_source.run,

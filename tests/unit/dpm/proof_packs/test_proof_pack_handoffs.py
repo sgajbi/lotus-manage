@@ -69,6 +69,7 @@ def _proof_pack():
         result_json=result.model_dump(mode="json"),
     )
     return build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=run,
         created_by="pm_handoff",
         reason="Rebalance back to target.",

@@ -1626,6 +1626,7 @@ def test_direct_run_proof_pack_generates_every_section_with_truthful_states() ->
         correlation_id="corr-workflow-proof-pack",
     )
     pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=run,
         created_by="pm_001",
         reason="Rebalance back to model after drift review.",
@@ -1660,6 +1661,7 @@ def test_direct_run_proof_pack_generates_every_section_with_truthful_states() ->
 
 def test_missing_mandate_identity_blocks_promotion_without_hiding_other_evidence() -> None:
     pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(),
         created_by="pm_001",
         reason="Rebalance back to model after drift review.",
@@ -1675,6 +1677,7 @@ def test_missing_mandate_identity_blocks_promotion_without_hiding_other_evidence
 
 def test_mandate_context_degrades_when_only_identifier_is_available() -> None:
     pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(),
         created_by="pm_001",
         reason="Rebalance back to model after drift review.",
@@ -1691,6 +1694,7 @@ def test_mandate_context_degrades_when_only_identifier_is_available() -> None:
 def test_mandate_context_degrades_when_health_snapshot_is_missing() -> None:
     mandate_twin = _mandate_twin()
     pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(),
         created_by="pm_001",
         reason="Rebalance back to model after drift review.",
@@ -1731,6 +1735,7 @@ def test_mandate_context_state_follows_health_and_source_readiness(
     )
 
     pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(),
         created_by="pm_001",
         reason="Rebalance back to model after drift review.",
@@ -1746,6 +1751,7 @@ def test_mandate_context_state_follows_health_and_source_readiness(
 def test_builder_covers_trade_tax_approval_and_defensive_source_edges() -> None:
     base_result = _ready_rebalance_result()
     no_intent_pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(result=base_result.model_copy(update={"intents": []})),
         created_by="pm_001",
         reason=None,
@@ -1753,6 +1759,7 @@ def test_builder_covers_trade_tax_approval_and_defensive_source_edges() -> None:
         mandate_id="mandate_001",
     )
     tax_pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(
             result=base_result.model_copy(
                 update={
@@ -1769,6 +1776,7 @@ def test_builder_covers_trade_tax_approval_and_defensive_source_edges() -> None:
         mandate_id="mandate_001",
     )
     pending_pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(result=base_result.model_copy(update={"status": "PENDING_REVIEW"})),
         created_by="pm_001",
         reason=None,
@@ -1776,6 +1784,7 @@ def test_builder_covers_trade_tax_approval_and_defensive_source_edges() -> None:
         mandate_id="mandate_001",
     )
     blocked_pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=_run_record(result=base_result.model_copy(update={"status": "BLOCKED"})),
         created_by="pm_001",
         reason=None,
@@ -1794,6 +1803,7 @@ def test_builder_covers_trade_tax_approval_and_defensive_source_edges() -> None:
         builder_module._as_of_date(run=None, alternative_set=None)
     with pytest.raises(ProofPackSourceValidationError, match="DPM_PROOF_PACK_SOURCE_MISSING"):
         builder_module._proof_pack_id(
+            tenant_id="tenant-test",
             source_type="REBALANCE_RUN",
             run=None,
             alternative_set=None,
@@ -1834,6 +1844,7 @@ def test_proof_pack_build_context_prefers_explicit_correlation_then_falls_back_t
     )
 
     explicit = builder_module._proof_pack_build_context(
+        tenant_id="tenant-test",
         source_type="REBALANCE_RUN",
         run=run,
         alternative_set=None,
@@ -1846,6 +1857,7 @@ def test_proof_pack_build_context_prefers_explicit_correlation_then_falls_back_t
         direct_regime_stress_context=None,
     )
     selected = builder_module._proof_pack_build_context(
+        tenant_id="tenant-test",
         source_type="REBALANCE_RUN",
         run=run,
         alternative_set=None,
@@ -1858,6 +1870,7 @@ def test_proof_pack_build_context_prefers_explicit_correlation_then_falls_back_t
         direct_regime_stress_context=None,
     )
     run_fallback = builder_module._proof_pack_build_context(
+        tenant_id="tenant-test",
         source_type="REBALANCE_RUN",
         run=run,
         alternative_set=None,
@@ -1937,6 +1950,7 @@ def test_proof_pack_build_context_attaches_direct_regime_source_hashes_and_refs(
     ).model_copy(update={"generated_at": CREATED_AT})
 
     context = builder_module._proof_pack_build_context(
+        tenant_id="tenant-test",
         source_type="SELECTED_ALTERNATIVE",
         run=_run_record(result=result),
         alternative_set=alternative_set,
@@ -1958,8 +1972,18 @@ def test_proof_pack_build_context_attaches_direct_regime_source_hashes_and_refs(
         ),
     )
 
-    assert context.proof_pack_id == (
-        f"dpp_{alternative_set.alternative_set_id}_{alternative.alternative_id}"
+    # The id is derived rather than concatenated (issue #648), so this asserts
+    # agreement with the canonical derivation and that the tenant separates it
+    # - the previous literal could not distinguish two tenants at all.
+    assert context.proof_pack_id == proof_pack_id_for_selected_alternative(
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=alternative.alternative_id,
+        tenant_id="tenant-test",
+    )
+    assert context.proof_pack_id != proof_pack_id_for_selected_alternative(
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=alternative.alternative_id,
+        tenant_id="tenant-other",
     )
     assert context.portfolio_id == "pf_proof_pack_1"
     assert context.source_hashes["regime_stress_context"].startswith("sha256:")
@@ -2145,8 +2169,8 @@ def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
         ),
     }
 
-    first = build_proof_pack_from_run(**kwargs)
-    second = build_proof_pack_from_run(**kwargs)
+    first = build_proof_pack_from_run(**kwargs, tenant_id="tenant-test")
+    second = build_proof_pack_from_run(**kwargs, tenant_id="tenant-test")
 
     assert first.content_hash == second.content_hash
     assert first.supportability.section_hashes == second.supportability.section_hashes
@@ -2156,6 +2180,7 @@ def test_rebalance_run_proof_pack_id_uses_stable_run_identity() -> None:
     run = _run_record()
 
     pack = build_proof_pack_from_run(
+        tenant_id="tenant-test",
         run=run,
         created_by="pm_001",
         reason="Rebalance back to model after drift review.",
@@ -2164,7 +2189,7 @@ def test_rebalance_run_proof_pack_id_uses_stable_run_identity() -> None:
     )
 
     assert pack.proof_pack_id == proof_pack_id_for_rebalance_run(
-        rebalance_run_id=run.rebalance_run_id
+        tenant_id="tenant-test", rebalance_run_id=run.rebalance_run_id
     )
 
 
@@ -2189,6 +2214,7 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
     )
 
     pack = build_proof_pack_from_selected_alternative(
+        tenant_id="tenant-test",
         alternative_set=alternative_set,
         selected_alternative_id=alternative.alternative_id,
         run=_run_record(result=result),
@@ -2202,6 +2228,7 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
     selected = _section(pack, "selected_alternative")
     assert pack.source_type == "SELECTED_ALTERNATIVE"
     assert pack.proof_pack_id == proof_pack_id_for_selected_alternative(
+        tenant_id="tenant-test",
         alternative_set_id=alternative_set.alternative_set_id,
         selected_alternative_id=alternative.alternative_id,
     )
@@ -2328,6 +2355,7 @@ def test_selected_alternative_proof_pack_attaches_source_owned_risk_and_performa
     ).model_copy(update={"generated_at": CREATED_AT})
 
     pack = build_proof_pack_from_selected_alternative(
+        tenant_id="tenant-test",
         alternative_set=alternative_set,
         selected_alternative_id=alternative.alternative_id,
         run=_run_record(result=result),
@@ -2415,6 +2443,7 @@ def test_selected_alternative_proof_pack_distinguishes_estimated_and_source_owne
     ).model_copy(update={"generated_at": CREATED_AT})
 
     pack = build_proof_pack_from_selected_alternative(
+        tenant_id="tenant-test",
         alternative_set=alternative_set,
         selected_alternative_id=alternative.alternative_id,
         run=_run_record(result=result),
@@ -2519,6 +2548,7 @@ def test_selected_alternative_proof_pack_preserves_restriction_and_sustainabilit
     ).model_copy(update={"generated_at": CREATED_AT})
 
     pack = build_proof_pack_from_selected_alternative(
+        tenant_id="tenant-test",
         alternative_set=alternative_set,
         selected_alternative_id=alternative.alternative_id,
         run=_run_record(result=result),
@@ -2596,6 +2626,7 @@ def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source()
     ).model_copy(update={"generated_at": CREATED_AT})
 
     pack = build_proof_pack_from_selected_alternative(
+        tenant_id="tenant-test",
         alternative_set=alternative_set,
         selected_alternative_id=alternative.alternative_id,
         run=_run_record(result=result),
@@ -2662,6 +2693,7 @@ def test_selected_alternative_proof_pack_accepts_direct_regime_scenario_pack_sou
     ).model_copy(update={"generated_at": CREATED_AT})
 
     pack = build_proof_pack_from_selected_alternative(
+        tenant_id="tenant-test",
         alternative_set=alternative_set,
         selected_alternative_id=alternative.alternative_id,
         run=_run_record(result=result),
@@ -3236,6 +3268,7 @@ def test_selected_alternative_builder_rejects_unknown_selection() -> None:
 
     with pytest.raises(ProofPackSourceValidationError, match="DPM_SELECTED_ALTERNATIVE_NOT_FOUND"):
         build_proof_pack_from_selected_alternative(
+            tenant_id="tenant-test",
             alternative_set=alternative_set,
             selected_alternative_id="missing",
             run=_run_record(result=result),
@@ -3261,6 +3294,7 @@ def test_selected_alternative_builder_rejects_mismatched_selection_records() -> 
         match="DPM_SELECTED_ALTERNATIVE_SELECTION_MISMATCH",
     ):
         build_proof_pack_from_selected_alternative(
+            tenant_id="tenant-test",
             alternative_set=alternative_set,
             selected_alternative_id=alternative.alternative_id,
             run=_run_record(result=result),
@@ -3282,6 +3316,7 @@ def test_selected_alternative_builder_rejects_mismatched_selection_records() -> 
         match="DPM_SELECTED_ALTERNATIVE_SET_MISMATCH",
     ):
         build_proof_pack_from_selected_alternative(
+            tenant_id="tenant-test",
             alternative_set=alternative_set,
             selected_alternative_id=alternative.alternative_id,
             run=_run_record(result=result),
