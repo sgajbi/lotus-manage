@@ -24,6 +24,7 @@ def create_persisted_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     request_hash = create_wave_request_hash(
+        tenant_id=tenant_id,
         trigger_type=trigger_type,
         trigger_id=trigger_id,
         rationale=rationale,

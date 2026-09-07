@@ -53,6 +53,7 @@ def test_create_wave_request_hash_uses_canonical_create_fields() -> None:
     portfolios = [{"portfolio_id": "PB_SG_CREATE"}]
 
     digest = create_wave_request_hash(
+        tenant_id="tenant-test",
         trigger_type="EXPLICIT_PORTFOLIO_LIST",
         trigger_id="manual-create",
         rationale="Create deterministic wave.",
@@ -63,6 +64,7 @@ def test_create_wave_request_hash_uses_canonical_create_fields() -> None:
 
     assert digest == request_hash(
         {
+            "tenant_id": "tenant-test",
             "trigger_type": "EXPLICIT_PORTFOLIO_LIST",
             "trigger_id": "manual-create",
             "rationale": "Create deterministic wave.",
@@ -112,3 +114,33 @@ def test_wave_creation_exports_only_creation_helpers() -> None:
         "create_wave_request_hash",
         "promote_preview_to_created_wave",
     ]
+
+
+def test_two_tenants_reusing_one_idempotency_key_do_not_replay_each_other() -> None:
+    """The cross-tenant replay this hash exists to prevent (issue #648).
+
+    Idempotency keys are caller-chosen, so two tenants can present the same
+    one. If the hash omitted the tenant, the second tenant's identical request
+    would match the first's stored hash and be served as a REPLAY - returning
+    the other tenant's wave as its own, which is indistinguishable from a
+    legitimate retry.
+
+    With the tenant in the hash the digests differ, so the reuse surfaces as an
+    idempotency conflict instead of a silent cross-tenant read.
+    """
+
+    request = {
+        "trigger_type": "EXPLICIT_PORTFOLIO_LIST",
+        "trigger_id": "manual-create",
+        "rationale": "Create deterministic wave.",
+        "as_of_date": "2026-05-03",
+        "actor_id": "pm_001",
+        "portfolios": [{"portfolio_id": "PB_SG_CREATE"}],
+    }
+
+    alpha = create_wave_request_hash(tenant_id="tenant-alpha", **request)
+    beta = create_wave_request_hash(tenant_id="tenant-beta", **request)
+
+    assert alpha != beta
+    # Still deterministic within a tenant, so a genuine retry still replays.
+    assert alpha == create_wave_request_hash(tenant_id="tenant-alpha", **request)
