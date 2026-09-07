@@ -26,6 +26,7 @@ def source_check_persisted_wave(
     prepared = prepare_wave_transition(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         replay_states={"SOURCE_CHECKED"},
         allowed_states={"CREATED"},
         error_code="DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
@@ -43,6 +44,7 @@ def source_check_persisted_wave(
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         source_wave=prepared.wave,
         transitioned_wave=checked,
     )
@@ -59,11 +61,13 @@ def simulate_persisted_wave(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     risk_authority_client: RiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     prepared = prepare_wave_transition(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         replay_states={"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"},
         allowed_states={"SOURCE_CHECKED"},
         error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
@@ -84,6 +88,7 @@ def simulate_persisted_wave(
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         source_wave=prepared.wave,
         transitioned_wave=completed,
     )

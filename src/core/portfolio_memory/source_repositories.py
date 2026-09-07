@@ -78,6 +78,24 @@ def require_mandate_tenant_id(
     return tenant_id.strip()
 
 
+def require_wave_tenant_id(
+    *,
+    tenant_id: str | None,
+    repositories: PortfolioMemorySourceRepositories,
+) -> str:
+    """Waves are tenant-scoped, so a wave-sourced scan must name its tenant.
+
+    Mirrors require_mandate_tenant_id rather than inventing a second
+    convention. Unlike that one this never returns None: the wave repository is
+    not optional on this path, and returning None would reintroduce the
+    unscoped list_waves that issue #677 removes.
+    """
+
+    if tenant_id is None or not tenant_id.strip():
+        raise ValueError("tenant_id is required when portfolio memory includes wave sources")
+    return tenant_id.strip()
+
+
 def build_portfolio_memory_source_repositories(
     *,
     proof_pack_repository: DpmProofPackRepository,

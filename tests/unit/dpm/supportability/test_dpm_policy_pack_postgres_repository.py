@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import src.infrastructure.dpm_policy_packs.postgres as postgres_module
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.dpm_policy_packs.postgres import PostgresDpmPolicyPackRepository
+from tests.support.postgres_migration_sql import is_migration_ddl
 
 
 class _FakeCursor:
@@ -83,13 +84,7 @@ class _FakeConnection:
             # Migration 0025 fences monitoring exceptions by tenant
             # (issue #648); this fake models a different table.
             return _FakeCursor()
-        # Schema statements from apply_postgres_migrations. Migration files
-        # open with a comment block, so a startswith check on the keyword
-        # never matches - look for the statement keyword anywhere.
-        if any(
-            keyword in sql
-            for keyword in ("CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "schema_migrations")
-        ):
+        if is_migration_ddl(sql):
             return _FakeCursor()
         raise AssertionError(f"Unhandled SQL: {sql}")
 

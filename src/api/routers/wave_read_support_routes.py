@@ -4,7 +4,6 @@ import logging
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
@@ -17,7 +16,7 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveProofPackPostureResponse,
     DpmWaveSupportabilityResponse,
 )
-from src.api.routers.wave_route_parameters import WaveIdPath
+from src.api.routers.wave_route_parameters import WaveIdPath, WaveTenantIdHeader
 from src.api.routers.wave_supportability_http import get_wave_supportability_response
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
@@ -46,11 +45,13 @@ logger = logging.getLogger(__name__)
 )
 def get_wave_proof_pack_posture(
     wave_id: WaveIdPath,
+    x_tenant_id: WaveTenantIdHeader,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveProofPackPostureResponse:
     return get_wave_proof_pack_posture_response(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
     )
 
 
@@ -78,8 +79,12 @@ def get_wave_proof_pack_posture(
     },
 )
 def get_wave_report_input(
-    tenant_id: MandateTenantId,
     wave_id: WaveIdPath,
+    # One selector per aggregate (issue #677): every wave route now takes the
+    # wave tenant header. This route previously took a tenant_id QUERY param
+    # while the wave lifecycle took the header - two mechanisms on one
+    # aggregate, which is the confusion #676 already had to fix once.
+    x_tenant_id: WaveTenantIdHeader,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
     outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
@@ -88,10 +93,10 @@ def get_wave_report_input(
     return get_wave_report_input_response(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
         proof_pack_repository=proof_pack_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
-        tenant_id=tenant_id,
     )
 
 
@@ -113,10 +118,12 @@ def get_wave_report_input(
 )
 def get_wave_supportability(
     wave_id: WaveIdPath,
+    x_tenant_id: WaveTenantIdHeader,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveSupportabilityResponse:
     return get_wave_supportability_response(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
         logger=logger,
     )

@@ -21,6 +21,7 @@ from src.core.waves import (
 from src.infrastructure.waves import InMemoryDpmWaveRepository
 from src.infrastructure.waves import in_memory as in_memory_module
 from src.infrastructure.waves.postgres import PostgresDpmWaveRepository
+from tests.support.postgres_migration_sql import is_migration_ddl
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -131,11 +132,11 @@ def test_in_memory_wave_repository_is_defensive_and_version_guarded() -> None:
         wave=wave, idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
     )
 
-    loaded = repository.get_wave(wave_id=wave.wave_id)
+    loaded = repository.get_wave(wave_id=wave.wave_id, tenant_id="tenant-test")
     assert loaded is not None
     loaded.items[0].state = "SOURCE_BLOCKED"
 
-    reloaded = repository.get_wave(wave_id=wave.wave_id)
+    reloaded = repository.get_wave(wave_id=wave.wave_id, tenant_id="tenant-test")
     assert reloaded is not None
     assert reloaded.items[0].state == "CANDIDATE"
 
@@ -144,11 +145,11 @@ def test_in_memory_wave_repository_is_defensive_and_version_guarded() -> None:
         to_state="PREVIEWED",
         event=_event("DRAFT", "PREVIEWED"),
     )
-    repository.update_wave(wave=updated, expected_version=1)
-    assert repository.get_wave(wave_id=wave.wave_id).version == 2  # type: ignore[union-attr]
+    repository.update_wave(wave=updated, expected_version=1, tenant_id="tenant-test")
+    assert repository.get_wave(wave_id=wave.wave_id, tenant_id="tenant-test").version == 2  # type: ignore[union-attr]
 
     with pytest.raises(DpmWaveVersionConflictError):
-        repository.update_wave(wave=updated, expected_version=1)
+        repository.update_wave(wave=updated, expected_version=1, tenant_id="tenant-test")
 
 
 def test_in_memory_wave_repository_enforces_idempotency_conflict() -> None:
@@ -189,7 +190,7 @@ def test_in_memory_wave_repository_replays_idempotent_wave() -> None:
 
     replay = repository.get_wave_by_idempotency(idempotency_key="idem-1", tenant_id="tenant-test")
 
-    assert replay == wave
+    assert replay == wave.model_copy(update={"tenant_id": "tenant-test"})
 
 
 def test_in_memory_wave_write_helpers_preserve_idempotency_and_copy_contract() -> None:
@@ -257,6 +258,7 @@ def test_in_memory_wave_repository_lists_filtered_sorted_defensive_pages() -> No
         as_of_date="2026-05-03",
         limit=1,
         offset=0,
+        tenant_id="tenant-test",
     )
     second_page = repository.list_waves(
         state="DRAFT",
@@ -264,12 +266,16 @@ def test_in_memory_wave_repository_lists_filtered_sorted_defensive_pages() -> No
         as_of_date="2026-05-03",
         limit=1,
         offset=1,
+        tenant_id="tenant-test",
     )
 
     assert [wave.wave_id for wave in first_page] == ["dwv_newer"]
     assert [wave.wave_id for wave in second_page] == ["dwv_older"]
     first_page[0].items[0].state = "SOURCE_BLOCKED"
-    assert repository.get_wave(wave_id="dwv_newer").items[0].state == "CANDIDATE"  # type: ignore[union-attr]
+    assert (
+        repository.get_wave(wave_id="dwv_newer", tenant_id="tenant-test").items[0].state
+        == "CANDIDATE"
+    )  # type: ignore[union-attr]
 
 
 def test_wave_postgres_migration_declares_persistence_tables() -> None:
@@ -430,13 +436,7 @@ class _FakeWaveConnection:
                 }
             )
             return _FakeCursor(rowcount=1)
-        # Schema statements from apply_postgres_migrations. Migration files
-        # open with a comment block, so a startswith check on the keyword
-        # never matches - look for the statement keyword anywhere.
-        if any(
-            keyword in sql
-            for keyword in ("CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "schema_migrations")
-        ):
+        if is_migration_ddl(sql):
             return _FakeCursor()
         raise AssertionError(f"Unexpected SQL: {sql}")
 
@@ -511,19 +511,25 @@ def test_postgres_wave_repository_roundtrip_idempotency_and_update() -> None:
     repository.save_wave(
         wave=wave, idempotency_key="idem-1", request_hash="hash-1", tenant_id="tenant-test"
     )
-    loaded = repository.get_wave(wave_id=wave.wave_id)
+    loaded = repository.get_wave(wave_id=wave.wave_id, tenant_id="tenant-test")
     replay = repository.get_wave_by_idempotency(idempotency_key="idem-1", tenant_id="tenant-test")
     updated = apply_wave_transition(
         wave=wave,
         to_state="CREATED",
         event=_event("PREVIEWED", "CREATED"),
     )
-    repository.update_wave(wave=updated, expected_version=2)
+    repository.update_wave(wave=updated, expected_version=2, tenant_id="tenant-test")
 
-    assert loaded == wave
-    assert replay == wave
-    assert repository.get_wave(wave_id=wave.wave_id) == updated
-    assert repository.list_waves(limit=10, offset=0) == [updated]
+    # Storage stamps the owning tenant, so a read never equals the unstamped
+    # local value. Comparing against the stamped wave keeps the round-trip
+    # assertion intact and additionally pins that the stamp is what came back.
+    owned = wave.model_copy(update={"tenant_id": "tenant-test"})
+    owned_update = updated.model_copy(update={"tenant_id": "tenant-test"})
+
+    assert loaded == owned
+    assert replay == owned
+    assert repository.get_wave(wave_id=wave.wave_id, tenant_id="tenant-test") == owned_update
+    assert repository.list_waves(limit=10, offset=0, tenant_id="tenant-test") == [owned_update]
     assert sorted(fake.events) == ["evt-draft-previewed", "evt-previewed-created"]
     assert fake.commits == 2
     assert fake.closed == 6
@@ -549,7 +555,7 @@ def test_postgres_wave_repository_conflicts() -> None:
             tenant_id="tenant-test",
         )
     with pytest.raises(DpmWaveVersionConflictError):
-        repository.update_wave(wave=wave, expected_version=99)
+        repository.update_wave(wave=wave, expected_version=99, tenant_id="tenant-test")
 
 
 def test_postgres_wave_payload_accepts_non_string_json() -> None:
@@ -561,13 +567,13 @@ def test_postgres_wave_payload_accepts_non_string_json() -> None:
     )
     fake.waves[wave.wave_id]["wave_json"] = wave.model_dump(mode="json")
 
-    assert repository.get_wave(wave_id=wave.wave_id) == wave
+    assert repository.get_wave(wave_id=wave.wave_id, tenant_id="tenant-test") == wave
 
 
 def test_postgres_wave_repository_returns_none_for_missing_reads() -> None:
     repository = _postgres_repository(_FakeWaveConnection())
 
-    assert repository.get_wave(wave_id="dwv_missing") is None
+    assert repository.get_wave(wave_id="dwv_missing", tenant_id="tenant-test") is None
     assert (
         repository.get_wave_by_idempotency(idempotency_key="idem-missing", tenant_id="tenant-test")
         is None
@@ -588,12 +594,16 @@ def test_postgres_wave_repository_list_applies_durable_filters() -> None:
         as_of_date="2026-05-03",
         limit=25,
         offset=5,
+        tenant_id="tenant-test",
     )
 
     query, args = fake.queries[-1]
     assert listed == []
-    assert "WHERE state = %s AND trigger_type = %s AND as_of_date = %s" in query
-    assert args == ("DRAFT", "EXPLICIT_PORTFOLIO_LIST", "2026-05-03", 25, 5)
+    # The tenant leads the WHERE clause rather than being appended, so the
+    # index on (tenant_id, ...) is usable and no filter combination can produce
+    # a plan that scans another tenant's rows before discarding them.
+    assert "WHERE tenant_id = %s AND state = %s AND trigger_type = %s AND as_of_date = %s" in query
+    assert args == ("tenant-test", "DRAFT", "EXPLICIT_PORTFOLIO_LIST", "2026-05-03", 25, 5)
 
 
 def test_postgres_wave_payload_serializes_driver_native_json_values() -> None:

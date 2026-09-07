@@ -34,6 +34,7 @@ def select_persisted_wave_item_alternative(
     prepared = prepare_wave_transition(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         replay_states=set(),
         allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
         error_code="DPM_WAVE_SELECTION_INVALID_STATE",
@@ -68,6 +69,7 @@ def select_persisted_wave_item_alternative(
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         source_wave=prepared.wave,
         transitioned_wave=updated,
     )

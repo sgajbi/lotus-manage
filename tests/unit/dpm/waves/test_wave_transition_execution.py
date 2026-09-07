@@ -16,12 +16,12 @@ class _WaveRepository:
         self.updated_wave: DpmRebalanceWave | None = None
         self.expected_version: int | None = None
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         if wave_id == self.wave.wave_id:
             return self.wave
         return None
 
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
         self.updated_wave = wave
         self.expected_version = expected_version
 
@@ -44,6 +44,7 @@ def test_prepare_wave_transition_returns_replayed_wave_without_state_guard() -> 
         allowed_states={"SOURCE_CHECKED"},
         error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
         action_phrase="be simulated",
+        tenant_id="tenant-sg",
     )
 
     assert prepared == PreparedWaveTransition(wave=wave, replayed=True)
@@ -59,6 +60,7 @@ def test_prepare_wave_transition_requires_allowed_state_for_new_transition() -> 
         allowed_states={"SOURCE_CHECKED"},
         error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
         action_phrase="be simulated",
+        tenant_id="tenant-sg",
     )
 
     assert prepared == PreparedWaveTransition(wave=wave, replayed=False)
@@ -74,6 +76,7 @@ def test_prepare_wave_transition_supports_non_replayable_allowed_transition() ->
         allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
         error_code="DPM_WAVE_SELECTION_INVALID_STATE",
         action_phrase="record alternative selection",
+        tenant_id="tenant-sg",
     )
 
     assert prepared == PreparedWaveTransition(wave=wave, replayed=False)
@@ -90,6 +93,7 @@ def test_prepare_wave_transition_with_empty_replay_states_requires_allowed_state
             allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
             error_code="DPM_WAVE_SELECTION_INVALID_STATE",
             action_phrase="record alternative selection",
+            tenant_id="tenant-sg",
         )
 
     assert exc_info.value.code == "DPM_WAVE_SELECTION_INVALID_STATE"
@@ -105,6 +109,7 @@ def test_prepare_wave_transition_supports_explicitly_unguarded_transition() -> N
         allowed_states=None,
         error_code="DPM_WAVE_CANCEL_INVALID_STATE",
         action_phrase="be cancelled",
+        tenant_id="tenant-sg",
     )
 
     assert prepared == PreparedWaveTransition(wave=wave, replayed=False)
@@ -121,6 +126,7 @@ def test_prepare_wave_transition_preserves_state_validation_error() -> None:
             allowed_states={"SOURCE_CHECKED"},
             error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
             action_phrase="be simulated",
+            tenant_id="tenant-sg",
         )
 
     assert exc_info.value.code == "DPM_WAVE_SIMULATION_INVALID_STATE"
@@ -135,6 +141,7 @@ def test_persist_transitioned_wave_uses_source_wave_version_for_optimistic_updat
         wave_repository=repository,  # type: ignore[arg-type]
         source_wave=source_wave,
         transitioned_wave=transitioned_wave,
+        tenant_id="tenant-sg",
     )
 
     assert repository.updated_wave is transitioned_wave

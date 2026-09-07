@@ -111,6 +111,7 @@ def simulate_wave(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     risk_authority_client: RiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_preparation_commands.simulate_persisted_wave(
@@ -122,6 +123,7 @@ def simulate_wave(
         construction_repository=construction_repository,
         run_service=run_service,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         risk_authority_client=risk_authority_client,
     )
 
@@ -169,6 +171,7 @@ def approve_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_lifecycle_commands.approve_persisted_wave(
         wave_id=wave_id,
@@ -177,6 +180,7 @@ def approve_wave(
         comment=comment,
         correlation_id=correlation_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -188,6 +192,7 @@ def stage_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_lifecycle_commands.stage_persisted_wave(
         wave_id=wave_id,
@@ -196,6 +201,7 @@ def stage_wave(
         comment=comment,
         correlation_id=correlation_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -207,6 +213,7 @@ def handoff_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_lifecycle_commands.handoff_persisted_wave(
         wave_id=wave_id,
@@ -215,6 +222,7 @@ def handoff_wave(
         comment=comment,
         correlation_id=correlation_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -226,6 +234,7 @@ def cancel_wave(
     comment: str | None,
     correlation_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_lifecycle_commands.cancel_persisted_wave(
         wave_id=wave_id,
@@ -234,6 +243,7 @@ def cancel_wave(
         comment=comment,
         correlation_id=correlation_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -245,16 +255,19 @@ def wave_supportability(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
     return wave_read_model_queries.wave_supportability_for_id(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
 def search_waves(
     *,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     state: str | None = None,
     trigger_type: str | None = None,
     as_of_date: str | None = None,
@@ -264,6 +277,7 @@ def search_waves(
 ) -> list[dict[str, object]]:
     return wave_search.search_wave_summaries(
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         state=state,
         trigger_type=trigger_type,
         as_of_date=as_of_date,
@@ -277,10 +291,12 @@ def retrieve_wave_detail(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
     return wave_read_model_queries.wave_detail_for_id(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -288,10 +304,12 @@ def list_wave_items(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
     return wave_read_model_queries.wave_items_for_id(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -299,10 +317,12 @@ def proof_pack_posture(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
 ) -> dict[str, object]:
     return wave_read_model_queries.wave_proof_pack_posture_for_id(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
     )
 
 
@@ -310,16 +330,20 @@ def get_report_input(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    # Required, not `str | None = None`. An optional tenant on a fenced read
+    # defaults to "unscoped", which is the state issue #677 removes - and an
+    # optional parameter is exactly how the unscoped path survived being
+    # noticed.
+    tenant_id: str,
     proof_pack_repository: DpmProofPackRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
-    tenant_id: str | None = None,
 ) -> DpmWaveReportInput:
     return wave_read_model_queries.wave_report_input_for_id(
         wave_id=wave_id,
         wave_repository=wave_repository,
+        tenant_id=tenant_id,
         proof_pack_repository=proof_pack_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
-        tenant_id=tenant_id,
     )

@@ -9,6 +9,7 @@ from src.core.portfolio_memory.source_repositories import (
     build_portfolio_memory_source_repositories,
     require_campaign_definition_tenant_id,
     require_mandate_tenant_id,
+    require_wave_tenant_id,
     require_pm_quality_tenant_id,
 )
 from src.core.portfolio_memory.search_request import validate_portfolio_memory_source_scan_limit
@@ -55,7 +56,13 @@ def candidate_portfolio_ids_from_sources(
     )
     candidates = _explicit_candidate_ids(portfolio_ids)
     candidates.update(_proof_pack_candidate_ids(repositories, source_scan_limit))
-    candidates.update(_wave_candidate_ids(repositories, source_scan_limit))
+    candidates.update(
+        _wave_candidate_ids(
+            require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories),
+            repositories,
+            source_scan_limit,
+        )
+    )
     candidates.update(_outcome_review_candidate_ids(repositories, source_scan_limit))
     candidates.update(
         _mandate_exception_candidate_ids(
@@ -98,12 +105,15 @@ def _proof_pack_candidate_ids(
 
 
 def _wave_candidate_ids(
+    tenant_id: str,
     repositories: PortfolioMemorySourceRepositories,
     source_scan_limit: int,
 ) -> set[str]:
     return {
         item.portfolio_id
-        for wave in repositories.wave_repository.list_waves(limit=source_scan_limit)
+        for wave in repositories.wave_repository.list_waves(
+            tenant_id=tenant_id, limit=source_scan_limit
+        )
         for item in wave.items
     }
 

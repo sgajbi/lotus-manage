@@ -5,7 +5,11 @@ from fastapi import APIRouter, Depends, status
 from src.api.dependencies import get_wave_repository
 from src.api.routers.wave_request_models import DpmWaveWorkflowCommandRequest
 from src.api.routers.wave_response_contracts import DpmWaveResponse
-from src.api.routers.wave_route_parameters import WaveCorrelationIdHeader, WaveIdPath
+from src.api.routers.wave_route_parameters import (
+    WaveCorrelationIdHeader,
+    WaveIdPath,
+    WaveTenantIdHeader,
+)
 from src.api.routers.wave_workflow_command_http import run_wave_workflow_command_response
 from src.api.services import wave_service
 from src.core.waves import DpmWaveRepository
@@ -35,6 +39,7 @@ router = APIRouter()
 def approve_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
+    x_tenant_id: WaveTenantIdHeader,
     x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
@@ -44,6 +49,7 @@ def approve_wave(
         request=request,
         correlation_id=x_correlation_id or f"corr_wave_approve_{wave_id}",
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
     )
 
 
@@ -68,6 +74,7 @@ def approve_wave(
 def stage_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
+    x_tenant_id: WaveTenantIdHeader,
     x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
@@ -77,6 +84,7 @@ def stage_wave(
         request=request,
         correlation_id=x_correlation_id or f"corr_wave_stage_{wave_id}",
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
     )
 
 
@@ -100,6 +108,7 @@ def stage_wave(
 def handoff_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
+    x_tenant_id: WaveTenantIdHeader,
     x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
@@ -109,6 +118,7 @@ def handoff_wave(
         request=request,
         correlation_id=x_correlation_id or f"corr_wave_handoff_{wave_id}",
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
     )
 
 
@@ -135,6 +145,7 @@ def handoff_wave(
 def cancel_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
+    x_tenant_id: WaveTenantIdHeader,
     x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
@@ -144,4 +155,5 @@ def cancel_wave(
         request=request,
         correlation_id=x_correlation_id or f"corr_wave_cancel_{wave_id}",
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
     )

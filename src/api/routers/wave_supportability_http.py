@@ -16,12 +16,14 @@ def get_wave_supportability_response(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     logger: logging.Logger,
 ) -> DpmWaveSupportabilityResponse:
     try:
         payload = wave_service.wave_supportability(
             wave_id=wave_id,
             wave_repository=wave_repository,
+            tenant_id=tenant_id,
         )
     except wave_service.DpmWaveLookupError as exc:
         record_wave_supportability(

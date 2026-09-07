@@ -50,7 +50,11 @@ class PostgresDpmWaveRepository:
                 idempotency_key=mapping_key,
                 request_hash=request_hash,
             )
-            _insert_wave_row(connection=connection, wave=wave)
+            # Stamped from the argument so the stored record cannot
+            # disagree with the tenant the caller claimed.
+            _insert_wave_row(
+                connection=connection, wave=wave.model_copy(update={"tenant_id": tenant_id})
+            )
             _insert_idempotency_marker(
                 connection=connection,
                 wave=wave,
@@ -61,15 +65,16 @@ class PostgresDpmWaveRepository:
             _insert_new_events(connection=connection, wave=wave)
             connection.commit()
 
-    def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
+    def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         with closing(self._connect()) as connection:
             row = connection.execute(
                 """
                 SELECT wave_json
                 FROM dpm_rebalance_waves
                 WHERE wave_id = %s
+                  AND tenant_id = %s
                 """,
-                (wave_id,),
+                (wave_id, tenant_id),
             ).fetchone()
         if row is None:
             return None
@@ -101,14 +106,17 @@ class PostgresDpmWaveRepository:
     def list_waves(
         self,
         *,
+        tenant_id: str,
         state: str | None = None,
         trigger_type: str | None = None,
         as_of_date: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmRebalanceWave]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        # Seeded rather than appended conditionally: the tenant predicate is not
+        # one of the optional filters and must never be absent (issue #677).
+        clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         if state is not None:
             clauses.append("state = %s")
             args.append(state)
@@ -118,7 +126,7 @@ class PostgresDpmWaveRepository:
         if as_of_date is not None:
             clauses.append("as_of_date = %s")
             args.append(as_of_date)
-        where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        where_clause = f"WHERE {' AND '.join(clauses)}"
         args.extend([limit, offset])
         with closing(self._connect()) as connection:
             rows = connection.execute(
@@ -133,7 +141,13 @@ class PostgresDpmWaveRepository:
             ).fetchall()
         return [load_model_json(DpmRebalanceWave, _payload(row)) for row in rows]
 
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
+        # The tenant rides in the UPDATE predicate rather than a prior SELECT:
+        # a check-then-write leaves a window, and this is the write half of the
+        # transition path. A foreign wave matches no row and raises the same
+        # version-conflict error as a stale version - indistinguishable on
+        # purpose, so a caller cannot probe for wave ids it does not own.
+        stamped = wave.model_copy(update={"tenant_id": tenant_id})
         with closing(self._connect()) as connection:
             result = connection.execute(
                 """
@@ -144,19 +158,21 @@ class PostgresDpmWaveRepository:
                     retention_policy = %s
                 WHERE wave_id = %s
                 AND version = %s
+                AND tenant_id = %s
                 """,
                 (
-                    wave.state,
-                    wave.version,
-                    dump_model_json(wave),
-                    wave.retention_policy,
-                    wave.wave_id,
+                    stamped.state,
+                    stamped.version,
+                    dump_model_json(stamped),
+                    stamped.retention_policy,
+                    stamped.wave_id,
                     expected_version,
+                    tenant_id,
                 ),
             )
             if result.rowcount != 1:
                 raise DpmWaveVersionConflictError("DPM_WAVE_VERSION_CONFLICT")
-            _insert_new_events(connection=connection, wave=wave)
+            _insert_new_events(connection=connection, wave=stamped)
             connection.commit()
 
     def _connect(self) -> Any:
@@ -185,6 +201,9 @@ def _wave_row_args(wave: DpmRebalanceWave) -> tuple[Any, ...]:
         wave.version,
         dump_model_json(wave),
         wave.retention_policy,
+        # Persisted as its own column, not only inside wave_json, so the fence
+        # is an indexable predicate rather than a JSON extraction (issue #677).
+        wave.tenant_id,
     )
 
 
@@ -224,8 +243,9 @@ def _insert_wave_row(*, connection: Any, wave: DpmRebalanceWave) -> None:
             correlation_id,
             version,
             wave_json,
-            retention_policy
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            retention_policy,
+            tenant_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (wave_id) DO NOTHING
         """,
         _wave_row_args(wave),

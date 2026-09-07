@@ -44,6 +44,7 @@ from src.core.portfolio_memory.source_repositories import (
     require_campaign_definition_tenant_id as _require_campaign_definition_tenant_id,
     require_mandate_tenant_id as _require_mandate_tenant_id,
     require_pm_quality_tenant_id as _require_pm_quality_tenant_id,
+    require_wave_tenant_id,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
@@ -91,7 +92,7 @@ def _require_tenant_id_for_tenant_scoped_sources(
     *,
     tenant_id: str | None,
     repositories: PortfolioMemorySourceRepositories,
-) -> str | None:
+) -> str:
     pm_quality_tenant_id = _require_pm_quality_tenant_id(
         tenant_id=tenant_id,
         repositories=repositories,
@@ -110,10 +111,19 @@ def _require_tenant_id_for_tenant_scoped_sources(
     # the other families, found irrelevant to them, and discarded as None -
     # which then reaches the mandate collector as an absent tenant even though
     # the caller supplied one.
-    return _require_mandate_tenant_id(
+    mandate_tenant_id = _require_mandate_tenant_id(
         tenant_id=tenant_id,
         repositories=repositories,
     )
+    if mandate_tenant_id is not None:
+        return mandate_tenant_id
+    # Waves close the chain rather than adding another optional link. Every
+    # optional family above answers None when absent, so before #677 a bundle
+    # carrying only the mandatory sources fell through all of them and returned
+    # None - the caller's tenant validated against families it did not use and
+    # then discarded. `wave_repository` is not optional on the bundle, so a
+    # wave source is always present and this step always requires a tenant.
+    return require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories)
 
 
 def build_portfolio_memory_from_sources(

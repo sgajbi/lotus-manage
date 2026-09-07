@@ -888,7 +888,7 @@ def _save_supportability_wave(
         ),
         idempotency_key=None,
         request_hash=None,
-        tenant_id="tenant-test",
+        tenant_id="tenant-sg",
     )
 
 
@@ -905,7 +905,7 @@ class _SaveConflictWaveRepository(InMemoryDpmWaveRepository):
 
 
 class _VersionConflictWaveRepository(InMemoryDpmWaveRepository):
-    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int, tenant_id: str) -> None:
         raise DpmWaveVersionConflictError("stale durable wave version")
 
 
@@ -968,9 +968,7 @@ def _save_wave_for_service(
             source_degraded_item_count=1 if item.state == "SOURCE_DEGRADED" else 0,
         ),
     )
-    repository.save_wave(
-        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
-    )
+    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-sg")
     return wave
 
 
@@ -1004,7 +1002,9 @@ def test_wave_preview_returns_source_backed_and_blocked_items_without_persistenc
     }
     assert payload["wave"]["items"][0]["mandate_id"] == MANDATE_ID
     assert payload["wave"]["items"][1]["reason_codes"] == ["MISSING_AFFECTED_PORTFOLIO_SOURCE"]
-    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is None
+    assert (
+        wave_repository.get_wave(wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg") is None
+    )
 
 
 def test_wave_create_persists_and_replays_by_idempotency_key() -> None:
@@ -1033,7 +1033,10 @@ def test_wave_create_persists_and_replays_by_idempotency_key() -> None:
     assert first_payload["idempotent_replay"] is False
     assert second_payload["idempotent_replay"] is True
     assert second_payload["wave"]["wave_id"] == first_payload["wave"]["wave_id"]
-    assert wave_repository.get_wave(wave_id=first_payload["wave"]["wave_id"]) is not None
+    assert (
+        wave_repository.get_wave(wave_id=first_payload["wave"]["wave_id"], tenant_id="tenant-sg")
+        is not None
+    )
 
 
 def test_pm_book_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
@@ -1096,7 +1099,10 @@ def test_pm_book_wave_create_persists_resolved_source_owned_cohort(monkeypatch) 
     assert payload["durable"] is True
     assert payload["wave"]["trigger"]["trigger_type"] == "PM_BOOK_REVIEW"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
-    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+    assert (
+        wave_repository.get_wave(wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg")
+        is not None
+    )
 
 
 @pytest.mark.parametrize(
@@ -1248,7 +1254,10 @@ def test_cio_model_change_wave_create_persists_resolved_source_owned_cohort(monk
     assert payload["durable"] is True
     assert payload["wave"]["trigger"]["trigger_type"] == "CIO_MODEL_CHANGE"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
-    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+    assert (
+        wave_repository.get_wave(wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg")
+        is not None
+    )
 
 
 @pytest.mark.parametrize(
@@ -1416,7 +1425,10 @@ def test_risk_event_wave_create_persists_resolved_source_owned_cohort() -> None:
     assert payload["durable"] is True
     assert payload["wave"]["trigger"]["trigger_type"] == "RISK_EVENT"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
-    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+    assert (
+        wave_repository.get_wave(wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg")
+        is not None
+    )
 
 
 def test_tactical_house_view_wave_preview_resolves_advise_owned_cohort() -> None:
@@ -1524,7 +1536,10 @@ def test_tactical_house_view_wave_create_persists_resolved_advise_owned_cohort()
     assert payload["durable"] is True
     assert payload["wave"]["trigger"]["trigger_type"] == "TACTICAL_HOUSE_VIEW"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
-    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+    assert (
+        wave_repository.get_wave(wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg")
+        is not None
+    )
 
 
 @pytest.mark.parametrize(
@@ -2008,7 +2023,9 @@ def test_bulk_review_campaign_create_persists_core_portfolio_universe_candidates
     assert payload["durable"] is True
     assert payload["wave"]["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
-    persisted_wave = wave_repository.get_wave(wave_id=payload["wave"]["wave_id"])
+    persisted_wave = wave_repository.get_wave(
+        wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg"
+    )
     assert persisted_wave is not None
     page_ref = next(
         ref
@@ -2651,7 +2668,7 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
         "BulkReviewCampaignMembership",
         "BulkReviewCampaignGovernance",
     }
-    assert wave_repository.get_wave(wave_id=wave["wave_id"]) is not None
+    assert wave_repository.get_wave(wave_id=wave["wave_id"], tenant_id="tenant-sg") is not None
     assert fetched.status_code == 200
     assert len(fetched.json()["launch_history"]) == 1
     assert fetched.json()["launch_history"][0]["wave_id"] == wave["wave_id"]
@@ -2706,7 +2723,7 @@ def test_bulk_review_campaign_definition_launch_retry_repairs_missing_audit() ->
         }
         failed = client.post(f"{route}/launch", json=launch_request)
         persisted_waves_after_failure = wave_repository.list_waves(
-            trigger_type="BULK_REVIEW_CAMPAIGN"
+            trigger_type="BULK_REVIEW_CAMPAIGN", tenant_id="tenant-sg"
         )
         missing_audit = client.get(f"{route}/launch-history")
         repaired = client.post(f"{route}/launch", json=launch_request)
@@ -2728,7 +2745,10 @@ def test_bulk_review_campaign_definition_launch_retry_repairs_missing_audit() ->
     assert repaired.status_code == 201
     assert repaired.json()["idempotent_replay"] is True
     assert repaired.json()["wave"]["wave_id"] == durable_wave.wave_id
-    assert len(wave_repository.list_waves(trigger_type="BULK_REVIEW_CAMPAIGN")) == 1
+    assert (
+        len(wave_repository.list_waves(trigger_type="BULK_REVIEW_CAMPAIGN", tenant_id="tenant-sg"))
+        == 1
+    )
     assert replayed.status_code == 201
     assert replayed.json()["idempotent_replay"] is True
     assert replayed.json()["wave"]["wave_id"] == durable_wave.wave_id
@@ -2780,7 +2800,7 @@ def test_bulk_review_campaign_definition_launch_fails_closed_when_readiness_bloc
     assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in blocked_payload["reasonCodes"]
     assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in blocked_payload["reasonCodes"]
     assert blocked_payload["readiness"]["preview_create_allowed"] is False
-    assert wave_repository.list_waves() == []
+    assert wave_repository.list_waves(tenant_id="tenant-sg") == []
     assert missing.status_code == 404
     assert _error_reason_code(missing) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
@@ -4637,7 +4657,10 @@ def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
     assert payload["durable"] is True
     assert payload["wave"]["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
-    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+    assert (
+        wave_repository.get_wave(wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg")
+        is not None
+    )
 
 
 @pytest.mark.parametrize(
@@ -5110,7 +5133,7 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
             wave=DpmRebalanceWave.model_validate(draft.json()["wave"]),
             idempotency_key=None,
             request_hash=None,
-            tenant_id="tenant-test",
+            tenant_id="tenant-sg",
         )
         invalid = client.post(
             f"/api/v1/rebalance/waves/{draft.json()['wave']['wave_id']}/source-check",
@@ -5206,7 +5229,7 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
     assert selected_item["state"] == "PROOF_PACK_READY"
     assert selected_item["selected_alternative_id"] == "alt_min_turnover"
     assert selected_item["proof_pack_id"].startswith("dpp_")
-    persisted = wave_repository.get_wave(wave_id=wave_id)
+    persisted = wave_repository.get_wave(wave_id=wave_id, tenant_id="tenant-sg")
     assert persisted is not None
     assert persisted.items[0].selected_alternative_id == "alt_min_turnover"
     assert persisted.items[0].proof_pack_id == selected_item["proof_pack_id"]
@@ -5854,7 +5877,7 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
     assert handoff_replay.json()["idempotent_replay"] is True
     assert handoff_replay.json()["wave"]["handoff_refs"] == handoff_payload["wave"]["handoff_refs"]
 
-    persisted = wave_repository.get_wave(wave_id=wave_id)
+    persisted = wave_repository.get_wave(wave_id=wave_id, tenant_id="tenant-sg")
     assert persisted is not None
     assert persisted.state == "HANDOFF_READY"
     assert len(persisted.handoff_refs) == 1
@@ -5955,7 +5978,7 @@ def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> 
     assert payload["wave"]["items"][0]["diagnostics"]["external_execution_claimed"] is False
     assert payload["wave"]["events"][-1]["reason_code"] == "WAVE_CANCELLED"
     assert replay.json()["idempotent_replay"] is True
-    persisted = wave_repository.get_wave(wave_id=wave_id)
+    persisted = wave_repository.get_wave(wave_id=wave_id, tenant_id="tenant-sg")
     assert persisted is not None
     assert persisted.state == "CANCELLED"
     assert invalid.status_code == 422
@@ -6153,6 +6176,7 @@ def test_wave_services_translate_durable_write_conflicts_to_governed_errors() ->
             construction_repository=InMemoryConstructionRepository(),
             run_service=_run_service(),
             wave_repository=simulate_repository,
+            tenant_id="tenant-sg",
         )
     assert simulate_exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
 
@@ -6210,6 +6234,7 @@ def test_wave_services_translate_durable_write_conflicts_to_governed_errors() ->
                 reason_code="CONFLICT_TEST",
                 comment="Conflict test comment.",
                 correlation_id="corr-conflict-command",
+                tenant_id="tenant-sg",
                 **extra_kwargs,
             )
         assert exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
@@ -6237,14 +6262,15 @@ def test_wave_selection_translates_durable_write_conflict_to_governed_error() ->
         construction_repository=construction_repository,
         run_service=_run_service(),
         wave_repository=normal_repository,
+        tenant_id="tenant-sg",
     )
-    simulated = normal_repository.get_wave(wave_id=source_checked.wave_id)
+    simulated = normal_repository.get_wave(wave_id=source_checked.wave_id, tenant_id="tenant-sg")
     assert simulated is not None
     assert simulated.items[0].alternative_set_id is not None
 
     conflict_repository = _VersionConflictWaveRepository()
     conflict_repository.save_wave(
-        wave=simulated, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+        wave=simulated, idempotency_key=None, request_hash=None, tenant_id="tenant-sg"
     )
 
     with pytest.raises(wave_service.DpmWaveValidationError) as exc:
@@ -6309,6 +6335,7 @@ def test_wave_services_reject_no_eligible_approval_stage_and_handoff() -> None:
                 comment=None,
                 correlation_id=f"corr-{wave_id}",
                 wave_repository=repository,
+                tenant_id="tenant-sg",
             )
 
         assert exc.value.code == expected_code
@@ -6403,13 +6430,11 @@ def test_wave_supportability_filters_and_private_helper_edges() -> None:
         ],
     )
     blocked = wave_service.wave_supportability(
-        wave_id="dwv_filter_blocked",
-        wave_repository=repository,
+        wave_id="dwv_filter_blocked", wave_repository=repository, tenant_id="tenant-sg"
     )
 
     ready_search = wave_service.search_waves(
-        wave_repository=repository,
-        supportability_state="ready",
+        wave_repository=repository, supportability_state="ready", tenant_id="tenant-sg"
     )
 
     assert [item["wave_id"] for item in ready_search] == ["dwv_filter_ready"]
@@ -6556,12 +6581,10 @@ def test_wave_supportability_service_reports_ready_and_info_only_postures() -> N
     )
 
     ready = wave_service.wave_supportability(
-        wave_id="dwv_support_ready",
-        wave_repository=repository,
+        wave_id="dwv_support_ready", wave_repository=repository, tenant_id="tenant-sg"
     )
     info_only = wave_service.wave_supportability(
-        wave_id="dwv_support_info",
-        wave_repository=repository,
+        wave_id="dwv_support_info", wave_repository=repository, tenant_id="tenant-sg"
     )
 
     assert ready["supportability_state"] == "ready"
@@ -6628,12 +6651,10 @@ def test_wave_supportability_service_reports_degraded_and_blocked_actions() -> N
     )
 
     degraded = wave_service.wave_supportability(
-        wave_id="dwv_support_degraded",
-        wave_repository=repository,
+        wave_id="dwv_support_degraded", wave_repository=repository, tenant_id="tenant-sg"
     )
     blocked = wave_service.wave_supportability(
-        wave_id="dwv_support_blocked",
-        wave_repository=repository,
+        wave_id="dwv_support_blocked", wave_repository=repository, tenant_id="tenant-sg"
     )
 
     assert degraded["supportability_state"] == "degraded"
@@ -6740,7 +6761,7 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         ],
     )
     wave_repository.save_wave(
-        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-sg"
     )
 
     with _client(mandate_repository, wave_repository) as client:
@@ -6976,7 +6997,7 @@ def test_bulk_review_campaign_wave_report_input_carries_universe_boundary() -> N
         ],
     )
     wave_repository.save_wave(
-        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-sg"
     )
 
     with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
@@ -7057,7 +7078,7 @@ def test_wave_report_input_rejects_external_execution_claims() -> None:
         ],
     )
     wave_repository.save_wave(
-        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-test"
+        wave=wave, idempotency_key=None, request_hash=None, tenant_id="tenant-sg"
     )
 
     with _client(InMemoryDpmMandateRepository(), wave_repository) as client:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
+from src.api.routers.wave_route_parameters import WaveTenantIdHeader
 from src.api.dependencies import (
     get_construction_repository,
     get_risk_authority_client,
@@ -43,6 +44,7 @@ router = APIRouter()
 def simulate_wave(
     wave_id: WaveIdPath,
     request: DpmWaveSimulationRequest,
+    x_tenant_id: WaveTenantIdHeader,
     x_correlation_id: WaveCorrelationIdHeader = None,
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
@@ -56,5 +58,6 @@ def simulate_wave(
         construction_repository=construction_repository,
         run_service=run_service,
         wave_repository=wave_repository,
+        tenant_id=x_tenant_id,
         risk_authority_client=risk_authority_client,
     )

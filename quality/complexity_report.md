@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-09-07T09:19:22+00:00`
+- Generated at: `2026-09-07T14:11:16+00:00`
 
-- Baseline source snapshot: `8ae9804b14fe59d3020aeaa5b27bd9c32352fb4a`
+- Baseline source snapshot: `c8130d382c4da0177ee9bca8886b1c21e567aee0`
 
-- Report source snapshot: `63b3e59a+worktree`
+- Report source snapshot: `6fb9998d`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -22,7 +22,7 @@
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1068 | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 791 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
-| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 111 | 410 |
+| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 111 | 404 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
@@ -52,7 +52,7 @@
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1068 | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 791 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
-| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 111 | 410 |
+| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 111 | 404 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |

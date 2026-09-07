@@ -5,6 +5,7 @@ from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveEvent, DpmWaveRepos
 def search_wave_summaries(
     *,
     wave_repository: DpmWaveRepository,
+    tenant_id: str,
     state: str | None = None,
     trigger_type: str | None = None,
     as_of_date: str | None = None,
@@ -13,6 +14,7 @@ def search_wave_summaries(
     offset: int = 0,
 ) -> list[dict[str, object]]:
     waves = wave_repository.list_waves(
+        tenant_id=tenant_id,
         state=state,
         trigger_type=trigger_type,
         as_of_date=as_of_date,

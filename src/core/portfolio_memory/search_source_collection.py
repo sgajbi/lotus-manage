@@ -28,6 +28,7 @@ from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     require_campaign_definition_tenant_id,
     require_mandate_tenant_id,
+    require_wave_tenant_id,
 )
 from src.core.portfolio_memory.wave_projection import wave_events
 
@@ -62,6 +63,7 @@ def collect_portfolio_memory_search_events(
         limit=limit,
     )
     _collect_wave_events(
+        tenant_id=require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories),
         repositories=repositories,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
@@ -146,12 +148,13 @@ def _collect_proof_pack_events(
 
 def _collect_wave_events(
     *,
+    tenant_id: str,
     repositories: PortfolioMemorySourceRepositories,
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
     limit: int,
 ) -> None:
-    for wave in repositories.wave_repository.list_waves(limit=limit):
+    for wave in repositories.wave_repository.list_waves(tenant_id=tenant_id, limit=limit):
         matching_portfolio_ids = {
             item.portfolio_id for item in wave.items if item.portfolio_id.strip()
         }

@@ -65,11 +65,15 @@ WaveTenantIdHeader = Annotated[
         # 422 (issue #648). Leaving it optional published a contract that
         # disagreed with the behaviour: every generated client and integration
         # test would have been built to omit a header the service rejects.
+        # Stated as a rule rather than a route list. The previous wording named
+        # the four routes that had it at the time, and #677 put it on every
+        # wave route - a list is wrong the moment the next one is added, and
+        # nothing would have failed to say so.
         description=(
-            "Trusted tenant id. Required: wave preview, create, source-check and selection all "
-            "read tenant-scoped mandate evidence, and a request that does not state its tenant is "
-            "refused rather than answered from an assumed one. Also required when resolving "
-            "persisted bulk-review campaign definitions."
+            "Trusted tenant id. Required on every wave route: a wave belongs to one tenant, and "
+            "a request that does not state its tenant is refused rather than answered from an "
+            "assumed one. Waves persisted before tenant scoping carry no tenant and are reachable "
+            "from none, including a tenant named `default`."
         ),
         examples=["tenant-sg"],
     ),
