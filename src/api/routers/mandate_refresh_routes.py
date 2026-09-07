@@ -10,6 +10,7 @@ from src.api.routers.mandate_http import (
     mandate_source_unavailable_http_exception,
 )
 from src.api.routers.mandate_models import (
+    HEALTH_SNAPSHOT_ID_EXAMPLE,
     MANDATE_RESPONSE_EXAMPLE,
     DpmMandateRefreshFromCoreRequest,
     DpmMandateRefreshFromCoreResponse,
@@ -44,7 +45,7 @@ from src.core.mandate_repository import DpmMandateRepository
                         "refreshed_at": "2026-05-03T08:30:00Z",
                         "mandate": MANDATE_RESPONSE_EXAMPLE,
                         "health_snapshot": {
-                            "health_snapshot_id": "mh_20260503_pb_sg_global_bal_001",
+                            "health_snapshot_id": HEALTH_SNAPSHOT_ID_EXAMPLE,
                             "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
                             "portfolio_id": "PB_SG_GLOBAL_BAL_001",
                             "as_of_date": "2026-05-03",

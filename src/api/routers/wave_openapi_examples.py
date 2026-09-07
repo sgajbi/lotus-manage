@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import cast
 
+from src.api.routers.mandate_models import HEALTH_SNAPSHOT_ID_EXAMPLE
+
 
 WAVE_EXAMPLE = {
     "wave": {
@@ -78,14 +80,14 @@ SOURCE_CHECK_WAVE_EXAMPLE = {
                     {
                         "source_system": "lotus-manage",
                         "source_type": "DPM_MANDATE_HEALTH_SNAPSHOT",
-                        "source_id": "mh_20260503_pb_sg_global_bal_001",
+                        "source_id": HEALTH_SNAPSHOT_ID_EXAMPLE,
                         "source_version": "2026-05-03",
                         "supportability_state": "READY",
                     },
                     {
                         "source_system": "lotus-manage",
                         "source_type": "DPM_SOURCE_READINESS",
-                        "source_id": "mh_20260503_pb_sg_global_bal_001",
+                        "source_id": HEALTH_SNAPSHOT_ID_EXAMPLE,
                         "source_version": "2026-05-03",
                         "supportability_state": "READY",
                     },

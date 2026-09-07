@@ -14,6 +14,12 @@ from __future__ import annotations
 
 from datetime import date
 
+from src.api.routers.mandate_models import (
+    HEALTH_SNAPSHOT_EXAMPLE_AS_OF_DATE,
+    HEALTH_SNAPSHOT_EXAMPLE_PORTFOLIO_ID,
+    HEALTH_SNAPSHOT_EXAMPLE_TENANT_ID,
+    HEALTH_SNAPSHOT_ID_EXAMPLE,
+)
 from src.core.mandate_health_scoring import _mandate_health_snapshot_id
 from src.core.mandate_models import DpmMandateHealthInput
 from src.core.mandates import DpmMandateConstraintSet, DpmMandateDigitalTwin, DpmMandateReviewPolicy
@@ -100,3 +106,30 @@ def test_health_keys_stay_distinct_across_portfolios_within_one_tenant() -> None
         DpmMandateHealthInput(twin=_twin(portfolio_id="PF_B")), tenant_id="alpha"
     )
     assert alpha_a != alpha_b
+
+
+def test_the_published_health_snapshot_example_is_reproducible_from_its_inputs() -> None:
+    """The OpenAPI example must be a value this derivation can actually emit.
+
+    The example previously showed the readable mh_<date>_<portfolio> shape and
+    stayed on the page unchanged when this derivation became a tenant-scoped
+    hash, so the published contract described an id the service could no longer
+    produce and no test noticed. Pinning the example to the derivation means a
+    future change to either one fails here rather than silently teaching every
+    consumer the wrong shape. The inputs are the canonical demo dataset's, so
+    the example is reproducible by a reader rather than merely plausible.
+    """
+
+    derived = _mandate_health_snapshot_id(
+        DpmMandateHealthInput(twin=_twin(portfolio_id=HEALTH_SNAPSHOT_EXAMPLE_PORTFOLIO_ID)),
+        tenant_id=HEALTH_SNAPSHOT_EXAMPLE_TENANT_ID,
+    )
+
+    assert derived == HEALTH_SNAPSHOT_ID_EXAMPLE
+    assert date.fromisoformat(HEALTH_SNAPSHOT_EXAMPLE_AS_OF_DATE) == _twin().as_of_date
+    # Divergence half: a derivation ignoring its inputs would satisfy the
+    # equality above, so the example must also NOT be what another tenant gets.
+    assert derived != _mandate_health_snapshot_id(
+        DpmMandateHealthInput(twin=_twin(portfolio_id=HEALTH_SNAPSHOT_EXAMPLE_PORTFOLIO_ID)),
+        tenant_id="tenant-other",
+    )
