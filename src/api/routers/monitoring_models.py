@@ -6,6 +6,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from src.core.mandates import DpmMonitoringException, DpmMonitoringRun
+from src.api.routers.mandate_tenant_query import NormalisedTenantId
 
 
 class DpmMonitoringRunOnceRequest(BaseModel):
@@ -21,7 +22,7 @@ class DpmMonitoringRunOnceRequest(BaseModel):
         description="Business date used to evaluate mandate health.",
         examples=["2026-05-03"],
     )
-    tenant_id: str = Field(
+    tenant_id: NormalisedTenantId = Field(
         min_length=1,
         description=(
             "Tenant whose mandates are monitored. Required: the run reads mandate twins and "
