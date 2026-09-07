@@ -547,10 +547,7 @@ def _outer_lookup_then_arm_has_mismatch_exit(block: str) -> bool:
         stripped_line = line.strip()
         if condition_depth == 1 and stripped_line.startswith("existing_ref_sha="):
             return False
-        if (
-            stripped_line not in IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITIONS
-            or condition_depth != 1
-        ):
+        if stripped_line not in IMMUTABLE_DISPATCH_REF_MISMATCH_CONDITIONS or condition_depth != 1:
             if _opens_nested_shell_scope(stripped_line):
                 condition_depth += 1
             if _closes_nested_shell_scope(stripped_line):
@@ -697,7 +694,15 @@ def _is_exact_main_releasability_dispatch_command(command: str) -> bool:
         and not normalized_command.rstrip().endswith("&")
         and '--repo "$GITHUB_REPOSITORY"' in normalized_command
         and '--ref "$dispatch_ref"' in normalized_command
-        and '-f expected_sha="$MERGE_COMMIT_SHA"' in normalized_command
+        # Either the PR-head binding or the per-revision one (issue #659). The
+        # exhaustive token-sequence check below is what actually pins the
+        # command shape; this line only requires that SOME pinned expected_sha
+        # is passed, so a dispatch with no pinning at all still fails here
+        # rather than relying on the tuple comparison alone.
+        and any(
+            f'-f expected_sha="{variable}"' in normalized_command
+            for variable in IMMUTABLE_DISPATCH_REF_PINNED_SHA_VARIABLES
+        )
         and tuple(command_tokens) in MAIN_RELEASABILITY_DISPATCH_TOKENS
     )
 
@@ -1074,12 +1079,21 @@ def merged_pr_main_releasability_dispatch_violations(
             "types: [closed]": "dispatcher must be limited to closed pull request events",
             "github.event.pull_request.merged == true": "dispatcher must require a merged PR",
             "github.event.pull_request.base.ref == 'main'": "dispatcher must target main merges only",
-            "github.event.pull_request.merge_commit_sha": (
-                "dispatcher must bind dispatch evidence to the merged PR SHA"
-            ),
-            'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"': (
-                "dispatcher must create an immutable dispatch ref for the merged PR SHA"
-            ),
+            # Per-commit dispatch (issue #659) binds each run to one revision the
+            # merged PR put on main, rather than to the PR head alone. Either
+            # binding is accepted, but the per-revision form must come from the
+            # enumerating job's output - a bare ${{ matrix.revision }} could be
+            # fed from anywhere, whereas that job is where rebase-only merging
+            # and ancestry against fetched main are asserted. So this stays a
+            # binding to the merge event, one hop further along.
+            (
+                "github.event.pull_request.merge_commit_sha",
+                "needs.enumerate-merged-revisions.outputs.revisions",
+            ): ("dispatcher must bind dispatch evidence to the merged PR SHA"),
+            (
+                'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+                'dispatch_ref="main-releasability-${revision}"',
+            ): ("dispatcher must create an immutable dispatch ref for the dispatched SHA"),
             "Dispatch ref $dispatch_ref points to $existing_ref_sha": (
                 "dispatcher must fail closed if an existing dispatch ref points to a different SHA"
             ),
@@ -1096,19 +1110,36 @@ def merged_pr_main_releasability_dispatch_violations(
                 "dispatcher must pass the merged PR SHA as an expected mainline SHA"
             ),
         }
+        # A key may be one token or a tuple of acceptable alternatives; a tuple
+        # is satisfied by any one of them. Alternatives exist only where the
+        # per-commit dispatch expresses the same guarantee differently, never to
+        # excuse a missing guarantee.
+        step_scoped_tokens = {
+            "github.event.pull_request.merge_commit_sha",
+            "needs.enumerate-merged-revisions.outputs.revisions",
+            'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
+            'dispatch_ref="main-releasability-${revision}"',
+            "Dispatch ref $dispatch_ref points to $existing_ref_sha",
+            'gh api "repos/$GITHUB_REPOSITORY/git/refs"',
+            "gh workflow run main-releasability.yml",
+            '--ref "$dispatch_ref"',
+            "-f expected_sha=",
+        }
         for token, reason in required_tokens.items():
-            search_text = dispatcher_text
-            if token in {
-                "github.event.pull_request.merge_commit_sha",
-                'dispatch_ref="main-releasability-${MERGE_COMMIT_SHA}"',
-                "Dispatch ref $dispatch_ref points to $existing_ref_sha",
-                'gh api "repos/$GITHUB_REPOSITORY/git/refs"',
-                "gh workflow run main-releasability.yml",
-                '--ref "$dispatch_ref"',
-                "-f expected_sha=",
-            }:
-                search_text = dispatch_contract_text
-            if token not in search_text:
+            alternatives = token if isinstance(token, tuple) else (token,)
+            satisfied = False
+            for alternative in alternatives:
+                search_text = (
+                    dispatch_contract_text if alternative in step_scoped_tokens else dispatcher_text
+                )
+                # The per-revision matrix source is declared on the job, not
+                # inside the governed step, so it is read from the whole file.
+                if alternative == "needs.enumerate-merged-revisions.outputs.revisions":
+                    search_text = dispatcher_text
+                if alternative in search_text:
+                    satisfied = True
+                    break
+            if not satisfied:
                 violations.append(f"{dispatcher.as_posix()}: {reason}")
         if _has_failure_masked_outer_brace_group(dispatch_contract_text):
             violations.append(

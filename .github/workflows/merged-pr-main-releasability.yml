@@ -9,24 +9,33 @@ permissions:
   contents: write
 
 jobs:
-  dispatch-main-releasability:
-    name: Dispatch Main Releasability
+  # Enumeration is a separate job from dispatch on purpose (issue #659).
+  #
+  # This repository merges by rebase, so a merged PR of N commits puts N commits
+  # on main and every one of them needs its own gate run - a commit that was
+  # never the PR head still becomes the deployed tree on rollback and bisect.
+  #
+  # The dispatch itself must stay a flat lookup / conditional ref creation /
+  # dispatch sequence in one named step, because scripts/workflow_policy_gate.py
+  # validates that structure and a shell `for` loop nests it out of reach of
+  # that control. A matrix gives one un-nested dispatch per revision instead,
+  # and each revision gets its own job log rather than being buried in a loop.
+  enumerate-merged-revisions:
+    name: Enumerate Merged Revisions
     if: >
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      revisions: ${{ steps.enumerate.outputs.revisions }}
     steps:
       - uses: actions/checkout@v6
         with:
           # Every revision the PR added must be enumerable, not just the head.
           fetch-depth: 0
-      # Step name is load-bearing: scripts/workflow_policy_gate.py locates this
-      # step by name to check the lookup, conditional ref creation and dispatch
-      # all live in one governed run step. Renaming it makes that whole control
-      # silently find nothing - the lifted version of this file carried the
-      # source repository's name and disabled the check on arrival.
-      - name: Dispatch main releasability gate
+      - name: Enumerate every revision the merged PR put on main
+        id: enumerate
         env:
           GH_TOKEN: ${{ github.token }}
           MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
@@ -43,13 +52,12 @@ jobs:
             exit 1
           fi
 
-          # This enumeration is correct ONLY under rebase-only merging: a squash
-          # lands one commit however many the PR held (the extra dispatches
-          # would name commits from earlier PRs), and a merge commit adds a
-          # second parent (the walk would descend into main's own history).
-          # Gating the wrong trees while reporting success is worse than the
-          # coverage gap this closes, so fail loudly if the repository's merge
-          # methods ever change.
+          # The enumeration is correct ONLY under rebase-only merging: a squash
+          # lands one commit however many the PR held, so the extra revisions
+          # would name commits from earlier PRs; a merge commit adds a second
+          # parent, so the walk would descend into main's own history. Gating
+          # the wrong trees while reporting success is worse than the coverage
+          # gap this closes, so fail loudly if the setting ever changes.
           merge_methods="$(gh api "repos/$GITHUB_REPOSITORY" \
             --jq '[.allow_squash_merge, .allow_merge_commit, .allow_rebase_merge] | @csv')"
           if [ "$merge_methods" != "false,false,true" ]; then
@@ -58,8 +66,8 @@ jobs:
           fi
 
           git fetch origin main --quiet
-          # Judge ancestry against the freshly fetched main, not the event-time
-          # checkout snapshot.
+          # Ancestry is judged against the freshly fetched main, not the
+          # event-time checkout snapshot.
           git checkout --quiet --detach FETCH_HEAD
           revisions="$(git rev-list -n "$COMMIT_COUNT" "$MERGE_COMMIT_SHA" | tac)"
           if [ -z "$revisions" ]; then
@@ -67,49 +75,73 @@ jobs:
             exit 1
           fi
 
-          dispatched=0
+          enumerated=0
           for revision in $revisions; do
             # A revision that is not on the fetched main - for example after a
             # forced move of main between the merge event and this checkout -
             # must never be tagged or gated as main history.
             if ! git merge-base --is-ancestor "$revision" HEAD; then
-              echo "::error::Revision $revision is not an ancestor of main; refusing to dispatch."
+              echo "::error::Revision $revision is not an ancestor of main; refusing to enumerate it."
               exit 1
             fi
-            dispatch_ref="main-releasability-${revision}"
-            existing_ref_sha=""
-            if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null)"; then
-              if [ "$existing_ref_sha" != "$revision" ]; then
-                echo "::error::Dispatch ref $dispatch_ref points to $existing_ref_sha, expected $revision"
-                exit 1
-              fi
-            else
-              existing_ref_sha=""
-            fi
-            if [ -z "$existing_ref_sha" ]; then
-              gh api "repos/$GITHUB_REPOSITORY/git/refs" \
-                -f ref="refs/tags/$dispatch_ref" \
-                -f sha="$revision" >/dev/null
-            fi
-            # Inputs are exactly the two this repository's gate declares.
-            # main-releasability.yml here takes expected_sha and triggering_pr
-            # and nothing else; passing an input it does not declare makes the
-            # dispatch 422 and the gate never runs, which would disable this
-            # fix silently rather than loudly.
-            gh workflow run main-releasability.yml \
-              --repo "$GITHUB_REPOSITORY" \
-              --ref "$dispatch_ref" \
-              -f expected_sha="$revision" \
-              -f triggering_pr="$PR_NUMBER"
-            dispatched=$((dispatched + 1))
-            echo "Dispatched main releasability for $revision (PR #$PR_NUMBER)"
+            enumerated=$((enumerated + 1))
           done
 
-          # A merged PR of N commits must produce N dispatches. Asserted rather
-          # than assumed, because the loop silently doing nothing is the exact
-          # shape of the gap being closed.
-          if [ "$dispatched" -ne "$COMMIT_COUNT" ]; then
-            echo "::error::Dispatched $dispatched runs for a $COMMIT_COUNT-commit PR #$PR_NUMBER"
+          # A merged PR of N commits must enumerate N revisions. Asserted rather
+          # than assumed, because producing an empty or short list silently is
+          # the exact shape of the gap being closed.
+          if [ "$enumerated" -ne "$COMMIT_COUNT" ]; then
+            echo "::error::Enumerated $enumerated revisions for a $COMMIT_COUNT-commit PR #$PR_NUMBER"
             exit 1
           fi
-          echo "Dispatched $dispatched of $COMMIT_COUNT merged revisions for PR #$PR_NUMBER"
+
+          payload="$(printf '%s\n' $revisions | jq -R . | jq -sc .)"
+          echo "revisions=$payload" >> "$GITHUB_OUTPUT"
+          echo "Enumerated $enumerated of $COMMIT_COUNT merged revisions for PR #$PR_NUMBER"
+
+  dispatch-main-releasability:
+    name: Dispatch Main Releasability
+    needs: enumerate-merged-revisions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      # Sequential on purpose: two jobs creating dispatch tags at the same time
+      # race on the refs API, and a failed tag creation would drop a revision's
+      # gate run silently. fail-fast off so one revision's failure does not
+      # cancel the gate runs of the others.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        revision: ${{ fromJson(needs.enumerate-merged-revisions.outputs.revisions) }}
+    steps:
+      # Step name is load-bearing: scripts/workflow_policy_gate.py locates this
+      # step by name to verify the lookup, conditional ref creation and dispatch
+      # all live in one governed run step. Renaming it makes that whole control
+      # silently find nothing.
+      - name: Dispatch main releasability gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          revision: ${{ matrix.revision }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          dispatch_ref="main-releasability-${revision}"
+          existing_ref_sha=""
+          if existing_ref_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$dispatch_ref" --jq .object.sha 2>/dev/null)"; then
+            if [ "$existing_ref_sha" != "$revision" ]; then
+              echo "::error::Dispatch ref $dispatch_ref points to $existing_ref_sha, expected $revision"
+              exit 1
+            fi
+          else
+            existing_ref_sha=""
+          fi
+          if [ -z "$existing_ref_sha" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/$dispatch_ref" \
+              -f sha="$revision" >/dev/null
+          fi
+          gh workflow run main-releasability.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$dispatch_ref" \
+            -f expected_sha="$revision" \
+            -f triggering_pr="$PR_NUMBER"
