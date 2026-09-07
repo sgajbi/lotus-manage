@@ -241,7 +241,7 @@ Required fields:
 
 | Field | Type | Description | Example |
 | --- | --- | --- | --- |
-| `health_snapshot_id` | string | Stable id for this health calculation. | `mh_20260503_pb_sg_bal_001` |
+| `health_snapshot_id` | string | Stable id for this health calculation, derived from the tenant, portfolio and business date (see note below). | `mh_8ecb4ce03a9091104414e926331f0c3d` |
 | `mandate_id` | string | Mandate id. | `mandate_pb_sg_bal_001` |
 | `portfolio_id` | string | Portfolio id. | `PB_SG_GLOBAL_BAL_001` |
 | `as_of_date` | date | Business date. | `2026-05-03` |
@@ -252,6 +252,13 @@ Required fields:
 | `recommended_action` | enum | Next action. | `SIMULATE_REBALANCE` |
 | `source_readiness_state` | enum | Source readiness posture. | `READY` |
 | `evidence_refs` | array | Links to source, run, or artifact evidence. | `[]` |
+
+`health_snapshot_id` was originally the readable `mh_<date>_<portfolio>`. Issue #648 replaced it
+with `mh_<hash>` over the tenant, portfolio and business date, because health snapshots upsert on
+this id alone: without the tenant, two tenants scoring the same portfolio on the same date derived
+the same id, and the second write replaced the first's payload. The value stays stable and
+reproducible for a given tenant, portfolio and date; it is no longer human-parseable, and the
+readable components remain available as their own columns.
 
 ### 5.4 DpmMonitoringException
 

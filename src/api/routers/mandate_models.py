@@ -13,6 +13,16 @@ from src.core.mandates import (
 )
 
 
+# The inputs the published health-snapshot example is derived from, kept beside
+# the example so a test can re-derive it. The example previously showed the
+# readable mh_<date>_<portfolio> shape and stayed on the page unchanged when
+# issue #648 made the id a tenant-scoped hash, so every consumer reading the
+# OpenAPI document was told to expect a shape the service can no longer emit.
+HEALTH_SNAPSHOT_EXAMPLE_TENANT_ID = "default"
+HEALTH_SNAPSHOT_EXAMPLE_PORTFOLIO_ID = "PB_SG_GLOBAL_BAL_001"
+HEALTH_SNAPSHOT_EXAMPLE_AS_OF_DATE = "2026-05-03"
+HEALTH_SNAPSHOT_ID_EXAMPLE = "mh_8ecb4ce03a9091104414e926331f0c3d"
+
 MANDATE_RESPONSE_EXAMPLE: dict[str, Any] = {
     "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
     "portfolio_id": "PB_SG_GLOBAL_BAL_001",
