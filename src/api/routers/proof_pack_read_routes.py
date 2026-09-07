@@ -12,6 +12,7 @@ from src.api.routers.proof_packs import router
 from src.api.services import proof_pack_service
 from src.core.proof_packs import render_proof_pack_markdown
 from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.common.identity_examples import PROOF_PACK_ID_EXAMPLE
 
 
 @router.get(
@@ -28,7 +29,7 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 def get_proof_pack(
     proof_pack_id: Annotated[
         str,
-        Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
+        Path(description="Proof-pack identifier.", examples=[PROOF_PACK_ID_EXAMPLE]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
 ) -> DpmProofPackLookupResponse:
@@ -57,7 +58,7 @@ def get_proof_pack(
 def get_proof_pack_markdown(
     proof_pack_id: Annotated[
         str,
-        Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
+        Path(description="Proof-pack identifier.", examples=[PROOF_PACK_ID_EXAMPLE]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
 ) -> str:

@@ -4,13 +4,13 @@ from typing import Annotated, Optional
 
 from fastapi import Depends, Header
 
+from src.core.common.identity_examples import HEALTH_SNAPSHOT_ID_EXAMPLE
 from src.api.dependencies import get_mandate_repository
 from src.api.routers.mandate_http import (
     mandate_source_incomplete_http_exception,
     mandate_source_unavailable_http_exception,
 )
 from src.api.routers.mandate_models import (
-    HEALTH_SNAPSHOT_ID_EXAMPLE,
     MANDATE_RESPONSE_EXAMPLE,
     DpmMandateRefreshFromCoreRequest,
     DpmMandateRefreshFromCoreResponse,

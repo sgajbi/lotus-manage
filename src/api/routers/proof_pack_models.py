@@ -6,10 +6,14 @@ from pydantic import BaseModel, Field
 
 from src.core.construction.models import AuthoritativeRegimeStressContext
 from src.core.proof_packs.models import DpmPreTradeProofPack
+from src.core.common.identity_examples import (
+    EXAMPLE_TENANT_ID,
+    PROOF_PACK_ID_EXAMPLE,
+)
 
 
 PROOF_PACK_EXAMPLE = {
-    "proof_pack_id": "dpp_rr_001",
+    "proof_pack_id": PROOF_PACK_ID_EXAMPLE,
     "proof_pack_version": "1.0",
     "portfolio_id": "PB_SG_GLOBAL_BAL_001",
     "mandate_id": "mandate_001",
@@ -93,17 +97,26 @@ class DpmProofPackGenerateResponse(BaseModel):
     markdown_url: str | None = Field(
         default=None,
         description="Relative URL for deterministic Markdown retrieval when requested.",
-        examples=["/api/v1/rebalance/proof-packs/dpp_rr_001/summary.md"],
+        examples=[
+            f"/api/v1/rebalance/proof-packs/{PROOF_PACK_ID_EXAMPLE}/summary.md"
+            f"?tenant_id={EXAMPLE_TENANT_ID}"
+        ],
     )
     report_input_url: str | None = Field(
         default=None,
         description="Relative URL for report input retrieval when requested.",
-        examples=["/api/v1/rebalance/proof-packs/dpp_rr_001/report-input"],
+        examples=[
+            f"/api/v1/rebalance/proof-packs/{PROOF_PACK_ID_EXAMPLE}/report-input"
+            f"?tenant_id={EXAMPLE_TENANT_ID}"
+        ],
     )
     ai_evidence_input_url: str | None = Field(
         default=None,
         description="Relative URL for AI evidence input retrieval when requested.",
-        examples=["/api/v1/rebalance/proof-packs/dpp_rr_001/ai-evidence-input"],
+        examples=[
+            f"/api/v1/rebalance/proof-packs/{PROOF_PACK_ID_EXAMPLE}/ai-evidence-input"
+            f"?tenant_id={EXAMPLE_TENANT_ID}"
+        ],
     )
 
 

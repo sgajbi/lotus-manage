@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from src.core.mandates import DpmMonitoringException, DpmMonitoringRun
 from src.api.routers.mandate_tenant_query import NormalisedTenantId
+from src.core.common.identity_examples import MONITORING_EXCEPTION_ID_EXAMPLE
 
 
 class DpmMonitoringRunOnceRequest(BaseModel):
@@ -78,7 +79,7 @@ class DpmMonitoringExceptionPage(BaseModel):
     next_cursor: Optional[str] = Field(
         default=None,
         description="Cursor to request the next page, or null when no next page exists.",
-        examples=["me_20260503_pb_sg_global_bal_001_source_readiness"],
+        examples=[MONITORING_EXCEPTION_ID_EXAMPLE],
     )
 
 

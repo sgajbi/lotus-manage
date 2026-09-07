@@ -19,6 +19,7 @@ from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofP
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.waves.repository import DpmWaveRepository
+from src.core.common.identity_examples import PROOF_PACK_ID_EXAMPLE
 
 
 @router.get(
@@ -36,7 +37,7 @@ def get_proof_pack_report_input(
     tenant_id: MandateTenantId,
     proof_pack_id: Annotated[
         str,
-        Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
+        Path(description="Proof-pack identifier.", examples=[PROOF_PACK_ID_EXAMPLE]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
@@ -71,7 +72,7 @@ def get_proof_pack_ai_evidence_input(
     tenant_id: MandateTenantId,
     proof_pack_id: Annotated[
         str,
-        Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
+        Path(description="Proof-pack identifier.", examples=[PROOF_PACK_ID_EXAMPLE]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
