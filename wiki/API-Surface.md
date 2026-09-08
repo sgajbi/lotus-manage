@@ -304,16 +304,61 @@ Source-service callers must use the canonical snake_case query parameters `consu
 `lotus-manage` should not rely on Gateway naming.
 
 The tenant is not always a query parameter. Mandate reads, monitoring-exception reads and the
-command centre take `tenant_id` as above; the rebalance-wave lifecycle commands — preview, create,
-source-check and selection — take the tenant as the `X-Tenant-Id` header, one selector across all
-four. On those surfaces the tenant is required and an absent one is refused rather than answered
-from an assumed tenant.
+command centre take `tenant_id` as above. **The wave aggregate takes the tenant as the
+`X-Tenant-Id` header instead — 15 of them, not a named subset.** On those surfaces the tenant is
+required and an absent one is refused rather than answered from an assumed tenant.
+
+The header is the only selector for the wave and mandate data `lotus-manage` owns. It is **not**
+the only `tenant_id` a wave request can carry: `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` preview and
+create bodies accept an optional `tenant_id`, which is forwarded to upstream source products for
+cohort evaluation and is not reconciled against the header. They are different things with the same
+name — the header admits the caller, the body field filters a source lookup — so do not assume
+setting one constrains the other.
+
+One wave-prefixed route is **not** in that set and must not be assumed fenced:
+`GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews`. It reads the outcome-review aggregate,
+which carries no tenant of its own, so a wave-prefixed path does not by itself imply a
+tenant-partitioned response. It is listed with the other unscoped reads below.
+
+- `GET /api/v1/rebalance/waves`
+- `GET /api/v1/rebalance/waves/{wave_id}`
+- `GET /api/v1/rebalance/waves/{wave_id}/items`
+- `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`
+- `GET /api/v1/rebalance/waves/{wave_id}/report-input`
+- `GET /api/v1/rebalance/waves/{wave_id}/supportability`
+- `POST /api/v1/rebalance/waves`
+- `POST /api/v1/rebalance/waves/preview`
+- `POST /api/v1/rebalance/waves/{wave_id}/approve`
+- `POST /api/v1/rebalance/waves/{wave_id}/cancel`
+- `POST /api/v1/rebalance/waves/{wave_id}/handoff`
+- `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
+- `POST /api/v1/rebalance/waves/{wave_id}/simulate`
+- `POST /api/v1/rebalance/waves/{wave_id}/source-check`
+- `POST /api/v1/rebalance/waves/{wave_id}/stage`
+
+Those are method-and-path rather than friendly names deliberately: a test asserts each one against
+the served contract, so a renamed or added operation fails this page instead of quietly ageing it.
+
+Do not build a client from a subset of that list. An earlier version of this page named only four
+of the fifteen, and a consumer enumerating wave operations from it reproduced exactly that gap.
+
+**The bulk-review campaign operations under `/rebalance/waves/campaign-*` also require
+`X-Tenant-Id`, and the served OpenAPI document does not say so.** They read the header through a
+trusted-context dependency rather than a declared parameter, so it is enforced — an absent tenant is
+refused — but it is invisible to a generated client. Send it on those routes even though the spec
+does not list it. Tracked as a contract defect rather than a documentation one, because the fix is
+to declare it.
 
 It is not yet universal. Monitoring **run** reads — `GET /monitoring/runs` and
 `GET /monitoring/runs/{monitoring_run_id}` — still accept no tenant and read across tenants,
 because the monitoring-run aggregate carries no tenant of its own. Do not treat monitoring-run
-responses as tenant-fenced. That gap is tracked with the other unscoped wave and proof-pack
-aggregates.
+responses as tenant-fenced. Five operations are in that state: both monitoring-run reads,
+`GET /rebalance/proof-packs/{proof_pack_id}` with its `summary.md` companion, and
+`GET /rebalance/waves/{wave_id}/outcome-reviews` — the last of which sits under the wave prefix
+while reading an aggregate that is not tenant-scoped.
+
+The wave aggregate is **no longer** among them — migration `0027` scoped it, and this sentence
+previously described the state before that change.
 
 Endpoint certification details are tracked in [Endpoint Certification](Endpoint-Certification).
 
