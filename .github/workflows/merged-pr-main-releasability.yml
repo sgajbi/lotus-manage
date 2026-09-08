@@ -40,11 +40,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           COMMIT_COUNT: ${{ github.event.pull_request.commits }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           if [ -z "$MERGE_COMMIT_SHA" ]; then
             echo "::error::pull_request.merge_commit_sha is required for exact-main releasability dispatch"
+            exit 1
+          fi
+          if [ -z "$BASE_SHA" ]; then
+            echo "::error::pull_request.base.sha was empty; the merged range cannot be bounded"
             exit 1
           fi
           if [ -z "$COMMIT_COUNT" ] || [ "$COMMIT_COUNT" -lt 1 ]; then
@@ -69,7 +74,17 @@ jobs:
           # Ancestry is judged against the freshly fetched main, not the
           # event-time checkout snapshot.
           git checkout --quiet --detach FETCH_HEAD
-          revisions="$(git rev-list -n "$COMMIT_COUNT" "$MERGE_COMMIT_SHA" | tac)"
+          # Enumerate the RANGE the PR added, not a count of commits walked
+          # back from the tip. `pull_request.commits` describes the branch when
+          # the event fired, not what landed: a rebase that drops a commit
+          # already on main leaves the count larger than the window, and the
+          # walk then runs past this PR's history into commits earlier merges
+          # put there. Those are genuine ancestors of main and genuinely number
+          # COMMIT_COUNT, so the ancestry guard and the count assertion below
+          # both PASS on a wrong enumeration - neither can catch it. Realised
+          # twice in sibling repositories, once re-tagging a base commit.
+          git fetch origin --quiet "$BASE_SHA" || true
+          revisions="$(git rev-list --reverse "$BASE_SHA..$MERGE_COMMIT_SHA")"
           if [ -z "$revisions" ]; then
             echo "::error::No revisions enumerated for merged PR #$PR_NUMBER at $MERGE_COMMIT_SHA"
             exit 1
@@ -84,15 +99,30 @@ jobs:
               echo "::error::Revision $revision is not an ancestor of main; refusing to enumerate it."
               exit 1
             fi
+            # Linearity and contiguity both hold for a squash, so neither
+            # separates "this PR added it" from "it was already there".
+            # Reachability from the base does.
+            if git merge-base --is-ancestor "$revision" "$BASE_SHA"; then
+              echo "::error::Revision $revision is reachable from the PR base; it was not added by this PR."
+              exit 1
+            fi
             enumerated=$((enumerated + 1))
           done
 
           # A merged PR of N commits must enumerate N revisions. Asserted rather
           # than assumed, because producing an empty or short list silently is
           # the exact shape of the gap being closed.
-          if [ "$enumerated" -ne "$COMMIT_COUNT" ]; then
-            echo "::error::Enumerated $enumerated revisions for a $COMMIT_COUNT-commit PR #$PR_NUMBER"
+          # The count is now an ASYMMETRIC cross-check, not the enumeration.
+          # Fewer than COMMIT_COUNT is a stale count over a complete range -
+          # an ordinary rebase does this, so it is a notice rather than a
+          # failure. More means the range spans revisions the PR did not add,
+          # and that is refused BEFORE anything is tagged.
+          if [ "$enumerated" -gt "$COMMIT_COUNT" ]; then
+            echo "::error::Enumerated $enumerated revisions for a $COMMIT_COUNT-commit PR #$PR_NUMBER; the range spans revisions this PR did not add."
             exit 1
+          fi
+          if [ "$enumerated" -lt "$COMMIT_COUNT" ]; then
+            echo "::notice::Enumerated $enumerated of a declared $COMMIT_COUNT commits for PR #$PR_NUMBER; pull_request.commits predates the rebase."
           fi
 
           payload="$(printf '%s\n' $revisions | jq -R . | jq -sc .)"

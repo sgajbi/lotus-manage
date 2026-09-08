@@ -22,10 +22,42 @@ WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 def test_merged_pr_dispatch_gates_every_revision_the_pr_put_on_main() -> None:
     dispatcher = (WORKFLOW_ROOT / "merged-pr-main-releasability.yml").read_text(encoding="utf-8")
 
-    # Enumeration of every revision, oldest first, from full history.
+    # Enumerate the RANGE the PR added, oldest first - not a count of commits
+    # walked back from the tip.
+    #
+    # This assertion previously pinned `git rev-list -n "$COMMIT_COUNT"
+    # "$MERGE_COMMIT_SHA" | tac`, so the test and the defect were wrong
+    # together and a correction would have failed the suite while reading as
+    # though the correction were the mistake. `pull_request.commits` describes
+    # the branch when the event fired, not what landed: after a rebase that
+    # drops a commit already on main, the count exceeds the window and the walk
+    # runs into commits earlier merges put there. Those are genuine ancestors
+    # of main and genuinely number COMMIT_COUNT, so the ancestry guard and the
+    # count assertion both pass on a wrong enumeration.
     assert "COMMIT_COUNT: ${{ github.event.pull_request.commits }}" in dispatcher
-    assert 'git rev-list -n "$COMMIT_COUNT" "$MERGE_COMMIT_SHA" | tac' in dispatcher
+    assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in dispatcher
+    assert 'git rev-list --reverse "$BASE_SHA..$MERGE_COMMIT_SHA"' in dispatcher
+    assert 'git rev-list -n "$COMMIT_COUNT"' not in dispatcher, (
+        "the count-bounded walk is the defect this test used to pin"
+    )
     assert "for revision in $revisions; do" in dispatcher
+
+    # The base must be bound and required; an unbounded range is unbounded
+    # error, and the walk runs further back the larger the discrepancy.
+    assert 'if [ -z "$BASE_SHA" ]; then' in dispatcher
+
+    # Reachability from the base is what separates "this PR added it" from
+    # "it was already there". Linearity and contiguity both hold for a squash.
+    assert 'if git merge-base --is-ancestor "$revision" "$BASE_SHA"; then' in dispatcher
+
+    # The count survives as an ASYMMETRIC cross-check. Fewer than declared is
+    # an ordinary rebase and must not fail; more means the range spans
+    # revisions the PR did not add and is refused before anything is tagged.
+    assert '[ "$enumerated" -gt "$COMMIT_COUNT" ]' in dispatcher
+    assert '[ "$enumerated" -lt "$COMMIT_COUNT" ]' in dispatcher
+    assert '-ne "$COMMIT_COUNT"' not in dispatcher, (
+        "a symmetric count check fails every ordinary rebase"
+    )
     assert "fetch-depth: 0" in dispatcher
     # Every dispatch is pinned to its own revision, not the PR head.
     assert 'dispatch_ref="main-releasability-${revision}"' in dispatcher
@@ -255,9 +287,16 @@ def test_the_dispatcher_passes_only_inputs_this_gate_declares() -> None:
 def test_the_dispatcher_asserts_it_enumerated_one_revision_per_commit() -> None:
     """A loop that silently produces nothing is the shape of the gap being closed.
 
-    Enumerating zero or too few revisions would leave the job green with no
-    coverage created - indistinguishable, from the outside, from the defect this
-    issue reports. The count is asserted against the PR's own commit count.
+    Enumerating zero revisions would leave the job green with no coverage
+    created - indistinguishable, from the outside, from the defect this issue
+    reports.
+
+    The count is no longer asserted for equality. `pull_request.commits`
+    describes the branch when the event fired, so an ordinary rebase makes it
+    exceed what landed, and a symmetric check fails every such merge. It is an
+    asymmetric cross-check instead: MORE enumerated than declared means the
+    range spans revisions the PR did not add and is refused; FEWER is a stale
+    count over a complete range and is a notice.
 
     Enumeration and dispatch are separate jobs so the dispatch step stays a flat
     lookup / conditional ref creation / dispatch sequence: workflow_policy_gate
@@ -267,7 +306,8 @@ def test_the_dispatcher_asserts_it_enumerated_one_revision_per_commit() -> None:
 
     dispatcher = (WORKFLOW_ROOT / "merged-pr-main-releasability.yml").read_text(encoding="utf-8")
 
-    assert 'if [ "$enumerated" -ne "$COMMIT_COUNT" ]; then' in dispatcher
+    assert 'if [ -z "$revisions" ]; then' in dispatcher
+    assert '[ "$enumerated" -gt "$COMMIT_COUNT" ]' in dispatcher
     assert "enumerated=$((enumerated + 1))" in dispatcher
     # One dispatch job per enumerated revision, fed from the enumerating job so
     # the dispatched SHA stays bound to the merge event rather than to anything
