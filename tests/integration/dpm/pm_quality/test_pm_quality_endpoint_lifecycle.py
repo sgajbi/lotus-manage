@@ -13,6 +13,13 @@ from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.pm_quality import postgres as pm_quality_postgres
 
 
+# This module deliberately exercises PostgreSQL repository behavior through an
+# in-process driver substitute and contains no live-database proof. The lane
+# inventory requires this explicit whole-module declaration; one monkeypatch is
+# insufficient because a mixed module may also contain a separate live test.
+POSTGRES_LANE_CLASSIFICATION = "fake-backed-module"
+
+
 PM_QUALITY_POSTGRES_SINGLETONS = (
     "_POSTGRES_PM_QUALITY_POLICY_REPOSITORY",
     "_POSTGRES_PM_QUALITY_SCORE_RUN_REPOSITORY",
