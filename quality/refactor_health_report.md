@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-09-08T15:08:37+00:00`
+- Generated at: `2026-09-08T15:34:28+00:00`
 
 - Baseline ref: `origin/main`
 
 - Baseline source snapshot: `0e23e6fcbecfd31a4d5937573db582a1a5b07373`
 
-- Report source snapshot: `0e23e6fc+worktree`
+- Report source snapshot: `6330968d+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,8 +15,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 933 | 936 | +3 |
-| Total Python LOC | 218596 | 219429 | +833 |
-| Test functions | 3174 | 3188 | +14 |
+| Total Python LOC | 218596 | 219556 | +960 |
+| Test functions | 3174 | 3190 | +16 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -93,7 +93,7 @@
 | 7 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |
 | 8 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
 | 9 | test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts | tests/unit/dpm/api/test_waves_api.py | 268 |
-| 10 | test_dpm_supportability_and_async_schemas_have_descriptions_and_examples | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 237 |
+| 10 | execute | tests/unit/dpm/supportability/test_dpm_mandate_repository.py | 242 |
 
 ## Most Complex Functions
 

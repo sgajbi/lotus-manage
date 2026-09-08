@@ -203,9 +203,12 @@ def test_a_row_whose_column_and_payload_disagree_is_served_to_nobody(
     repository.save_monitoring_run(_run(run_id="dmr_split", tenant_id=TENANT_A))
 
     # The body now claims tenant B while the column still says tenant A -
-    # reachable through the conflict clause, reproduced here directly.
+    # reachable through the conflict clause, reproduced here directly. Both
+    # halves of the body are set, because the adapter compares the payload's
+    # tenant in SQL and returns the payload to the caller.
     stored = store.monitoring_runs["dmr_split"]
     stored["payload_json"] = _run(run_id="dmr_split", tenant_id=TENANT_B).model_dump_json()
+    stored["payload_tenant_id"] = TENANT_B
 
     assert repository.get_monitoring_run(monitoring_run_id="dmr_split", tenant_id=TENANT_A) is None
     assert repository.get_monitoring_run(monitoring_run_id="dmr_split", tenant_id=TENANT_B) is None

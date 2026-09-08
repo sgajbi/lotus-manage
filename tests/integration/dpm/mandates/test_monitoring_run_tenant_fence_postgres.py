@@ -246,3 +246,76 @@ def test_a_row_whose_column_and_payload_disagree_is_served_to_nobody(
 
     assert repository.get_monitoring_run(monitoring_run_id=run_id, tenant_id=tenant_a) is None
     assert repository.get_monitoring_run(monitoring_run_id=run_id, tenant_id=tenant_b) is None
+
+
+def test_a_contradictory_row_does_not_shorten_the_page_it_is_excluded_from(
+    repository: PostgresDpmMandateRepository, tenants: tuple[str, str]
+) -> None:
+    """The owner-agreement predicate must filter the SET, not the fetched page.
+
+    The first version of this fence compared the payload's tenant in Python,
+    after the query had already applied `LIMIT`. A contradictory row that sorts
+    ahead of the caller's own runs then consumed the window and was dropped
+    afterwards, so the caller received a SHORT page - here, an EMPTY one with
+    no cursor - while its own older runs sat unread and unreachable.
+
+    That is the same defect as filtering a page instead of a set, arriving
+    through a second predicate rather than the tenant one. Raised in review on
+    PR #695; this is the case it named.
+    """
+
+    tenant_a, tenant_b = tenants
+    suffix = uuid.uuid4().hex[:12]
+    contradictory = f"dmr_split_{suffix}"
+    newer = f"dmr_valid_newer_{suffix}"
+    older = f"dmr_valid_older_{suffix}"
+
+    # Newest, and contradictory: the column says tenant A, the body says B.
+    # Two saves, because that is how the row reaches this state in production -
+    # ON CONFLICT refreshes the body and leaves the owner column alone.
+    repository.save_monitoring_run(
+        _run(
+            run_id=contradictory,
+            tenant_id=tenant_a,
+            requested_at=datetime(2026, 5, 5, 12, 0, tzinfo=timezone.utc),
+        )
+    )
+    repository.save_monitoring_run(
+        _run(
+            run_id=contradictory,
+            tenant_id=tenant_b,
+            requested_at=datetime(2026, 5, 5, 12, 0, tzinfo=timezone.utc),
+        )
+    )
+    # Two valid runs, so a correct page still has a NEXT one. With a single
+    # valid run the absent cursor is right for a different reason and the test
+    # could not tell a preserved window from an exhausted one.
+    repository.save_monitoring_run(
+        _run(
+            run_id=newer,
+            tenant_id=tenant_a,
+            requested_at=datetime(2026, 5, 4, 12, 0, tzinfo=timezone.utc),
+        )
+    )
+    repository.save_monitoring_run(
+        _run(
+            run_id=older,
+            tenant_id=tenant_a,
+            requested_at=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
+        )
+    )
+
+    page, cursor = repository.list_monitoring_runs(
+        status=None, limit=1, cursor=None, tenant_id=tenant_a
+    )
+
+    assert [item.monitoring_run_id for item in page] == [newer], (
+        "the contradictory row consumed the page window and was filtered "
+        "afterwards, so the caller's own run was never returned"
+    )
+    assert cursor == newer, "the window was consumed, so no next page was offered"
+
+    following, _ = repository.list_monitoring_runs(
+        status=None, limit=50, cursor=cursor, tenant_id=tenant_a
+    )
+    assert [item.monitoring_run_id for item in following] == [older]
