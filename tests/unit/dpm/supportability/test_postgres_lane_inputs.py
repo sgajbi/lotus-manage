@@ -105,7 +105,11 @@ def imports_a_postgres_adapter(source: str) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             if any(
-                alias.name.startswith(ADAPTER_MODULE_ROOT) and "postgres" in alias.name.casefold()
+                alias.name.startswith(ADAPTER_MODULE_ROOT)
+                and (
+                    "postgres" in alias.name.casefold()
+                    or _package_exports_postgres_adapter(alias.name)
+                )
                 for alias in node.names
             ):
                 return True
@@ -117,7 +121,36 @@ def imports_a_postgres_adapter(source: str) -> bool:
                 return True
             if any("postgres" in alias.name.casefold() for alias in node.names):
                 return True
+            if any(
+                _package_exports_postgres_adapter(f"{module}.{alias.name}") for alias in node.names
+            ):
+                return True
     return False
+
+
+def _package_exports_postgres_adapter(module: str) -> bool:
+    """Whether a repository package directly exports a PostgreSQL adapter.
+
+    Importing `src.infrastructure.mandates as mandates` gives the caller every
+    name exported from that package even though neither the import path nor its
+    local alias says `postgres`. Resolve that ambiguity from the package source
+    instead of guessing from the test filename or treating all infrastructure
+    imports as database proof.
+    """
+
+    package_init = REPOSITORY_ROOT.joinpath(*module.split("."), "__init__.py")
+    if not package_init.is_file():
+        return False
+    try:
+        tree = ast.parse(package_init.read_text(encoding="utf-8"))
+    except SyntaxError:  # pragma: no cover - broken package source fails elsewhere
+        return False
+    return any(
+        "postgres" in (node.module or "").casefold()
+        or any("postgres" in alias.name.casefold() for alias in node.names)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import | ast.ImportFrom)
+    )
 
 
 def stubs_the_driver(source: str) -> bool:
@@ -176,6 +209,8 @@ def test_the_detector_reads_every_import_form_and_only_imports() -> None:
     assert imports_a_postgres_adapter(
         "from src.infrastructure.mandates import PostgresDpmMandateRepository\n"
     )
+    assert imports_a_postgres_adapter("import src.infrastructure.mandates as mandates\n")
+    assert imports_a_postgres_adapter("from src.infrastructure import mandates\n")
     assert imports_a_postgres_adapter("import src.infrastructure.waves.postgres\n")
 
     assert not imports_a_postgres_adapter("from src.infrastructure.mandates.in_memory import X\n")
