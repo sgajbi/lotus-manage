@@ -940,15 +940,19 @@ class _FakeConnection:
                 arg_index += 1
             if "monitoring_run_id < %s" in normalized:
                 cursor = params[arg_index]
-                arg_index += 5
-                # The cursor row resolves under the SAME tenant, which is the
-                # point of the subquery fence: another tenant's run id must not
-                # resolve to a started_at and so must not position the page.
+                arg_index += 7
+                # The anchor resolves under the SAME visibility rule as the
+                # page: tenant AND owner agreement. Another tenant's run id
+                # must not resolve to a started_at, and neither must a
+                # contradictory row that no caller can read - even though its
+                # column still names this tenant.
                 anchor = next(
                     (
                         row
                         for row in self.store.monitoring_runs.values()
-                        if row["monitoring_run_id"] == cursor and row["tenant_id"] == tenant_id
+                        if row["monitoring_run_id"] == cursor
+                        and row["tenant_id"] == tenant_id
+                        and row["payload_tenant_id"] == tenant_id
                     ),
                     None,
                 )

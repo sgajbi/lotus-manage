@@ -319,3 +319,67 @@ def test_a_contradictory_row_does_not_shorten_the_page_it_is_excluded_from(
         status=None, limit=50, cursor=cursor, tenant_id=tenant_a
     )
     assert [item.monitoring_run_id for item in following] == [older]
+
+
+def test_a_cursor_naming_an_invisible_contradictory_row_is_refused(
+    repository: PostgresDpmMandateRepository, tenants: tuple[str, str]
+) -> None:
+    """The anchor resolves under the page's own visibility rule, both predicates.
+
+    A contradictory row is invisible to every caller, but its `tenant_id`
+    COLUMN still names one. That tenant could pass the row's id as a cursor and
+    page from a position it cannot read, because the anchor subqueries checked
+    only the column. The two adapters then disagreed about the consequence -
+    PostgreSQL returned the valid runs older than the invisible row, the
+    in-memory store returned nothing - which is its own signal that the rule
+    was stated in two places and only one of them was complete.
+
+    A cursor naming a row the caller cannot read is refused, exactly as it
+    already is for another tenant's row. Raised in review on PR #695.
+    """
+
+    tenant_a, tenant_b = tenants
+    suffix = uuid.uuid4().hex[:12]
+    contradictory = f"dmr_split_{suffix}"
+    older = f"dmr_older_{suffix}"
+
+    repository.save_monitoring_run(
+        _run(
+            run_id=contradictory,
+            tenant_id=tenant_a,
+            requested_at=datetime(2026, 5, 5, 12, 0, tzinfo=timezone.utc),
+        )
+    )
+    repository.save_monitoring_run(
+        _run(
+            run_id=contradictory,
+            tenant_id=tenant_b,
+            requested_at=datetime(2026, 5, 5, 12, 0, tzinfo=timezone.utc),
+        )
+    )
+    repository.save_monitoring_run(
+        _run(
+            run_id=older,
+            tenant_id=tenant_a,
+            requested_at=datetime(2026, 5, 4, 12, 0, tzinfo=timezone.utc),
+        )
+    )
+
+    # The column still names tenant A, which is what made this reachable.
+    with closing(repository._connect()) as connection:  # noqa: SLF001
+        row = connection.execute(
+            "SELECT tenant_id FROM dpm_monitoring_runs WHERE monitoring_run_id = %s",
+            (contradictory,),
+        ).fetchone()
+    column = row["tenant_id"] if isinstance(row, dict) else row[0]
+    assert column == tenant_a, "the premise of this test is that the column still admits A"
+
+    page, cursor = repository.list_monitoring_runs(
+        status=None, limit=50, cursor=contradictory, tenant_id=tenant_a
+    )
+
+    assert page == [], (
+        "a row the caller cannot read positioned its page; the anchor subquery "
+        "applies the tenant predicate but not the owner agreement"
+    )
+    assert cursor is None
