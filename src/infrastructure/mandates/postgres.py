@@ -62,6 +62,23 @@ _MANDATE_VERSION_ORDER = (
 )
 
 
+def _run_owned_by(run: DpmMonitoringRun, tenant_id: str) -> bool:
+    """The stored column and the stored body must name the same owner.
+
+    `tenant_id` is a column AND a key inside `filters_json`/`payload_json`, fed
+    from one value at insert. The ON CONFLICT clause refreshes the payload and
+    the filters but deliberately never the column, so a later save carrying a
+    different tenant rewrites the body while the fence keeps answering with the
+    original owner. The column then admits the caller and the payload handed
+    back is another tenant's.
+
+    Both must agree with the caller, so a row whose own two records disagree is
+    served to nobody rather than to whichever of the two the fence consulted.
+    """
+
+    return run.filters.get("tenant_id") == tenant_id
+
+
 class PostgresDpmMandateRepository:
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
@@ -388,13 +405,18 @@ class PostgresDpmMandateRepository:
         self,
         *,
         monitoring_run_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMonitoringRun]:
-        query = "SELECT payload_json FROM dpm_monitoring_runs WHERE monitoring_run_id = %s"
+        query = (
+            "SELECT payload_json FROM dpm_monitoring_runs "
+            "WHERE monitoring_run_id = %s AND tenant_id = %s"
+        )
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (monitoring_run_id,)).fetchone()
+            row = connection.execute(query, (monitoring_run_id, tenant_id)).fetchone()
         if row is None:
             return None
-        return load_model_json(DpmMonitoringRun, _payload(row))
+        run = load_model_json(DpmMonitoringRun, _payload(row))
+        return run if _run_owned_by(run, tenant_id) else None
 
     def list_monitoring_runs(
         self,
@@ -402,9 +424,13 @@ class PostgresDpmMandateRepository:
         status: Optional[str],
         limit: int,
         cursor: Optional[str],
+        tenant_id: str,
     ) -> tuple[list[DpmMonitoringRun], Optional[str]]:
-        where_clauses: list[str] = []
-        args: list[Any] = []
+        # Seeded, not appended conditionally: the tenant predicate is not
+        # optional, and a shape where it is one clause among several invites a
+        # later edit that makes it conditional too.
+        where_clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         if status is not None:
             where_clauses.append("status = %s")
             args.append(status)
@@ -412,16 +438,25 @@ class PostgresDpmMandateRepository:
             where_clauses.append(
                 """
                 (
-                    started_at < (SELECT started_at FROM dpm_monitoring_runs WHERE monitoring_run_id = %s)
+                    started_at < (
+                        SELECT started_at FROM dpm_monitoring_runs
+                        WHERE monitoring_run_id = %s AND tenant_id = %s
+                    )
                     OR (
-                        started_at = (SELECT started_at FROM dpm_monitoring_runs WHERE monitoring_run_id = %s)
+                        started_at = (
+                            SELECT started_at FROM dpm_monitoring_runs
+                            WHERE monitoring_run_id = %s AND tenant_id = %s
+                        )
                         AND monitoring_run_id < %s
                     )
                 )
                 """
             )
-            args.extend([cursor, cursor, cursor])
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+            # The cursor row is resolved under the same tenant. An unfenced
+            # subquery leaks ordering position even when the page is fenced:
+            # another tenant's run id would still resolve to a started_at.
+            args.extend([cursor, tenant_id, cursor, tenant_id, cursor])
+        where_sql = f"WHERE {' AND '.join(where_clauses)}"
         query = f"""
             SELECT payload_json, monitoring_run_id
             FROM dpm_monitoring_runs
@@ -432,7 +467,11 @@ class PostgresDpmMandateRepository:
         args.append(limit + 1)
         with closing(self._connect()) as connection:
             rows = connection.execute(query, tuple(args)).fetchall()
-        runs = [load_model_json(DpmMonitoringRun, _payload(row)) for row in rows]
+        runs = [
+            run
+            for run in (load_model_json(DpmMonitoringRun, _payload(row)) for row in rows)
+            if _run_owned_by(run, tenant_id)
+        ]
         page = runs[:limit]
         next_cursor = page[-1].monitoring_run_id if len(runs) > limit else None
         return page, next_cursor

@@ -13,7 +13,6 @@ store can be made to agree with any claim about them, including a false one.
 from __future__ import annotations
 
 import json
-import os
 import uuid
 from contextlib import closing
 from datetime import date
@@ -23,11 +22,9 @@ import pytest
 from src.core.mandates import DpmMandateConstraintSet, DpmMandateDigitalTwin, DpmMandateReviewPolicy
 from src.infrastructure.mandates.postgres import PostgresDpmMandateRepository
 
-_DSN = os.getenv("DPM_POSTGRES_INTEGRATION_DSN", "").strip()
+from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
 
-pytestmark = pytest.mark.skipif(
-    not _DSN, reason="DPM_POSTGRES_INTEGRATION_DSN is required for the tenant isolation proof"
-)
+_PROOF = "mandate tenant isolation proof"
 
 TENANT_A = "tenant-alpha"
 TENANT_B = "tenant-beta"
@@ -35,7 +32,7 @@ TENANT_B = "tenant-beta"
 
 @pytest.fixture
 def repository() -> PostgresDpmMandateRepository:
-    return PostgresDpmMandateRepository(dsn=_DSN)
+    return PostgresDpmMandateRepository(dsn=postgres_dsn_or_skip(_PROOF))
 
 
 def _twin(

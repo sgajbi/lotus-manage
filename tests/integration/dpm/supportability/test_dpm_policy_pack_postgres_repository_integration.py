@@ -1,4 +1,3 @@
-import os
 import uuid
 from contextlib import closing
 
@@ -6,22 +5,29 @@ import pytest
 
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.dpm_policy_packs.postgres import PostgresDpmPolicyPackRepository
+from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_fake
 from tests.unit.dpm.supportability.test_dpm_policy_pack_postgres_repository import (
     _build_repository as _build_fake_repository,
 )
 
-_DSN = os.getenv("DPM_POSTGRES_INTEGRATION_DSN", "").strip()
+_PROOF = "live policy-pack repository contract"
 
 
 @pytest.fixture
 def repository(monkeypatch: pytest.MonkeyPatch) -> PostgresDpmPolicyPackRepository:
-    if _DSN:
-        try:
-            repo = PostgresDpmPolicyPackRepository(dsn=_DSN)
-            _reset_tables(repo)
-            return repo
-        except Exception:
-            pass
+    """The real engine when one is offered, the fake only when none is.
+
+    The previous form caught every exception from the real repository and fell
+    through to the fake, so a refused connection or a failed migration produced
+    a green run under a name that says `live_postgres`. A configured DSN now
+    means the real engine is expected to work.
+    """
+
+    dsn = postgres_dsn_or_fake(_PROOF)
+    if dsn is not None:
+        repo = PostgresDpmPolicyPackRepository(dsn=dsn)
+        _reset_tables(repo)
+        return repo
     repo, _ = _build_fake_repository(monkeypatch)
     return repo
 

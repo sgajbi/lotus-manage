@@ -42,7 +42,7 @@ Gateway should expose a product-facing command-center contract that composes the
 | --- | --- | --- |
 | Book-level health cockpit | `GET /api/v1/dpm/command-center` | Pass tenant, portfolio-manager, book, as-of, and health filters. Preserve supportability and source-run lineage. |
 | Monitoring execution | `POST /api/v1/dpm/monitoring/run-once` | Restrict execution to entitled books or explicit mandate ids. Add user, tenant, and channel context. |
-| Monitoring run audit | `GET /api/v1/dpm/monitoring/runs` and `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}` | Provide newest-first audit view and drill-down. |
+| Monitoring run audit | `GET /api/v1/dpm/monitoring/runs` and `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}` | Provide newest-first audit view and drill-down. **Both require `tenant_id`** and return only that tenant's runs; forward the tenant already resolved for the cockpit rather than deriving a second one. A call without it is refused with `422`. |
 | Exception queue | `GET /api/v1/dpm/exceptions` | Shape for table and drill-down panels without changing reason codes, severity, or recommended action. |
 | Exception resolution | `POST /api/v1/dpm/exceptions/{exception_id}/resolve` | Enforce resolver entitlement and pass bounded resolution reason. |
 | Mandate drill-down | `GET /api/v1/mandates/{mandate_id}`, `GET /api/v1/mandates/{mandate_id}/health`, `GET /api/v1/mandates/{mandate_id}/diff` | Provide twin, score, dimension evidence, and version delta for the selected mandate. Forward `as_of_date` to the health read for historical reviews and preserve the resolved snapshot date. |

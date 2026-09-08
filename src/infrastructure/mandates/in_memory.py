@@ -194,10 +194,18 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         self,
         *,
         monitoring_run_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMonitoringRun]:
         with self._lock:
             run = self._monitoring_runs.get(monitoring_run_id)
-            return deepcopy(run) if run is not None else None
+            # The tenant lives in `filters`, not as a model field: the column
+            # is fed from `run.filters.get("tenant_id")`. Reading it the same
+            # way here keeps the two adapters answering one question rather
+            # than two. A run with no recorded tenant is matched by no caller,
+            # the same quarantine the mandate and wave aggregates use.
+            if run is None or run.filters.get("tenant_id") != tenant_id:
+                return None
+            return deepcopy(run)
 
     def list_monitoring_runs(
         self,
@@ -205,9 +213,16 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         status: Optional[str],
         limit: int,
         cursor: Optional[str],
+        tenant_id: str,
     ) -> tuple[list[DpmMonitoringRun], Optional[str]]:
         with self._lock:
-            rows = list(self._monitoring_runs.values())
+            # Filtered before paging: filtering a page would silently return
+            # fewer of the caller's own runs than the page they asked for.
+            rows = [
+                row
+                for row in self._monitoring_runs.values()
+                if row.filters.get("tenant_id") == tenant_id
+            ]
             if status is not None:
                 rows = [row for row in rows if row.status == status]
             rows = sorted(

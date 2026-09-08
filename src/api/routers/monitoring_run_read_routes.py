@@ -4,6 +4,7 @@ from typing import Literal, Optional
 
 from fastapi import Depends, Query
 
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.dependencies import get_mandate_repository
 from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
 from src.api.routers.monitoring import router
@@ -24,6 +25,7 @@ from src.core.mandates import DpmMonitoringRun
     responses={200: {"description": "Bounded monitoring run page."}},
 )
 async def read_monitoring_runs(
+    tenant_id: MandateTenantId,
     status_filter: Optional[Literal["SUCCEEDED", "FAILED"]] = Query(
         default=None,
         description="Optional terminal status filter.",
@@ -38,6 +40,7 @@ async def read_monitoring_runs(
         status=status_filter,
         limit=limit,
         cursor=cursor,
+        tenant_id=tenant_id,
     )
     return DpmMonitoringRunPage(items=items, next_cursor=next_cursor)
 
@@ -54,11 +57,13 @@ async def read_monitoring_runs(
 )
 async def read_monitoring_run(
     monitoring_run_id: str,
+    tenant_id: MandateTenantId,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMonitoringRun:
     return read_mandate_with_not_found_http_mapping(
         lambda: get_monitoring_run(
             repository=repository,
             monitoring_run_id=monitoring_run_id,
+            tenant_id=tenant_id,
         )
     )

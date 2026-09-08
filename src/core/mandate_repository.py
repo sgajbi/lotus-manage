@@ -72,6 +72,7 @@ class DpmMandateRepository(Protocol):
         self,
         *,
         monitoring_run_id: str,
+        tenant_id: str,
     ) -> Optional[DpmMonitoringRun]: ...
 
     def list_monitoring_runs(
@@ -80,6 +81,7 @@ class DpmMandateRepository(Protocol):
         status: Optional[str],
         limit: int,
         cursor: Optional[str],
+        tenant_id: str,
     ) -> tuple[list[DpmMonitoringRun], Optional[str]]: ...
 
     def list_monitoring_exceptions(

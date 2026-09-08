@@ -18,7 +18,6 @@ CI job that owns the database runs this file explicitly.
 
 from __future__ import annotations
 
-import os
 import random
 import uuid
 
@@ -41,13 +40,11 @@ from src.core.mandates import (
 )
 from src.infrastructure.mandates.postgres import PostgresDpmMandateRepository
 
-_DSN = os.getenv("DPM_POSTGRES_INTEGRATION_DSN", "").strip()
+from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
+
+_PROOF = "mandate temporal-read proof"
 
 TENANT_ID = "tenant-integration"
-
-pytestmark = pytest.mark.skipif(
-    not _DSN, reason="DPM_POSTGRES_INTEGRATION_DSN is required for the temporal-read proof"
-)
 
 _AS_OF = date(2026, 5, 3)
 
@@ -78,7 +75,7 @@ def _twin(
 
 @pytest.fixture
 def repository() -> PostgresDpmMandateRepository:
-    return PostgresDpmMandateRepository(dsn=_DSN)
+    return PostgresDpmMandateRepository(dsn=postgres_dsn_or_skip(_PROOF))
 
 
 def _clear(repository: PostgresDpmMandateRepository, mandate_id: str) -> None:

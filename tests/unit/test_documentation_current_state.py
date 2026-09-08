@@ -2893,3 +2893,78 @@ def test_the_wiki_wave_header_count_is_derived_from_the_served_contract() -> Non
         "the tenant-header section must name the one wave route that is not fenced; "
         "a reader of that list would otherwise assume the wave prefix implies fencing"
     )
+
+
+def _tenant_query_is_required(operation: dict[str, object]) -> bool:
+    return any(
+        parameter["name"] == "tenant_id"
+        and parameter["in"] == "query"
+        and parameter.get("required")
+        for parameter in operation.get("parameters", [])  # type: ignore[union-attr]
+    )
+
+
+def test_the_wiki_tenant_scope_claims_are_derived_from_the_served_contract() -> None:
+    """The page's scoped/unscoped claims must fail when the contract moves.
+
+    The paragraph this pins previously said monitoring-run reads were unfenced
+    "because the monitoring-run aggregate carries no tenant of its own". The
+    column had existed since migration 0003; the reads simply never consulted
+    it. The sentence was wrong on the day it was written and nothing could tell,
+    because every other assertion about this page checks that it MENTIONS
+    something - which a false statement does as well as a true one.
+
+    So this reads the served document. Fence one of the operations named below
+    as unscoped, or unfence one named as scoped, and this test fails until the
+    page is corrected.
+    """
+
+    spec = app.openapi()
+    operations = {
+        f"{method.upper()} {path}": operation
+        for path, path_item in spec["paths"].items()
+        for method, operation in path_item.items()
+        if method in {"get", "post", "put", "patch", "delete"}
+    }
+
+    scoped = {
+        "GET /api/v1/dpm/monitoring/runs",
+        "GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}",
+    }
+    # Named as unscoped on the page. `report-input` and `ai-evidence-input` are
+    # deliberately absent: they DO declare a required tenant_id and are still
+    # unfenced, which is why the page describes them separately and issue #694
+    # calls the parameter misleading rather than missing. A membership test
+    # here would report them as fenced.
+    unscoped = {
+        "GET /api/v1/rebalance/proof-packs/{proof_pack_id}",
+        "GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md",
+        "GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews",
+    }
+
+    missing = sorted((scoped | unscoped) - set(operations))
+    assert not missing, f"the page names operations the contract does not serve: {missing}"
+
+    unfenced_but_claimed_scoped = sorted(
+        name for name in scoped if not _tenant_query_is_required(operations[name])
+    )
+    assert not unfenced_but_claimed_scoped, (
+        "wiki/API-Surface.md says these take a required tenant_id and the served "
+        f"contract disagrees: {unfenced_but_claimed_scoped}"
+    )
+
+    fenced_but_claimed_unscoped = sorted(
+        name for name in unscoped if _tenant_query_is_required(operations[name])
+    )
+    assert not fenced_but_claimed_unscoped, (
+        "wiki/API-Surface.md still lists these as unscoped after they were fenced; "
+        f"update the page and issue #694: {fenced_but_claimed_unscoped}"
+    )
+
+    api_surface = (ROOT / "wiki" / "API-Surface.md").read_text(encoding="utf-8")
+    assert "required `tenant_id` query parameter" in api_surface
+    assert "matched\n  by no caller at all rather than by whoever asks" in api_surface, (
+        "the page must keep saying that a NULL-tenant run is quarantined rather "
+        "than defaulted; that is the property the migration relies on"
+    )
+    assert "issue #694" in api_surface
