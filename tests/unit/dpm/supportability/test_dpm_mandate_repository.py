@@ -1,3 +1,5 @@
+import json
+
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
@@ -899,6 +901,10 @@ class _FakeConnection:
                 "tenant_id": params[4],
                 "started_at": params[8],
                 "payload_json": params[11],
+                # The body's own tenant, which the adapter now compares in SQL.
+                # ON CONFLICT refreshes this and never the column above, so the
+                # two can disagree and the fake must be able to represent that.
+                "payload_tenant_id": json.loads(params[6]).get("tenant_id"),
             }
             return _FakeResult(rowcount=1)
         if (
@@ -906,7 +912,11 @@ class _FakeConnection:
             and "where monitoring_run_id" in normalized
         ):
             row = self.store.monitoring_runs.get(str(params[0]))
-            if row is None or row["tenant_id"] != params[1]:
+            if (
+                row is None
+                or row["tenant_id"] != params[1]
+                or row["payload_tenant_id"] != params[2]
+            ):
                 return _FakeResult()
             return _FakeResult(rows=[{"payload_json": row["payload_json"]}])
         if "select payload_json, monitoring_run_id from dpm_monitoring_runs" in normalized:
@@ -916,8 +926,15 @@ class _FakeConnection:
             rows = list(self.store.monitoring_runs.values())
             arg_index = 0
             tenant_id = params[arg_index]
-            arg_index += 1
-            rows = [row for row in rows if row["tenant_id"] == tenant_id]
+            arg_index += 2  # the tenant is bound twice: column, then payload
+            # Both predicates are in the WHERE clause, so both apply to the SET
+            # before LIMIT. Filtering here rather than after the slice below is
+            # what makes the fake able to fail the short-page case at all.
+            rows = [
+                row
+                for row in rows
+                if row["tenant_id"] == tenant_id and row["payload_tenant_id"] == tenant_id
+            ]
             if "status = %s" in normalized:
                 rows = [row for row in rows if row["status"] == params[arg_index]]
                 arg_index += 1

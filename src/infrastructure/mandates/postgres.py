@@ -62,21 +62,25 @@ _MANDATE_VERSION_ORDER = (
 )
 
 
-def _run_owned_by(run: DpmMonitoringRun, tenant_id: str) -> bool:
-    """The stored column and the stored body must name the same owner.
-
-    `tenant_id` is a column AND a key inside `filters_json`/`payload_json`, fed
-    from one value at insert. The ON CONFLICT clause refreshes the payload and
-    the filters but deliberately never the column, so a later save carrying a
-    different tenant rewrites the body while the fence keeps answering with the
-    original owner. The column then admits the caller and the payload handed
-    back is another tenant's.
-
-    Both must agree with the caller, so a row whose own two records disagree is
-    served to nobody rather than to whichever of the two the fence consulted.
-    """
-
-    return run.filters.get("tenant_id") == tenant_id
+# The stored column and the stored body must name the same owner.
+#
+# `tenant_id` is a column AND a key inside `payload_json`, fed from one value at
+# insert. The ON CONFLICT clause refreshes the payload and the filters but
+# deliberately never the column, so a later save carrying a different tenant
+# rewrites the body while the fence keeps answering with the original owner. The
+# column then admits the caller and the payload handed back is another tenant's.
+#
+# Both must agree with the caller, so a row whose own two records disagree is
+# served to nobody rather than to whichever of the two the fence consulted.
+#
+# In SQL rather than after the fetch, and that placement is the whole point.
+# Applied in Python this predicate runs AFTER `LIMIT`, so contradictory rows
+# consume the fetched window and the caller receives a SHORT page with no
+# cursor while its own older runs remain unread - a filtered page instead of a
+# filtered set, which is the exact defect the tenant predicate is seeded to
+# avoid two lines below. `payload_json` is JSONB (migration 0004), so the
+# engine can answer this as part of the set.
+_OWNER_AGREEMENT_SQL = "payload_json -> 'filters' ->> 'tenant_id' = %s"
 
 
 class PostgresDpmMandateRepository:
@@ -409,14 +413,13 @@ class PostgresDpmMandateRepository:
     ) -> Optional[DpmMonitoringRun]:
         query = (
             "SELECT payload_json FROM dpm_monitoring_runs "
-            "WHERE monitoring_run_id = %s AND tenant_id = %s"
+            f"WHERE monitoring_run_id = %s AND tenant_id = %s AND {_OWNER_AGREEMENT_SQL}"
         )
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (monitoring_run_id, tenant_id)).fetchone()
+            row = connection.execute(query, (monitoring_run_id, tenant_id, tenant_id)).fetchone()
         if row is None:
             return None
-        run = load_model_json(DpmMonitoringRun, _payload(row))
-        return run if _run_owned_by(run, tenant_id) else None
+        return load_model_json(DpmMonitoringRun, _payload(row))
 
     def list_monitoring_runs(
         self,
@@ -429,8 +432,8 @@ class PostgresDpmMandateRepository:
         # Seeded, not appended conditionally: the tenant predicate is not
         # optional, and a shape where it is one clause among several invites a
         # later edit that makes it conditional too.
-        where_clauses: list[str] = ["tenant_id = %s"]
-        args: list[Any] = [tenant_id]
+        where_clauses: list[str] = ["tenant_id = %s", _OWNER_AGREEMENT_SQL]
+        args: list[Any] = [tenant_id, tenant_id]
         if status is not None:
             where_clauses.append("status = %s")
             args.append(status)
@@ -467,11 +470,7 @@ class PostgresDpmMandateRepository:
         args.append(limit + 1)
         with closing(self._connect()) as connection:
             rows = connection.execute(query, tuple(args)).fetchall()
-        runs = [
-            run
-            for run in (load_model_json(DpmMonitoringRun, _payload(row)) for row in rows)
-            if _run_owned_by(run, tenant_id)
-        ]
+        runs = [load_model_json(DpmMonitoringRun, _payload(row)) for row in rows]
         page = runs[:limit]
         next_cursor = page[-1].monitoring_run_id if len(runs) > limit else None
         return page, next_cursor

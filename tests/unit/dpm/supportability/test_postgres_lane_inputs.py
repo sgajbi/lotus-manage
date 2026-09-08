@@ -21,11 +21,25 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
 MAKEFILE = REPOSITORY_ROOT / "Makefile"
 INTEGRATION_ROOT = REPOSITORY_ROOT / "tests" / "integration"
 
-# A file is a PostgreSQL proof when it imports the adapter package or the
-# shared prerequisite. Matching on the FILENAME would have been simpler and
-# wrong: `test_mandate_temporal_reads_postgres.py` says so in its name, but
-# nothing makes the next author repeat the convention, and a proof that quietly
-# fell outside the naming rule is precisely the case this test exists to catch.
+# What makes a file a PostgreSQL proof: it imports a PostgreSQL ADAPTER.
+#
+# Matching on the FILENAME would have been simpler and wrong -
+# `test_mandate_temporal_reads_postgres.py` says so in its name, but nothing
+# makes the next author repeat the convention. The first version of this test
+# then made the same mistake one level down: it matched the prerequisite helper
+# names and one environment-variable string, so a proof reaching PostgreSQL
+# through its own DSN variable and its own skip was invisible, and BOTH tests
+# below passed while the lane omitted exactly the file they claim to cover.
+# Raised in review on PR #695.
+#
+# The import is the thing that cannot be avoided: a test cannot exercise the
+# PostgreSQL adapter without naming it. The helper and env-var markers are kept
+# as a widening, not as the definition.
+ADAPTER_IMPORT = re.compile(
+    r"^\s*(?:from|import)\s+src\.infrastructure\.[\w.]*postgres[\w.]*",
+    re.MULTILINE,
+)
+
 MARKERS = (
     "postgres_dsn_or_skip",
     "postgres_dsn_or_fake",
@@ -56,11 +70,32 @@ def _lane_paths() -> list[str]:
 
 
 def _postgres_proof_files() -> list[Path]:
-    return sorted(
-        path
-        for path in INTEGRATION_ROOT.rglob("test_*.py")
-        if any(marker in path.read_text(encoding="utf-8") for marker in MARKERS)
+    def is_proof(path: Path) -> bool:
+        text = path.read_text(encoding="utf-8")
+        return bool(ADAPTER_IMPORT.search(text)) or any(marker in text for marker in MARKERS)
+
+    return sorted(path for path in INTEGRATION_ROOT.rglob("test_*.py") if is_proof(path))
+
+
+def test_the_detector_recognises_an_adapter_import_on_its_own() -> None:
+    """The widened detector must actually widen.
+
+    A detector that still keys on the helper names would pass every assertion
+    below while missing the file they exist to catch, and nothing about a green
+    run distinguishes the two. So this asserts the discriminating case directly:
+    an adapter import, with no helper name and no environment variable
+    anywhere.
+    """
+
+    assert ADAPTER_IMPORT.search(
+        "from src.infrastructure.mandates.postgres import PostgresDpmMandateRepository\n"
     )
+    assert ADAPTER_IMPORT.search(
+        "from src.infrastructure.rebalance_runs.idea_management_actions_postgres import X\n"
+    )
+    assert not ADAPTER_IMPORT.search("from src.infrastructure.mandates.in_memory import X\n")
+    # A mention in prose or a docstring is not an import.
+    assert not ADAPTER_IMPORT.search('"""Talks about src.infrastructure.waves.postgres."""\n')
 
 
 def test_the_lane_names_every_postgres_proof_file() -> None:
