@@ -439,26 +439,40 @@ class PostgresDpmMandateRepository:
             args.append(status)
         if cursor is not None:
             where_clauses.append(
-                """
+                f"""
                 (
                     started_at < (
                         SELECT started_at FROM dpm_monitoring_runs
                         WHERE monitoring_run_id = %s AND tenant_id = %s
+                          AND {_OWNER_AGREEMENT_SQL}
                     )
                     OR (
                         started_at = (
                             SELECT started_at FROM dpm_monitoring_runs
                             WHERE monitoring_run_id = %s AND tenant_id = %s
+                              AND {_OWNER_AGREEMENT_SQL}
                         )
                         AND monitoring_run_id < %s
                     )
                 )
                 """
             )
-            # The cursor row is resolved under the same tenant. An unfenced
-            # subquery leaks ordering position even when the page is fenced:
-            # another tenant's run id would still resolve to a started_at.
-            args.extend([cursor, tenant_id, cursor, tenant_id, cursor])
+            # The anchor row is resolved under EXACTLY the visibility rule the
+            # page uses. Two predicates, not one:
+            #
+            # the tenant, because an unfenced subquery leaks ordering position
+            # even when the page is fenced - another tenant's run id would
+            # still resolve to a started_at;
+            #
+            # and the owner agreement, because a contradictory row is invisible
+            # to everyone yet its column still names a tenant. That tenant
+            # could hand back the row's own id as a cursor and page from a
+            # position it cannot see - and the two adapters disagreed about
+            # what happened next, PostgreSQL returning older valid runs while
+            # the in-memory store returned nothing. A cursor naming a row the
+            # caller cannot read is refused, which is what it already does for
+            # every other invisible row.
+            args.extend([cursor, tenant_id, tenant_id, cursor, tenant_id, tenant_id, cursor])
         where_sql = f"WHERE {' AND '.join(where_clauses)}"
         query = f"""
             SELECT payload_json, monitoring_run_id
