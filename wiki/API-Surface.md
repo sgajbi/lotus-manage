@@ -349,13 +349,30 @@ refused — but it is invisible to a generated client. Send it on those routes e
 does not list it. Tracked as a contract defect rather than a documentation one, because the fix is
 to declare it.
 
-It is not yet universal. Monitoring **run** reads — `GET /monitoring/runs` and
-`GET /monitoring/runs/{monitoring_run_id}` — still accept no tenant and read across tenants,
-because the monitoring-run aggregate carries no tenant of its own. Do not treat monitoring-run
-responses as tenant-fenced. Five operations are in that state: both monitoring-run reads,
-`GET /rebalance/proof-packs/{proof_pack_id}` with its `summary.md` companion, and
-`GET /rebalance/waves/{wave_id}/outcome-reviews` — the last of which sits under the wave prefix
-while reading an aggregate that is not tenant-scoped.
+It is not yet universal, and this page previously said something false about why. Monitoring
+**run** reads read across no tenants any more: `GET /monitoring/runs` and
+`GET /monitoring/runs/{monitoring_run_id}` now take a **required `tenant_id` query parameter**,
+the same selector their mandate siblings use, and return only that tenant's runs. The reason
+given here before — that the monitoring-run aggregate "carries no tenant of its own" — was
+simply wrong. `dpm_monitoring_runs.tenant_id` has existed since migration `0003`. The column was
+populated all along and the reads never consulted it.
+
+Two limits on that fence are worth stating plainly, because neither is visible from the contract:
+
+- A run whose `tenant_id` is NULL — the column is nullable and was never backfilled — is matched
+  by no caller at all rather than by whoever asks. Those runs are quarantined, not defaulted, and
+  attributing them is an operator action.
+- The recorded tenant comes from the request body's `filters` on the write path and is not
+  reconciled against an admitted caller identity. Read fencing therefore scopes what a caller can
+  **see**; it does not yet stop a caller recording a run under a tenant it merely names. That gap
+  is tracked on issue #693 and is not closed by this change.
+
+Three operations remain genuinely unscoped: `GET /rebalance/proof-packs/{proof_pack_id}` with its
+`summary.md` companion, and `GET /rebalance/waves/{wave_id}/outcome-reviews` — the last of which
+sits under the wave prefix while reading an aggregate that is not tenant-scoped. The proof-pack
+reads are worse than unscoped: `GET /rebalance/proof-packs/{proof_pack_id}/report-input` and
+`/ai-evidence-input` **require** a `tenant_id` and then use it only for downstream enrichment, so
+the parameter looks like a fence and is not one. Tracked on issue #694.
 
 The wave aggregate is **no longer** among them — migration `0027` scoped it, and this sentence
 previously described the state before that change.

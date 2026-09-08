@@ -73,6 +73,7 @@ def _monitoring_run(
     run_id: str = "dmr_20260503_120000",
     status: str = "SUCCEEDED",
     requested_at: datetime = datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
+    tenant_id: str | None = "default",
 ) -> DpmMonitoringRun:
     return DpmMonitoringRun(
         monitoring_run_id=run_id,
@@ -81,7 +82,11 @@ def _monitoring_run(
         completed_at=requested_at + timedelta(seconds=2),
         status=status,
         mandate_ids=["MANDATE_PB_SG_GLOBAL_BAL_001"],
-        filters={"tenant_id": "default", "portfolio_manager_id": "PM_SG_DPM_001"},
+        filters=(
+            {"portfolio_manager_id": "PM_SG_DPM_001"}
+            if tenant_id is None
+            else {"tenant_id": tenant_id, "portfolio_manager_id": "PM_SG_DPM_001"}
+        ),
         total_mandates=1,
         health_distribution={"READY": 1},
         exception_count=0,
@@ -682,28 +687,36 @@ def test_repository_persists_pages_and_purges_monitoring_runs() -> None:
     repository.save_monitoring_run(latest_run)
     repository.save_monitoring_run(failed_run)
 
-    first_page, cursor = repository.list_monitoring_runs(status=None, limit=1, cursor=None)
+    first_page, cursor = repository.list_monitoring_runs(
+        status=None, limit=1, cursor=None, tenant_id="default"
+    )
     second_page, second_cursor = repository.list_monitoring_runs(
         status=None,
         limit=1,
         cursor=cursor,
+        tenant_id="default",
     )
     failed_page, failed_cursor = repository.list_monitoring_runs(
         status="FAILED",
         limit=10,
         cursor=None,
+        tenant_id="default",
     )
     missing_page, missing_cursor = repository.list_monitoring_runs(
         status=None,
         limit=10,
         cursor="UNKNOWN_RUN",
+        tenant_id="default",
     )
     purged = repository.purge_mandate_records_before(
         cutoff=datetime(2025, 1, 1, tzinfo=timezone.utc)
     )
 
     assert (
-        repository.get_monitoring_run(monitoring_run_id=latest_run.monitoring_run_id) == latest_run
+        repository.get_monitoring_run(
+            monitoring_run_id=latest_run.monitoring_run_id, tenant_id="default"
+        )
+        == latest_run
     )
     assert first_page == [latest_run]
     assert cursor == latest_run.monitoring_run_id
@@ -714,7 +727,12 @@ def test_repository_persists_pages_and_purges_monitoring_runs() -> None:
     assert missing_page == []
     assert missing_cursor is None
     assert purged == 1
-    assert repository.get_monitoring_run(monitoring_run_id=old_run.monitoring_run_id) is None
+    assert (
+        repository.get_monitoring_run(
+            monitoring_run_id=old_run.monitoring_run_id, tenant_id="default"
+        )
+        is None
+    )
 
 
 def test_repository_serialization_round_trip_preserves_domain_types() -> None:
@@ -872,9 +890,13 @@ class _FakeConnection:
             return _FakeResult(rows=[{"payload_json": row["payload_json"]} for row in rows])
 
         if normalized.startswith("insert into dpm_monitoring_runs"):
+            # tenant_id is the fifth INSERT column. A fake that drops it cannot
+            # observe the fence at all, and every tenant assertion below would
+            # pass against a store that never scoped anything.
             self.store.monitoring_runs[str(params[0])] = {
                 "monitoring_run_id": params[0],
                 "status": params[2],
+                "tenant_id": params[4],
                 "started_at": params[8],
                 "payload_json": params[11],
             }
@@ -884,19 +906,47 @@ class _FakeConnection:
             and "where monitoring_run_id" in normalized
         ):
             row = self.store.monitoring_runs.get(str(params[0]))
-            return (
-                _FakeResult(rows=[{"payload_json": row["payload_json"]}]) if row else _FakeResult()
-            )
+            if row is None or row["tenant_id"] != params[1]:
+                return _FakeResult()
+            return _FakeResult(rows=[{"payload_json": row["payload_json"]}])
         if "select payload_json, monitoring_run_id from dpm_monitoring_runs" in normalized:
+            # Bound arguments in the order the SQL names them: tenant first
+            # (the fence is seeded, not appended), then the optional status,
+            # then the cursor clause's five.
             rows = list(self.store.monitoring_runs.values())
             arg_index = 0
+            tenant_id = params[arg_index]
+            arg_index += 1
+            rows = [row for row in rows if row["tenant_id"] == tenant_id]
             if "status = %s" in normalized:
                 rows = [row for row in rows if row["status"] == params[arg_index]]
                 arg_index += 1
             if "monitoring_run_id < %s" in normalized:
                 cursor = params[arg_index]
-                arg_index += 3
-                rows = [row for row in rows if row["monitoring_run_id"] < cursor]
+                arg_index += 5
+                # The cursor row resolves under the SAME tenant, which is the
+                # point of the subquery fence: another tenant's run id must not
+                # resolve to a started_at and so must not position the page.
+                anchor = next(
+                    (
+                        row
+                        for row in self.store.monitoring_runs.values()
+                        if row["monitoring_run_id"] == cursor and row["tenant_id"] == tenant_id
+                    ),
+                    None,
+                )
+                if anchor is None:
+                    rows = []
+                else:
+                    rows = [
+                        row
+                        for row in rows
+                        if row["started_at"] < anchor["started_at"]
+                        or (
+                            row["started_at"] == anchor["started_at"]
+                            and row["monitoring_run_id"] < cursor
+                        )
+                    ]
             limit = int(params[-1])
             rows = sorted(
                 rows,
@@ -1277,22 +1327,31 @@ def test_postgres_repository_persists_reads_and_pages_monitoring_runs(
     repository.save_monitoring_run(latest_run)
     repository.save_monitoring_run(failed_run)
 
-    first_page, cursor = repository.list_monitoring_runs(status=None, limit=1, cursor=None)
+    first_page, cursor = repository.list_monitoring_runs(
+        status=None, limit=1, cursor=None, tenant_id="default"
+    )
     second_page, second_cursor = repository.list_monitoring_runs(
         status=None,
         limit=1,
         cursor=cursor,
+        tenant_id="default",
     )
     failed_page, failed_cursor = repository.list_monitoring_runs(
         status="FAILED",
         limit=10,
         cursor=None,
+        tenant_id="default",
     )
 
     assert (
-        repository.get_monitoring_run(monitoring_run_id=latest_run.monitoring_run_id) == latest_run
+        repository.get_monitoring_run(
+            monitoring_run_id=latest_run.monitoring_run_id, tenant_id="default"
+        )
+        == latest_run
     )
-    assert repository.get_monitoring_run(monitoring_run_id="UNKNOWN_RUN") is None
+    assert (
+        repository.get_monitoring_run(monitoring_run_id="UNKNOWN_RUN", tenant_id="default") is None
+    )
     assert first_page == [latest_run]
     assert cursor == latest_run.monitoring_run_id
     assert second_page == [older_run]

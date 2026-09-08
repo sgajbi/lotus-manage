@@ -207,8 +207,9 @@ def get_monitoring_run(
     *,
     repository: DpmMandateRepository,
     monitoring_run_id: str,
+    tenant_id: str,
 ) -> DpmMonitoringRun:
-    run = repository.get_monitoring_run(monitoring_run_id=monitoring_run_id)
+    run = repository.get_monitoring_run(monitoring_run_id=monitoring_run_id, tenant_id=tenant_id)
     if run is None:
         raise DpmMonitoringRunNotFoundError("DPM_MONITORING_RUN_NOT_FOUND")
     return run
@@ -220,8 +221,11 @@ def list_monitoring_runs(
     status: Optional[str],
     limit: int,
     cursor: Optional[str],
+    tenant_id: str,
 ) -> tuple[list[DpmMonitoringRun], Optional[str]]:
-    return repository.list_monitoring_runs(status=status, limit=limit, cursor=cursor)
+    return repository.list_monitoring_runs(
+        status=status, limit=limit, cursor=cursor, tenant_id=tenant_id
+    )
 
 
 def list_monitoring_exceptions(
@@ -273,7 +277,13 @@ def get_command_center_summary(
     health_state: Optional[str],
     limit: int,
 ) -> DpmCommandCenterSummary:
-    runs, _ = repository.list_monitoring_runs(status=None, limit=200, cursor=None)
+    # Fenced in the query rather than after the fetch. This previously read
+    # every tenant's runs and narrowed them in Python, so the caller's own
+    # page size was spent on rows they may not see - a correctness bug that
+    # presents as a short result rather than as a leak.
+    runs, _ = repository.list_monitoring_runs(
+        status=None, limit=200, cursor=None, tenant_id=tenant_id
+    )
     latest_run = latest_command_center_run(
         runs,
         tenant_id=tenant_id,

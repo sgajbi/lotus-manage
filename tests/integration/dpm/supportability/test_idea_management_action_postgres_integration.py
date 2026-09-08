@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import uuid
 from datetime import datetime, timezone
 
@@ -14,13 +13,18 @@ from src.core.rebalance_runs.idea_action_intake import idea_management_action_hi
 from src.core.rebalance_runs.idea_management_action_repository import (
     IdeaManagementActionRepositoryConflictError,
 )
+from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
+
 from src.infrastructure.rebalance_runs.idea_management_actions_postgres import (
     PostgresIdeaManagementActionRepository,
 )
 
 
-_DSN = os.getenv("DPM_POSTGRES_INTEGRATION_DSN", "").strip()
-pytestmark = pytest.mark.skipif(not _DSN, reason="DPM_POSTGRES_INTEGRATION_DSN is required")
+# The lane is named after this suite and it still decided its own skip, so
+# `DPM_POSTGRES_INTEGRATION_REQUIRED=1` never reached it: with no DSN it
+# skipped quietly in the one job that owns a database.
+_PROOF = "idea-management-action persistence proof"
+_DSN = postgres_dsn_or_skip(_PROOF, module_level=True)
 
 
 def _action(*, suffix: str, fingerprint: str = "sha256:0123456789ab"):

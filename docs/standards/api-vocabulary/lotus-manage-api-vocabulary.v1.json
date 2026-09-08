@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-07T13:40:09.192745+00:00",
+  "generatedAt": "2026-09-08T15:05:01.396422+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -18728,6 +18728,18 @@
       "attributeRef": "#/attributeCatalog/lotus.limit"
     },
     {
+      "name": "tenant_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": true,
+      "type": "string",
+      "description": "Tenant whose mandate evidence is being read. Required: mandate snapshots and health snapshots are stored per tenant, and the same mandate id may exist under more than one tenant. Send it as the canonical snake_case query parameter `tenant_id`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+    },
+    {
       "name": "status_filter",
       "kind": "request_option",
       "location": "query",
@@ -18774,6 +18786,18 @@
       "allowedValues": [],
       "semanticId": "lotus.monitoring_run_id",
       "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
+    },
+    {
+      "name": "tenant_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": true,
+      "type": "string",
+      "description": "Tenant whose mandate evidence is being read. Required: mandate snapshots and health snapshots are stored per tenant, and the same mandate id may exist under more than one tenant. Send it as the canonical snake_case query parameter `tenant_id`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.tenant_id"
     },
     {
       "name": "tenant_id",
@@ -62707,6 +62731,14 @@
       "request": {
         "fields": [
           {
+            "name": "tenant_id",
+            "location": "query",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "status_filter",
             "location": "query",
             "required": false,
@@ -62864,6 +62896,14 @@
             "type": "string",
             "semanticId": "lotus.monitoring_run_id",
             "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "query",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           }
         ]
       },

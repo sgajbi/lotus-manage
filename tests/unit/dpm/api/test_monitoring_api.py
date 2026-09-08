@@ -140,9 +140,11 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
                 "requested_by": "ops_sg_001",
             },
         )
-        runs_response = client.get("/api/v1/dpm/monitoring/runs?status_filter=SUCCEEDED")
+        runs_response = client.get(
+            "/api/v1/dpm/monitoring/runs?status_filter=SUCCEEDED&tenant_id=default"
+        )
         run_id = run_response.json()["monitoring_run_id"]
-        run_detail = client.get(f"/api/v1/dpm/monitoring/runs/{run_id}")
+        run_detail = client.get(f"/api/v1/dpm/monitoring/runs/{run_id}?tenant_id=default")
         exceptions_response = client.get(
             f"/api/v1/dpm/exceptions?mandate_id={MANDATE_ID}&portfolio_id={PORTFOLIO_ID}&tenant_id=default"
         )
@@ -569,7 +571,7 @@ def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:
             "/api/v1/dpm/monitoring/run-once",
             json={"mandate_ids": ["UNKNOWN"], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
-        missing_run = client.get("/api/v1/dpm/monitoring/runs/UNKNOWN")
+        missing_run = client.get("/api/v1/dpm/monitoring/runs/UNKNOWN?tenant_id=default")
         client.post(
             "/api/v1/dpm/monitoring/run-once",
             json={"mandate_ids": [MANDATE_ID], "as_of_date": "2026-05-03", "tenant_id": "default"},
