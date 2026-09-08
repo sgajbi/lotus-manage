@@ -2786,3 +2786,110 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "governed PM memo request posture are implementation-backed" in supported_features
     assert "A WTBD is not complete until merged to `main`" in supported_features
+
+
+def test_the_wiki_wave_header_count_is_derived_from_the_served_contract() -> None:
+    """The wiki's wave-header claim must track the contract, not be re-typed.
+
+    This page previously said the header applied to four wave operations -
+    "preview, create, source-check and selection ... one selector across all
+    four" - while the served document required it on fifteen. The four were
+    correct when written and the sentence was never revisited.
+
+    Nothing caught it. Every other assertion in this module checks that a
+    document *mentions* something, which a stale document does just as well as
+    a current one; `test_documentation_current_state` measures mention, not
+    currency. A consumer enumerating wave operations from that paragraph built
+    exactly the gap it described, and four of its calls reached lotus-manage
+    with no tenant.
+
+    So this asserts the number rather than the words: add or remove a
+    tenant-headed wave operation and the wiki fails until it is updated.
+    """
+
+    spec = app.openapi()
+    served = {
+        f"{method.upper()} {path}"
+        for path, operations in spec["paths"].items()
+        for method, operation in operations.items()
+        if method in {"get", "post", "put", "patch", "delete"}
+        and "/rebalance/waves" in path
+        and "campaign" not in path
+        and any(
+            parameter["name"].lower() == "x-tenant-id"
+            and parameter["in"] == "header"
+            and parameter.get("required")
+            for parameter in operation.get("parameters", [])
+        )
+    }
+
+    api_surface = (ROOT / "wiki" / "API-Surface.md").read_text(encoding="utf-8")
+    claimed = re.search(r"(\d+) of them, not a named subset", api_surface)
+
+    assert claimed is not None, (
+        "wiki/API-Surface.md no longer states how many wave operations take the "
+        "tenant header; that sentence is what keeps the page honest"
+    )
+    assert int(claimed.group(1)) == len(served), (
+        f"wiki says {claimed.group(1)} wave operations take X-Tenant-Id; the served "
+        f"contract has {len(served)}: {sorted(served)}"
+    )
+    # A subset would satisfy an equality that someone 'fixed' by editing the
+    # number downward, so pin that the aggregate is fenced rather than sampled.
+    assert len(served) >= 15
+
+    # The count alone is too weak: rename one operation and add another and it
+    # stays 15 while the page advertises a route that no longer exists and
+    # omits the one that replaced it. The identities are what a consumer builds
+    # from, so each is asserted verbatim - which is why the page lists
+    # method-and-path rather than friendly names.
+    # Scoped to the tenant-header list, not the whole page. These routes are
+    # also listed in an earlier section, so a page-wide scan finds a deleted
+    # entry there and reports a complete list when it is not - falsification
+    # caught exactly that: removing an operation from this list failed to fail.
+    start = api_surface.index("of them, not a named subset")
+    end = api_surface.index("Those are method-and-path", start)
+    tenant_header_list = api_surface[start:end]
+    # Bullet lines only. The same block names the one unfenced wave route in
+    # prose, deliberately, and a prose mention must not be read as a claim that
+    # the route is fenced.
+    documented = set(
+        re.findall(
+            r"^- `((?:GET|POST|PUT|PATCH|DELETE) /api/v1/rebalance/waves[^`]*)`",
+            tenant_header_list,
+            re.MULTILINE,
+        )
+    )
+    assert served <= documented, f"served but undocumented: {sorted(served - documented)}"
+    stale = {entry for entry in documented if entry not in served and "campaign" not in entry}
+    assert stale == set(), f"documented but no longer served: {sorted(stale)}"
+
+    # The one non-campaign wave route that is NOT fenced. Review caught the
+    # first version of this page claiming "every rebalance-wave operation" when
+    # this route reads the outcome-review aggregate, which carries no tenant -
+    # so a wave-prefixed path does not by itself imply a tenant-partitioned
+    # response. Asserted rather than commented, so the exception cannot grow
+    # silently: a second unfenced wave route fails this until the page says so.
+    unfenced_wave_routes = {
+        f"{method.upper()} {path}"
+        for path, operations in spec["paths"].items()
+        for method, operation in operations.items()
+        if method in {"get", "post", "put", "patch", "delete"}
+        and "/rebalance/waves" in path
+        and "campaign" not in path
+        and not any(
+            "tenant" in parameter["name"].lower() and parameter.get("required")
+            for parameter in operation.get("parameters", [])
+        )
+    }
+    assert unfenced_wave_routes == {"GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews"}, (
+        f"the set of unfenced wave routes changed: {sorted(unfenced_wave_routes)}"
+    )
+    # Named inside the tenant-header block, not merely somewhere on the page:
+    # this route is also listed among the unscoped reads further down, so a
+    # page-wide check passes when the warning beside the fenced list is
+    # deleted - falsification caught exactly that, twice.
+    assert "waves/{wave_id}/outcome-reviews" in tenant_header_list, (
+        "the tenant-header section must name the one wave route that is not fenced; "
+        "a reader of that list would otherwise assume the wave prefix implies fencing"
+    )
