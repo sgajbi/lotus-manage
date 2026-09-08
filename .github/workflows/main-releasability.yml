@@ -176,6 +176,10 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.idea-postgres
           DPM_POSTGRES_INTEGRATION_DSN: postgresql://manage:manage@127.0.0.1:5432/manage_actions
+          # Declared a prerequisite: an absent DSN fails this lane
+          # rather than skipping it. Both wave proofs gated on the DSN
+          # alone and had never run in CI, while being cited as evidence.
+          DPM_POSTGRES_INTEGRATION_REQUIRED: "1"
         run: make test-idea-management-action-postgres-coverage
       - name: Upload coverage data
         uses: actions/upload-artifact@v7

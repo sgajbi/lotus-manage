@@ -53,13 +53,13 @@ test-integration:
 	python -m pytest $(INTEGRATION_TESTS)
 
 test-idea-management-action-postgres:
-	python -m pytest tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py -q
+	python -m pytest tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py tests/integration/dpm/waves -q
 
 # Every PostgreSQL-backed integration proof runs in the one CI job that owns a
 # live database. Adding a file here is what stops it becoming a lane that skips
 # everywhere and reports green (issues #646/#647).
 test-idea-management-action-postgres-coverage:
-	python -m pytest tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py tests/integration/dpm/mandates -q --cov=src --cov-report=
+	python -m pytest tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py tests/integration/dpm/mandates tests/integration/dpm/waves -q --cov=src --cov-report=
 	@test -f .coverage.idea-postgres || mv .coverage .coverage.idea-postgres
 
 test-e2e:

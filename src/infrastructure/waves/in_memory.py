@@ -82,7 +82,21 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
                 return None
             wave_id, _request_hash = indexed
             wave = self._waves.get(wave_id)
-            return deepcopy(wave) if wave is not None else None
+            # The mapping's tenant is not the aggregate's tenant. Migration
+            # 0027 added the wave column nullable with no backfill, so between
+            # 0026 and 0027 a wave can carry NO tenant while its tenant-derived
+            # mapping survives. Checking only the mapping returned that
+            # quarantined wave as a successful replay - the one path that
+            # bypassed the fence every direct read enforces, and it would have
+            # handed the caller an aggregate nobody owns.
+            #
+            # Caller, mapping and aggregate must agree. A disagreement returns
+            # None rather than raising: a distinct error would disclose that
+            # the key resolves to something, and the quarantined row is left
+            # exactly as it is - not stamped, not resurrected.
+            if wave is None or wave.tenant_id != tenant_id:
+                return None
+            return deepcopy(wave)
 
     def list_waves(
         self,

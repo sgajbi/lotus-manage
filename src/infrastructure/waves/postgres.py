@@ -91,11 +91,18 @@ class PostgresDpmWaveRepository:
                 JOIN dpm_rebalance_waves w ON w.wave_id = i.wave_id
                 WHERE i.idempotency_key = %s
                   AND i.tenant_id = %s
+                  -- The aggregate's own owner, not only the mapping's. A wave
+                  -- left unstamped by migration 0027 has w.tenant_id NULL, and
+                  -- `NULL = 'anything'` is NULL rather than true, so it is
+                  -- matched by no caller - the same quarantine every direct
+                  -- read gets. Without this the replay path returned it.
+                  AND w.tenant_id = %s
                 """,
                 (
                     wave_idempotency_mapping_key(
                         tenant_id=tenant_id, idempotency_key=idempotency_key
                     ),
+                    tenant_id,
                     tenant_id,
                 ),
             ).fetchone()

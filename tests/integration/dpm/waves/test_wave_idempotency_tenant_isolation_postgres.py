@@ -17,7 +17,6 @@ made to agree with either answer.
 
 from __future__ import annotations
 
-import os
 import uuid
 from datetime import datetime, timezone
 
@@ -29,14 +28,12 @@ from src.core.waves import (
     DpmRebalanceWaveItem,
     DpmWaveTrigger,
 )
+from src.core.waves.repository import wave_idempotency_mapping_key
 from src.infrastructure.waves.postgres import PostgresDpmWaveRepository
 
-_DSN = os.getenv("DPM_POSTGRES_INTEGRATION_DSN", "").strip()
+from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
 
-pytestmark = pytest.mark.skipif(
-    not _DSN,
-    reason="DPM_POSTGRES_INTEGRATION_DSN is required for the wave idempotency isolation proof",
-)
+_PROOF = "wave idempotency isolation proof"
 
 TENANT_A = "tenant-alpha"
 TENANT_B = "tenant-beta"
@@ -44,7 +41,7 @@ TENANT_B = "tenant-beta"
 
 @pytest.fixture
 def repository() -> PostgresDpmWaveRepository:
-    return PostgresDpmWaveRepository(dsn=_DSN)
+    return PostgresDpmWaveRepository(dsn=postgres_dsn_or_skip(_PROOF))
 
 
 def _wave(*, wave_id: str, portfolio_id: str) -> DpmRebalanceWave:
@@ -166,7 +163,7 @@ def test_mappings_written_before_the_tenant_column_are_quarantined_not_defaulted
 
     # Reduce the stored mapping to its pre-migration shape: the caller's raw
     # key, with no tenant.
-    with psycopg.connect(_DSN, row_factory=dict_row) as connection:
+    with psycopg.connect(postgres_dsn_or_skip(_PROOF), row_factory=dict_row) as connection:
         connection.execute(
             "UPDATE dpm_rebalance_wave_idempotency SET idempotency_key = %s, tenant_id = NULL"
             " WHERE wave_id = %s",
@@ -186,3 +183,88 @@ def test_mappings_written_before_the_tenant_column_are_quarantined_not_defaulted
         assert (
             repository.get_wave_by_idempotency(idempotency_key=legacy_key, tenant_id=tenant) is None
         ), tenant
+
+
+def test_a_wave_left_unstamped_by_0027_is_not_returned_as_a_successful_replay(
+    repository: PostgresDpmWaveRepository,
+) -> None:
+    """The upgrade regression, on the engine where it actually matters.
+
+    Migration 0026 made the mapping key tenant-derived; 0027 added the wave's
+    own tenant nullable with no backfill. Between them a wave can carry no
+    tenant while its tenant-scoped mapping survives, and every direct read
+    refuses it because `NULL = 'anything'` is NULL rather than true.
+
+    The replay path did not, because it joined on the MAPPING's tenant only.
+    This drives the exact post-upgrade shape - live mapping, unstamped
+    aggregate - which no in-memory fake can produce faithfully, since Python's
+    `None != tenant` is a different rule from SQL's.
+    """
+
+    key = f"idem-upgrade-{uuid.uuid4().hex[:10]}"
+    wave_id = f"dwv_{uuid.uuid4().hex[:10]}"
+    repository.save_wave(
+        wave=_wave(wave_id=wave_id, portfolio_id="PB_TENANT_A_001"),
+        idempotency_key=key,
+        request_hash="hash-a",
+        tenant_id=TENANT_A,
+    )
+    with repository._connect() as connection:  # noqa: SLF001
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE dpm_rebalance_waves SET tenant_id = NULL WHERE wave_id = %s",
+                (wave_id,),
+            )
+        connection.commit()
+
+    assert repository.get_wave(wave_id=wave_id, tenant_id=TENANT_A) is None
+    assert repository.get_wave_by_idempotency(idempotency_key=key, tenant_id=TENANT_A) is None, (
+        "the replay path returned a wave the direct read refuses"
+    )
+
+    # The refusal must not repair the row: quarantine means unowned, not
+    # owned by whoever replays next.
+    with repository._connect() as connection:  # noqa: SLF001
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT tenant_id FROM dpm_rebalance_waves WHERE wave_id = %s", (wave_id,)
+            )
+            row = cursor.fetchone()
+    assert row is not None
+    assert (row["tenant_id"] if isinstance(row, dict) else row[0]) is None
+
+
+def test_a_mapping_resolving_to_another_tenants_wave_is_refused(
+    repository: PostgresDpmWaveRepository,
+) -> None:
+    """Mapping and aggregate can disagree without either being NULL - a
+    restore or a partial migration is enough."""
+
+    key = f"idem-cross-{uuid.uuid4().hex[:10]}"
+    theirs = f"dwv_{uuid.uuid4().hex[:10]}"
+    repository.save_wave(
+        wave=_wave(wave_id=theirs, portfolio_id="PB_TENANT_B_001"),
+        idempotency_key=key,
+        request_hash="hash-b",
+        tenant_id=TENANT_B,
+    )
+    with repository._connect() as connection:  # noqa: SLF001
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO dpm_rebalance_wave_idempotency
+                    (idempotency_key, tenant_id, wave_id, request_hash, created_at)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (
+                    wave_idempotency_mapping_key(tenant_id=TENANT_A, idempotency_key=key),
+                    TENANT_A,
+                    theirs,
+                    "hash-a",
+                    datetime(2026, 5, 3, tzinfo=timezone.utc),
+                ),
+            )
+        connection.commit()
+
+    assert repository.get_wave_by_idempotency(idempotency_key=key, tenant_id=TENANT_A) is None
+    assert repository.get_wave(wave_id=theirs, tenant_id=TENANT_B) is not None

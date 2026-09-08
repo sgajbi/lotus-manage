@@ -21,7 +21,6 @@ database, as the wave idempotency isolation proof does.
 
 from __future__ import annotations
 
-import os
 import uuid
 from datetime import datetime, timezone
 
@@ -36,17 +35,14 @@ from src.core.waves import (
 )
 from src.infrastructure.waves.postgres import PostgresDpmWaveRepository
 
-_DSN = os.getenv("DPM_POSTGRES_INTEGRATION_DSN", "").strip()
+from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
 
-pytestmark = pytest.mark.skipif(
-    not _DSN,
-    reason="DPM_POSTGRES_INTEGRATION_DSN is required for the wave aggregate isolation proof",
-)
+_PROOF = "wave aggregate isolation proof"
 
 
 @pytest.fixture
 def repository() -> PostgresDpmWaveRepository:
-    return PostgresDpmWaveRepository(dsn=_DSN)
+    return PostgresDpmWaveRepository(dsn=postgres_dsn_or_skip(_PROOF))
 
 
 @pytest.fixture
