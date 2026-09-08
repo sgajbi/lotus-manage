@@ -55,13 +55,11 @@ INTEGRATION_ROOT = REPOSITORY_ROOT / "tests" / "integration"
 # keyword and defeats any regex anchored on the module path.
 ADAPTER_MODULE_ROOT = "src.infrastructure"
 
-# What a file does to run the adapter without a database. Naming these is the
-# point: the exclusion is a statement about the file, checkable by reading it.
-DRIVER_STUB_MARKERS = (
-    "has_psycopg",
-    "_import_psycopg",
-    "_FakePsycopg",
-)
+# Replacing this adapter hook substitutes the database driver itself. Merely
+# importing, calling or discussing the hook proves nothing about whether the
+# test uses a real database, so the detector below requires an actual patch
+# operation against an imported PostgreSQL adapter module.
+DRIVER_IMPORT_HOOK = "_import_psycopg"
 
 MARKERS = (
     "postgres_dsn_or_skip",
@@ -124,8 +122,60 @@ def imports_a_postgres_adapter(source: str) -> bool:
     return False
 
 
+def _dotted_name(node: ast.expr) -> str | None:
+    """Return a dotted expression name without evaluating it."""
+
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        prefix = _dotted_name(node.value)
+        return f"{prefix}.{node.attr}" if prefix else None
+    return None
+
+
+def _postgres_adapter_bindings(tree: ast.AST) -> set[str]:
+    """Names in this module that resolve to PostgreSQL adapter modules."""
+
+    bindings: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.startswith(ADAPTER_MODULE_ROOT) and "postgres" in alias.name:
+                    bindings.add(alias.asname or alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if not module.startswith(ADAPTER_MODULE_ROOT):
+                continue
+            for alias in node.names:
+                if "postgres" in alias.name:
+                    bindings.add(alias.asname or alias.name)
+    return bindings
+
+
 def stubs_the_driver(source: str) -> bool:
-    return any(marker in source for marker in DRIVER_STUB_MARKERS)
+    """True only for an actual driver-hook patch on an imported adapter."""
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:  # pragma: no cover - a broken test file fails elsewhere
+        return False
+
+    adapter_bindings = _postgres_adapter_bindings(tree)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or len(node.args) < 2:
+            continue
+        operation = _dotted_name(node.func)
+        if operation not in {"monkeypatch.setattr", "patch.object"}:
+            continue
+        target = _dotted_name(node.args[0])
+        attribute = node.args[1]
+        if (
+            target in adapter_bindings
+            and isinstance(attribute, ast.Constant)
+            and attribute.value == DRIVER_IMPORT_HOOK
+        ):
+            return True
+    return False
 
 
 def _candidate_files() -> list[Path]:
@@ -163,6 +213,26 @@ def test_the_detector_reads_every_import_form_and_only_imports() -> None:
     # A mention in prose is not an import, and neither is an unrelated package.
     assert not imports_a_postgres_adapter('"""Talks about src.infrastructure.waves.postgres."""\n')
     assert not imports_a_postgres_adapter("from tests.helpers.postgres import thing\n")
+
+
+def test_the_stub_detector_requires_an_actual_adapter_driver_patch() -> None:
+    import_line = "from src.infrastructure.pm_quality import postgres as pm_quality_postgres\n"
+
+    assert stubs_the_driver(
+        import_line + 'monkeypatch.setattr(pm_quality_postgres, "_import_psycopg", lambda: fake)\n'
+    )
+    assert stubs_the_driver(
+        import_line + 'patch.object(pm_quality_postgres, "_import_psycopg", return_value=fake)\n'
+    )
+
+    # Genuine database proofs may call or mention the helpers. Neither is a
+    # driver substitution, and excluding either would hide real proof again.
+    assert not stubs_the_driver(import_line + "assert pm_quality_postgres.has_psycopg()\n")
+    assert not stubs_the_driver(import_line + "pm_quality_postgres._import_psycopg()\n")
+    assert not stubs_the_driver(import_line + '"""Uses _import_psycopg directly."""\n')
+    assert not stubs_the_driver(
+        import_line + 'monkeypatch.setattr(unrelated_module, "_import_psycopg", lambda: fake)\n'
+    )
 
 
 def _postgres_proof_files() -> list[Path]:
