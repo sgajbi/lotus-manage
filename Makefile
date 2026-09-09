@@ -59,17 +59,11 @@ test-integration:
 # ONE list, named once. The two targets below carried separate copies and had
 # already drifted - `dpm/mandates` was in the coverage target and not the plain
 # one - which is the same failure in a smaller form: the lane an operator runs
-# by hand and the lane CI runs were proving different things.
-#
-# `tests/unit/dpm/supportability/test_postgres_lane_inputs.py` asserts this
-# variable names every PostgreSQL proof file in the tree, so adding one is not
-# a step anybody has to remember.
-POSTGRES_INTEGRATION_TESTS = \
-	tests/integration/dpm/supportability/test_idea_management_action_postgres_integration.py \
-	tests/integration/dpm/supportability/test_dpm_postgres_repository_integration.py \
-	tests/integration/dpm/supportability/test_dpm_policy_pack_postgres_repository_integration.py \
-	tests/integration/dpm/mandates \
-	tests/integration/dpm/waves
+# by hand and the lane CI runs were proving different things. Running the
+# complete integration tree makes adapter imports, package re-exports and
+# fixture-supplied repositories irrelevant to reachability: every integration
+# proof is in the live-database lane without another list to maintain.
+POSTGRES_INTEGRATION_TESTS = tests/integration
 
 test-idea-management-action-postgres:
 	python -m pytest $(POSTGRES_INTEGRATION_TESTS) -q
