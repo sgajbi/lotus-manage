@@ -71,6 +71,34 @@ def test_current_docs_do_not_advertise_removed_advisory_runtime_surface() -> Non
     assert failures == []
 
 
+def test_repository_current_state_separates_durable_truth_from_delivery_history() -> None:
+    context = (ROOT / "REPOSITORY-ENGINEERING-CONTEXT.md").read_text(encoding="utf-8")
+    current_state = context.split("## Current-State Summary", 1)[1].split(
+        "## Architecture And Module Map", 1
+    )[0]
+
+    assert "pull-request numbers, commit SHAs, wiki publication hashes" in current_state
+    assert "Git history and the owning GitHub issues preserve that" in current_state
+    assert (
+        "another repository's historical\ndelivery receipt is never a substitute" in current_state
+    )
+    assert "`lotus-core` served OpenAPI" in current_state
+    assert "`lotus-gateway` owns BFF admission/forwarding" in current_state
+    assert "`lotus-platform` owns shared contracts" in current_state
+
+    forbidden_provenance = {
+        "pull request receipt": r"\bPR #\d+",
+        "commit receipt": r"`[0-9a-f]{7,40}`",
+        "wiki receipt": r"\bwiki\s+`[0-9a-f]{7,40}`",
+    }
+    failures = [
+        label
+        for label, pattern in forbidden_provenance.items()
+        if re.search(pattern, current_state)
+    ]
+    assert failures == []
+
+
 def test_local_repository_navigation_readmes_cover_safe_edit_boundaries() -> None:
     expected_readmes = [
         ROOT / "contracts" / "README.md",
