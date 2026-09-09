@@ -156,11 +156,12 @@ def _repositories() -> tuple[
     wave_repository = InMemoryDpmWaveRepository()
     outcome_repository = InMemoryDpmOutcomeReviewRepository()
     mandate_repository = InMemoryDpmMandateRepository()
-    proof_pack = _proof_pack().model_copy(update={"portfolio_id": PORTFOLIO_ID})
+    proof_pack = _proof_pack(tenant_id=TENANT_ID).model_copy(update={"portfolio_id": PORTFOLIO_ID})
     proof_pack_repository.save_proof_pack(
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id=TENANT_ID,
     )
     wave_repository.save_wave(
         wave=_wave(), idempotency_key=None, request_hash=None, tenant_id=TENANT_ID
@@ -1983,7 +1984,7 @@ def test_portfolio_memory_search_normalizes_text_filters_before_matching() -> No
 def test_portfolio_memory_search_counts_artifact_only_source_systems_and_types() -> None:
     proof_pack_repository = InMemoryDpmProofPackRepository()
     proof_pack_repository.save_proof_pack(
-        proof_pack=_proof_pack().model_copy(
+        proof_pack=_proof_pack(tenant_id=TENANT_ID).model_copy(
             update={
                 "portfolio_id": PORTFOLIO_ID,
                 "report_input_ref": DpmProofPackEvidenceRef(
@@ -1996,6 +1997,7 @@ def test_portfolio_memory_search_counts_artifact_only_source_systems_and_types()
         ),
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id=TENANT_ID,
     )
 
     page = search_portfolio_memory(

@@ -16,17 +16,20 @@ def test_find_replayable_proof_pack_prefers_idempotency_match() -> None:
         proof_pack=by_idempotency,
         idempotency_key="idem-proof-pack-replay",
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
     repository.save_proof_pack(
         proof_pack=by_source_identity,
         idempotency_key=None,
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
 
     replay = find_replayable_proof_pack(
         proof_pack_id=by_source_identity.proof_pack_id,
         idempotency_key="idem-proof-pack-replay",
         proof_pack_repository=repository,
+        tenant_id="tenant-test",
     )
 
     assert replay == by_idempotency
@@ -39,12 +42,14 @@ def test_find_replayable_proof_pack_falls_back_to_source_identity() -> None:
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
 
     replay = find_replayable_proof_pack(
         proof_pack_id=proof_pack.proof_pack_id,
         idempotency_key="different-idempotency-key",
         proof_pack_repository=repository,
+        tenant_id="tenant-test",
     )
 
     assert replay == proof_pack
@@ -57,6 +62,7 @@ def test_find_replayable_proof_pack_returns_none_when_no_replay_exists() -> None
         proof_pack_id="dpp_missing",
         idempotency_key=None,
         proof_pack_repository=repository,
+        tenant_id="tenant-test",
     )
 
     assert replay is None

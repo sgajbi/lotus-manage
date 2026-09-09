@@ -43,6 +43,7 @@ class _CountingProofPackRepository(InMemoryDpmProofPackRepository):
     def list_proof_packs(
         self,
         *,
+        tenant_id: str,
         portfolio_id: str | None = None,
         mandate_id: str | None = None,
         status: str | None = None,
@@ -51,6 +52,7 @@ class _CountingProofPackRepository(InMemoryDpmProofPackRepository):
     ) -> list[DpmPreTradeProofPack]:
         self.list_calls += 1
         return super().list_proof_packs(
+            tenant_id=tenant_id,
             portfolio_id=portfolio_id,
             mandate_id=mandate_id,
             status=status,
@@ -203,9 +205,12 @@ def test_search_portfolio_memory_from_sources_uses_repository_bundle() -> None:
 def test_search_portfolio_memory_from_sources_batches_source_family_scans() -> None:
     proof_pack_repository = _CountingProofPackRepository()
     proof_pack_repository.save_proof_pack(
-        proof_pack=_proof_pack().model_copy(update={"portfolio_id": PORTFOLIO_ID}),
+        proof_pack=_proof_pack(tenant_id=TENANT_ID).model_copy(
+            update={"portfolio_id": PORTFOLIO_ID}
+        ),
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id=TENANT_ID,
     )
     wave_repository = _CountingWaveRepository()
     wave_repository.save_wave(
@@ -250,7 +255,7 @@ def test_search_portfolio_memory_from_sources_batches_source_family_scans() -> N
 def test_search_portfolio_memory_from_sources_supplements_explicit_portfolio_sources() -> None:
     proof_pack_repository = _CountingProofPackRepository()
     proof_pack_repository.save_proof_pack(
-        proof_pack=_proof_pack().model_copy(
+        proof_pack=_proof_pack(tenant_id=TENANT_ID).model_copy(
             update={
                 "proof_pack_id": "dpp_other_newer",
                 "portfolio_id": "PB_OTHER_NEWER",
@@ -259,9 +264,10 @@ def test_search_portfolio_memory_from_sources_supplements_explicit_portfolio_sou
         ),
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id=TENANT_ID,
     )
     proof_pack_repository.save_proof_pack(
-        proof_pack=_proof_pack().model_copy(
+        proof_pack=_proof_pack(tenant_id=TENANT_ID).model_copy(
             update={
                 "proof_pack_id": "dpp_other_second",
                 "portfolio_id": "PB_OTHER_SECOND",
@@ -270,9 +276,10 @@ def test_search_portfolio_memory_from_sources_supplements_explicit_portfolio_sou
         ),
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id=TENANT_ID,
     )
     proof_pack_repository.save_proof_pack(
-        proof_pack=_proof_pack().model_copy(
+        proof_pack=_proof_pack(tenant_id=TENANT_ID).model_copy(
             update={
                 "proof_pack_id": "dpp_explicit_older",
                 "portfolio_id": PORTFOLIO_ID,
@@ -281,6 +288,7 @@ def test_search_portfolio_memory_from_sources_supplements_explicit_portfolio_sou
         ),
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id=TENANT_ID,
     )
     outcome_repository = _CountingOutcomeReviewRepository()
     outcome_repository.save_outcome_review(
@@ -323,7 +331,7 @@ def test_search_portfolio_memory_from_sources_supplements_explicit_portfolio_sou
         portfolio_ids=[PORTFOLIO_ID],
         source_scan_limit=2,
         generated_at=datetime(2026, 5, 31, 11, 0, tzinfo=timezone.utc),
-        tenant_id="tenant-test",
+        tenant_id=TENANT_ID,
     )
 
     explicit_item = next(item for item in page.items if item.portfolio_id == PORTFOLIO_ID)

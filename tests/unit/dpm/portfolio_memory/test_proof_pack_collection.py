@@ -11,12 +11,14 @@ def test_proof_pack_memory_events_projects_proof_pack_and_timeline_events() -> N
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
 
     events = proof_pack_memory_events(
         portfolio_id=PORTFOLIO_ID,
         proof_pack_repository=repository,
         limit=100,
+        tenant_id="tenant-test",
     )
 
     assert [event.event_type for event in events] == [
@@ -36,12 +38,14 @@ def test_proof_pack_memory_events_uses_portfolio_filter() -> None:
         proof_pack=_proof_pack().model_copy(update={"portfolio_id": "PB_OTHER_001"}),
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
 
     events = proof_pack_memory_events(
         portfolio_id=PORTFOLIO_ID,
         proof_pack_repository=repository,
         limit=100,
+        tenant_id="tenant-test",
     )
 
     assert events == []

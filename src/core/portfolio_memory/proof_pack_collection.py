@@ -10,6 +10,7 @@ def proof_pack_memory_events(
     portfolio_id: str,
     proof_pack_repository: DpmProofPackRepository,
     limit: int,
+    tenant_id: str,
 ) -> list[DpmPortfolioMemoryEvent]:
     """Collect proof-pack memory events for one portfolio."""
 
@@ -17,6 +18,7 @@ def proof_pack_memory_events(
     for proof_pack in proof_pack_repository.list_proof_packs(
         portfolio_id=portfolio_id,
         limit=limit,
+        tenant_id=tenant_id,
     ):
         events.extend(proof_pack_events(proof_pack))
     return events

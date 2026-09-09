@@ -192,7 +192,8 @@ Current repository posture:
 14. RFC-0040 has delivered the implementation-backed manage pre-trade proof-pack backend
     foundation: durable `DpmPreTradeProofPack` JSON, deterministic Markdown summary, report-input
     handoff, AI-evidence handoff with forbidden-action/field guardrails, immutable in-memory and
-    PostgreSQL persistence, append-only refs, retention metadata, section/content hashes, source
+    PostgreSQL persistence, tenant-owned direct/replay/list reads, nullable migration quarantine for
+    unattributed legacy rows, append-only refs, retention metadata, section/content hashes, source
     lineage, source-backed mandate-context attachment from persisted RFC-0038 mandate twin and
     health evidence when available, certified `/api/v1/rebalance/proof-packs/*` APIs, and
     canonical Postgres-backed live proof under `output/rfc0040-proof/20260503-135112`,

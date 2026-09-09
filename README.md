@@ -92,7 +92,9 @@ available. That file is the authority; read it rather than a prose list, which c
 
 RFC-0040 is implementation-backed for Manage-owned pre-trade proof packs - durable JSON,
 deterministic Markdown, report-input and AI-evidence handoffs, hashes, lineage, retention metadata,
-immutable persistence, certified APIs, and source-backed mandate-context attachment. Downstream
+immutable persistence, required tenant-fenced reads/replay/listing, certified APIs, and source-backed
+mandate-context attachment. Legacy proof packs without attributable tenant ownership remain
+quarantined rather than being assigned to an assumed caller. Downstream
 realization has landed in the owning apps: Gateway composition and Workbench review UX, report
 materialization in `lotus-render`/`lotus-report`/`lotus-archive`, and governed AI PM memo support in
 `lotus-ai`/`lotus-gateway`/`lotus-workbench`. Proof packs support **internal review only** - the

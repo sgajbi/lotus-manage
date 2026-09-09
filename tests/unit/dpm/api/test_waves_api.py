@@ -5234,7 +5234,9 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
     assert persisted.items[0].selected_alternative_id == "alt_min_turnover"
     assert persisted.items[0].proof_pack_id == selected_item["proof_pack_id"]
     assert (
-        proof_pack_repository.get_proof_pack(proof_pack_id=selected_item["proof_pack_id"])
+        proof_pack_repository.get_proof_pack(
+            proof_pack_id=selected_item["proof_pack_id"], tenant_id="tenant-sg"
+        )
         is not None
     )
 

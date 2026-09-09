@@ -40,6 +40,7 @@ def test_find_stored_ref_returns_latest_matching_append_only_ref() -> None:
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
     repository.append_ref(
         ref=_stored_ref(
@@ -82,6 +83,7 @@ def test_hydrate_handoff_refs_overlays_stored_refs_without_mutating_pack() -> No
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
     repository.append_ref(
         ref=_stored_ref(
@@ -119,6 +121,7 @@ def test_ensure_handoff_refs_skips_existing_matching_content_refs() -> None:
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
 
     first = ensure_handoff_refs(
@@ -185,6 +188,7 @@ def test_require_handoff_ref_falls_back_to_latest_stored_ref() -> None:
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
     repository.append_ref(
         ref=_stored_ref(
@@ -213,6 +217,7 @@ def test_require_handoff_ref_returns_none_when_no_generated_ref_exists() -> None
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
 
     ref = require_handoff_ref(

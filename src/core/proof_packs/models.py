@@ -179,6 +179,13 @@ class DpmProofPackStoredRef(BaseModel):
 class DpmPreTradeProofPack(BaseModel):
     proof_pack_id: str = Field(description="Stable pre-trade proof-pack identifier.")
     proof_pack_version: str = Field(description="Proof-pack contract version.")
+    tenant_id: str | None = Field(
+        default=None,
+        description=(
+            "Tenant that owns this proof pack. Legacy rows can carry no owner and are "
+            "therefore matched by no tenant-scoped repository read."
+        ),
+    )
     portfolio_id: str = Field(description="Portfolio identifier.")
     mandate_id: str | None = Field(default=None, description="Mandate identifier when available.")
     source_type: ProofPackSourceType = Field(description="Source used to generate the proof pack.")

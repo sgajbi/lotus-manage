@@ -67,7 +67,7 @@ def _ready_rebalance_result() -> RebalanceResult:
     )
 
 
-def _proof_pack(reason: str = "Rebalance back to target."):
+def _proof_pack(reason: str = "Rebalance back to target.", *, tenant_id: str = "tenant-test"):
     result = _ready_rebalance_result()
     run = DpmRunRecord(
         rebalance_run_id="rr_repo_001",
@@ -79,7 +79,7 @@ def _proof_pack(reason: str = "Rebalance back to target."):
         result_json=result.model_dump(mode="json"),
     )
     return build_proof_pack_from_run(
-        tenant_id="tenant-test",
+        tenant_id=tenant_id,
         run=run,
         created_by="pm_repo",
         reason=reason,
@@ -96,13 +96,16 @@ def test_in_memory_repository_round_trips_immutable_proof_pack_and_retention() -
         proof_pack=proof_pack,
         idempotency_key="idem-proof-pack-repository",
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
 
-    by_id = repository.get_proof_pack(proof_pack_id=proof_pack.proof_pack_id)
-    by_idempotency = repository.get_proof_pack_by_idempotency(
-        idempotency_key="idem-proof-pack-repository"
+    by_id = repository.get_proof_pack(
+        proof_pack_id=proof_pack.proof_pack_id, tenant_id="tenant-test"
     )
-    listed = repository.list_proof_packs(portfolio_id="pf_repo_1")
+    by_idempotency = repository.get_proof_pack_by_idempotency(
+        idempotency_key="idem-proof-pack-repository", tenant_id="tenant-test"
+    )
+    listed = repository.list_proof_packs(tenant_id="tenant-test", portfolio_id="pf_repo_1")
     retention = repository.get_retention_metadata(proof_pack_id=proof_pack.proof_pack_id)
 
     assert by_id == proof_pack
@@ -123,11 +126,13 @@ def test_in_memory_repository_replays_same_identity_but_rejects_mutation() -> No
         proof_pack=proof_pack,
         idempotency_key="idem-proof-pack-repository",
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
     repository.save_proof_pack(
         proof_pack=proof_pack,
         idempotency_key="idem-proof-pack-repository",
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
 
     mutated = _proof_pack(reason="Changed rationale.")
@@ -136,6 +141,7 @@ def test_in_memory_repository_replays_same_identity_but_rejects_mutation() -> No
             proof_pack=mutated,
             idempotency_key="idem-proof-pack-repository",
             retention_expires_at=RETENTION_EXPIRES_AT,
+            tenant_id="tenant-test",
         )
 
 
@@ -148,6 +154,7 @@ def test_in_memory_repository_rejects_idempotency_conflict() -> None:
         proof_pack=first,
         idempotency_key="idem-proof-pack-repository",
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
 
     with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT"):
@@ -155,7 +162,98 @@ def test_in_memory_repository_rejects_idempotency_conflict() -> None:
             proof_pack=second,
             idempotency_key="idem-proof-pack-repository",
             retention_expires_at=RETENTION_EXPIRES_AT,
+            tenant_id="tenant-test",
         )
+
+
+def test_in_memory_repository_rejects_aggregate_and_admitted_tenant_mismatch() -> None:
+    repository = InMemoryDpmProofPackRepository()
+
+    with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_TENANT_MISMATCH"):
+        repository.save_proof_pack(
+            proof_pack=_proof_pack(tenant_id="tenant-owned"),
+            idempotency_key=None,
+            retention_expires_at=None,
+            tenant_id="tenant-foreign",
+        )
+
+
+def test_in_memory_repository_fences_direct_list_and_replay_reads_by_tenant() -> None:
+    repository = InMemoryDpmProofPackRepository()
+    owned = _proof_pack(tenant_id="tenant-owned")
+    foreign = _proof_pack(reason="Foreign rationale.", tenant_id="tenant-foreign").model_copy(
+        update={"proof_pack_id": "dpp_foreign"}
+    )
+    repository.save_proof_pack(
+        proof_pack=owned,
+        idempotency_key="shared-caller-key",
+        retention_expires_at=None,
+        tenant_id="tenant-owned",
+    )
+    repository.save_proof_pack(
+        proof_pack=foreign,
+        idempotency_key="shared-caller-key",
+        retention_expires_at=None,
+        tenant_id="tenant-foreign",
+    )
+
+    assert (
+        repository.get_proof_pack(proof_pack_id=owned.proof_pack_id, tenant_id="tenant-foreign")
+        is None
+    )
+    assert (
+        repository.get_proof_pack_by_idempotency(
+            idempotency_key="shared-caller-key", tenant_id="tenant-owned"
+        )
+        == owned
+    )
+    assert (
+        repository.get_proof_pack_by_idempotency(
+            idempotency_key="shared-caller-key", tenant_id="tenant-foreign"
+        )
+        == foreign
+    )
+    assert repository.list_proof_packs(tenant_id="tenant-owned") == [owned]
+    assert repository.list_proof_packs(tenant_id="tenant-foreign") == [foreign]
+
+
+def test_in_memory_repository_quarantines_legacy_unattributed_pack() -> None:
+    repository = InMemoryDpmProofPackRepository()
+    legacy = _proof_pack().model_copy(update={"tenant_id": None})
+    repository._proof_packs[legacy.proof_pack_id] = legacy
+
+    assert (
+        repository.get_proof_pack(proof_pack_id=legacy.proof_pack_id, tenant_id="tenant-test")
+        is None
+    )
+    assert repository.list_proof_packs(tenant_id="tenant-test") == []
+
+
+def test_in_memory_repository_filters_tenant_before_pagination() -> None:
+    repository = InMemoryDpmProofPackRepository()
+    foreign = _proof_pack(reason="Foreign newest.", tenant_id="tenant-foreign").model_copy(
+        update={"proof_pack_id": "dpp_foreign_newest"}
+    )
+    owned = _proof_pack(reason="Owned older.", tenant_id="tenant-owned").model_copy(
+        update={
+            "proof_pack_id": "dpp_owned_older",
+            "created_at": CREATED_AT - timedelta(minutes=1),
+        }
+    )
+    repository.save_proof_pack(
+        proof_pack=foreign,
+        idempotency_key=None,
+        retention_expires_at=None,
+        tenant_id="tenant-foreign",
+    )
+    repository.save_proof_pack(
+        proof_pack=owned,
+        idempotency_key=None,
+        retention_expires_at=None,
+        tenant_id="tenant-owned",
+    )
+
+    assert repository.list_proof_packs(tenant_id="tenant-owned", limit=1) == [owned]
 
 
 def test_proof_pack_immutability_helper_allows_matching_content_hash() -> None:
@@ -270,6 +368,7 @@ def test_in_memory_repository_appends_refs_without_mutating_body() -> None:
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
 
     ref = DpmProofPackStoredRef(
@@ -283,7 +382,10 @@ def test_in_memory_repository_appends_refs_without_mutating_body() -> None:
     repository.append_ref(ref=ref)
 
     assert repository.list_refs(proof_pack_id=proof_pack.proof_pack_id) == [ref]
-    assert repository.get_proof_pack(proof_pack_id=proof_pack.proof_pack_id) == proof_pack
+    assert (
+        repository.get_proof_pack(proof_pack_id=proof_pack.proof_pack_id, tenant_id="tenant-test")
+        == proof_pack
+    )
 
 
 def test_postgres_migration_declares_proof_pack_persistence_tables() -> None:
@@ -307,3 +409,18 @@ def test_postgres_migration_declares_proof_pack_persistence_tables() -> None:
     missing = [token for token in required_tokens if token not in migration]
 
     assert missing == []
+
+
+def test_postgres_migration_quarantines_legacy_proof_packs_and_indexes_tenant_reads() -> None:
+    migration = (
+        ROOT
+        / "src"
+        / "infrastructure"
+        / "postgres_migrations"
+        / "dpm"
+        / "0028_proof_pack_tenant_scope.sql"
+    ).read_text(encoding="utf-8")
+
+    assert "ADD COLUMN IF NOT EXISTS tenant_id TEXT NULL" in migration
+    assert "UPDATE dpm_pre_trade_proof_packs" not in migration
+    assert "(tenant_id, created_at DESC, proof_pack_id DESC)" in migration

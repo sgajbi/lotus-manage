@@ -65,6 +65,7 @@ def generate_proof_pack_from_run(
         ),
         idempotency_key=idempotency_key,
         proof_pack_repository=proof_pack_repository,
+        tenant_id=tenant_id,
     )
     if existing is not None:
         return existing
@@ -92,6 +93,7 @@ def generate_proof_pack_from_run(
         proof_pack_repository=proof_pack_repository,
         proof_pack=proof_pack,
         idempotency_key=idempotency_key,
+        tenant_id=tenant_id,
     )
     return proof_pack
 
@@ -120,6 +122,7 @@ def generate_proof_pack_from_selected_alternative(
         ),
         idempotency_key=idempotency_key,
         proof_pack_repository=proof_pack_repository,
+        tenant_id=tenant_id,
     )
     if existing is not None:
         return existing
@@ -150,6 +153,7 @@ def generate_proof_pack_from_selected_alternative(
         proof_pack_repository=proof_pack_repository,
         proof_pack=proof_pack,
         idempotency_key=idempotency_key,
+        tenant_id=tenant_id,
     )
     return proof_pack
 
@@ -158,8 +162,12 @@ def get_proof_pack(
     *,
     proof_pack_id: str,
     proof_pack_repository: DpmProofPackRepository,
+    tenant_id: str,
 ) -> DpmPreTradeProofPack:
-    proof_pack = proof_pack_repository.get_proof_pack(proof_pack_id=proof_pack_id)
+    proof_pack = proof_pack_repository.get_proof_pack(
+        proof_pack_id=proof_pack_id,
+        tenant_id=tenant_id,
+    )
     if proof_pack is None:
         raise DpmRunNotFoundError("DPM_PROOF_PACK_NOT_FOUND")
     return hydrate_handoff_refs(
@@ -172,10 +180,12 @@ def get_report_input_ref(
     *,
     proof_pack_id: str,
     proof_pack_repository: DpmProofPackRepository,
+    tenant_id: str,
 ) -> DpmProofPackEvidenceRef:
     proof_pack = get_proof_pack(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
+        tenant_id=tenant_id,
     )
     ref = require_handoff_ref(
         proof_pack_id=proof_pack_id,
@@ -192,10 +202,12 @@ def get_ai_evidence_ref(
     *,
     proof_pack_id: str,
     proof_pack_repository: DpmProofPackRepository,
+    tenant_id: str,
 ) -> DpmProofPackEvidenceRef:
     proof_pack = get_proof_pack(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
+        tenant_id=tenant_id,
     )
     ref = require_handoff_ref(
         proof_pack_id=proof_pack_id,
@@ -217,11 +229,12 @@ def get_report_input(
     wave_repository: DpmWaveRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
-    tenant_id: str | None = None,
+    tenant_id: str,
 ) -> DpmProofPackReportInput:
     proof_pack = get_proof_pack(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
+        tenant_id=tenant_id,
     )
     return build_proof_pack_report_input(
         proof_pack=proof_pack,
@@ -240,11 +253,12 @@ def get_ai_evidence_input(
     wave_repository: DpmWaveRepository | None = None,
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
-    tenant_id: str | None = None,
+    tenant_id: str,
 ) -> DpmProofPackAiEvidenceInput:
     proof_pack = get_proof_pack(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
+        tenant_id=tenant_id,
     )
     return build_proof_pack_ai_evidence_input(
         proof_pack=proof_pack,

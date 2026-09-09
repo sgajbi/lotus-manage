@@ -6,6 +6,7 @@ from fastapi import Depends, Path, status
 from fastapi.responses import PlainTextResponse
 
 from src.api.dependencies import get_proof_pack_repository
+from src.api.routers.mandate_tenant_query import MandateTenantId
 from src.api.routers.proof_pack_http import PROOF_PACK_ROUTE_ERRORS, proof_pack_http_exception
 from src.api.routers.proof_pack_models import DpmProofPackLookupResponse
 from src.api.routers.proof_packs import router
@@ -27,6 +28,7 @@ from src.core.common.identity_examples import PROOF_PACK_ID_EXAMPLE
     },
 )
 def get_proof_pack(
+    tenant_id: MandateTenantId,
     proof_pack_id: Annotated[
         str,
         Path(description="Proof-pack identifier.", examples=[PROOF_PACK_ID_EXAMPLE]),
@@ -38,6 +40,7 @@ def get_proof_pack(
             proof_pack=proof_pack_service.get_proof_pack(
                 proof_pack_id=proof_pack_id,
                 proof_pack_repository=proof_pack_repository,
+                tenant_id=tenant_id,
             )
         )
     except PROOF_PACK_ROUTE_ERRORS as exc:
@@ -56,6 +59,7 @@ def get_proof_pack(
     },
 )
 def get_proof_pack_markdown(
+    tenant_id: MandateTenantId,
     proof_pack_id: Annotated[
         str,
         Path(description="Proof-pack identifier.", examples=[PROOF_PACK_ID_EXAMPLE]),
@@ -66,6 +70,7 @@ def get_proof_pack_markdown(
         proof_pack = proof_pack_service.get_proof_pack(
             proof_pack_id=proof_pack_id,
             proof_pack_repository=proof_pack_repository,
+            tenant_id=tenant_id,
         )
         return render_proof_pack_markdown(proof_pack)
     except PROOF_PACK_ROUTE_ERRORS as exc:

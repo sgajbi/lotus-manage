@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-09-09T00:03:27+00:00`
+- Generated at: `2026-09-09T02:34:34+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `0e23e6fcbecfd31a4d5937573db582a1a5b07373`
+- Baseline source snapshot: `a07363e1941c1f173e7bcca74002616afacf6d03`
 
-- Report source snapshot: `030ac897+worktree`
+- Report source snapshot: `70e22473+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -14,9 +14,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 933 | 936 | +3 |
-| Total Python LOC | 218596 | 219542 | +946 |
-| Test functions | 3174 | 3189 | +15 |
+| Python files | 936 | 937 | +1 |
+| Total Python LOC | 219542 | 220197 | +655 |
+| Test functions | 3189 | 3201 | +12 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -43,7 +43,7 @@
 | 4 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
 | 5 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
-| 7 | tests/unit/test_documentation_current_state.py | 2895 |
+| 7 | tests/unit/test_documentation_current_state.py | 2970 |
 | 8 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2709 |
 | 9 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2670 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
@@ -52,14 +52,14 @@
 
 | Rank | File | Lines |
 | --- | --- | --- |
-| 1 | tests/unit/dpm/api/test_waves_api.py | 7777 |
+| 1 | tests/unit/dpm/api/test_waves_api.py | 7779 |
 | 2 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3609 |
 | 3 | tests/unit/test_ci_workflow_gate_enforcement.py | 3395 |
 | 4 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
 | 5 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
-| 7 | tests/unit/test_documentation_current_state.py | 2970 |
-| 8 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2709 |
+| 7 | tests/unit/test_documentation_current_state.py | 2969 |
+| 8 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2711 |
 | 9 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2670 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
 
@@ -78,7 +78,7 @@
 | 7 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |
 | 8 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
 | 9 | test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts | tests/unit/dpm/api/test_waves_api.py | 268 |
-| 10 | test_dpm_supportability_and_async_schemas_have_descriptions_and_examples | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 237 |
+| 10 | execute | tests/unit/dpm/supportability/test_dpm_mandate_repository.py | 246 |
 
 ### current branch
 

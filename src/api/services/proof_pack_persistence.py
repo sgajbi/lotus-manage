@@ -13,6 +13,7 @@ def persist_proof_pack(
     proof_pack_repository: DpmProofPackRepository,
     proof_pack: DpmPreTradeProofPack,
     idempotency_key: str | None,
+    tenant_id: str,
     persisted_at: datetime | None = None,
 ) -> None:
     retention_base = persisted_at or datetime.now(timezone.utc)
@@ -20,6 +21,7 @@ def persist_proof_pack(
         proof_pack=proof_pack,
         idempotency_key=idempotency_key,
         retention_expires_at=retention_base + timedelta(days=PROOF_PACK_RETENTION_DAYS),
+        tenant_id=tenant_id,
     )
 
 

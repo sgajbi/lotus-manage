@@ -12,7 +12,11 @@ from src.core.proof_packs.models import (
     DpmProofPackRetentionMetadata,
     DpmProofPackStoredRef,
 )
-from src.core.proof_packs.repository import DpmProofPackConflictError
+from src.core.proof_packs.repository import (
+    DpmProofPackConflictError,
+    proof_pack_idempotency_mapping_key,
+    require_proof_pack_tenant,
+)
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -34,38 +38,51 @@ class PostgresDpmProofPackRepository:
         proof_pack: DpmPreTradeProofPack,
         idempotency_key: str | None,
         retention_expires_at: datetime | None,
+        tenant_id: str,
     ) -> None:
+        stamped = require_proof_pack_tenant(proof_pack=proof_pack, tenant_id=tenant_id)
+        mapping_key = (
+            None
+            if idempotency_key is None
+            else proof_pack_idempotency_mapping_key(
+                tenant_id=tenant_id, idempotency_key=idempotency_key
+            )
+        )
         with closing(self._connect()) as connection:
             existing = connection.execute(
                 """
-                SELECT content_hash
+                SELECT
+                    content_hash,
+                    tenant_id,
+                    payload_json ->> 'tenant_id' AS payload_tenant_id
                 FROM dpm_pre_trade_proof_packs
                 WHERE proof_pack_id = %s
                 """,
-                (proof_pack.proof_pack_id,),
+                (stamped.proof_pack_id,),
             ).fetchone()
             _raise_on_existing_proof_pack_conflict(
                 existing=existing,
-                proof_pack=proof_pack,
+                proof_pack=stamped,
             )
-            if idempotency_key is not None:
+            if mapping_key is not None:
                 existing_idempotency = connection.execute(
                     """
                     SELECT proof_pack_id
                     FROM dpm_pre_trade_proof_packs
                     WHERE idempotency_key = %s
                     """,
-                    (idempotency_key,),
+                    (mapping_key,),
                 ).fetchone()
                 _raise_on_idempotency_conflict(
                     existing_idempotency=existing_idempotency,
-                    proof_pack=proof_pack,
+                    proof_pack=stamped,
                 )
 
             connection.execute(
                 """
                 INSERT INTO dpm_pre_trade_proof_packs (
                     proof_pack_id,
+                    tenant_id,
                     portfolio_id,
                     mandate_id,
                     source_type,
@@ -76,16 +93,16 @@ class PostgresDpmProofPackRepository:
                     retention_expires_at,
                     payload_json,
                     created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (proof_pack_id) DO NOTHING
                 """,
                 _proof_pack_insert_params(
-                    proof_pack=proof_pack,
-                    idempotency_key=idempotency_key,
+                    proof_pack=stamped,
+                    idempotency_key=mapping_key,
                     retention_expires_at=retention_expires_at,
                 ),
             )
-            for section in proof_pack.sections:
+            for section in stamped.sections:
                 connection.execute(
                     """
                     INSERT INTO dpm_pre_trade_proof_pack_sections (
@@ -100,21 +117,23 @@ class PostgresDpmProofPackRepository:
                     ON CONFLICT (proof_pack_id, section_id) DO NOTHING
                     """,
                     _proof_pack_section_insert_params(
-                        proof_pack=proof_pack,
+                        proof_pack=stamped,
                         section=section,
                     ),
                 )
             connection.commit()
 
-    def get_proof_pack(self, *, proof_pack_id: str) -> DpmPreTradeProofPack | None:
+    def get_proof_pack(self, *, proof_pack_id: str, tenant_id: str) -> DpmPreTradeProofPack | None:
         with closing(self._connect()) as connection:
             row = connection.execute(
                 """
                 SELECT payload_json
                 FROM dpm_pre_trade_proof_packs
                 WHERE proof_pack_id = %s
+                  AND tenant_id = %s
+                  AND payload_json ->> 'tenant_id' = %s
                 """,
-                (proof_pack_id,),
+                (proof_pack_id, tenant_id, tenant_id),
             ).fetchone()
         if row is None:
             return None
@@ -124,6 +143,7 @@ class PostgresDpmProofPackRepository:
         self,
         *,
         idempotency_key: str,
+        tenant_id: str,
     ) -> DpmPreTradeProofPack | None:
         with closing(self._connect()) as connection:
             row = connection.execute(
@@ -131,8 +151,16 @@ class PostgresDpmProofPackRepository:
                 SELECT payload_json
                 FROM dpm_pre_trade_proof_packs
                 WHERE idempotency_key = %s
+                  AND tenant_id = %s
+                  AND payload_json ->> 'tenant_id' = %s
                 """,
-                (idempotency_key,),
+                (
+                    proof_pack_idempotency_mapping_key(
+                        tenant_id=tenant_id, idempotency_key=idempotency_key
+                    ),
+                    tenant_id,
+                    tenant_id,
+                ),
             ).fetchone()
         if row is None:
             return None
@@ -141,14 +169,15 @@ class PostgresDpmProofPackRepository:
     def list_proof_packs(
         self,
         *,
+        tenant_id: str,
         portfolio_id: str | None = None,
         mandate_id: str | None = None,
         status: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmPreTradeProofPack]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["tenant_id = %s", "payload_json ->> 'tenant_id' = %s"]
+        args: list[Any] = [tenant_id, tenant_id]
         for column, value in (
             ("portfolio_id", portfolio_id),
             ("mandate_id", mandate_id),
@@ -264,7 +293,11 @@ def _raise_on_existing_proof_pack_conflict(
     existing: Any,
     proof_pack: DpmPreTradeProofPack,
 ) -> None:
-    if existing is not None and existing["content_hash"] != proof_pack.content_hash:
+    if existing is not None and (
+        existing["content_hash"] != proof_pack.content_hash
+        or existing["tenant_id"] != proof_pack.tenant_id
+        or existing["payload_tenant_id"] != proof_pack.tenant_id
+    ):
         raise DpmProofPackConflictError("DPM_PROOF_PACK_IMMUTABLE_CONFLICT")
 
 
@@ -288,6 +321,7 @@ def _proof_pack_insert_params(
 ) -> tuple[Any, ...]:
     return (
         proof_pack.proof_pack_id,
+        proof_pack.tenant_id,
         proof_pack.portfolio_id,
         proof_pack.mandate_id,
         proof_pack.source_type,

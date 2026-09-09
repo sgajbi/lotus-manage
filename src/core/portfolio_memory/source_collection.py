@@ -27,9 +27,11 @@ def collect_portfolio_memory_events(
     """Collect source-family memory events without aggregating or hashing them."""
 
     limit = validate_portfolio_memory_read_limit(limit=limit)
+    scoped_tenant_id = require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories)
     events: list[DpmPortfolioMemoryEvent] = []
     events.extend(
         proof_pack_memory_events(
+            tenant_id=scoped_tenant_id,
             portfolio_id=portfolio_id,
             proof_pack_repository=repositories.proof_pack_repository,
             limit=limit,
@@ -58,7 +60,7 @@ def collect_portfolio_memory_events(
 
     events.extend(
         wave_memory_events(
-            tenant_id=require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories),
+            tenant_id=scoped_tenant_id,
             portfolio_id=portfolio_id,
             wave_repository=repositories.wave_repository,
             limit=limit,

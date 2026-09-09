@@ -158,7 +158,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert proof_pack["content_hash"].startswith("sha256:")
     assert proof_pack["source_hashes"]["mandate_twin"].startswith("sha256:")
     assert proof_pack["source_hashes"]["mandate_health"].startswith("sha256:")
-    assert body["markdown_url"].endswith("/summary.md")
+    assert body["markdown_url"].endswith("/summary.md?tenant_id=tenant-test")
     # The handoff link carries the tenant, because the endpoint it points at
     # requires one (issue #648) - a link without it is refused the moment a
     # consumer follows it, and a broken link is indistinguishable from a
@@ -180,14 +180,19 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert replay.status_code == 200
     assert replay.json()["proof_pack"]["content_hash"] == proof_pack["content_hash"]
 
-    fetched = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}")
+    fetched = client.get(
+        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}?tenant_id=tenant-test"
+    )
     assert fetched.status_code == 200
     fetched_proof_pack = fetched.json()["proof_pack"]
     assert fetched_proof_pack["proof_pack_id"] == proof_pack["proof_pack_id"]
     assert fetched_proof_pack["report_input_ref"]["ref_type"] == "DPM_PROOF_PACK_REPORT_INPUT"
     assert fetched_proof_pack["ai_evidence_ref"]["ref_type"] == "DPM_PROOF_PACK_AI_EVIDENCE_INPUT"
 
-    markdown = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/summary.md")
+    markdown = client.get(
+        f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/summary.md"
+        "?tenant_id=tenant-test"
+    )
     assert markdown.status_code == 200
     assert "# Pre-Trade Proof Pack" in markdown.text
     assert "| `reporting_refs` | `READY` |" in markdown.text
@@ -588,12 +593,43 @@ def test_generate_proof_pack_does_not_hide_unexpected_service_exceptions(
 
 def test_proof_pack_read_routes_return_404_for_missing_pack(client: TestClient) -> None:
     for path in [
-        "/api/v1/rebalance/proof-packs/missing",
-        "/api/v1/rebalance/proof-packs/missing/summary.md",
+        "/api/v1/rebalance/proof-packs/missing?tenant_id=tenant-test",
+        "/api/v1/rebalance/proof-packs/missing/summary.md?tenant_id=tenant-test",
         "/api/v1/rebalance/proof-packs/missing/report-input?tenant_id=tenant-test",
         "/api/v1/rebalance/proof-packs/missing/ai-evidence-input?tenant_id=tenant-test",
     ]:
         response = client.get(path)
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "DPM_PROOF_PACK_NOT_FOUND"
+
+
+def test_proof_pack_read_routes_require_tenant(client: TestClient) -> None:
+    for suffix in ["", "/summary.md", "/report-input", "/ai-evidence-input"]:
+        response = client.get(f"/api/v1/rebalance/proof-packs/missing{suffix}")
+
+        assert response.status_code == 422
+
+
+def test_proof_pack_read_routes_refuse_foreign_tenant(client: TestClient) -> None:
+    run_id = _simulate_run(client)
+    created = client.post(
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-test",
+        json={
+            "source_type": "REBALANCE_RUN",
+            "rebalance_run_id": run_id,
+            "actor_id": "pm_api",
+            "mandate_id": "mandate_api_001",
+        },
+        headers={"Idempotency-Key": "proof-pack-foreign-read"},
+    )
+    assert created.status_code == 200
+    proof_pack_id = created.json()["proof_pack"]["proof_pack_id"]
+
+    for suffix in ["", "/summary.md", "/report-input", "/ai-evidence-input"]:
+        response = client.get(
+            f"/api/v1/rebalance/proof-packs/{proof_pack_id}{suffix}?tenant_id=tenant-foreign"
+        )
 
         assert response.status_code == 404
         assert response.json()["detail"] == "DPM_PROOF_PACK_NOT_FOUND"
@@ -630,3 +666,13 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
         in ai_schema["properties"]["portfolio_memory_context"]["description"]
     )
     assert "DpmProofPackClientCommunicationBoundaryEvidence" in openapi["components"]["schemas"]
+    for path in [
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}",
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md",
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}/report-input",
+        "/api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input",
+    ]:
+        parameters = openapi["paths"][path]["get"]["parameters"]
+        tenant = next(parameter for parameter in parameters if parameter["name"] == "tenant_id")
+        assert tenant["in"] == "query"
+        assert tenant["required"] is True

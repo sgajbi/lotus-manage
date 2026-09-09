@@ -175,7 +175,7 @@ def _to_generate_response(
     scope = f"?tenant_id={quote(tenant_id, safe='')}"
     return DpmProofPackGenerateResponse(
         proof_pack=proof_pack,
-        markdown_url=f"{base}/summary.md" if include_markdown else None,
+        markdown_url=f"{base}/summary.md{scope}" if include_markdown else None,
         report_input_url=f"{base}/report-input{scope}" if include_report_input else None,
         ai_evidence_input_url=(
             f"{base}/ai-evidence-input{scope}" if include_ai_evidence_input else None
