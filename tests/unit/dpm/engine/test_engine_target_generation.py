@@ -2,12 +2,7 @@
 FILE: tests/engine/test_engine_target_generation.py
 """
 
-import subprocess
-import sys
 from decimal import Decimal
-from importlib.util import find_spec
-
-import pytest
 
 from src.core.rebalance.engine import _generate_targets
 from src.core.models import (
@@ -17,25 +12,6 @@ from src.core.models import (
     ModelTarget,
     ShelfEntry,
 )
-
-
-def _cvxpy_runtime_available(timeout_seconds: float = 3.0) -> bool:
-    if find_spec("cvxpy") is None:
-        return False
-    try:
-        subprocess.run(
-            [sys.executable, "-c", "import cvxpy"],
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=True,
-        )
-    except (subprocess.SubprocessError, OSError):
-        return False
-    return True
-
-
-_CVXPY_RUNTIME_AVAILABLE = _cvxpy_runtime_available()
 
 
 def test_target_gen_applies_group_cap_and_redistributes():
@@ -124,7 +100,6 @@ def test_target_gen_blocks_if_redistribution_impossible():
     assert diag.group_constraint_events[0].status == "BLOCKED"
 
 
-@pytest.mark.skipif(not _CVXPY_RUNTIME_AVAILABLE, reason="cvxpy runtime unavailable")
 def test_solver_target_gen_feasible_allocates_with_hard_constraints():
     targets = [
         ModelTarget(instrument_id="Tech_A", weight=Decimal("1.0")),
@@ -163,7 +138,6 @@ def test_solver_target_gen_feasible_allocates_with_hard_constraints():
     assert len(trace) == 2
 
 
-@pytest.mark.skipif(not _CVXPY_RUNTIME_AVAILABLE, reason="cvxpy runtime unavailable")
 def test_solver_target_gen_blocks_on_infeasible_constraints():
     targets = [ModelTarget(instrument_id="Tech_A", weight=Decimal("1.0"))]
     eligible = {"Tech_A": Decimal("1.0")}
