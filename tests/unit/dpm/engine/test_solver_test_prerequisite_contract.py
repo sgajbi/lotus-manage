@@ -39,6 +39,7 @@ def test_required_solver_proofs_cannot_skip_or_use_a_subprocess_probe() -> None:
         pytest_marks: set[str] = set()
         pytest_skip_calls: set[str] = set()
         unittest_modules = {"unittest"}
+        unittest_case_modules = {"unittest.case"}
         unittest_skip_calls: set[str] = set()
         unittest_skip_exceptions: set[str] = set()
         solver_capability_modules = {"src.core.common.capabilities"}
@@ -50,9 +51,12 @@ def test_required_solver_proofs_cannot_skip_or_use_a_subprocess_probe() -> None:
                     alias.asname or alias.name for alias in node.names if alias.name == "pytest"
                 )
                 unittest_modules.update(
+                    alias.asname or alias.name for alias in node.names if alias.name == "unittest"
+                )
+                unittest_case_modules.update(
                     alias.asname or alias.name
                     for alias in node.names
-                    if alias.name in {"unittest", "unittest.case"}
+                    if alias.name == "unittest.case"
                 )
                 solver_capability_modules.update(
                     alias.asname or alias.name
@@ -68,6 +72,8 @@ def test_required_solver_proofs_cannot_skip_or_use_a_subprocess_probe() -> None:
                         pytest_skip_calls.add(local_name)
             if isinstance(node, ast.ImportFrom) and node.module in {"unittest", "unittest.case"}:
                 for alias in node.names:
+                    if node.module == "unittest" and alias.name == "case":
+                        unittest_case_modules.add(alias.asname or alias.name)
                     if alias.name in {"skip", "skipIf", "skipUnless", "expectedFailure"}:
                         unittest_skip_calls.add(alias.asname or alias.name)
                     if alias.name == "SkipTest":
@@ -94,6 +100,16 @@ def test_required_solver_proofs_cannot_skip_or_use_a_subprocess_probe() -> None:
             *(f"{module}.skipUnless" for module in unittest_modules),
             *(f"{module}.expectedFailure" for module in unittest_modules),
             *(f"{module}.SkipTest" for module in unittest_modules),
+            *(f"{module}.case.skip" for module in unittest_modules),
+            *(f"{module}.case.skipIf" for module in unittest_modules),
+            *(f"{module}.case.skipUnless" for module in unittest_modules),
+            *(f"{module}.case.expectedFailure" for module in unittest_modules),
+            *(f"{module}.case.SkipTest" for module in unittest_modules),
+            *(f"{module}.skip" for module in unittest_case_modules),
+            *(f"{module}.skipIf" for module in unittest_case_modules),
+            *(f"{module}.skipUnless" for module in unittest_case_modules),
+            *(f"{module}.expectedFailure" for module in unittest_case_modules),
+            *(f"{module}.SkipTest" for module in unittest_case_modules),
             *(f"{module}.has_solver_dependencies" for module in solver_capability_modules),
         }
         for node in ast.walk(tree):
