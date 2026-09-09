@@ -15,6 +15,7 @@ SOLVER_TEST_FILES = (
 )
 DEPENDENCY_PROBE_IMPORT_ROOTS = {"importlib", "pkgutil", "subprocess"}
 SOLVER_DEPENDENCY_IMPORT_ROOTS = {"cvxpy", "numpy"}
+SOLVER_CAPABILITY_MODULE = "src.core.common.capabilities"
 
 
 def _dotted_name(node: ast.expr) -> str | None:
@@ -65,7 +66,7 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
         unittest_case_modules = {"unittest.case"}
         unittest_skip_calls: set[str] = set()
         unittest_skip_exceptions: set[str] = set()
-        solver_capability_modules = {"src.core.common.capabilities"}
+        solver_capability_modules = {SOLVER_CAPABILITY_MODULE}
         solver_capability_calls = {"has_solver_dependencies"}
 
         for node in ast.walk(tree):
@@ -81,11 +82,12 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
                     for alias in node.names
                     if alias.name == "unittest.case"
                 )
-                solver_capability_modules.update(
-                    alias.asname or alias.name
-                    for alias in node.names
-                    if alias.name == "src.core.common.capabilities"
-                )
+                for alias in node.names:
+                    if SOLVER_CAPABILITY_MODULE == alias.name:
+                        solver_capability_modules.add(alias.asname or alias.name)
+                    elif alias.asname and SOLVER_CAPABILITY_MODULE.startswith(f"{alias.name}."):
+                        suffix = SOLVER_CAPABILITY_MODULE.removeprefix(f"{alias.name}.")
+                        solver_capability_modules.add(f"{alias.asname}.{suffix}")
             if isinstance(node, ast.ImportFrom) and node.module == "pytest":
                 for alias in node.names:
                     local_name = alias.asname or alias.name
@@ -107,6 +109,19 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
                     for alias in node.names
                     if alias.name == "has_solver_dependencies"
                 )
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module is not None
+                and SOLVER_CAPABILITY_MODULE.startswith(f"{node.module}.")
+            ):
+                remaining_path = SOLVER_CAPABILITY_MODULE.removeprefix(f"{node.module}.")
+                expected_symbol, _, suffix = remaining_path.partition(".")
+                for alias in node.names:
+                    if alias.name == expected_symbol:
+                        local_name = alias.asname or alias.name
+                        solver_capability_modules.add(
+                            local_name if not suffix else f"{local_name}.{suffix}"
+                        )
 
         forbidden_attributes = {
             *(f"{module}.skip" for module in pytest_modules),
