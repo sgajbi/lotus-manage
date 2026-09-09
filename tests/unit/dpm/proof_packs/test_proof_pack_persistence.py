@@ -17,11 +17,13 @@ class _CapturingProofPackRepository:
         proof_pack: object,
         idempotency_key: str | None,
         retention_expires_at: datetime | None,
+        tenant_id: str,
     ) -> None:
         self.saved = {
             "proof_pack": proof_pack,
             "idempotency_key": idempotency_key,
             "retention_expires_at": retention_expires_at,
+            "tenant_id": tenant_id,
         }
 
 
@@ -35,12 +37,14 @@ def test_persist_proof_pack_applies_seven_year_retention_from_persisted_at() -> 
         proof_pack=proof_pack,
         idempotency_key="idem-proof-pack-persistence",
         persisted_at=persisted_at,
+        tenant_id="tenant-test",
     )
 
     assert repository.saved == {
         "proof_pack": proof_pack,
         "idempotency_key": "idem-proof-pack-persistence",
         "retention_expires_at": persisted_at + timedelta(days=PROOF_PACK_RETENTION_DAYS),
+        "tenant_id": "tenant-test",
     }
 
 

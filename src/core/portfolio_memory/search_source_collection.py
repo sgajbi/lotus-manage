@@ -50,12 +50,14 @@ def collect_portfolio_memory_search_events(
 
     limit = validate_portfolio_memory_read_limit(limit=limit)
     explicit_portfolio_ids = set(portfolio_ids)
+    scoped_tenant_id = require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories)
     candidates = set(explicit_portfolio_ids)
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]] = defaultdict(list)
     for portfolio_id in candidates:
         events_by_portfolio_id.setdefault(portfolio_id, [])
 
     _collect_proof_pack_events(
+        tenant_id=scoped_tenant_id,
         repositories=repositories,
         explicit_portfolio_ids=explicit_portfolio_ids,
         candidates=candidates,
@@ -63,7 +65,7 @@ def collect_portfolio_memory_search_events(
         limit=limit,
     )
     _collect_wave_events(
-        tenant_id=require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories),
+        tenant_id=scoped_tenant_id,
         repositories=repositories,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
@@ -123,6 +125,7 @@ def collect_portfolio_memory_search_events(
 
 def _collect_proof_pack_events(
     *,
+    tenant_id: str,
     repositories: PortfolioMemorySourceRepositories,
     explicit_portfolio_ids: set[str],
     candidates: set[str],
@@ -130,12 +133,15 @@ def _collect_proof_pack_events(
     limit: int,
 ) -> None:
     seen_proof_pack_ids: set[str] = set()
-    for proof_pack in repositories.proof_pack_repository.list_proof_packs(limit=limit):
+    for proof_pack in repositories.proof_pack_repository.list_proof_packs(
+        tenant_id=tenant_id, limit=limit
+    ):
         seen_proof_pack_ids.add(proof_pack.proof_pack_id)
         candidates.add(proof_pack.portfolio_id)
         events_by_portfolio_id[proof_pack.portfolio_id].extend(proof_pack_events(proof_pack))
     for portfolio_id in sorted(explicit_portfolio_ids):
         for proof_pack in repositories.proof_pack_repository.list_proof_packs(
+            tenant_id=tenant_id,
             portfolio_id=portfolio_id,
             limit=limit,
         ):

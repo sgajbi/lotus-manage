@@ -361,6 +361,7 @@ def _build_proof_pack(
     pack = DpmPreTradeProofPack(
         proof_pack_id=context.proof_pack_id,
         proof_pack_version=PROOF_PACK_VERSION,
+        tenant_id=tenant_id,
         portfolio_id=context.portfolio_id,
         mandate_id=mandate_id,
         source_type=source_type,

@@ -347,6 +347,7 @@ def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> 
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
 
     with pytest.raises(
@@ -356,6 +357,7 @@ def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> 
         proof_pack_service.get_report_input_ref(
             proof_pack_id=proof_pack.proof_pack_id,
             proof_pack_repository=repository,
+            tenant_id="tenant-test",
         )
     with pytest.raises(
         proof_pack_service.DpmProofPackAiEvidenceInputNotGeneratedError,
@@ -364,6 +366,7 @@ def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> 
         proof_pack_service.get_ai_evidence_ref(
             proof_pack_id=proof_pack.proof_pack_id,
             proof_pack_repository=repository,
+            tenant_id="tenant-test",
         )
 
     report_ref = DpmProofPackStoredRef(
@@ -389,6 +392,7 @@ def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> 
         proof_pack_service.get_report_input_ref(
             proof_pack_id=proof_pack.proof_pack_id,
             proof_pack_repository=repository,
+            tenant_id="tenant-test",
         ).content_hash
         == "sha256:report"
     )
@@ -396,6 +400,7 @@ def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> 
         proof_pack_service.get_ai_evidence_ref(
             proof_pack_id=proof_pack.proof_pack_id,
             proof_pack_repository=repository,
+            tenant_id="tenant-test",
         ).content_hash
         == "sha256:ai"
     )
@@ -424,7 +429,7 @@ def test_handoff_ref_lookup_reads_stored_refs_when_pack_is_not_hydrated() -> Non
         def __init__(self) -> None:
             self.calls = 0
 
-        def get_proof_pack(self, *, proof_pack_id: str):
+        def get_proof_pack(self, *, proof_pack_id: str, tenant_id: str):
             return proof_pack
 
         def list_refs(self, *, proof_pack_id: str):
@@ -439,6 +444,7 @@ def test_handoff_ref_lookup_reads_stored_refs_when_pack_is_not_hydrated() -> Non
         proof_pack_service.get_report_input_ref(
             proof_pack_id=proof_pack.proof_pack_id,
             proof_pack_repository=repository,
+            tenant_id="tenant-test",
         ).content_hash
         == "sha256:report"
     )
@@ -446,6 +452,7 @@ def test_handoff_ref_lookup_reads_stored_refs_when_pack_is_not_hydrated() -> Non
         proof_pack_service.get_ai_evidence_ref(
             proof_pack_id=proof_pack.proof_pack_id,
             proof_pack_repository=repository,
+            tenant_id="tenant-test",
         ).content_hash
         == "sha256:ai"
     )
@@ -458,6 +465,7 @@ def test_ensure_handoff_refs_is_idempotent_for_existing_matching_refs() -> None:
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
 
     first = proof_pack_service.ensure_handoff_refs(
@@ -485,6 +493,7 @@ def test_handoff_ref_lookup_prefers_latest_append_only_ref() -> None:
         proof_pack=proof_pack,
         idempotency_key=None,
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
     repository.append_ref(
         ref=DpmProofPackStoredRef(
@@ -510,6 +519,7 @@ def test_handoff_ref_lookup_prefers_latest_append_only_ref() -> None:
     report_ref = proof_pack_service.get_report_input_ref(
         proof_pack_id=proof_pack.proof_pack_id,
         proof_pack_repository=repository,
+        tenant_id="tenant-test",
     )
 
     assert report_ref.ref_id == "dpri_new"

@@ -13,6 +13,8 @@ from src.core.proof_packs.models import (
 from src.core.proof_packs.repository import (
     DpmProofPackConflictError,
     DpmProofPackRepository,
+    proof_pack_idempotency_mapping_key,
+    require_proof_pack_tenant,
 )
 
 RETENTION_POLICY_PRE_TRADE_PROOF_PACK = "DPM_PRE_TRADE_PROOF_PACK_7Y"
@@ -75,47 +77,60 @@ class InMemoryDpmProofPackRepository(DpmProofPackRepository):
         proof_pack: DpmPreTradeProofPack,
         idempotency_key: str | None,
         retention_expires_at: datetime | None,
+        tenant_id: str,
     ) -> None:
         with self._lock:
-            existing = self._proof_packs.get(proof_pack.proof_pack_id)
-            _ensure_proof_pack_content_is_immutable(existing=existing, proof_pack=proof_pack)
+            stamped = require_proof_pack_tenant(proof_pack=proof_pack, tenant_id=tenant_id)
+            existing = self._proof_packs.get(stamped.proof_pack_id)
+            _ensure_proof_pack_content_is_immutable(existing=existing, proof_pack=stamped)
+            mapping_key = (
+                None
+                if idempotency_key is None
+                else proof_pack_idempotency_mapping_key(
+                    tenant_id=tenant_id, idempotency_key=idempotency_key
+                )
+            )
             binding = _idempotency_binding(
-                idempotency_key=idempotency_key,
+                idempotency_key=mapping_key,
                 existing_proof_pack_id=(
-                    self._idempotency_index.get(idempotency_key)
-                    if idempotency_key is not None
-                    else None
+                    self._idempotency_index.get(mapping_key) if mapping_key is not None else None
                 ),
-                proof_pack_id=proof_pack.proof_pack_id,
+                proof_pack_id=stamped.proof_pack_id,
             )
             if binding is not None:
                 self._idempotency_index[binding[0]] = binding[1]
-            self._proof_packs[proof_pack.proof_pack_id] = deepcopy(proof_pack)
-            self._retention[proof_pack.proof_pack_id] = _retention_metadata(
-                proof_pack_id=proof_pack.proof_pack_id,
+            self._proof_packs[stamped.proof_pack_id] = deepcopy(stamped)
+            self._retention[stamped.proof_pack_id] = _retention_metadata(
+                proof_pack_id=stamped.proof_pack_id,
                 retention_expires_at=retention_expires_at,
             )
 
-    def get_proof_pack(self, *, proof_pack_id: str) -> DpmPreTradeProofPack | None:
+    def get_proof_pack(self, *, proof_pack_id: str, tenant_id: str) -> DpmPreTradeProofPack | None:
         with self._lock:
             row = self._proof_packs.get(proof_pack_id)
-            return deepcopy(row) if row is not None else None
+            return deepcopy(row) if row is not None and row.tenant_id == tenant_id else None
 
     def get_proof_pack_by_idempotency(
         self,
         *,
         idempotency_key: str,
+        tenant_id: str,
     ) -> DpmPreTradeProofPack | None:
         with self._lock:
-            proof_pack_id = self._idempotency_index.get(idempotency_key)
+            proof_pack_id = self._idempotency_index.get(
+                proof_pack_idempotency_mapping_key(
+                    tenant_id=tenant_id, idempotency_key=idempotency_key
+                )
+            )
             if proof_pack_id is None:
                 return None
             row = self._proof_packs.get(proof_pack_id)
-            return deepcopy(row) if row is not None else None
+            return deepcopy(row) if row is not None and row.tenant_id == tenant_id else None
 
     def list_proof_packs(
         self,
         *,
+        tenant_id: str,
         portfolio_id: str | None = None,
         mandate_id: str | None = None,
         status: str | None = None,
@@ -124,7 +139,11 @@ class InMemoryDpmProofPackRepository(DpmProofPackRepository):
     ) -> list[DpmPreTradeProofPack]:
         with self._lock:
             page = _list_proof_packs(
-                proof_packs=list(self._proof_packs.values()),
+                proof_packs=[
+                    proof_pack
+                    for proof_pack in self._proof_packs.values()
+                    if proof_pack.tenant_id == tenant_id
+                ],
                 filters=_ProofPackListFilters(
                     portfolio_id=portfolio_id,
                     mandate_id=mandate_id,

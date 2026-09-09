@@ -54,11 +54,18 @@ def candidate_portfolio_ids_from_sources(
     source_scan_limit = validate_portfolio_memory_source_scan_limit(
         source_scan_limit=source_scan_limit
     )
+    scoped_tenant_id = require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories)
     candidates = _explicit_candidate_ids(portfolio_ids)
-    candidates.update(_proof_pack_candidate_ids(repositories, source_scan_limit))
+    candidates.update(
+        _proof_pack_candidate_ids(
+            scoped_tenant_id,
+            repositories,
+            source_scan_limit,
+        )
+    )
     candidates.update(
         _wave_candidate_ids(
-            require_wave_tenant_id(tenant_id=tenant_id, repositories=repositories),
+            scoped_tenant_id,
             repositories,
             source_scan_limit,
         )
@@ -93,13 +100,14 @@ def _explicit_candidate_ids(portfolio_ids: list[str] | None) -> set[str]:
 
 
 def _proof_pack_candidate_ids(
+    tenant_id: str,
     repositories: PortfolioMemorySourceRepositories,
     source_scan_limit: int,
 ) -> set[str]:
     return {
         proof_pack.portfolio_id
         for proof_pack in repositories.proof_pack_repository.list_proof_packs(
-            limit=source_scan_limit
+            tenant_id=tenant_id, limit=source_scan_limit
         )
     }
 

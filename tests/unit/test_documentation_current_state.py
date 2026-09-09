@@ -2930,15 +2930,13 @@ def test_the_wiki_tenant_scope_claims_are_derived_from_the_served_contract() -> 
     scoped = {
         "GET /api/v1/dpm/monitoring/runs",
         "GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}",
-    }
-    # Named as unscoped on the page. `report-input` and `ai-evidence-input` are
-    # deliberately absent: they DO declare a required tenant_id and are still
-    # unfenced, which is why the page describes them separately and issue #694
-    # calls the parameter misleading rather than missing. A membership test
-    # here would report them as fenced.
-    unscoped = {
         "GET /api/v1/rebalance/proof-packs/{proof_pack_id}",
         "GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md",
+        "GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input",
+        "GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input",
+    }
+    # Named as the remaining unscoped operation on the page.
+    unscoped = {
         "GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews",
     }
 
@@ -2958,7 +2956,7 @@ def test_the_wiki_tenant_scope_claims_are_derived_from_the_served_contract() -> 
     )
     assert not fenced_but_claimed_unscoped, (
         "wiki/API-Surface.md still lists these as unscoped after they were fenced; "
-        f"update the page and issue #694: {fenced_but_claimed_unscoped}"
+        f"update the page: {fenced_but_claimed_unscoped}"
     )
 
     api_surface = (ROOT / "wiki" / "API-Surface.md").read_text(encoding="utf-8")
@@ -2967,4 +2965,5 @@ def test_the_wiki_tenant_scope_claims_are_derived_from_the_served_contract() -> 
         "the page must keep saying that a NULL-tenant run is quarantined rather "
         "than defaulted; that is the property the migration relies on"
     )
-    assert "issue #694" in api_surface
+    assert "Migration `0028`" in api_surface
+    assert "Legacy NULL-owner rows" in api_surface

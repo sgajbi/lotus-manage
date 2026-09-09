@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-08T15:05:01.396422+00:00",
+  "generatedAt": "2026-09-09T01:43:05.149715+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -19004,6 +19004,18 @@
       "attributeRef": "#/attributeCatalog/lotus.proof_pack_id"
     },
     {
+      "name": "tenant_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": true,
+      "type": "string",
+      "description": "Tenant whose mandate evidence is being read. Required: mandate snapshots and health snapshots are stored per tenant, and the same mandate id may exist under more than one tenant. Send it as the canonical snake_case query parameter `tenant_id`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+    },
+    {
       "name": "proof_pack_id",
       "kind": "request_option",
       "location": "path",
@@ -19014,6 +19026,18 @@
       "allowedValues": [],
       "semanticId": "lotus.proof_pack_id",
       "attributeRef": "#/attributeCatalog/lotus.proof_pack_id"
+    },
+    {
+      "name": "tenant_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": true,
+      "type": "string",
+      "description": "Tenant whose mandate evidence is being read. Required: mandate snapshots and health snapshots are stored per tenant, and the same mandate id may exist under more than one tenant. Send it as the canonical snake_case query parameter `tenant_id`.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.tenant_id"
     },
     {
       "name": "proof_pack_id",
@@ -67304,6 +67328,14 @@
             "attributeRef": "#/attributeCatalog/lotus.proof_pack_version"
           },
           {
+            "name": "proof_pack.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "proof_pack.portfolio_id",
             "location": "body",
             "required": true,
@@ -68601,6 +68633,14 @@
             "type": "string",
             "semanticId": "lotus.proof_pack_id",
             "attributeRef": "#/attributeCatalog/lotus.proof_pack_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "query",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           }
         ]
       },
@@ -68629,6 +68669,14 @@
             "type": "string",
             "semanticId": "lotus.proof_pack_version",
             "attributeRef": "#/attributeCatalog/lotus.proof_pack_version"
+          },
+          {
+            "name": "proof_pack.tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "proof_pack.portfolio_id",
@@ -69904,6 +69952,14 @@
             "type": "string",
             "semanticId": "lotus.proof_pack_id",
             "attributeRef": "#/attributeCatalog/lotus.proof_pack_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "query",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           }
         ]
       },

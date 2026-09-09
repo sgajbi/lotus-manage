@@ -84,15 +84,17 @@ Workbench RFC-0098, and
   source-backed degraded or blocked section states instead of inventing missing evidence.
 - `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`
   retrieves the persisted proof-pack JSON contract with section states, hashes, lineage, retention
-  posture, source references, and supportability summary.
+  posture, source references, and supportability summary. A required `tenant_id` query parameter
+  fences the aggregate before its body is returned.
 - `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`
-  renders deterministic human-readable Markdown from the persisted proof pack.
+  renders deterministic human-readable Markdown from the tenant-fenced persisted proof pack.
 - `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`
   returns deterministic `DpmProofPackReportInput` for downstream report materialization without
-  requiring `lotus-report` to reconstruct proof-pack truth.
+  requiring `lotus-report` to reconstruct proof-pack truth. The required `tenant_id` fences both
+  the proof pack and its downstream enrichment.
 - `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input`
   returns bounded `DpmProofPackAiEvidenceInput` with forbidden-action guardrails and forbidden-field
-  filtering for downstream AI workflows.
+  filtering for downstream AI workflows, under the same required tenant fence.
 
 These are manage-owned backend authority endpoints. Gateway and Workbench must consume these
 contracts later without reconstructing proof-pack evidence. Report materialization and AI memo
@@ -367,12 +369,11 @@ Two limits on that fence are worth stating plainly, because neither is visible f
   **see**; it does not yet stop a caller recording a run under a tenant it merely names. That gap
   is tracked on issue #693 and is not closed by this change.
 
-Three operations remain genuinely unscoped: `GET /rebalance/proof-packs/{proof_pack_id}` with its
-`summary.md` companion, and `GET /rebalance/waves/{wave_id}/outcome-reviews` — the last of which
-sits under the wave prefix while reading an aggregate that is not tenant-scoped. The proof-pack
-reads are worse than unscoped: `GET /rebalance/proof-packs/{proof_pack_id}/report-input` and
-`/ai-evidence-input` **require** a `tenant_id` and then use it only for downstream enrichment, so
-the parameter looks like a fence and is not one. Tracked on issue #694.
+One operation remains genuinely unscoped: `GET /rebalance/waves/{wave_id}/outcome-reviews`, which
+sits under the wave prefix while reading an aggregate that is not tenant-scoped. Proof-pack reads
+are no longer in this set. Migration `0028` records the admitted tenant on new proof packs; all four
+detail/handoff reads, replay, and portfolio-memory list reads require that owner to agree with the
+caller. Legacy NULL-owner rows and contradictory column/payload ownership are matched by no caller.
 
 The wave aggregate is **no longer** among them — migration `0027` scoped it, and this sentence
 previously described the state before that change.

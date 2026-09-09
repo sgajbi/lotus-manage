@@ -9,11 +9,16 @@ def find_replayable_proof_pack(
     proof_pack_id: str,
     idempotency_key: str | None,
     proof_pack_repository: DpmProofPackRepository,
+    tenant_id: str,
 ) -> DpmPreTradeProofPack | None:
     if idempotency_key is not None:
         existing = proof_pack_repository.get_proof_pack_by_idempotency(
-            idempotency_key=idempotency_key
+            idempotency_key=idempotency_key,
+            tenant_id=tenant_id,
         )
         if existing is not None:
             return existing
-    return proof_pack_repository.get_proof_pack(proof_pack_id=proof_pack_id)
+    return proof_pack_repository.get_proof_pack(
+        proof_pack_id=proof_pack_id,
+        tenant_id=tenant_id,
+    )

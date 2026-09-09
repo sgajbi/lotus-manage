@@ -38,9 +38,17 @@ class _FakeConnection:
 
     def execute(self, query: str, params: Sequence[Any] = ()) -> _FakeCursor:
         normalized = " ".join(query.split())
-        if normalized.startswith("SELECT content_hash FROM dpm_pre_trade_proof_packs"):
+        if normalized.startswith("SELECT content_hash, tenant_id"):
             row = self.proof_packs_by_id.get(str(params[0]))
-            return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+            return _FakeCursor(
+                {
+                    "content_hash": row["content_hash"],
+                    "tenant_id": row["tenant_id"],
+                    "payload_tenant_id": row["payload_json"].get("tenant_id"),
+                }
+                if row
+                else None
+            )
         if normalized.startswith("SELECT proof_pack_id FROM dpm_pre_trade_proof_packs"):
             row = self.proof_packs_by_idempotency.get(str(params[0]))
             return _FakeCursor({"proof_pack_id": row["proof_pack_id"]} if row else None)
@@ -49,13 +57,32 @@ class _FakeConnection:
         if normalized.startswith("INSERT INTO dpm_pre_trade_proof_pack_sections"):
             return _FakeCursor()
         if "SELECT payload_json FROM dpm_pre_trade_proof_packs WHERE proof_pack_id" in normalized:
-            return _FakeCursor(self.proof_packs_by_id.get(str(params[0])))
+            row = self.proof_packs_by_id.get(str(params[0]))
+            return _FakeCursor(
+                row
+                if row is not None
+                and row["tenant_id"] == params[1]
+                and row["payload_json"].get("tenant_id") == params[2]
+                else None
+            )
         if "SELECT payload_json FROM dpm_pre_trade_proof_packs WHERE idempotency_key" in normalized:
-            return _FakeCursor(self.proof_packs_by_idempotency.get(str(params[0])))
+            row = self.proof_packs_by_idempotency.get(str(params[0]))
+            return _FakeCursor(
+                row
+                if row is not None
+                and row["tenant_id"] == params[1]
+                and row["payload_json"].get("tenant_id") == params[2]
+                else None
+            )
         if normalized.startswith("SELECT payload_json FROM dpm_pre_trade_proof_packs WHERE"):
-            rows = list(self.proof_packs_by_id.values())
+            rows = [
+                row
+                for row in self.proof_packs_by_id.values()
+                if row["tenant_id"] == params[0]
+                and row["payload_json"].get("tenant_id") == params[1]
+            ]
             if "portfolio_id = %s" in normalized:
-                rows = [row for row in rows if row["portfolio_id"] == params[0]]
+                rows = [row for row in rows if row["portfolio_id"] == params[2]]
             return _FakeCursor(rows=rows)
         if normalized.startswith("SELECT proof_pack_id, retention_policy, retention_expires_at"):
             return _FakeCursor(self.proof_packs_by_id.get(str(params[0])))
@@ -71,18 +98,19 @@ class _FakeConnection:
             return _FakeCursor()
         row = {
             "proof_pack_id": proof_pack_id,
-            "portfolio_id": str(params[1]),
-            "mandate_id": params[2],
-            "status": str(params[4]),
-            "content_hash": str(params[5]),
-            "idempotency_key": params[6],
-            "retention_policy": params[7],
-            "retention_expires_at": params[8],
-            "payload_json": json.loads(str(params[9])),
+            "tenant_id": str(params[1]),
+            "portfolio_id": str(params[2]),
+            "mandate_id": params[3],
+            "status": str(params[5]),
+            "content_hash": str(params[6]),
+            "idempotency_key": params[7],
+            "retention_policy": params[8],
+            "retention_expires_at": params[9],
+            "payload_json": json.loads(str(params[10])),
         }
         self.proof_packs_by_id[proof_pack_id] = row
-        if params[6] is not None:
-            self.proof_packs_by_idempotency[str(params[6])] = row
+        if params[7] is not None:
+            self.proof_packs_by_idempotency[str(params[7])] = row
         return _FakeCursor()
 
     def _insert_ref(self, params: Sequence[Any]) -> _FakeCursor:
@@ -121,6 +149,7 @@ def test_postgres_proof_pack_repository_round_trips_pack_retention_and_refs(
         proof_pack=proof_pack,
         idempotency_key="idem-proof-pack-postgres",
         retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
     )
     ref = DpmProofPackStoredRef(
         proof_pack_id=proof_pack.proof_pack_id,
@@ -132,12 +161,19 @@ def test_postgres_proof_pack_repository_round_trips_pack_retention_and_refs(
     )
     repository.append_ref(ref=ref)
 
-    assert repository.get_proof_pack(proof_pack_id=proof_pack.proof_pack_id) == proof_pack
     assert (
-        repository.get_proof_pack_by_idempotency(idempotency_key="idem-proof-pack-postgres")
+        repository.get_proof_pack(proof_pack_id=proof_pack.proof_pack_id, tenant_id="tenant-test")
         == proof_pack
     )
-    assert repository.list_proof_packs(portfolio_id=proof_pack.portfolio_id) == [proof_pack]
+    assert (
+        repository.get_proof_pack_by_idempotency(
+            idempotency_key="idem-proof-pack-postgres", tenant_id="tenant-test"
+        )
+        == proof_pack
+    )
+    assert repository.list_proof_packs(
+        tenant_id="tenant-test", portfolio_id=proof_pack.portfolio_id
+    ) == [proof_pack]
     assert (
         repository.get_retention_metadata(proof_pack_id=proof_pack.proof_pack_id).retention_policy
         == RETENTION_POLICY_PRE_TRADE_PROOF_PACK
@@ -172,8 +208,9 @@ def test_postgres_proof_pack_insert_params_preserve_storage_contract() -> None:
         retention_expires_at=RETENTION_EXPIRES_AT,
     )
 
-    assert params[:9] == (
+    assert params[:10] == (
         proof_pack.proof_pack_id,
+        proof_pack.tenant_id,
         proof_pack.portfolio_id,
         proof_pack.mandate_id,
         proof_pack.source_type,
@@ -183,8 +220,8 @@ def test_postgres_proof_pack_insert_params_preserve_storage_contract() -> None:
         RETENTION_POLICY_PRE_TRADE_PROOF_PACK,
         RETENTION_EXPIRES_AT.isoformat(),
     )
-    assert json.loads(str(params[9]))["proof_pack_id"] == proof_pack.proof_pack_id
-    assert params[10] == proof_pack.created_at.isoformat()
+    assert json.loads(str(params[10]))["proof_pack_id"] == proof_pack.proof_pack_id
+    assert params[11] == proof_pack.created_at.isoformat()
 
 
 def test_postgres_proof_pack_section_insert_params_preserve_section_contract() -> None:
@@ -212,7 +249,11 @@ def test_postgres_proof_pack_conflict_helpers_preserve_error_codes() -> None:
     mutated = _proof_pack(reason="Changed rationale.")
 
     postgres_module._raise_on_existing_proof_pack_conflict(
-        existing={"content_hash": proof_pack.content_hash},
+        existing={
+            "content_hash": proof_pack.content_hash,
+            "tenant_id": proof_pack.tenant_id,
+            "payload_tenant_id": proof_pack.tenant_id,
+        },
         proof_pack=proof_pack,
     )
     postgres_module._raise_on_idempotency_conflict(
@@ -221,9 +262,32 @@ def test_postgres_proof_pack_conflict_helpers_preserve_error_codes() -> None:
     )
     with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IMMUTABLE_CONFLICT"):
         postgres_module._raise_on_existing_proof_pack_conflict(
-            existing={"content_hash": proof_pack.content_hash},
+            existing={
+                "content_hash": proof_pack.content_hash,
+                "tenant_id": proof_pack.tenant_id,
+                "payload_tenant_id": proof_pack.tenant_id,
+            },
             proof_pack=mutated,
         )
+    for disagreeing_owner in [None, "tenant-other"]:
+        with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IMMUTABLE_CONFLICT"):
+            postgres_module._raise_on_existing_proof_pack_conflict(
+                existing={
+                    "content_hash": proof_pack.content_hash,
+                    "tenant_id": disagreeing_owner,
+                    "payload_tenant_id": proof_pack.tenant_id,
+                },
+                proof_pack=proof_pack,
+            )
+        with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IMMUTABLE_CONFLICT"):
+            postgres_module._raise_on_existing_proof_pack_conflict(
+                existing={
+                    "content_hash": proof_pack.content_hash,
+                    "tenant_id": proof_pack.tenant_id,
+                    "payload_tenant_id": disagreeing_owner,
+                },
+                proof_pack=proof_pack,
+            )
     with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT"):
         postgres_module._raise_on_idempotency_conflict(
             existing_idempotency={"proof_pack_id": proof_pack.proof_pack_id},
@@ -240,6 +304,7 @@ def test_postgres_proof_pack_repository_conflict_paths(
         proof_pack=proof_pack,
         idempotency_key="idem-proof-pack-postgres",
         retention_expires_at=None,
+        tenant_id="tenant-test",
     )
 
     mutated = _proof_pack(reason="Changed rationale.")
@@ -248,6 +313,7 @@ def test_postgres_proof_pack_repository_conflict_paths(
             proof_pack=mutated,
             idempotency_key="idem-proof-pack-postgres",
             retention_expires_at=None,
+            tenant_id="tenant-test",
         )
 
     other = proof_pack.model_copy(update={"proof_pack_id": "dpp_postgres_other"})
@@ -256,8 +322,12 @@ def test_postgres_proof_pack_repository_conflict_paths(
             proof_pack=other,
             idempotency_key="idem-proof-pack-postgres",
             retention_expires_at=None,
+            tenant_id="tenant-test",
         )
 
-    assert repository.get_proof_pack(proof_pack_id="missing") is None
-    assert repository.get_proof_pack_by_idempotency(idempotency_key="missing") is None
+    assert repository.get_proof_pack(proof_pack_id="missing", tenant_id="tenant-test") is None
+    assert (
+        repository.get_proof_pack_by_idempotency(idempotency_key="missing", tenant_id="tenant-test")
+        is None
+    )
     assert repository.get_retention_metadata(proof_pack_id="missing") is None
