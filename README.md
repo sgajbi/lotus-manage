@@ -62,9 +62,9 @@ Current posture under RFC-0082:
 4. Host/runtime coexistence and gateway-facing capability discovery are part of the operational
    contract.
 5. Solver-capable production installs use the `solver` extra (`cvxpy` and `numpy`), while
-   development and CI declare both as required `dev` dependencies. Solver-mode tests execute
-   unconditionally and fail if that test runtime is missing or broken; they must never turn a slow
-   import into a passing skip.
+   development and CI declare both as required `dev` dependencies. Solver-mode proof surfaces load
+   that prerequisite during test collection and execute unconditionally; a missing, suppressed, or
+   broken solver runtime must fail the lane instead of becoming a passing skip.
 
 ## Strategic DPM Roadmap
 

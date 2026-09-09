@@ -13,6 +13,9 @@ SOLVER_TEST_FILES = (
     Path("tests/unit/dpm/golden/test_golden_scenarios.py"),
     Path("tests/e2e/demo/test_demo_scenarios.py"),
 )
+SOLVER_PREREQUISITE_FILE = Path("tests/shared/solver_prerequisites.py")
+SOLVER_PREREQUISITE_MODULE = "tests.shared.solver_prerequisites"
+SOLVER_PREREQUISITE_FUNCTION = "require_solver_test_dependencies"
 DEPENDENCY_PROBE_IMPORT_ROOTS = {"importlib", "pkgutil", "subprocess"}
 SOLVER_DEPENDENCY_IMPORT_ROOTS = {"cvxpy", "numpy"}
 SOLVER_CAPABILITY_MODULE = "src.core.common.capabilities"
@@ -55,10 +58,50 @@ def test_cvxpy_is_a_required_test_dependency() -> None:
     assert any(dependency.startswith("cvxpy") for dependency in dev_dependencies)
 
 
+def test_solver_prerequisite_imports_dependencies_at_module_load() -> None:
+    tree = ast.parse(
+        SOLVER_PREREQUISITE_FILE.read_text(encoding="utf-8"),
+        filename=str(SOLVER_PREREQUISITE_FILE),
+    )
+    imported_roots = {
+        alias.name.partition(".")[0]
+        for node in tree.body
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    } | {
+        node.module.partition(".")[0]
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom) and node.module is not None
+    }
+
+    assert SOLVER_DEPENDENCY_IMPORT_ROOTS <= imported_roots
+
+
+def _module_load_prerequisite_calls(tree: ast.Module) -> set[str]:
+    prerequisite_names = {
+        alias.asname or alias.name
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom) and node.module == SOLVER_PREREQUISITE_MODULE
+        for alias in node.names
+        if alias.name == SOLVER_PREREQUISITE_FUNCTION
+    }
+    return {
+        node.value.func.id
+        for node in tree.body
+        if isinstance(node, ast.Expr)
+        and isinstance(node.value, ast.Call)
+        and isinstance(node.value.func, ast.Name)
+        and node.value.func.id in prerequisite_names
+    }
+
+
 def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -> None:
     violations: list[str] = []
     for path in SOLVER_TEST_FILES:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        assert _module_load_prerequisite_calls(tree), (
+            f"{path} must call the solver prerequisite directly at module load"
+        )
         pytest_modules = {"pytest"}
         pytest_marks: set[str] = set()
         pytest_skip_calls: set[str] = set()

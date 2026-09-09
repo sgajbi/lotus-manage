@@ -18,6 +18,10 @@ from src.core.models import (
     PortfolioSnapshot,
     ShelfEntry,
 )
+from tests.shared.solver_prerequisites import require_solver_test_dependencies
+
+
+require_solver_test_dependencies()
 
 
 def load_golden_file(filename: str) -> Dict[str, Any]:

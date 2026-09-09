@@ -20,6 +20,10 @@ from src.core.models import (
     ShelfEntry,
 )
 from tests.shared.factories import valid_api_payload
+from tests.shared.solver_prerequisites import require_solver_test_dependencies
+
+
+require_solver_test_dependencies()
 
 DEMO_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "docs", "demo")
 

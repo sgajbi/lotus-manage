@@ -11,6 +11,10 @@ from tests.shared.factories import (
     price,
     target,
 )
+from tests.shared.solver_prerequisites import require_solver_test_dependencies
+
+
+require_solver_test_dependencies()
 
 
 def _diag():
