@@ -1,4 +1,4 @@
-.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate test-family-inventory coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-idea-management-action-postgres test-e2e test-unit-coverage test-integration-coverage test-e2e-coverage test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-image-evidence docker-up docker-down
+.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate test-family-inventory coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-idea-management-action-postgres test-e2e test-unit-coverage test-integration-coverage test-e2e-coverage test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply quarantine-inventory pre-commit docker-build docker-image-evidence docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 IMAGE_NAME ?= lotus-manage
@@ -159,6 +159,9 @@ migration-smoke:
 
 migration-apply:
 	python scripts/postgres_migrate.py --target dpm
+
+quarantine-inventory:
+	python scripts/quarantined_tenant_inventory.py --limit $${QUARANTINE_INVENTORY_LIMIT:-20}
 
 lint:
 	python -m ruff check .
