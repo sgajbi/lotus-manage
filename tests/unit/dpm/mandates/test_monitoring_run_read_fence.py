@@ -50,8 +50,9 @@ def _run(
     filters: dict[str, Any] = {"portfolio_manager_id": "PM_SG_DPM_001"}
     if tenant_id is not None:
         filters["tenant_id"] = tenant_id
-    return DpmMonitoringRun(
+    run = DpmMonitoringRun(
         monitoring_run_id=run_id,
+        tenant_id=tenant_id or "legacy-unowned",
         as_of_date=date(2026, 5, 3),
         requested_at=requested_at,
         completed_at=requested_at + timedelta(seconds=2),
@@ -63,6 +64,7 @@ def _run(
         exception_count=0,
         source_readiness_summary={"READY": 1},
     )
+    return run if tenant_id is not None else run.model_copy(update={"tenant_id": None})
 
 
 @pytest.fixture(name="repositories")
@@ -209,6 +211,7 @@ def test_a_row_whose_column_and_payload_disagree_is_served_to_nobody(
     stored = store.monitoring_runs["dmr_split"]
     stored["payload_json"] = _run(run_id="dmr_split", tenant_id=TENANT_B).model_dump_json()
     stored["payload_tenant_id"] = TENANT_B
+    stored["filter_tenant_id"] = TENANT_B
 
     assert repository.get_monitoring_run(monitoring_run_id="dmr_split", tenant_id=TENANT_A) is None
     assert repository.get_monitoring_run(monitoring_run_id="dmr_split", tenant_id=TENANT_B) is None

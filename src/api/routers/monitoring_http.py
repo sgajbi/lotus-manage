@@ -20,6 +20,16 @@ def monitoring_selector_required_http_exception() -> HTTPException:
     )
 
 
+def monitoring_tenant_mismatch_http_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail={
+            "code": "DPM_MONITORING_TENANT_MISMATCH",
+            "message": "Request tenant_id must match the admitted X-Tenant-Id scope.",
+        },
+    )
+
+
 def monitoring_pm_book_portfolio_types_required_http_exception() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,

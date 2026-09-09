@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-09T01:43:05.149715+00:00",
+  "generatedAt": "2026-09-09T12:26:25.449378+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5609,7 +5609,7 @@
       "semanticId": "lotus.filters",
       "canonicalTerm": "filters",
       "preferredName": "filters",
-      "description": "Caller-supplied monitoring filters used for audit and replay.",
+      "description": "Monitoring selectors used for audit and replay. The tenant entry is derived from the admitted run owner rather than trusted from the request body.",
       "example": {
         "sample_key": "sample_value"
       },
@@ -18726,6 +18726,18 @@
       "allowedValues": [],
       "semanticId": "lotus.limit",
       "attributeRef": "#/attributeCatalog/lotus.limit"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope admitted by Manage. It must equal the request tenant before any monitoring side effect. This is routing scope, not proof of an authenticated principal.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "tenant_id",
@@ -62425,6 +62437,14 @@
             "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
           },
           {
+            "name": "latest_monitoring_run.tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "latest_monitoring_run.as_of_date",
             "location": "body",
             "required": true,
@@ -62580,6 +62600,14 @@
       "request": {
         "fields": [
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "mandate_ids",
             "location": "body",
             "required": false,
@@ -62654,6 +62682,14 @@
             "type": "string",
             "semanticId": "lotus.monitoring_run_id",
             "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "as_of_date",
@@ -62807,6 +62843,14 @@
             "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
           },
           {
+            "name": "items[].tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "items[].as_of_date",
             "location": "body",
             "required": true,
@@ -62940,6 +62984,14 @@
             "type": "string",
             "semanticId": "lotus.monitoring_run_id",
             "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "as_of_date",

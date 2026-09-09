@@ -128,6 +128,7 @@ def test_build_monitoring_run_projects_terminal_success_summary() -> None:
 
     run = build_monitoring_run(
         monitoring_run_id="dmr_20260503_083000_000000",
+        tenant_id="default",
         as_of_date=date(2026, 5, 3),
         requested_at=requested_at,
         completed_at=completed_at,
@@ -139,6 +140,7 @@ def test_build_monitoring_run_projects_terminal_success_summary() -> None:
     )
 
     assert run.monitoring_run_id == "dmr_20260503_083000_000000"
+    assert run.tenant_id == "default"
     assert run.status == "SUCCEEDED"
     assert run.total_mandates == 1
     assert run.requested_at == requested_at

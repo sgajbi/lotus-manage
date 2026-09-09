@@ -13,8 +13,9 @@ from src.api.routers.monitoring_http import (
     monitoring_pm_book_membership_not_ready_http_exception,
     monitoring_pm_book_portfolio_types_required_http_exception,
     monitoring_selector_required_http_exception,
+    monitoring_tenant_mismatch_http_exception,
 )
-from src.api.routers.monitoring_models import DpmMonitoringRunOnceRequest
+from src.api.routers.monitoring_models import DpmMonitoringRunOnceRequest, MonitoringTenantIdHeader
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
     mandate_ids_from_pm_book_membership,
@@ -37,34 +38,43 @@ from src.core.mandates import DpmMonitoringRun
         "Use this endpoint to evaluate a bounded set of existing mandate digital twins and persist "
         "a monitoring run, health snapshots, and derived exceptions. Callers may provide explicit "
         "mandate ids or omit them and provide a portfolio-manager selector so Manage resolves the "
-        "PM-book cohort from lotus-core `PortfolioManagerBookMembership:v1`."
+        "PM-book cohort from lotus-core `PortfolioManagerBookMembership:v1`. The required "
+        "caller-asserted `X-Tenant-Id` scope must match the request tenant before Manage calls "
+        "Core or writes monitoring evidence; this routing scope is not authentication proof."
     ),
     responses={
         200: {"description": "Monitoring run completed and persisted."},
+        409: {"description": "Request tenant does not match admitted caller tenant scope."},
+        422: {"description": "Required tenant admission or monitoring selector is invalid."},
         404: {"description": "At least one requested mandate id was not found."},
     },
 )
 async def run_once(
     request: DpmMonitoringRunOnceRequest,
+    x_tenant_id: MonitoringTenantIdHeader,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMonitoringRun:
+    if request.tenant_id != x_tenant_id:
+        raise monitoring_tenant_mismatch_http_exception()
     mandate_ids = list(request.mandate_ids)
     source_filters: dict[str, str] = {}
     if not mandate_ids:
         mandate_ids, source_filters = _mandate_ids_from_pm_book_selector(
             request=request,
             repository=repository,
+            tenant_id=x_tenant_id,
         )
 
     return read_mandate_with_not_found_http_mapping(
         lambda: run_mandate_monitoring_once(
             repository=repository,
-            tenant_id=request.tenant_id,
+            tenant_id=x_tenant_id,
             mandate_ids=mandate_ids,
             as_of_date=request.as_of_date,
             filters=_monitoring_run_filters(
                 request=request,
                 source_filters=source_filters,
+                tenant_id=x_tenant_id,
             ),
         )
     )
@@ -82,13 +92,14 @@ def _resolve_pm_book_membership(
     *,
     request: DpmMonitoringRunOnceRequest,
     portfolio_types: list[str],
+    tenant_id: str,
 ) -> DpmCorePortfolioManagerBookMembershipResponse:
     try:
         return (
             monitoring_router.get_core_resolver_client().resolve_portfolio_manager_book_membership(
                 portfolio_manager_id=request.portfolio_manager_id or "",
                 as_of_date=request.as_of_date,
-                tenant_id=request.tenant_id,
+                tenant_id=tenant_id,
                 booking_center_code=request.booking_center_code,
                 portfolio_types=portfolio_types,
                 include_inactive=False,
@@ -120,14 +131,19 @@ def _mandate_ids_from_pm_book_selector(
     *,
     request: DpmMonitoringRunOnceRequest,
     repository: DpmMandateRepository,
+    tenant_id: str,
 ) -> tuple[list[str], dict[str, str]]:
     portfolio_types = _validated_pm_book_selector(request)
-    membership = _resolve_pm_book_membership(request=request, portfolio_types=portfolio_types)
+    membership = _resolve_pm_book_membership(
+        request=request,
+        portfolio_types=portfolio_types,
+        tenant_id=tenant_id,
+    )
     _validate_pm_book_membership_ready(membership)
     mandate_ids = _mandate_ids_from_pm_book_membership(
         repository=repository,
         membership=membership,
-        tenant_id=request.tenant_id,
+        tenant_id=tenant_id,
     )
     return mandate_ids, _pm_book_source_filters(membership)
 
@@ -170,11 +186,12 @@ def _monitoring_run_filters(
     *,
     request: DpmMonitoringRunOnceRequest,
     source_filters: dict[str, str],
+    tenant_id: str,
 ) -> dict[str, str]:
     return {
         key: value
         for key, value in {
-            "tenant_id": request.tenant_id,
+            "tenant_id": tenant_id,
             "portfolio_manager_id": request.portfolio_manager_id,
             "book_id": request.book_id,
             "booking_center_code": request.booking_center_code,

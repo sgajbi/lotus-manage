@@ -31,11 +31,20 @@ import json
 import uuid
 from contextlib import closing
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Any
 
 import pytest
+from fastapi.testclient import TestClient
 
-from src.core.mandates import DpmMonitoringRun
+from src.api.dependencies import get_mandate_repository
+from src.api.main import app
+from src.core.mandates import (
+    DpmMandateConstraintSet,
+    DpmMandateDigitalTwin,
+    DpmMandateReviewPolicy,
+    DpmMonitoringRun,
+)
 from src.infrastructure.mandates.postgres import PostgresDpmMandateRepository
 
 from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
@@ -71,8 +80,9 @@ def _run(
     filters: dict[str, Any] = {"portfolio_manager_id": "PM_SG_DPM_001"}
     if tenant_id is not None:
         filters["tenant_id"] = tenant_id
-    return DpmMonitoringRun(
+    run = DpmMonitoringRun(
         monitoring_run_id=run_id,
+        tenant_id=tenant_id or "legacy-unowned",
         as_of_date=date(2026, 5, 3),
         requested_at=requested_at,
         completed_at=requested_at + timedelta(seconds=2),
@@ -84,6 +94,86 @@ def _run(
         exception_count=0,
         source_readiness_summary={"READY": 1},
     )
+    return run if tenant_id is not None else run.model_copy(update={"tenant_id": None})
+
+
+def _mandate(*, mandate_id: str, portfolio_id: str) -> DpmMandateDigitalTwin:
+    return DpmMandateDigitalTwin(
+        mandate_id=mandate_id,
+        portfolio_id=portfolio_id,
+        mandate_version="1",
+        as_of_date=date(2026, 5, 3),
+        base_currency="SGD",
+        reference_currency="SGD",
+        risk_profile="BALANCED",
+        investment_objective="LONG_TERM_TOTAL_RETURN",
+        time_horizon="LONG_TERM",
+        model_portfolio_id="MODEL_PB_SG_GLOBAL_BAL_DPM",
+        constraints=DpmMandateConstraintSet(turnover_budget=Decimal("0.15")),
+        review_policy=DpmMandateReviewPolicy(next_review_due_date=date(2026, 6, 30)),
+    )
+
+
+def test_run_once_persists_only_admitted_tenant_and_refuses_invalid_admission_before_writes(
+    repository: PostgresDpmMandateRepository,
+) -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-admitted-{suffix}"
+    mandate_id = f"MANDATE_ADMISSION_{suffix}"
+    repository.save_mandate_snapshot(
+        _mandate(mandate_id=mandate_id, portfolio_id=f"PORTFOLIO_{suffix}"),
+        tenant_id=tenant_id,
+    )
+    app.dependency_overrides[get_mandate_repository] = lambda: repository
+    request = {
+        "mandate_ids": [mandate_id],
+        "as_of_date": "2026-05-03",
+        "tenant_id": tenant_id,
+    }
+    try:
+        with TestClient(app) as client:
+            accepted = client.post(
+                "/api/v1/dpm/monitoring/run-once",
+                headers={"X-Tenant-Id": tenant_id},
+                json=request,
+            )
+            mismatch = client.post(
+                "/api/v1/dpm/monitoring/run-once",
+                headers={"X-Tenant-Id": f"other-{tenant_id}"},
+                json=request,
+            )
+            missing = client.post("/api/v1/dpm/monitoring/run-once", json=request)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert accepted.status_code == 200
+    run_id = accepted.json()["monitoring_run_id"]
+    assert accepted.json()["tenant_id"] == tenant_id
+    assert accepted.json()["filters"]["tenant_id"] == tenant_id
+    assert mismatch.status_code == 409
+    assert missing.status_code == 422
+
+    with closing(repository._connect()) as connection:  # noqa: SLF001
+        row = connection.execute(
+            """
+            SELECT tenant_id, payload_json
+            FROM dpm_monitoring_runs
+            WHERE monitoring_run_id = %s
+            """,
+            (run_id,),
+        ).fetchone()
+        run_count = connection.execute(
+            "SELECT COUNT(*) FROM dpm_monitoring_runs WHERE tenant_id = %s",
+            (tenant_id,),
+        ).fetchone()
+    column_tenant = row["tenant_id"] if isinstance(row, dict) else row[0]
+    payload = row["payload_json"] if isinstance(row, dict) else row[1]
+    body = payload if isinstance(payload, dict) else json.loads(payload)
+    count = run_count["count"] if isinstance(run_count, dict) else run_count[0]
+    assert column_tenant == tenant_id
+    assert body["tenant_id"] == tenant_id
+    assert body["filters"]["tenant_id"] == tenant_id
+    assert count == 1, "rejected admissions must not persist additional runs"
 
 
 def test_a_run_is_readable_only_by_the_tenant_recorded_on_its_row(
@@ -243,6 +333,31 @@ def test_a_row_whose_column_and_payload_disagree_is_served_to_nobody(
     body_tenant = body["filters"]["tenant_id"]
     assert column == tenant_a, "the conflict clause is expected to leave the owner column alone"
     assert body_tenant == tenant_b, "the conflict clause is expected to refresh the body"
+
+    assert repository.get_monitoring_run(monitoring_run_id=run_id, tenant_id=tenant_a) is None
+    assert repository.get_monitoring_run(monitoring_run_id=run_id, tenant_id=tenant_b) is None
+
+
+@pytest.mark.parametrize("json_path", ["{tenant_id}", "{filters,tenant_id}"])
+def test_each_payload_owner_record_must_agree_with_the_tenant_column(
+    repository: PostgresDpmMandateRepository,
+    tenants: tuple[str, str],
+    json_path: str,
+) -> None:
+    tenant_a, tenant_b = tenants
+    run_id = f"dmr_owner_guard_{uuid.uuid4().hex[:12]}"
+    repository.save_monitoring_run(_run(run_id=run_id, tenant_id=tenant_a))
+
+    with closing(repository._connect()) as connection:  # noqa: SLF001
+        connection.execute(
+            """
+            UPDATE dpm_monitoring_runs
+            SET payload_json = jsonb_set(payload_json, %s::text[], to_jsonb(%s::text), true)
+            WHERE monitoring_run_id = %s
+            """,
+            (json_path, tenant_b, run_id),
+        )
+        connection.commit()
 
     assert repository.get_monitoring_run(monitoring_run_id=run_id, tenant_id=tenant_a) is None
     assert repository.get_monitoring_run(monitoring_run_id=run_id, tenant_id=tenant_b) is None

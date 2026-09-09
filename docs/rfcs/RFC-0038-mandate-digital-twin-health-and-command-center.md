@@ -460,6 +460,12 @@ Purpose:
 2. support filters by PM, model, mandate type, portfolio id, tenant, and as-of date,
 3. persist monitoring run and exceptions.
 
+The command requires caller-asserted `X-Tenant-Id` and an equal normalized body `tenant_id`.
+Manage refuses missing or mismatched admission before Core resolution or repository side effects,
+then persists the admitted header as the run domain owner, database owner, and retained audit-filter
+tenant. Legacy NULL and contradictory ownership remains quarantined. This binds current routing
+scope; it does not claim an authenticated principal while #624 remains open.
+
 `GET /api/v1/dpm/monitoring/runs`
 
 Purpose:

@@ -92,6 +92,7 @@ def calculate_monitoring_run_mandate_result(
 def build_monitoring_run(
     *,
     monitoring_run_id: str,
+    tenant_id: str,
     as_of_date: date,
     requested_at: datetime,
     completed_at: datetime,
@@ -103,6 +104,7 @@ def build_monitoring_run(
 ) -> DpmMonitoringRun:
     return DpmMonitoringRun(
         monitoring_run_id=monitoring_run_id,
+        tenant_id=tenant_id,
         as_of_date=as_of_date,
         requested_at=requested_at,
         completed_at=completed_at,

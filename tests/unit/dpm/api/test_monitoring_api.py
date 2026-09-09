@@ -132,6 +132,7 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
     with _client(repository) as client:
         run_response = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [MANDATE_ID],
                 "as_of_date": "2026-05-03",
@@ -150,6 +151,8 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
         )
 
     assert run_response.status_code == 200
+    assert run_response.json()["tenant_id"] == "default"
+    assert run_response.json()["filters"]["tenant_id"] == "default"
     assert run_response.json()["total_mandates"] == 1
     assert run_response.json()["health_distribution"]["PENDING_REVIEW"] == 1
     assert runs_response.status_code == 200
@@ -158,6 +161,53 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
     assert exceptions_response.status_code == 200
     assert exceptions_response.json()["items"]
     assert exceptions_response.json()["items"][0]["monitoring_run_id"] == run_id
+
+
+def test_monitoring_run_once_refuses_missing_or_mismatched_admitted_tenant_before_side_effects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = InMemoryDpmMandateRepository()
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(
+        "src.api.routers.monitoring.build_core_resolver_client",
+        lambda: resolver,
+    )
+    request = {
+        "mandate_ids": [],
+        "as_of_date": "2026-05-03",
+        "tenant_id": "tenant-body",
+        "portfolio_manager_id": "PM_SG_DPM_001",
+    }
+
+    with _client(repository) as client:
+        missing = client.post("/api/v1/dpm/monitoring/run-once", json=request)
+        mismatch = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "tenant-admitted"},
+            json=request,
+        )
+
+    assert missing.status_code == 422
+    assert mismatch.status_code == 409
+    assert mismatch.json()["detail"]["code"] == "DPM_MONITORING_TENANT_MISMATCH"
+    assert resolver.requests == []
+    assert repository._monitoring_runs == {}  # noqa: SLF001
+    assert repository._health_snapshots == {}  # noqa: SLF001
+    assert repository._exceptions == {}  # noqa: SLF001
+
+
+def test_monitoring_run_once_openapi_requires_admitted_tenant_header() -> None:
+    operation = app.openapi()["paths"]["/api/v1/dpm/monitoring/run-once"]["post"]
+    tenant_header = next(
+        parameter
+        for parameter in operation["parameters"]
+        if parameter["in"] == "header" and parameter["name"].lower() == "x-tenant-id"
+    )
+
+    assert tenant_header["required"] is True
+    assert tenant_header["schema"]["pattern"] == r"\S"
+    assert "caller-asserted tenant scope" in tenant_header["description"]
+    assert "not proof of an authenticated principal" in tenant_header["description"]
 
 
 def test_monitoring_run_once_resolves_pm_book_from_core(monkeypatch) -> None:
@@ -172,6 +222,7 @@ def test_monitoring_run_once_resolves_pm_book_from_core(monkeypatch) -> None:
     with _client(repository) as client:
         response = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [],
                 "as_of_date": "2026-05-03",
@@ -271,6 +322,7 @@ def test_monitoring_run_once_requires_explicit_or_pm_book_selector() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={"mandate_ids": [], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
 
@@ -288,6 +340,7 @@ def test_monitoring_run_once_blocks_pm_book_without_refreshed_mandate(monkeypatc
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [],
                 "as_of_date": "2026-05-03",
@@ -310,6 +363,7 @@ def test_monitoring_run_once_blocks_empty_pm_book_membership(monkeypatch) -> Non
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [],
                 "as_of_date": "2026-05-03",
@@ -332,6 +386,7 @@ def test_monitoring_run_once_blocks_non_ready_pm_book_membership(monkeypatch) ->
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [],
                 "as_of_date": "2026-05-03",
@@ -356,6 +411,7 @@ def test_monitoring_run_once_maps_core_resolver_source_failures(monkeypatch) -> 
     with _client(InMemoryDpmMandateRepository()) as client:
         unavailable = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [],
                 "as_of_date": "2026-05-03",
@@ -371,6 +427,7 @@ def test_monitoring_run_once_maps_core_resolver_source_failures(monkeypatch) -> 
     with _client(InMemoryDpmMandateRepository()) as client:
         incomplete = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [],
                 "as_of_date": "2026-05-03",
@@ -393,6 +450,7 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
     with _client(repository) as client:
         run_response = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={
                 "mandate_ids": [MANDATE_ID],
                 "as_of_date": "2026-05-03",
@@ -506,6 +564,7 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
 def test_command_center_exposes_degraded_and_blocked_source_readiness_states() -> None:
     repository = InMemoryDpmMandateRepository()
     common = {
+        "tenant_id": "default",
         "as_of_date": date(2026, 5, 3),
         "requested_at": datetime(2026, 5, 3, 8, 30, tzinfo=timezone.utc),
         "completed_at": datetime(2026, 5, 3, 8, 31, tzinfo=timezone.utc),
@@ -569,11 +628,13 @@ def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:
     with _client(repository) as client:
         missing_run_once = client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={"mandate_ids": ["UNKNOWN"], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
         missing_run = client.get("/api/v1/dpm/monitoring/runs/UNKNOWN?tenant_id=default")
         client.post(
             "/api/v1/dpm/monitoring/run-once",
+            headers={"X-Tenant-Id": "default"},
             json={"mandate_ids": [MANDATE_ID], "as_of_date": "2026-05-03", "tenant_id": "default"},
         )
         exception_id = client.get("/api/v1/dpm/exceptions?tenant_id=default").json()["items"][0][
