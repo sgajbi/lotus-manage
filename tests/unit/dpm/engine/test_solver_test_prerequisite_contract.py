@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import re
 import tomllib
 from pathlib import Path
 
@@ -19,6 +20,7 @@ SOLVER_PREREQUISITE_FUNCTION = "require_solver_test_dependencies"
 DEPENDENCY_PROBE_IMPORT_ROOTS = {"importlib", "pkgutil", "subprocess"}
 SOLVER_DEPENDENCY_IMPORT_ROOTS = {"cvxpy", "numpy"}
 SOLVER_CAPABILITY_MODULE = "src.core.common.capabilities"
+REQUIREMENT_NAME_END = re.compile(r"[\s\[<>=!~;@]")
 
 
 def _dotted_name(node: ast.expr) -> str | None:
@@ -51,11 +53,20 @@ def _caught_exception_names(node: ast.expr | None) -> set[str]:
     return set() if name is None else {name}
 
 
-def test_cvxpy_is_a_required_test_dependency() -> None:
+def _normalized_requirement_name(requirement: str) -> str:
+    name = REQUIREMENT_NAME_END.split(requirement.strip(), maxsplit=1)[0]
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def test_solver_packages_are_required_direct_test_dependencies() -> None:
     project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
 
     dev_dependencies = project["optional-dependencies"]["dev"]
-    assert any(dependency.startswith("cvxpy") for dependency in dev_dependencies)
+    direct_dependency_names = {
+        _normalized_requirement_name(dependency) for dependency in dev_dependencies
+    }
+
+    assert SOLVER_DEPENDENCY_IMPORT_ROOTS <= direct_dependency_names
 
 
 def test_solver_prerequisite_imports_dependencies_at_module_load() -> None:
