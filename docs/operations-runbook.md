@@ -32,6 +32,44 @@ For full repo-native evidence in production-oriented work, run:
   parity; no service source tree outside `lotus-manage` is writable inside the CI container.
 - `make mesh-contract-validate`
 
+## NULL-tenant quarantine inventory
+
+Migrations `0003` and `0024` through `0028` deliberately retain rows that cannot be attributed to
+a verified tenant. Migration `0029` adds the partial index required to inventory the original
+`dpm_monitoring_runs` quarantine without scanning full monitoring history. Those rows match no
+ordinary tenant-scoped repository read and must not be assigned, updated, deleted, or exposed
+through an API merely to make a count disappear.
+
+From the `lotus-manage` repository root, set the same governed PostgreSQL DSN used by the service,
+then run either shell's equivalent:
+
+```powershell
+$env:DPM_SUPPORTABILITY_POSTGRES_DSN = '<bank-managed PostgreSQL DSN>'
+$env:QUARANTINE_INVENTORY_LIMIT = '20'
+make quarantine-inventory
+```
+
+```bash
+export DPM_SUPPORTABILITY_POSTGRES_DSN='<bank-managed PostgreSQL DSN>'
+export QUARANTINE_INVENTORY_LIMIT=20
+make quarantine-inventory
+```
+
+The JSON result covers all seven governed datasets, reports each total and a stable bounded sample,
+marks truncation explicitly, and includes the applied migration version and checksum. The command
+opens a repeatable-read, read-only transaction and always rolls it back. It hashes idempotency keys
+and never emits payloads or the DSN.
+
+- `status: success` with `totalQuarantinedRows: 0` is an explicit successful zero.
+- `truncated: true` means increase `QUARANTINE_INVENTORY_LIMIT` within `1..100` or query the
+  identified dataset through an approved database-support procedure; it is not authority to infer
+  ownership.
+- Exit code `1` with `QUARANTINE_INVENTORY_FAILED` means the inventory is not evidence. Verify
+  connectivity, the bound, and DPM migration application. The sanitized output intentionally omits
+  connection details.
+- Treat nonzero counts as an attribution backlog for an authorized data owner. This command is
+  observation only and provides no remediation or tenant-assignment path.
+
 ## Incident triage
 
 - If health fails, verify startup migration state and storage adapter configuration first.

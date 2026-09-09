@@ -12,6 +12,7 @@ runtime validation, and release evidence.
 | `clean_generated_artifacts.py` | Removes ignored generated caches, coverage files, build output, logs, and `output/` evidence. | `make clean` |
 | `docker_image_evidence.py` | Writes Docker release manifest, image inspect, SBOM/scan/signature status, and provenance summary evidence. | `make docker-image-evidence` |
 | `postgres_migrate.py` | Migration smoke/apply helper. | `make migration-smoke` or `make migration-apply` |
+| `quarantined_tenant_inventory.py` | Read-only, bounded inventory of every governed NULL-tenant quarantine dataset. | `make quarantine-inventory` |
 | `Start-CanonicalManage.ps1` | Canonical local Manage service startup helper. | `make run-canonical` |
 
 Prefer the Make target that wraps a script because CI uses those targets as the stable contract.

@@ -1072,6 +1072,14 @@ Use these commands as the primary local contract:
    `make domain-product-validate`
 9. test-family proof-breadth validation
    `make test-family-inventory`
+10. NULL-tenant quarantine inventory
+    `make quarantine-inventory`
+    This operator-only command is the canonical observation path for the seven datasets retained
+    without verified tenant attribution by migrations `0003` and `0024` through `0028`; migration
+    `0029` supplies the partial monitoring-run index required for bounded census cost. The command
+    must remain bounded, sanitized, migration-provenanced, and transactionally read-only. A
+    successful zero is distinct from failure; nonzero results do not authorize tenant inference or
+    mutation.
 
 ## Validation And CI Expectations
 

@@ -358,6 +358,23 @@ Invalid values fail production readiness with `POSTGRES_ACCESS_POLICY_INVALID:*`
 request hashes, or payload content. Runtime repositories do not retry writes blindly; operators
 should treat database failures as infrastructure faults and follow the Postgres rollout runbook.
 
+Rows retained without verified tenant attribution remain deliberately quarantined: normal tenant
+reads match none of them. Operators can inventory every governed quarantine dataset without
+changing it by setting `DPM_SUPPORTABILITY_POSTGRES_DSN` and running:
+
+```bash
+make quarantine-inventory
+```
+
+The command reports counts, at most 20 identifying rows per dataset by default, truncation, and
+applied migration checksums. Migration `0029` supplies the partial NULL-tenant index that keeps the
+monitoring-run count and sample bounded as history grows. Set `QUARANTINE_INVENTORY_LIMIT` to
+`1..100` for a different bound.
+It runs in a repeatable-read, read-only transaction; an explicit successful zero is healthy, while
+missing migration provenance, connection failure, or an unsafe bound exits nonzero with a
+sanitized error. Idempotency keys are SHA-256 hashed and payloads, DSNs, and tenant guesses are
+never emitted. See [the operations runbook](docs/operations-runbook.md#null-tenant-quarantine-inventory).
+
 Async scenario analysis defaults to inline execution in Docker. For accept-now/execute-later live
 proof, start the stack with `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`; manual execution can be disabled
 with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false` when the execute endpoint must be hidden.

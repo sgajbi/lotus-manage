@@ -375,6 +375,27 @@ python scripts/openapi_quality_gate.py
   `as_of_date` metadata when supplied; older, missing, or inconsistent source evidence remains
   non-certifying.
 
+## NULL-tenant quarantine inventory
+
+Rows that migrations `0003` and `0024` through `0028` could not truthfully attribute remain NULL
+and therefore match no tenant-scoped application read. Migration `0029` provides the partial index
+that keeps the original monitoring-run quarantine census bounded as history grows. From the
+`lotus-manage` repository root, set the bank-managed `DPM_SUPPORTABILITY_POSTGRES_DSN` and run
+`make quarantine-inventory`.
+
+The command inventories all seven governed datasets in a repeatable-read, read-only transaction.
+It returns total counts, a stable bounded sample, explicit truncation, and applied migration
+versions/checksums. `QUARANTINE_INVENTORY_LIMIT` defaults to `20` and accepts `1..100`.
+Idempotency keys are hashed; payloads and connection details are not emitted.
+
+- `status: success` and a zero total is a successful empty inventory.
+- A nonzero exit with `QUARANTINE_INVENTORY_FAILED` is not usable evidence; check connectivity,
+  the bound, and migration application.
+- Nonzero counts are an authorized data-owner attribution backlog, not permission to guess a tenant,
+  mutate rows, delete evidence, or bypass normal application isolation.
+- Detailed PowerShell and Bash invocation plus interpretation guidance lives in
+  [docs/operations-runbook.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations-runbook.md#null-tenant-quarantine-inventory).
+
 ## Key references
 
 - [docs/documentation/project-overview.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/documentation/project-overview.md)
