@@ -10,7 +10,6 @@ from typing import Any, Dict
 
 import pytest
 
-from src.core.common.capabilities import has_solver_dependencies
 from src.core.rebalance.engine import run_simulation
 from src.core.models import (
     EngineOptions,
@@ -41,14 +40,10 @@ SCENARIOS = sorted(
     for path in glob.glob(os.path.join(GOLDEN_DIR, "*.json"))
     if _is_rebalance_golden_fixture(path)
 )
-_SOLVER_AVAILABLE = has_solver_dependencies()
 
 
 @pytest.mark.parametrize("filename", SCENARIOS)
 def test_golden_scenario(filename):
-    if filename.startswith("scenario_12_solver_") and not _SOLVER_AVAILABLE:
-        pytest.skip("Solver golden scenarios require cvxpy and numpy")
-
     data = load_golden_file(filename)
     inputs = data["inputs"]
     expected = data.get("expected_output") or data.get("expected_outputs")
