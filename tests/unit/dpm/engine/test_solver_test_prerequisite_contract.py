@@ -50,7 +50,9 @@ def test_required_solver_proofs_cannot_skip_or_use_a_subprocess_probe() -> None:
                     alias.asname or alias.name for alias in node.names if alias.name == "pytest"
                 )
                 unittest_modules.update(
-                    alias.asname or alias.name for alias in node.names if alias.name == "unittest"
+                    alias.asname or alias.name
+                    for alias in node.names
+                    if alias.name in {"unittest", "unittest.case"}
                 )
                 solver_capability_modules.update(
                     alias.asname or alias.name
