@@ -396,6 +396,34 @@ Idempotency keys are hashed; payloads and connection details are not emitted.
 - Detailed PowerShell and Bash invocation plus interpretation guidance lives in
   [docs/operations-runbook.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations-runbook.md#null-tenant-quarantine-inventory).
 
+## Legacy mandate-limit provenance
+
+Migration `0030` preserves historical mandate cash-band and turnover values but marks them
+`MANDATE_LIMIT_PROVENANCE_AMBIGUOUS`, because the old compiler and caller-supplied recalculation
+could persist identical values and lineage. Numeric matching is never producer provenance.
+
+Effective mandate reads and health calculations suppress the ambiguous limits. Monitoring resolves
+the latest snapshot regardless of the requested run date, while recalculation accepted a selected
+non-latest version. Neither path recorded its chosen snapshot, and snapshot upserts refreshed
+`created_at`, so neither latest-state nor timestamp inference can recover that identity. All health
+snapshots and limit-dependent cash/turnover exceptions for an affected tenant/mandate are therefore
+retired, and every successful run referencing it becomes `FAILED` with empty aggregates. Projected
+cash-flow, tax-lot, restriction, workflow findings, and already-failed runs retain their original
+evidence. NULL-tenant snapshots may be marked, but their quarantined runs, health and exceptions
+remain untouched until audited attribution. Future writes record `CORE_COMPILED` or
+`CALLER_SUPPLIED` producer provenance; the migration drops its compatibility default after backfill
+so old replicas cannot create or overwrite unmarked ambiguous rows.
+
+Health recalculation resolves the exact tenant-scoped stored snapshot identity before trusting
+caller gap codes. Forged markers fail closed, and omitting a stored marker cannot bypass the fence.
+Manage calculates ambiguous history from the retained effective snapshot. Caller changes to
+restrictions, policy, lineage, risk profile, or other twin fields therefore cannot alter evidence
+or overwrite the retained raw snapshot limits. A portfolio change is rejected because the stored
+identity key is tenant/mandate/version/as-of rather than portfolio.
+
+Verify `dpm:0030`, refresh affected mandates from governed Core sources, then recalculate health and
+run monitoring again. Do not clear the marker or reconstruct deleted derived evidence by hand.
+
 ## Key references
 
 - [docs/documentation/project-overview.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/documentation/project-overview.md)

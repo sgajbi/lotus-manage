@@ -18,6 +18,7 @@ from src.core.dpm_source_context import (
 )
 from src.core.mandates import (
     DIMENSION_WEIGHTS,
+    MANDATE_LIMIT_PROVENANCE_AMBIGUOUS,
     DpmMandateConstraintSet,
     DpmMandateDimensionScore,
     DpmMandateDigitalTwin,
@@ -45,6 +46,7 @@ from src.core.mandates import (
     calculate_mandate_health,
     build_health_input_from_core_sources,
     compile_mandate_digital_twin_from_core,
+    effective_mandate_twin,
     monitoring_exceptions_from_health,
 )
 
@@ -475,6 +477,31 @@ def _dimension(
 def test_dimension_weights_are_complete_and_balanced() -> None:
     assert sum(DIMENSION_WEIGHTS.values()) == 100
     assert set(DIMENSION_WEIGHTS) == set(MandateHealthDimension)
+
+
+def test_ambiguous_legacy_limits_are_preserved_but_suppressed_from_reads_and_scoring() -> None:
+    persisted = _twin(field_gap_codes=[MANDATE_LIMIT_PROVENANCE_AMBIGUOUS])
+
+    effective = effective_mandate_twin(persisted)
+    assert persisted.constraints.cash_band_min_weight == Decimal("0.02")
+    assert persisted.constraints.cash_band_max_weight == Decimal("0.10")
+    assert persisted.constraints.turnover_budget == Decimal("0.15")
+    assert effective.constraints.cash_band_min_weight is None
+    assert effective.constraints.cash_band_max_weight is None
+    assert effective.constraints.turnover_budget is None
+
+    snapshot = calculate_mandate_health(
+        _ready_input(twin=persisted),
+        tenant_id="tenant-test",
+    )
+    assert _dimension(snapshot, MandateHealthDimension.CASH_LIQUIDITY).reason_code == (
+        "CASH_BAND_NOT_SOURCED"
+    )
+    assert _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER).reason_code == (
+        "TURNOVER_BUDGET_NOT_SOURCED"
+    )
+    assert snapshot.health_state == MandateHealthState.PENDING_REVIEW
+    assert snapshot.recommended_action == MandateRecommendedAction.FIX_SOURCE_DATA
 
 
 def test_compile_mandate_twin_uses_core_source_truth_and_explicit_gap_codes() -> None:

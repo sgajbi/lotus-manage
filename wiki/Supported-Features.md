@@ -328,6 +328,11 @@ Current functional behavior:
    dimensions, source-readiness posture, and monitoring action state through the Gateway/BFF only.
 5. Platform seed automation verifies ready, partial, and empty command-center postures before the
    screenshot pack is treated as demo-ready evidence.
+6. Historical cash-band and turnover values with no reliable producer marker remain stored for
+   audit but are explicitly provenance-ambiguous and ineffective. Migration `0030` retires only
+   dependent health/exception evidence, fails affected successful-run aggregates closed, preserves
+   earlier failures and unrelated findings, and records the producer of future Core and
+   caller-supplied snapshots.
 
 Non-functional controls:
 

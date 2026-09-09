@@ -45,9 +45,11 @@ from src.core.mandate_models import (
     MandateRecommendedAction,
     MandateSourceReadinessProjection as _MandateSourceReadinessProjection,
     MonitoringSeverity,
+    MANDATE_LIMIT_PROVENANCE_AMBIGUOUS,
     SourceReadinessState as _SourceReadinessState,
     bounded_ratio as _bounded_ratio,
     default_source_analytics_posture as _default_source_analytics_posture,
+    effective_mandate_twin,
 )
 from src.core.mandate_health_scoring import calculate_mandate_health
 
@@ -76,6 +78,7 @@ __all__ = [
     "MandateHealthState",
     "MandateRecommendedAction",
     "MonitoringSeverity",
+    "MANDATE_LIMIT_PROVENANCE_AMBIGUOUS",
     "_DigitalTwinLineageSourceProduct",
     "_MandateSourceReadinessProjection",
     "_SourceReadinessState",
@@ -84,6 +87,7 @@ __all__ = [
     "build_health_input_from_core_sources",
     "calculate_mandate_health",
     "compile_mandate_digital_twin_from_core",
+    "effective_mandate_twin",
     "monitoring_exceptions_from_health",
 ]
 

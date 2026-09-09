@@ -12,8 +12,10 @@ from src.core.mandates import (
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
     DpmMonitoringRun,
+    effective_mandate_twin,
 )
 from src.core.common.derived_identity import derived_identity
+from src.core.mandate_repository import MandateSnapshotProducer
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -92,7 +94,13 @@ class PostgresDpmMandateRepository:
         self._dsn = dsn
         self._init_db()
 
-    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin, *, tenant_id: str) -> None:
+    def save_mandate_snapshot(
+        self,
+        twin: DpmMandateDigitalTwin,
+        *,
+        tenant_id: str,
+        producer_kind: MandateSnapshotProducer = "CALLER_SUPPLIED",
+    ) -> None:
         query = """
             INSERT INTO dpm_mandate_snapshots (
                 mandate_snapshot_id,
@@ -105,8 +113,9 @@ class PostgresDpmMandateRepository:
                 payload_json,
                 created_at,
                 created_by,
-                tenant_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                tenant_id,
+                producer_kind
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (tenant_id, mandate_id, mandate_version, as_of_date) DO UPDATE SET
                 portfolio_id=excluded.portfolio_id,
                 as_of_date=excluded.as_of_date,
@@ -114,7 +123,8 @@ class PostgresDpmMandateRepository:
                 source_lineage_json=excluded.source_lineage_json,
                 payload_json=excluded.payload_json,
                 created_at=excluded.created_at,
-                created_by=excluded.created_by
+                created_by=excluded.created_by,
+                producer_kind=excluded.producer_kind
         """
         payload_json = dump_model_json(twin)
         with closing(self._connect()) as connection:
@@ -136,6 +146,7 @@ class PostgresDpmMandateRepository:
                     datetime.now().astimezone().isoformat(),
                     "lotus-manage",
                     tenant_id,
+                    producer_kind,
                 ),
             )
             connection.commit()
@@ -202,7 +213,10 @@ class PostgresDpmMandateRepository:
         """
         with closing(self._connect()) as connection:
             rows = connection.execute(query, (tenant_id, mandate_id)).fetchall()
-        return [load_model_json(DpmMandateDigitalTwin, _payload(row)) for row in rows]
+        return [
+            effective_mandate_twin(load_model_json(DpmMandateDigitalTwin, _payload(row)))
+            for row in rows
+        ]
 
     def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot, *, tenant_id: str) -> None:
         query = """
@@ -579,7 +593,7 @@ class PostgresDpmMandateRepository:
 def _to_twin(row: Any) -> Optional[DpmMandateDigitalTwin]:
     if row is None:
         return None
-    return load_model_json(DpmMandateDigitalTwin, _payload(row))
+    return effective_mandate_twin(load_model_json(DpmMandateDigitalTwin, _payload(row)))
 
 
 def _monitoring_exception_list_query(

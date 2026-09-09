@@ -70,6 +70,41 @@ and never emits payloads or the DSN.
 - Treat nonzero counts as an attribution backlog for an authorized data owner. This command is
   observation only and provides no remediation or tenant-assignment path.
 
+## Legacy mandate-limit provenance
+
+Migration `0030` handles snapshots written before the repository recorded whether Core compilation
+or explicit caller health input supplied the twin. Historical lineage cannot decide this because a
+caller could submit the same lineage.
+
+- Stored cash-band and turnover values remain intact for audit and recovery.
+- `MANDATE_LIMIT_PROVENANCE_AMBIGUOUS` makes them ineffective on reads and health calculations.
+- No legacy zero cash minimum is promoted into an explicit cash reserve.
+- All health snapshots and limit-dependent cash/turnover exceptions for the same tenant and mandate
+  are retired when any retained snapshot is ambiguous. Recalculation accepted a caller-selected
+  non-latest version, evidence did not record its snapshot identity, and snapshot upserts refreshed
+  `created_at`; neither a clean latest snapshot nor timestamp ordering can prove which version
+  produced it. Projected cash-flow, tax-lot, restriction, and workflow findings survive.
+- Successful monitoring runs that reference an affected mandate remain auditable but become
+  `FAILED` with empty aggregates. Their overall execution window cannot reconstruct per-mandate
+  reads once snapshot timestamps have been refreshed; runs that already failed retain their
+  original evidence.
+- NULL-tenant snapshots may receive the non-authoritative provenance marker, but their quarantined
+  runs, health, and exceptions are never changed or deleted before audited tenant attribution.
+- Future snapshots record `CORE_COMPILED` or `CALLER_SUPPLIED` producer provenance. After the
+  backfill the database drops the legacy default, so an old replica that omits provenance fails
+  instead of creating or overwriting an unmarked ambiguous row.
+- Recalculation resolves the exact tenant-scoped stored snapshot identity before trusting any
+  caller gap codes. A forged marker fails with `DPM_MANDATE_AMBIGUOUS_SNAPSHOT_NOT_FOUND`; omitting
+  a stored marker cannot bypass the fence. Manage calculates ambiguous history from the retained
+  effective snapshot, so caller changes to restrictions, policy, lineage, risk profile, or other
+  twin fields cannot alter evidence or overwrite the retained raw snapshot limits. A changed
+  portfolio is rejected because persistence identity is tenant/mandate/version/as-of, not portfolio.
+
+After rollout, verify `dpm:0030`, refresh the affected mandate from governed Core sources, then
+recalculate health and run monitoring again. Never clear the marker or reconstruct derived evidence
+by direct SQL. Rollback restores the pre-migration database backup as one unit; do not reverse only
+the payload marker while leaving dependent evidence migrated.
+
 ## Incident triage
 
 - If health fails, verify startup migration state and storage adapter configuration first.

@@ -445,6 +445,18 @@ class _FakeConnection:
             # table, so the statement is acknowledged here and proven
             # for real in the mandate integration lane.
             return _FakeCursor()
+        if "MANDATE_LIMIT_PROVENANCE_AMBIGUOUS" in sql and any(
+            table in sql
+            for table in (
+                "dpm_mandate_snapshots",
+                "dpm_mandate_health_snapshots",
+                "dpm_monitoring_exceptions",
+                "dpm_monitoring_runs",
+            )
+        ):
+            # Migration 0030 is exercised by the real PostgreSQL mandate
+            # integration proof. This fake models rebalance-run storage only.
+            return _FakeCursor()
         if is_migration_ddl(sql):
             return _FakeCursor()
         raise AssertionError(f"Unexpected SQL: {sql}")

@@ -131,9 +131,10 @@ def _insert_quarantined_rows(*, dsn: str, ids: dict[str, str]) -> None:
             """
             INSERT INTO dpm_mandate_snapshots (
                 mandate_snapshot_id, mandate_id, portfolio_id, mandate_version, as_of_date,
-                source_hash, source_lineage_json, payload_json, created_at, created_by
+                source_hash, source_lineage_json, payload_json, created_at, created_by,
+                producer_kind
             ) VALUES (%s, %s, %s, '1', '2026-09-09', 'sha256:inventory', '[]', '{}',
-                      '2026-09-09T00:00:00+00:00', 'inventory-proof')
+                      '2026-09-09T00:00:00+00:00', 'inventory-proof', 'UNKNOWN_LEGACY')
             """,
             (
                 ids["mandate_snapshot_id"],

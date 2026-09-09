@@ -84,6 +84,19 @@ class _FakeConnection:
             # Migration 0025 fences monitoring exceptions by tenant
             # (issue #648); this fake models a different table.
             return _FakeCursor()
+        if "MANDATE_LIMIT_PROVENANCE_AMBIGUOUS" in sql and any(
+            table in sql
+            for table in (
+                "dpm_mandate_snapshots",
+                "dpm_mandate_health_snapshots",
+                "dpm_monitoring_exceptions",
+                "dpm_monitoring_runs",
+            )
+        ):
+            # Migration 0030's cross-table rewrite is PostgreSQL-proven in
+            # test_legacy_mandate_limit_provenance_postgres.py. This fake owns
+            # only policy-pack behavior and must not emulate that migration.
+            return _FakeCursor()
         if is_migration_ddl(sql):
             return _FakeCursor()
         raise AssertionError(f"Unhandled SQL: {sql}")
