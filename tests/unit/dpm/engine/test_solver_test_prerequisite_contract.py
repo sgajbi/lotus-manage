@@ -13,6 +13,7 @@ SOLVER_TEST_FILES = (
     Path("tests/unit/dpm/golden/test_golden_scenarios.py"),
     Path("tests/e2e/demo/test_demo_scenarios.py"),
 )
+DEPENDENCY_PROBE_IMPORT_ROOTS = {"importlib", "pkgutil", "subprocess"}
 
 
 def _dotted_name(node: ast.expr) -> str | None:
@@ -31,7 +32,7 @@ def test_cvxpy_is_a_required_test_dependency() -> None:
     assert any(dependency.startswith("cvxpy") for dependency in dev_dependencies)
 
 
-def test_required_solver_proofs_cannot_skip_or_use_a_subprocess_probe() -> None:
+def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -> None:
     violations: list[str] = []
     for path in SOLVER_TEST_FILES:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -113,12 +114,16 @@ def test_required_solver_proofs_cannot_skip_or_use_a_subprocess_probe() -> None:
             *(f"{module}.has_solver_dependencies" for module in solver_capability_modules),
         }
         for node in ast.walk(tree):
-            if isinstance(node, ast.Import) and any(
-                alias.name == "subprocess" for alias in node.names
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.partition(".")[0] in DEPENDENCY_PROBE_IMPORT_ROOTS:
+                        violations.append(f"{path}:{node.lineno}: import {alias.name}")
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module is not None
+                and node.module.partition(".")[0] in DEPENDENCY_PROBE_IMPORT_ROOTS
             ):
-                violations.append(f"{path}:{node.lineno}: import subprocess")
-            if isinstance(node, ast.ImportFrom) and node.module == "subprocess":
-                violations.append(f"{path}:{node.lineno}: from subprocess")
+                violations.append(f"{path}:{node.lineno}: from {node.module}")
             dotted_name = _dotted_name(node) if isinstance(node, ast.Attribute) else None
             if dotted_name in forbidden_attributes or (
                 dotted_name is not None and dotted_name.endswith(".skipTest")
