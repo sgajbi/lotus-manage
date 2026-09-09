@@ -12,6 +12,10 @@ from src.core.models import (
     ModelTarget,
     ShelfEntry,
 )
+from tests.shared.solver_prerequisites import require_solver_test_dependencies
+
+
+require_solver_test_dependencies()
 
 
 def test_target_gen_applies_group_cap_and_redistributes():

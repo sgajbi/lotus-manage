@@ -1109,11 +1109,12 @@ Important validation expectations:
    prevents unrelated base-branch changes from making branch-owned evidence stale. Dirty worktrees
    and missing recorded refs retain the safe `origin/main` fallback.
 4. PR-grade validation includes coverage-backed full test execution,
-   Solver tests execute unconditionally because `cvxpy` is a required `dev` dependency for test
-   lanes (and remains in the optional `solver` extra for production installs). Do not reintroduce
-   availability probes, import timeouts, or skip markers: a missing, slow, or broken solver test
-   runtime is a failed prerequisite and must fail the lane rather than alter its coverage
-   denominator.
+   Solver tests load a shared `cvxpy`/`numpy` prerequisite directly during collection and execute
+   unconditionally because those packages are required `dev` dependencies for test lanes (and
+   remain in the optional `solver` extra for production installs). Do not suppress the collection
+   prerequisite or reintroduce availability probes, import timeouts, or skip markers: a missing,
+   slow, or broken solver test runtime is a failed prerequisite and must fail the lane rather than
+   alter its coverage denominator.
 5. `make static-quality-gates` includes `make test-family-inventory`, which blocks loss of the
    measured API/runtime, contract/governance, observability/security, domain/lifecycle/methodology,
    and integration/runtime proof-family floors in `quality/test_family_inventory_baseline.json`;
