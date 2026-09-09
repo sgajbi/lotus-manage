@@ -37,6 +37,13 @@ classified as source-backed, derived, local policy, or a known gap.
 | next review due date | `DiscretionaryMandateBinding:v1.next_review_due_date` | Source-backed when returned by core and used by mandate health review-cadence scoring. | None for first-wave review-date evidence. |
 | source lineage | Core source product lineage fields | Preserved as `DpmSourceProductLineage`. | None for source-backed products. |
 
+Historical persistence note: before migration `0030`, both Core refresh and caller-supplied health
+recalculation wrote `created_by=lotus-manage`, and callers could submit Core-shaped lineage. That
+lineage cannot distinguish producer provenance. Any pre-marker snapshot carrying cash-band or
+turnover values is preserved but marked `MANDATE_LIMIT_PROVENANCE_AMBIGUOUS`; those values are
+suppressed from effective reads and scoring rather than rewritten from a numeric fingerprint.
+Future rows carry repository-owned `CORE_COMPILED` or `CALLER_SUPPLIED` provenance.
+
 ## Health Engine Source Map
 
 | Health dimension | Current inputs | Behavior in Slice 1 | Future enrichment |

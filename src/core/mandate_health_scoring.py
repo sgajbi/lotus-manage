@@ -20,12 +20,16 @@ from src.core.mandate_models import (
     MandateRecommendedAction,
     MonitoringSeverity,
     default_source_analytics_posture as _default_source_analytics_posture,
+    effective_mandate_twin,
 )
 
 
 def calculate_mandate_health(
     input_: DpmMandateHealthInput, *, tenant_id: str
 ) -> DpmMandateHealthSnapshot:
+    effective_twin = effective_mandate_twin(input_.twin)
+    if effective_twin is not input_.twin:
+        input_ = input_.model_copy(update={"twin": effective_twin})
     dimension_scores = _mandate_health_dimension_scores(input_)
     health_state = _mandate_health_state(dimension_scores)
     top_reasons = _top_mandate_health_reasons(dimension_scores)

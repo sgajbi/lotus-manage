@@ -42,6 +42,7 @@ from src.api.services.mandate_refresh import (
 )
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
+    MANDATE_LIMIT_PROVENANCE_AMBIGUOUS,
     DpmCommandCenterSummary,
     DpmMandateDigitalTwin,
     DpmMandateHealthInput,
@@ -82,6 +83,7 @@ def refresh_mandate_from_core(
         repository=repository,
         tenant_id=tenant_id,
         twin=refresh_result.twin,
+        mandate_producer_kind="CORE_COMPILED",
         health_snapshot=refresh_result.health_snapshot,
         monitoring_exceptions=refresh_result.monitoring_exceptions,
     )
@@ -148,15 +150,59 @@ def recalculate_mandate_health(
 ) -> DpmMandateHealthSnapshot:
     if health_input.twin.mandate_id != mandate_id:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
-    health_result = calculate_mandate_health_result(health_input, tenant_id=tenant_id)
+    retained_projection = _resolve_retained_ambiguous_projection(
+        repository=repository,
+        twin=health_input.twin,
+        tenant_id=tenant_id,
+    )
+    calculation_input = (
+        health_input.model_copy(update={"twin": retained_projection})
+        if retained_projection is not None
+        else health_input
+    )
+    health_result = calculate_mandate_health_result(calculation_input, tenant_id=tenant_id)
     persist_mandate_health_evidence(
         repository=repository,
         tenant_id=tenant_id,
-        twin=health_input.twin,
+        twin=calculation_input.twin,
         health_snapshot=health_result.snapshot,
         monitoring_exceptions=health_result.monitoring_exceptions,
+        verified_retained_projection=retained_projection is not None,
     )
     return health_result.snapshot
+
+
+def _resolve_retained_ambiguous_projection(
+    *,
+    repository: DpmMandateRepository,
+    twin: DpmMandateDigitalTwin,
+    tenant_id: str,
+) -> DpmMandateDigitalTwin | None:
+    matching_snapshot = next(
+        (
+            stored
+            for stored in repository.list_mandate_versions(
+                mandate_id=twin.mandate_id,
+                tenant_id=tenant_id,
+            )
+            if stored.mandate_version == twin.mandate_version
+            and stored.as_of_date == twin.as_of_date
+        ),
+        None,
+    )
+    submitted_as_ambiguous = MANDATE_LIMIT_PROVENANCE_AMBIGUOUS in twin.field_gap_codes
+    if matching_snapshot is None:
+        if not submitted_as_ambiguous:
+            return None
+        raise DpmMandateSourceIncompleteError("DPM_MANDATE_AMBIGUOUS_SNAPSHOT_NOT_FOUND")
+    stored_as_ambiguous = MANDATE_LIMIT_PROVENANCE_AMBIGUOUS in matching_snapshot.field_gap_codes
+    if stored_as_ambiguous:
+        if matching_snapshot.portfolio_id != twin.portfolio_id:
+            raise DpmMandateSourceIncompleteError("DPM_MANDATE_AMBIGUOUS_SNAPSHOT_NOT_FOUND")
+        return matching_snapshot
+    if submitted_as_ambiguous:
+        raise DpmMandateSourceIncompleteError("DPM_MANDATE_AMBIGUOUS_SNAPSHOT_NOT_FOUND")
+    return None
 
 
 def run_mandate_monitoring_once(
@@ -182,7 +228,6 @@ def run_mandate_monitoring_once(
         persist_result=lambda twin, snapshot, exceptions: persist_mandate_health_evidence(
             repository=repository,
             tenant_id=tenant_id,
-            twin=twin,
             health_snapshot=snapshot,
             monitoring_exceptions=exceptions,
         ),

@@ -375,6 +375,15 @@ missing migration provenance, connection failure, or an unsafe bound exits nonze
 sanitized error. Idempotency keys are SHA-256 hashed and payloads, DSNs, and tenant guesses are
 never emitted. See [the operations runbook](docs/operations-runbook.md#null-tenant-quarantine-inventory).
 
+Migration `0030` closes the historical fabricated-limit ambiguity without guessing from the old
+`0.02`/`0.10`/`0.15` numeric shape. Existing snapshots did not record whether the Core compiler or
+`/health/recalculate` supplied their twin, and caller-supplied lineage could look identical. Rows
+with legacy limit values are preserved and marked `MANDATE_LIMIT_PROVENANCE_AMBIGUOUS`; effective
+reads and health scoring suppress those unverified limits. Their derived health evidence is
+retired, affected successful monitoring runs fail closed, and unrelated cash-flow, tax-lot,
+restriction, and workflow findings survive. Already-failed runs retain their evidence. Future
+writes persist `CORE_COMPILED` or `CALLER_SUPPLIED` producer provenance.
+
 Async scenario analysis defaults to inline execution in Docker. For accept-now/execute-later live
 proof, start the stack with `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`; manual execution can be disabled
 with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false` when the execute endpoint must be hidden.

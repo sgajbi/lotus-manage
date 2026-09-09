@@ -7,12 +7,13 @@ from datetime import date, datetime, timezone
 from threading import Lock
 from typing import Optional
 
-from src.core.mandate_repository import DpmMandateRepository
+from src.core.mandate_repository import DpmMandateRepository, MandateSnapshotProducer
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
     DpmMonitoringRun,
+    effective_mandate_twin,
 )
 
 
@@ -64,7 +65,13 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         self._monitoring_runs: dict[str, DpmMonitoringRun] = {}
         self._exceptions: dict[tuple[str, str], DpmMonitoringException] = {}
 
-    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin, *, tenant_id: str) -> None:
+    def save_mandate_snapshot(
+        self,
+        twin: DpmMandateDigitalTwin,
+        *,
+        tenant_id: str,
+        producer_kind: MandateSnapshotProducer = "CALLER_SUPPLIED",
+    ) -> None:
         with self._lock:
             key = (tenant_id, twin.mandate_id, twin.mandate_version, twin.as_of_date)
             self._mandates_by_key[key] = deepcopy(twin)
@@ -82,7 +89,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
                 if key[0] == tenant_id and twin.portfolio_id == portfolio_id
             ]
             latest = _latest_twin(rows)
-            return deepcopy(latest) if latest is not None else None
+            return effective_mandate_twin(deepcopy(latest)) if latest is not None else None
 
     def get_mandate_by_portfolio_as_of(
         self,
@@ -100,7 +107,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
                 and twin.as_of_date <= as_of_date
             ]
             latest = _latest_twin(rows)
-            return deepcopy(latest) if latest is not None else None
+            return effective_mandate_twin(deepcopy(latest)) if latest is not None else None
 
     def get_latest_mandate(
         self,
@@ -115,7 +122,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
                 if key[0] == tenant_id and twin.mandate_id == mandate_id
             ]
             latest = _latest_twin(rows)
-            return deepcopy(latest) if latest is not None else None
+            return effective_mandate_twin(deepcopy(latest)) if latest is not None else None
 
     def list_mandate_versions(
         self,
@@ -134,7 +141,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
                 key=lambda row: (row.as_of_date, _mandate_version_sort_key(row.mandate_version)),
                 reverse=True,
             )
-            return [deepcopy(row) for row in rows]
+            return [effective_mandate_twin(deepcopy(row)) for row in rows]
 
     def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot, *, tenant_id: str) -> None:
         with self._lock:

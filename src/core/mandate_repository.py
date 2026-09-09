@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Optional, Protocol
+from typing import Literal, Optional, Protocol
 
 from src.core.mandates import (
     DpmMandateDigitalTwin,
@@ -11,8 +11,17 @@ from src.core.mandates import (
 )
 
 
+MandateSnapshotProducer = Literal["CORE_COMPILED", "CALLER_SUPPLIED"]
+
+
 class DpmMandateRepository(Protocol):
-    def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin, *, tenant_id: str) -> None: ...
+    def save_mandate_snapshot(
+        self,
+        twin: DpmMandateDigitalTwin,
+        *,
+        tenant_id: str,
+        producer_kind: MandateSnapshotProducer = "CALLER_SUPPLIED",
+    ) -> None: ...
 
     def get_latest_mandate_by_portfolio(
         self,

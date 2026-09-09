@@ -201,6 +201,31 @@ class DpmMandateDigitalTwin(BaseModel):
     field_gap_codes: list[str] = Field(default_factory=list)
 
 
+MANDATE_LIMIT_PROVENANCE_AMBIGUOUS = "MANDATE_LIMIT_PROVENANCE_AMBIGUOUS"
+
+
+def effective_mandate_twin(twin: DpmMandateDigitalTwin) -> DpmMandateDigitalTwin:
+    """Return the fail-closed projection for legacy limits of unknown origin.
+
+    The stored values remain intact for audit and deliberate operator review.
+    They cannot act as contractual limits while the legacy writer is unknown.
+    """
+
+    if MANDATE_LIMIT_PROVENANCE_AMBIGUOUS not in twin.field_gap_codes:
+        return twin
+    return twin.model_copy(
+        update={
+            "constraints": twin.constraints.model_copy(
+                update={
+                    "cash_band_min_weight": None,
+                    "cash_band_max_weight": None,
+                    "turnover_budget": None,
+                }
+            )
+        }
+    )
+
+
 class DpmMandateHealthReason(BaseModel):
     dimension: MandateHealthDimension
     reason_code: str

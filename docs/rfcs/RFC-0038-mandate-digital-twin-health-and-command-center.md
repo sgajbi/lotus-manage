@@ -529,6 +529,13 @@ Indexes:
 2. `(portfolio_id, as_of_date)`,
 3. `(mandate_id, created_at desc)`.
 
+Migration `0030` adds repository-owned `producer_kind`. Existing rows are `UNKNOWN_LEGACY`; a
+Core refresh writes `CORE_COMPILED`, while explicit caller health input writes `CALLER_SUPPLIED`.
+Because historical callers could reproduce Core-shaped lineage, legacy cash-band/turnover values
+are marked provenance-ambiguous and suppressed from effective reads/scoring without destroying the
+stored payload. Derived health and monitoring evidence fails closed rather than continuing to
+publish results based on an unverifiable contractual limit.
+
 `dpm_mandate_health_snapshots`
 
 1. `health_snapshot_id` primary key,

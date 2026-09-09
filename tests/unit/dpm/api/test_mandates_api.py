@@ -28,7 +28,11 @@ from src.core.dpm_source_context import (
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
 from src.core.mandate_health_scoring import calculate_mandate_health
-from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthInput
+from src.core.mandates import (
+    MANDATE_LIMIT_PROVENANCE_AMBIGUOUS,
+    DpmMandateDigitalTwin,
+    DpmMandateHealthInput,
+)
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 
@@ -1035,6 +1039,117 @@ def test_health_read_and_recalculate_error_mapping() -> None:
     assert missing.json()["detail"] == "DPM_MANDATE_HEALTH_NOT_FOUND"
     assert mismatch.status_code == 424
     assert mismatch.json()["detail"] == "DPM_MANDATE_HEALTH_INPUT_MISMATCH"
+
+
+def test_ambiguous_recalculation_requires_exact_tenant_scoped_snapshot() -> None:
+    repository = InMemoryDpmMandateRepository()
+    ambiguous_twin = _twin().model_copy(
+        update={"field_gap_codes": ["MANDATE_LIMIT_PROVENANCE_AMBIGUOUS"]}
+    )
+    health_input = DpmMandateHealthInput(twin=ambiguous_twin, cash_weight=Decimal("0.05"))
+
+    with _client(repository) as client:
+        missing = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tenant-test",
+            json=health_input.model_dump(mode="json"),
+        )
+        repository.save_mandate_snapshot(ambiguous_twin, tenant_id="tenant-test")
+        verified = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tenant-test",
+            json=health_input.model_dump(mode="json"),
+        )
+
+    assert missing.status_code == 424
+    assert missing.json()["detail"] == "DPM_MANDATE_AMBIGUOUS_SNAPSHOT_NOT_FOUND"
+    assert verified.status_code == 200
+
+
+def test_ambiguous_recalculation_uses_retained_snapshot_not_submitted_twin() -> None:
+    repository = InMemoryDpmMandateRepository()
+    retained_twin = _twin().model_copy(
+        update={"field_gap_codes": ["MANDATE_LIMIT_PROVENANCE_AMBIGUOUS"]}
+    )
+    repository.save_mandate_snapshot(retained_twin, tenant_id="tenant-test")
+    submitted_twin = retained_twin.model_copy(
+        update={
+            "constraints": retained_twin.constraints.model_copy(
+                update={"max_tracking_error": Decimal("0.01")}
+            )
+        }
+    )
+    health_input = DpmMandateHealthInput(
+        twin=submitted_twin,
+        tracking_error=Decimal("0.10"),
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tenant-test",
+            json=health_input.model_dump(mode="json"),
+        )
+
+    assert response.status_code == 200
+    risk_drift = next(
+        score for score in response.json()["dimension_scores"] if score["dimension"] == "RISK_DRIFT"
+    )
+    assert risk_drift["reason_code"] == "RISK_DRIFT_READY"
+
+
+def test_ambiguous_recalculation_cannot_strip_stored_marker() -> None:
+    repository = InMemoryDpmMandateRepository()
+    retained_twin = _twin().model_copy(
+        update={"field_gap_codes": ["MANDATE_LIMIT_PROVENANCE_AMBIGUOUS"]}
+    )
+    repository.save_mandate_snapshot(retained_twin, tenant_id="tenant-test")
+    unmarked_twin = _twin().model_copy(
+        update={
+            "constraints": _twin().constraints.model_copy(
+                update={"max_tracking_error": Decimal("0.01")}
+            )
+        }
+    )
+    health_input = DpmMandateHealthInput(
+        twin=unmarked_twin,
+        tracking_error=Decimal("0.10"),
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tenant-test",
+            json=health_input.model_dump(mode="json"),
+        )
+
+    assert response.status_code == 200
+    risk_drift = next(
+        score for score in response.json()["dimension_scores"] if score["dimension"] == "RISK_DRIFT"
+    )
+    assert risk_drift["reason_code"] == "RISK_DRIFT_READY"
+    stored = repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="tenant-test")
+    assert stored is not None
+    assert MANDATE_LIMIT_PROVENANCE_AMBIGUOUS in stored.field_gap_codes
+
+
+def test_ambiguous_recalculation_rejects_portfolio_change_on_persisted_key() -> None:
+    repository = InMemoryDpmMandateRepository()
+    retained_twin = _twin().model_copy(
+        update={"field_gap_codes": [MANDATE_LIMIT_PROVENANCE_AMBIGUOUS]}
+    )
+    repository.save_mandate_snapshot(retained_twin, tenant_id="tenant-test")
+    unmarked_other_portfolio = _twin().model_copy(update={"portfolio_id": "PF_FORGED"})
+    health_input = DpmMandateHealthInput(twin=unmarked_other_portfolio)
+
+    with _client(repository) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tenant-test",
+            json=health_input.model_dump(mode="json"),
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"] == "DPM_MANDATE_AMBIGUOUS_SNAPSHOT_NOT_FOUND"
+    stored = repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="tenant-test")
+    assert stored is not None
+    assert stored.portfolio_id == PORTFOLIO_ID
+    assert MANDATE_LIMIT_PROVENANCE_AMBIGUOUS in stored.field_gap_codes
 
 
 def test_default_mandate_repository_dependency_is_available(

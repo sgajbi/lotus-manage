@@ -982,6 +982,15 @@ Current repository posture:
     holding the same mandate id, version and date hold separate rows rather than overwriting one
     another; same-date replays within a tenant remain idempotent. Rows persisted before the tenant
     fence carry a NULL tenant, match no scoped read, and are quarantined rather than defaulted.
+18. Snapshot producer provenance is repository-owned from migration `0030`: Core refresh writes
+    `CORE_COMPILED`, explicit `/health/recalculate` input writes `CALLER_SUPPLIED`, and pre-marker
+    rows remain `UNKNOWN_LEGACY`. Historical lineage is not a discriminator because the caller
+    could submit the same lineage. Legacy rows carrying any cash-band or turnover value retain the
+    raw payload and gain `MANDATE_LIMIT_PROVENANCE_AMBIGUOUS`; normal reads and health scoring
+    suppress those values. The migration invalidates affected health/successful-run aggregates
+    within the same tenant, preserves earlier run failures, and deletes only limit-dependent
+    exception reason codes. Never replace this with a numeric
+    fingerprint or promote a zero band minimum into a cash reserve.
 
 ## Architecture And Module Map
 

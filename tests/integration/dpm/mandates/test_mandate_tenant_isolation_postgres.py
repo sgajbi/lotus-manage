@@ -172,8 +172,8 @@ def test_rows_that_could_not_be_attributed_are_unreachable_from_every_tenant(
                 INSERT INTO dpm_mandate_snapshots (
                     mandate_snapshot_id, mandate_id, portfolio_id, mandate_version,
                     as_of_date, source_hash, source_lineage_json, payload_json,
-                    created_at, created_by
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    created_at, created_by, producer_kind
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'UNKNOWN_LEGACY')
                 """,
                 (
                     f"ms_{uuid.uuid4().hex[:12]}",
