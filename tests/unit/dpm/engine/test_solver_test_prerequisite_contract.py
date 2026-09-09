@@ -146,6 +146,8 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
         unittest_skip_exceptions: set[str] = set()
         solver_capability_modules = {SOLVER_CAPABILITY_MODULE}
         solver_capability_calls = {"has_solver_dependencies"}
+        cvxpy_modules = {"cvxpy"}
+        solver_availability_calls: set[str] = set()
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -161,6 +163,8 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
                     if alias.name == "unittest.case"
                 )
                 for alias in node.names:
+                    if alias.name == "cvxpy":
+                        cvxpy_modules.add(alias.asname or alias.name)
                     if SOLVER_CAPABILITY_MODULE == alias.name:
                         solver_capability_modules.add(alias.asname or alias.name)
                     elif alias.asname and SOLVER_CAPABILITY_MODULE.startswith(f"{alias.name}."):
@@ -200,6 +204,12 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
                         solver_capability_modules.add(
                             local_name if not suffix else f"{local_name}.{suffix}"
                         )
+            if isinstance(node, ast.ImportFrom) and node.module == "cvxpy":
+                solver_availability_calls.update(
+                    alias.asname or alias.name
+                    for alias in node.names
+                    if alias.name == "installed_solvers"
+                )
 
         forbidden_attributes = {
             *(f"{module}.skip" for module in pytest_modules),
@@ -227,6 +237,7 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
             *(f"{module}.expectedFailure" for module in unittest_case_modules),
             *(f"{module}.SkipTest" for module in unittest_case_modules),
             *(f"{module}.has_solver_dependencies" for module in solver_capability_modules),
+            *(f"{module}.installed_solvers" for module in cvxpy_modules),
         }
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -259,7 +270,12 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
                 violations.append(f"{path}:{node.lineno}: {node.id}")
             if isinstance(node, ast.Call):
                 call_name = _dotted_name(node.func)
-                if call_name in pytest_skip_calls | unittest_skip_calls | solver_capability_calls:
+                if call_name in (
+                    pytest_skip_calls
+                    | unittest_skip_calls
+                    | solver_capability_calls
+                    | solver_availability_calls
+                ):
                     violations.append(f"{path}:{node.lineno}: {call_name}")
 
     assert violations == []
