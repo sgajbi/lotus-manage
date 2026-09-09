@@ -14,6 +14,7 @@ SOLVER_TEST_FILES = (
     Path("tests/e2e/demo/test_demo_scenarios.py"),
 )
 DEPENDENCY_PROBE_IMPORT_ROOTS = {"importlib", "pkgutil", "subprocess"}
+SOLVER_DEPENDENCY_IMPORT_ROOTS = {"cvxpy", "numpy"}
 
 
 def _dotted_name(node: ast.expr) -> str | None:
@@ -23,6 +24,27 @@ def _dotted_name(node: ast.expr) -> str | None:
         owner = _dotted_name(node.value)
         return None if owner is None else f"{owner}.{node.attr}"
     return None
+
+
+def _imports_solver_dependency(node: ast.AST) -> bool:
+    if isinstance(node, ast.Import):
+        return any(
+            alias.name.partition(".")[0] in SOLVER_DEPENDENCY_IMPORT_ROOTS for alias in node.names
+        )
+    return (
+        isinstance(node, ast.ImportFrom)
+        and node.module is not None
+        and node.module.partition(".")[0] in SOLVER_DEPENDENCY_IMPORT_ROOTS
+    )
+
+
+def _caught_exception_names(node: ast.expr | None) -> set[str]:
+    if node is None:
+        return set()
+    if isinstance(node, ast.Tuple):
+        return {name for item in node.elts if (name := _dotted_name(item)) is not None}
+    name = _dotted_name(node)
+    return set() if name is None else {name}
 
 
 def test_cvxpy_is_a_required_test_dependency() -> None:
@@ -124,6 +146,17 @@ def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -
                 and node.module.partition(".")[0] in DEPENDENCY_PROBE_IMPORT_ROOTS
             ):
                 violations.append(f"{path}:{node.lineno}: from {node.module}")
+            if isinstance(node, ast.Try) and any(
+                _imports_solver_dependency(descendant)
+                for statement in node.body
+                for descendant in ast.walk(statement)
+            ):
+                violations.append(f"{path}:{node.lineno}: guarded solver dependency import")
+            if isinstance(node, ast.ExceptHandler) and any(
+                name.rpartition(".")[2] in {"ImportError", "ModuleNotFoundError"}
+                for name in _caught_exception_names(node.type)
+            ):
+                violations.append(f"{path}:{node.lineno}: swallowed dependency import failure")
             dotted_name = _dotted_name(node) if isinstance(node, ast.Attribute) else None
             if dotted_name in forbidden_attributes or (
                 dotted_name is not None and dotted_name.endswith(".skipTest")
