@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-09-09T12:59:47+00:00`
+- Generated at: `2026-09-09T13:34:10+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `ae9cbfe0ffb7e9e77859bfa500ca7173e5c08f28`
+- Baseline source snapshot: `3bec9f73a43a978a08d38815d27cba4275f39004`
 
-- Report source snapshot: `ae9cbfe0+worktree`
+- Report source snapshot: `3bec9f73+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -14,9 +14,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 946 | 947 | +1 |
-| Total Python LOC | 222370 | 222662 | +292 |
-| Test functions | 3230 | 3235 | +5 |
+| Python files | 947 | 947 | +0 |
+| Total Python LOC | 222662 | 222690 | +28 |
+| Test functions | 3235 | 3236 | +1 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -58,7 +58,7 @@
 | 4 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
 | 5 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
-| 7 | tests/unit/test_documentation_current_state.py | 2969 |
+| 7 | tests/unit/test_documentation_current_state.py | 2997 |
 | 8 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2711 |
 | 9 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2670 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
@@ -71,11 +71,11 @@
 | --- | --- | --- | --- |
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 791 |
-| 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 416 |
+| 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 419 |
 | 4 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 380 |
 | 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
-| 7 | test_unknown_legacy_limits_are_preserved_but_never_act_as_contractual_limits | tests/integration/dpm/mandates/test_legacy_mandate_limit_provenance_postgres.py | 334 |
+| 7 | test_unknown_legacy_limits_are_preserved_but_never_act_as_contractual_limits | tests/integration/dpm/mandates/test_legacy_mandate_limit_provenance_postgres.py | 335 |
 | 8 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |
 | 9 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
 | 10 | test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts | tests/unit/dpm/api/test_waves_api.py | 268 |
@@ -104,7 +104,7 @@
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1068 | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 791 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
-| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 113 | 416 |
+| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 114 | 419 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
