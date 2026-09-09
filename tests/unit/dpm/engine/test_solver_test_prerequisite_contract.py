@@ -17,6 +17,15 @@ SOLVER_TEST_FILES = (
 SOLVER_PREREQUISITE_FILE = Path("tests/shared/solver_prerequisites.py")
 SOLVER_PREREQUISITE_MODULE = "tests.shared.solver_prerequisites"
 SOLVER_PREREQUISITE_FUNCTION = "require_solver_test_dependencies"
+SOLVER_PROOF_ANCHORS = {
+    SOLVER_TEST_FILES[0]: {"test_solver_counts_locked_group_weight_in_group_constraint"},
+    SOLVER_TEST_FILES[1]: {"test_solver_target_gen_feasible_allocates_with_hard_constraints"},
+    SOLVER_TEST_FILES[2]: {
+        "test_solver_scenarios_are_in_golden_matrix",
+        "scenario_12_solver_ready_feasible.json",
+    },
+    SOLVER_TEST_FILES[3]: {"08_solver_mode.json"},
+}
 DEPENDENCY_PROBE_IMPORT_ROOTS = {"importlib", "pkgutil", "subprocess"}
 SOLVER_DEPENDENCY_IMPORT_ROOTS = {"cvxpy", "numpy"}
 SOLVER_CAPABILITY_MODULE = "src.core.common.capabilities"
@@ -106,12 +115,27 @@ def _module_load_prerequisite_calls(tree: ast.Module) -> set[str]:
     }
 
 
+def _source_anchor_values(tree: ast.Module) -> set[str]:
+    return {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    } | {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+
+
 def test_required_solver_proofs_cannot_skip_or_probe_dependency_availability() -> None:
     violations: list[str] = []
     for path in SOLVER_TEST_FILES:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         assert _module_load_prerequisite_calls(tree), (
             f"{path} must call the solver prerequisite directly at module load"
+        )
+        assert SOLVER_PROOF_ANCHORS[path] <= _source_anchor_values(tree), (
+            f"{path} must retain its required solver proof anchors"
         )
         pytest_modules = {"pytest"}
         pytest_marks: set[str] = set()

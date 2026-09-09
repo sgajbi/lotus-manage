@@ -44,6 +44,15 @@ SCENARIOS = sorted(
     for path in glob.glob(os.path.join(GOLDEN_DIR, "*.json"))
     if _is_rebalance_golden_fixture(path)
 )
+REQUIRED_SOLVER_SCENARIOS = {
+    "scenario_12_solver_conflict.json",
+    "scenario_12_solver_infeasible.json",
+    "scenario_12_solver_ready_feasible.json",
+}
+
+
+def test_solver_scenarios_are_in_golden_matrix():
+    assert REQUIRED_SOLVER_SCENARIOS <= set(SCENARIOS)
 
 
 @pytest.mark.parametrize("filename", SCENARIOS)
