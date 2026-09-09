@@ -41,7 +41,7 @@ Gateway should expose a product-facing command-center contract that composes the
 | Product need | `lotus-manage` source API | Gateway behavior |
 | --- | --- | --- |
 | Book-level health cockpit | `GET /api/v1/dpm/command-center` | Pass tenant, portfolio-manager, book, as-of, and health filters. Preserve supportability and source-run lineage. |
-| Monitoring execution | `POST /api/v1/dpm/monitoring/run-once` | Restrict execution to entitled books or explicit mandate ids. Add user, tenant, and channel context. |
+| Monitoring execution | `POST /api/v1/dpm/monitoring/run-once` | Send the normalized caller-asserted tenant in both required `X-Tenant-Id` and body `tenant_id`. Manage rejects disagreement before Core or repository work and persists the header value as run ownership. Gateway #786 forwards this contract. This routing scope is not authenticated-principal proof. |
 | Monitoring run audit | `GET /api/v1/dpm/monitoring/runs` and `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}` | Provide newest-first audit view and drill-down. **Both require `tenant_id`** and return only that tenant's runs; forward the tenant already resolved for the cockpit rather than deriving a second one. A call without it is refused with `422`. |
 | Exception queue | `GET /api/v1/dpm/exceptions` | Shape for table and drill-down panels without changing reason codes, severity, or recommended action. |
 | Exception resolution | `POST /api/v1/dpm/exceptions/{exception_id}/resolve` | Enforce resolver entitlement and pass bounded resolution reason. |
@@ -78,6 +78,7 @@ Monitoring run:
 POST /api/v1/dpm/monitoring/run-once HTTP/1.1
 Host: manage.dev.lotus
 Content-Type: application/json
+X-Tenant-Id: default
 
 {
   "mandate_ids": ["MANDATE_PB_SG_GLOBAL_BAL_001"],

@@ -46,7 +46,10 @@ class _FakeConnection:
         if sql.startswith("UPDATE ") and " SET tenant_id = " in sql and " WHERE " in sql:
             return _FakeCursor()
         if (
-            sql.startswith("UPDATE ")
+            (
+                sql.startswith("UPDATE ")
+                or "UPDATE dpm_monitoring_runs SET payload_json = jsonb_set(" in sql
+            )
             and " jsonb_set(" in sql
             and "'{tenant_id}'" in sql
             and " WHERE " in sql

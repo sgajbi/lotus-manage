@@ -351,23 +351,25 @@ refused — but it is invisible to a generated client. Send it on those routes e
 does not list it. Tracked as a contract defect rather than a documentation one, because the fix is
 to declare it.
 
-It is not yet universal, and this page previously said something false about why. Monitoring
-**run** reads read across no tenants any more: `GET /monitoring/runs` and
+It is not yet universal. Monitoring **run** creation and reads are now consistently scoped.
+`POST /monitoring/run-once` requires `X-Tenant-Id` and an equal normalized body `tenant_id`; a
+missing header is refused with `422`, disagreement with `409`, and both are rejected before Core
+or repository work. The admitted header value becomes the run's domain owner, database owner, and
+retained audit-filter tenant. `GET /monitoring/runs` and
 `GET /monitoring/runs/{monitoring_run_id}` now take a **required `tenant_id` query parameter**,
 the same selector their mandate siblings use, and return only that tenant's runs. The reason
 given here before — that the monitoring-run aggregate "carries no tenant of its own" — was
 simply wrong. `dpm_monitoring_runs.tenant_id` has existed since migration `0003`. The column was
 populated all along and the reads never consulted it.
 
-Two limits on that fence are worth stating plainly, because neither is visible from the contract:
+Two limits on that fence are worth stating plainly:
 
 - A run whose `tenant_id` is NULL — the column is nullable and was never backfilled — is matched
   by no caller at all rather than by whoever asks. Those runs are quarantined, not defaulted, and
   attributing them is an operator action.
-- The recorded tenant comes from the request body's `filters` on the write path and is not
-  reconciled against an admitted caller identity. Read fencing therefore scopes what a caller can
-  **see**; it does not yet stop a caller recording a run under a tenant it merely names. That gap
-  is tracked on issue #693 and is not closed by this change.
+- `X-Tenant-Id` is caller-asserted routing scope in the current no-auth posture. The equality check
+  prevents two conflicting tenant inputs; it does not establish an authenticated principal. That
+  broader production identity gap remains tracked by #624.
 
 One operation remains genuinely unscoped: `GET /rebalance/waves/{wave_id}/outcome-reviews`, which
 sits under the wave prefix while reading an aggregate that is not tenant-scoped. Proof-pack reads

@@ -82,7 +82,9 @@ _MANDATE_VERSION_ORDER = (
 # filtered set, which is the exact defect the tenant predicate is seeded to
 # avoid two lines below. `payload_json` is JSONB (migration 0004), so the
 # engine can answer this as part of the set.
-_OWNER_AGREEMENT_SQL = "payload_json -> 'filters' ->> 'tenant_id' = %s"
+_OWNER_AGREEMENT_SQL = (
+    "payload_json ->> 'tenant_id' = %s AND payload_json -> 'filters' ->> 'tenant_id' = %s"
+)
 
 
 class PostgresDpmMandateRepository:
@@ -403,7 +405,7 @@ class PostgresDpmMandateRepository:
                     run.as_of_date.isoformat(),
                     run.status,
                     run.filters.get("portfolio_manager_id"),
-                    run.filters.get("tenant_id"),
+                    run.tenant_id,
                     run.filters.get("requested_by", "lotus-manage"),
                     json.dumps(run.filters, separators=(",", ":"), sort_keys=True),
                     json.dumps(
@@ -430,7 +432,10 @@ class PostgresDpmMandateRepository:
             f"WHERE monitoring_run_id = %s AND tenant_id = %s AND {_OWNER_AGREEMENT_SQL}"
         )
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (monitoring_run_id, tenant_id, tenant_id)).fetchone()
+            row = connection.execute(
+                query,
+                (monitoring_run_id, tenant_id, tenant_id, tenant_id),
+            ).fetchone()
         if row is None:
             return None
         return load_model_json(DpmMonitoringRun, _payload(row))
@@ -447,7 +452,7 @@ class PostgresDpmMandateRepository:
         # optional, and a shape where it is one clause among several invites a
         # later edit that makes it conditional too.
         where_clauses: list[str] = ["tenant_id = %s", _OWNER_AGREEMENT_SQL]
-        args: list[Any] = [tenant_id, tenant_id]
+        args: list[Any] = [tenant_id, tenant_id, tenant_id]
         if status is not None:
             where_clauses.append("status = %s")
             args.append(status)
@@ -486,7 +491,19 @@ class PostgresDpmMandateRepository:
             # the in-memory store returned nothing. A cursor naming a row the
             # caller cannot read is refused, which is what it already does for
             # every other invisible row.
-            args.extend([cursor, tenant_id, tenant_id, cursor, tenant_id, tenant_id, cursor])
+            args.extend(
+                [
+                    cursor,
+                    tenant_id,
+                    tenant_id,
+                    tenant_id,
+                    cursor,
+                    tenant_id,
+                    tenant_id,
+                    tenant_id,
+                    cursor,
+                ]
+            )
         where_sql = f"WHERE {' AND '.join(where_clauses)}"
         query = f"""
             SELECT payload_json, monitoring_run_id

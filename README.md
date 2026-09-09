@@ -161,6 +161,10 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/mandates/*`
 - DPM monitoring, exceptions, and command center
   `/api/v1/dpm/monitoring/*`, `/api/v1/dpm/exceptions*`, `/api/v1/dpm/command-center`
+  `POST /api/v1/dpm/monitoring/run-once` requires `X-Tenant-Id`; its normalized value must
+  match the body `tenant_id` before Manage calls Core or persists health, exception, or run
+  evidence. The header is caller-asserted routing scope in the current no-auth posture, not proof
+  of an authenticated principal.
 - construction alternatives
   `/api/v1/construction/alternative-sets/generate`,
   `/api/v1/construction/alternative-sets/{alternative_set_id}`,

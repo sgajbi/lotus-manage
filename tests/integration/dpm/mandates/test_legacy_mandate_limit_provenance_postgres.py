@@ -142,6 +142,7 @@ def test_unknown_legacy_limits_are_preserved_but_never_act_as_contractual_limits
     )
     run_payload = {
         "monitoring_run_id": run_id,
+        "tenant_id": tenant_id,
         "as_of_date": "2026-05-03",
         "requested_at": "2026-05-03T01:00:00Z",
         "completed_at": "2026-05-03T01:00:01Z",

@@ -276,12 +276,18 @@ sequenceDiagram
     Gateway->>Manage: GET /api/v1/dpm/command-center
     Manage-->>Gateway: Summary with supportability and source-run lineage
     Workbench->>Gateway: Trigger monitoring run
-    Gateway->>Manage: POST /api/v1/dpm/monitoring/run-once
+    Gateway->>Manage: POST /api/v1/dpm/monitoring/run-once + X-Tenant-Id
     Manage->>Core: Source governed mandate and portfolio data
     Core-->>Manage: Source products and lineage
     Manage-->>Gateway: Monitoring run and exceptions
     Gateway-->>Workbench: Cockpit panels and drill-down links
 ```
+
+Gateway must send the same normalized caller-asserted tenant in `X-Tenant-Id` and the request
+body. Manage rejects missing or conflicting scope before calling Core or writing monitoring
+evidence, then records the header value as run ownership. Gateway PR #786 implements this contract
+at `ec5c421ba22aaec765524aa807f6c4a2dc8a0a29`. This is routing-scope agreement, not an
+authenticated-principal claim.
 
 The implementation handoff contract is maintained in
 [`docs/architecture/dpm-command-center-gateway-workbench-handoff.md`](https://github.com/sgajbi/lotus-manage/blob/main/docs/architecture/dpm-command-center-gateway-workbench-handoff.md).

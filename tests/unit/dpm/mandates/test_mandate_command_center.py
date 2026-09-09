@@ -36,6 +36,7 @@ def _run(
 ) -> DpmMonitoringRun:
     return DpmMonitoringRun(
         monitoring_run_id="dmr_command_center",
+        tenant_id=(filters or {}).get("tenant_id", "default"),
         as_of_date=as_of_date,
         requested_at=datetime(2026, 5, 3, 8, 30, tzinfo=timezone.utc),
         completed_at=datetime(2026, 5, 3, 8, 31, tzinfo=timezone.utc),

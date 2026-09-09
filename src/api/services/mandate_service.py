@@ -235,6 +235,7 @@ def run_mandate_monitoring_once(
 
     run = build_monitoring_run(
         monitoring_run_id=monitoring_run_id,
+        tenant_id=tenant_id,
         as_of_date=as_of_date,
         requested_at=requested_at,
         completed_at=datetime.now(timezone.utc),

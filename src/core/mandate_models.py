@@ -469,6 +469,14 @@ class DpmMonitoringRun(BaseModel):
         description="Stable monitoring run identifier.",
         examples=["dmr_20260503_083000"],
     )
+    tenant_id: str = Field(
+        min_length=1,
+        description=(
+            "Admitted tenant that owns the monitoring run. This is caller-asserted routing "
+            "scope, not proof of an authenticated principal."
+        ),
+        examples=["default"],
+    )
     as_of_date: date = Field(
         description="Business date used to evaluate mandate health.",
         examples=["2026-05-03"],
@@ -493,7 +501,10 @@ class DpmMonitoringRun(BaseModel):
     )
     filters: dict[str, str] = Field(
         default_factory=dict,
-        description="Caller-supplied monitoring filters used for audit and replay.",
+        description=(
+            "Monitoring selectors used for audit and replay. The tenant entry is derived from "
+            "the admitted run owner rather than trusted from the request body."
+        ),
         examples=[{"tenant_id": "default"}],
     )
     total_mandates: int = Field(

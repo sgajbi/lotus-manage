@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import BaseModel, Field
+from fastapi import Header
+from pydantic import AfterValidator, BaseModel, Field
 
 from src.core.mandates import DpmMonitoringException, DpmMonitoringRun
-from src.api.routers.mandate_tenant_query import NormalisedTenantId
+from src.api.routers.mandate_tenant_query import NormalisedTenantId, normalise_mandate_tenant
 from src.core.common.identity_examples import MONITORING_EXCEPTION_ID_EXAMPLE
 
 
@@ -61,6 +62,21 @@ class DpmMonitoringRunOnceRequest(BaseModel):
         description="Actor or automation id requesting the monitoring run.",
         examples=["ops_sg_001"],
     )
+
+
+MonitoringTenantIdHeader = Annotated[
+    str,
+    Header(
+        min_length=1,
+        pattern=r"\S",
+        description=(
+            "Required caller-asserted tenant scope admitted by Manage. It must equal the "
+            "request tenant before any monitoring side effect. This is routing scope, not "
+            "proof of an authenticated principal."
+        ),
+    ),
+    AfterValidator(normalise_mandate_tenant),
+]
 
 
 class DpmMonitoringRunPage(BaseModel):

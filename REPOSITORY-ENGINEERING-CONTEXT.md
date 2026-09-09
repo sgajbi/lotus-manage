@@ -138,6 +138,12 @@ Current repository posture:
     identity/request fingerprints and using source health-state/threshold posture for bounded
     `RISK_DRIFT` and `PERFORMANCE_ATTENTION` scoring without calculating risk or performance
     methodology locally.
+    Monitoring-run creation now requires caller-asserted `X-Tenant-Id`, rejects disagreement with
+    the normalized body tenant before Core or repository work, and persists only that admitted
+    value as the run's domain owner, database owner, and audit-filter tenant. Legacy NULL or
+    contradictory ownership remains quarantined. Gateway forwards the same scope through its
+    merged #785/#786 contract at `ec5c421ba22aaec765524aa807f6c4a2dc8a0a29`. This closes
+    request-to-routing-scope binding only; authenticated principal binding remains tracked by #624.
 13. RFC-0039 has delivered the implementation-backed construction-alternative backend foundation:
     bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
     risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,

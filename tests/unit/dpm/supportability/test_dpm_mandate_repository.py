@@ -77,8 +77,9 @@ def _monitoring_run(
     requested_at: datetime = datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
     tenant_id: str | None = "default",
 ) -> DpmMonitoringRun:
-    return DpmMonitoringRun(
+    run = DpmMonitoringRun(
         monitoring_run_id=run_id,
+        tenant_id=tenant_id or "legacy-unowned",
         as_of_date=date(2026, 5, 3),
         requested_at=requested_at,
         completed_at=requested_at + timedelta(seconds=2),
@@ -94,6 +95,7 @@ def _monitoring_run(
         exception_count=0,
         source_readiness_summary={"READY": 1},
     )
+    return run if tenant_id is not None else run.model_copy(update={"tenant_id": None})
 
 
 def test_repository_persists_mandate_versions_idempotently_and_lists_latest() -> None:
@@ -901,10 +903,12 @@ class _FakeConnection:
                 "tenant_id": params[4],
                 "started_at": params[8],
                 "payload_json": params[11],
-                # The body's own tenant, which the adapter now compares in SQL.
+                # The body's domain owner and retained audit-filter tenant,
+                # which the adapter compares in SQL.
                 # ON CONFLICT refreshes this and never the column above, so the
                 # two can disagree and the fake must be able to represent that.
-                "payload_tenant_id": json.loads(params[6]).get("tenant_id"),
+                "payload_tenant_id": json.loads(params[11]).get("tenant_id"),
+                "filter_tenant_id": json.loads(params[6]).get("tenant_id"),
             }
             return _FakeResult(rowcount=1)
         if (
@@ -916,6 +920,7 @@ class _FakeConnection:
                 row is None
                 or row["tenant_id"] != params[1]
                 or row["payload_tenant_id"] != params[2]
+                or row["filter_tenant_id"] != params[3]
             ):
                 return _FakeResult()
             return _FakeResult(rows=[{"payload_json": row["payload_json"]}])
@@ -926,21 +931,23 @@ class _FakeConnection:
             rows = list(self.store.monitoring_runs.values())
             arg_index = 0
             tenant_id = params[arg_index]
-            arg_index += 2  # the tenant is bound twice: column, then payload
+            arg_index += 3  # column, domain payload owner, and audit filter
             # Both predicates are in the WHERE clause, so both apply to the SET
             # before LIMIT. Filtering here rather than after the slice below is
             # what makes the fake able to fail the short-page case at all.
             rows = [
                 row
                 for row in rows
-                if row["tenant_id"] == tenant_id and row["payload_tenant_id"] == tenant_id
+                if row["tenant_id"] == tenant_id
+                and row["payload_tenant_id"] == tenant_id
+                and row["filter_tenant_id"] == tenant_id
             ]
             if "status = %s" in normalized:
                 rows = [row for row in rows if row["status"] == params[arg_index]]
                 arg_index += 1
             if "monitoring_run_id < %s" in normalized:
                 cursor = params[arg_index]
-                arg_index += 7
+                arg_index += 9
                 # The anchor resolves under the SAME visibility rule as the
                 # page: tenant AND owner agreement. Another tenant's run id
                 # must not resolve to a started_at, and neither must a
@@ -953,6 +960,7 @@ class _FakeConnection:
                         if row["monitoring_run_id"] == cursor
                         and row["tenant_id"] == tenant_id
                         and row["payload_tenant_id"] == tenant_id
+                        and row["filter_tenant_id"] == tenant_id
                     ),
                     None,
                 )
