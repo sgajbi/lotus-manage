@@ -36,6 +36,9 @@ scope unless a future source-owning service publishes and certifies that capabil
 - `/health/ready` validates production persistence guardrails, trusted write authorization posture,
   bounded Postgres access policy, and applied migrations in production profile, so container
   health is tied to supportability backing-store and authz readiness instead of `/docs`
+  and fails closed (HTTP `500`) when a required DPM migration is absent. Treat
+  `CUTOVER_MIGRATION_MISSING:dpm:<version>` as a deployment refusal: apply the governed migration
+  and recheck readiness; never bypass the route or insert a synthetic migration marker.
 
 ## RFC-0108 action register supportability
 
