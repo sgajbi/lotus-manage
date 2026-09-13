@@ -125,7 +125,7 @@ jobs:
             echo "::notice::Enumerated $enumerated of a declared $COMMIT_COUNT commits for PR #$PR_NUMBER; pull_request.commits predates the rebase."
           fi
 
-          payload="$(printf '%s\n' $revisions | jq -R . | jq -sc .)"
+          payload="$(printf '%s\n' "$revisions" | jq -R . | jq -sc .)"
           echo "revisions=$payload" >> "$GITHUB_OUTPUT"
           echo "Enumerated $enumerated of $COMMIT_COUNT merged revisions for PR #$PR_NUMBER"
 

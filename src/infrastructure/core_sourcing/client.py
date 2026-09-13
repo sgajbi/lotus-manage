@@ -108,6 +108,7 @@ class DpmCoreResolverClient:
         url: str,
         payload: dict[str, Any],
         correlation_id: Optional[str],
+        admitted_tenant_id: Optional[str] = None,
         unavailable_code: str,
         incomplete_code: str,
     ) -> dict[str, Any]:
@@ -116,6 +117,7 @@ class DpmCoreResolverClient:
             url=url,
             selector=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=admitted_tenant_id,
             unavailable_code=unavailable_code,
             incomplete_code=incomplete_code,
         )
@@ -126,6 +128,7 @@ class DpmCoreResolverClient:
         url: str,
         params: dict[str, Any],
         correlation_id: Optional[str],
+        admitted_tenant_id: Optional[str] = None,
         unavailable_code: str,
         incomplete_code: str,
     ) -> dict[str, Any]:
@@ -134,6 +137,7 @@ class DpmCoreResolverClient:
             url=url,
             selector=params,
             correlation_id=correlation_id,
+            admitted_tenant_id=admitted_tenant_id,
             unavailable_code=unavailable_code,
             incomplete_code=incomplete_code,
         )
@@ -145,11 +149,15 @@ class DpmCoreResolverClient:
         url: str,
         selector: dict[str, Any],
         correlation_id: Optional[str],
+        admitted_tenant_id: Optional[str],
         unavailable_code: str,
         incomplete_code: str,
     ) -> dict[str, Any]:
         attempts = max(self._config.max_attempts, 1)
-        headers = _source_product_headers(correlation_id)
+        headers = _source_product_headers(
+            correlation_id,
+            admitted_tenant_id=admitted_tenant_id,
+        )
         client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
         try:
             return _source_product_payload_with_retries(
@@ -508,6 +516,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
             incomplete_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
         )
@@ -534,6 +543,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE",
             incomplete_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE",
         )
@@ -567,6 +577,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE",
             incomplete_code="DPM_CORE_PORTFOLIO_UNIVERSE_INCOMPLETE",
         )

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from datetime import date
+import json
 
+import httpx
 import pytest
 
 from src.api.services.wave_core_portfolio_universe_resolution import (
@@ -25,6 +27,8 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioUniversePageMetadata,
 )
 from src.infrastructure.core_sourcing import (
+    DpmCoreResolverClient,
+    DpmCoreResolverConfig,
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
 )
@@ -194,6 +198,52 @@ def test_resolve_core_dpm_portfolio_universe_candidates_paginates_and_attaches_s
     assert resolver.calls[1]["page_token"] == "page-2"
     assert candidates[0]["source_refs"][0]["source_type"] == "DpmPortfolioUniverseCandidate"
     assert candidates[0]["source_refs"][1]["source_type"] == "DPM_PORTFOLIO_UNIVERSE_CANDIDATE"
+
+
+def test_core_universe_continuations_keep_admitted_tenant_in_actual_http_headers() -> None:
+    pages = [
+        _candidate_page(next_page_token="page-2", returned_candidate_count=1),
+        _candidate_page(
+            next_page_token=None,
+            returned_candidate_count=1,
+            candidates=[
+                _candidate_row(
+                    portfolio_id="PB_SG_GLOBAL_BAL_002",
+                    mandate_id="MANDATE_PB_SG_GLOBAL_BAL_002",
+                    binding_version=4,
+                    source_record_id="mandate-binding-002",
+                )
+            ],
+        ),
+    ]
+    seen: list[tuple[str | None, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.read())
+        seen.append((request.headers.get("X-Tenant-Id"), payload["page"]["page_token"]))
+        return httpx.Response(200, json=pages[len(seen) - 1].model_dump(mode="json"))
+
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    candidates = resolve_core_dpm_portfolio_universe_candidates(
+        as_of_date=date(2026, 5, 10),
+        tenant_id="default",
+        booking_center_code="Singapore",
+        model_portfolio_ids=["MODEL_PB_SG_GLOBAL_BAL_DPM"],
+        include_inactive_mandates=False,
+        campaign_candidate_page_size=1,
+        correlation_id="corr-universe-header-pages",
+        core_resolver_factory=lambda: resolver,
+    )
+
+    assert [candidate["portfolio_id"] for candidate in candidates] == [
+        "PB_SG_GLOBAL_BAL_001",
+        "PB_SG_GLOBAL_BAL_002",
+    ]
+    assert seen == [("default", None), ("default", "page-2")]
 
 
 def test_resolve_candidate_pages_passes_bounded_page_tokens() -> None:
