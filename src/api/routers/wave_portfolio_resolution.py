@@ -11,6 +11,10 @@ from src.api.routers.wave_campaign_definition_resolution import (
 from src.api.routers.wave_campaign_source_resolution import (
     resolve_bulk_review_campaign_portfolios,
 )
+from src.api.routers.mandate_tenant_query import (
+    DpmMandateTenantRequiredError,
+    require_mandate_tenant,
+)
 from src.api.routers.wave_core_source_resolution import (
     resolve_cio_model_change_portfolios,
     resolve_pm_book_portfolios,
@@ -106,6 +110,7 @@ def _resolve_pm_book_review_request_portfolios(
 ) -> list[dict[str, object]]:
     return resolve_pm_book_portfolios(
         request=context.request,
+        admitted_tenant_id=_admitted_core_source_tenant(context),
         correlation_id=context.correlation_id,
         core_resolver_factory=context.core_resolver_factory,
     )
@@ -116,6 +121,7 @@ def _resolve_cio_model_change_request_portfolios(
 ) -> list[dict[str, object]]:
     return resolve_cio_model_change_portfolios(
         request=context.request,
+        admitted_tenant_id=_admitted_core_source_tenant(context),
         correlation_id=context.correlation_id,
         core_resolver_factory=context.core_resolver_factory,
     )
@@ -151,9 +157,30 @@ def _resolve_bulk_review_campaign_request_portfolios(
     )
     return resolve_bulk_review_campaign_portfolios(
         request=resolved_request,
+        admitted_tenant_id=(
+            _admitted_core_source_tenant(context)
+            if resolved_request.campaign_candidate_source == "CORE_DPM_PORTFOLIO_UNIVERSE"
+            else context.tenant_id
+        ),
         correlation_id=context.correlation_id,
         core_resolver_factory=context.core_resolver_factory,
     )
+
+
+def _admitted_core_source_tenant(context: _PortfolioResolutionContext) -> str:
+    try:
+        admitted_tenant_id = require_mandate_tenant(context.tenant_id)
+    except DpmMandateTenantRequiredError as exc:
+        raise wave_service.DpmWaveValidationError(
+            "DPM_CORE_SOURCE_TENANT_REQUIRED",
+            "An admitted X-Tenant-Id is required before resolving a Core population.",
+        ) from exc
+    if context.request.tenant_id is not None and context.request.tenant_id != admitted_tenant_id:
+        raise wave_service.DpmWaveValidationError(
+            "DPM_CORE_SOURCE_TENANT_MISMATCH",
+            "The legacy source tenant must match the admitted X-Tenant-Id.",
+        )
+    return admitted_tenant_id
 
 
 _PORTFOLIO_RESOLUTION_HANDLERS: dict[

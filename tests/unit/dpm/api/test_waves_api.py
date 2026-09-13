@@ -189,7 +189,7 @@ def _pm_book_request() -> dict[str, object]:
         "as_of_date": "2026-05-03",
         "actor_id": "pm_001",
         "portfolio_manager_id": "PM_SG_DPM_001",
-        "tenant_id": "default",
+        "tenant_id": "tenant-sg",
         "booking_center_code": "Singapore",
         "portfolio_types": ["DISCRETIONARY"],
     }
@@ -203,7 +203,7 @@ def _cio_model_change_request() -> dict[str, object]:
         "as_of_date": "2026-05-03",
         "actor_id": "cio_001",
         "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
-        "tenant_id": "default",
+        "tenant_id": "tenant-sg",
         "booking_center_code": "Singapore",
     }
 
@@ -335,7 +335,7 @@ def _core_universe_bulk_review_campaign_request() -> dict[str, object]:
             "campaign_candidate_source": "CORE_DPM_PORTFOLIO_UNIVERSE",
             "portfolios": [],
             "model_portfolio_ids": ["MODEL_PB_SG_GLOBAL_BAL_DPM"],
-            "tenant_id": "default",
+            "tenant_id": "tenant-sg",
             "booking_center_code": "Singapore",
             "campaign_candidate_page_size": 1000,
         }
@@ -392,11 +392,12 @@ def _pm_book_membership_payload(
     *,
     supportability_state: str = "READY",
     members: list[dict[str, object]] | None = None,
+    tenant_id: str | None = "tenant-sg",
 ) -> dict[str, object]:
     return {
         "product_name": "PortfolioManagerBookMembership",
         "product_version": "v1",
-        "tenant_id": "default",
+        "tenant_id": tenant_id,
         "as_of_date": "2026-05-03",
         "portfolio_manager_id": "PM_SG_DPM_001",
         "booking_center_code": "Singapore",
@@ -437,11 +438,12 @@ def _cio_model_change_cohort_payload(
     *,
     supportability_state: str = "READY",
     affected_mandates: list[dict[str, object]] | None = None,
+    tenant_id: str | None = "tenant-sg",
 ) -> dict[str, object]:
     return {
         "product_name": "CioModelChangeAffectedCohort",
         "product_version": "v1",
-        "tenant_id": "default",
+        "tenant_id": tenant_id,
         "as_of_date": "2026-05-03",
         "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
         "model_portfolio_version": "2026.05",
@@ -500,6 +502,7 @@ def _dpm_portfolio_universe_candidate_payload(
     source_digest: str | None = DPM_PORTFOLIO_UNIVERSE_CONTENT_HASH,
     snapshot_id: str = "dpm_portfolio_universe:sha256:dpm-portfolio-universe",
     candidates: list[dict[str, object]] | None = None,
+    tenant_id: str | None = "tenant-sg",
 ) -> dict[str, object]:
     candidate_rows = candidates
     if candidate_rows is None:
@@ -525,7 +528,7 @@ def _dpm_portfolio_universe_candidate_payload(
     return {
         "product_name": "DpmPortfolioUniverseCandidate",
         "product_version": "v1",
-        "tenant_id": "default",
+        "tenant_id": tenant_id,
         "as_of_date": "2026-05-10",
         "candidates": candidate_rows,
         "page": {
@@ -1071,13 +1074,90 @@ def test_pm_book_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
         {
             "portfolio_manager_id": "PM_SG_DPM_001",
             "as_of_date": date(2026, 5, 3),
-            "tenant_id": "default",
+            "tenant_id": "tenant-sg",
             "booking_center_code": "Singapore",
             "portfolio_types": ["DISCRETIONARY"],
             "include_inactive": False,
             "correlation_id": "corr-pm-book-preview",
         }
     ]
+
+
+def test_pm_book_wave_preview_uses_admitted_header_when_legacy_selector_is_absent(
+    monkeypatch,
+) -> None:
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+    request = _pm_book_request()
+    request.pop("tenant_id")
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == 200
+    assert resolver.calls[0]["tenant_id"] == "tenant-sg"
+
+
+@pytest.mark.parametrize(
+    ("request_payload", "resolver", "expected_code"),
+    [
+        (
+            _pm_book_request(),
+            _PmBookResolver(_pm_book_membership_payload(tenant_id="tenant-other")),
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_TENANT_MISMATCH",
+        ),
+        (
+            _cio_model_change_request(),
+            _CioModelChangeResolver(_cio_model_change_cohort_payload(tenant_id="tenant-other")),
+            "DPM_CORE_CIO_MODEL_CHANGE_COHORT_TENANT_MISMATCH",
+        ),
+        (
+            _core_universe_bulk_review_campaign_request(),
+            _DpmPortfolioUniverseResolver(
+                _dpm_portfolio_universe_candidate_payload(tenant_id="tenant-other")
+            ),
+            "DPM_CORE_PORTFOLIO_UNIVERSE_TENANT_MISMATCH",
+        ),
+    ],
+)
+def test_wave_preview_rejects_core_population_response_outside_admitted_tenant(
+    monkeypatch,
+    request_payload: dict[str, object],
+    resolver: object,
+    expected_code: str,
+) -> None:
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request_payload)
+
+    assert response.status_code == 424
+    assert _error_reason_code(response) == expected_code
+    assert resolver.calls
+
+
+@pytest.mark.parametrize(
+    ("route", "headers"),
+    [
+        ("/api/v1/rebalance/waves/preview", {}),
+        ("/api/v1/rebalance/waves", {"Idempotency-Key": "idem-source-tenant-mismatch"}),
+    ],
+)
+def test_pm_book_wave_routes_refuse_conflicting_legacy_selector_before_core_io(
+    monkeypatch,
+    route: str,
+    headers: dict[str, str],
+) -> None:
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+    request = {**_pm_book_request(), "tenant_id": "tenant-other"}
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post(route, json=request, headers=headers)
+
+    assert response.status_code == 422
+    assert _error_reason_code(response) == "DPM_CORE_SOURCE_TENANT_MISMATCH"
+    assert resolver.calls == []
 
 
 def test_pm_book_wave_create_persists_resolved_source_owned_cohort(monkeypatch) -> None:
@@ -1227,7 +1307,7 @@ def test_cio_model_change_wave_preview_resolves_source_owned_cohort(monkeypatch)
         {
             "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
             "as_of_date": date(2026, 5, 3),
-            "tenant_id": "default",
+            "tenant_id": "tenant-sg",
             "booking_center_code": "Singapore",
             "include_inactive_mandates": False,
             "correlation_id": "corr-cio-model-change-preview",
@@ -1902,7 +1982,7 @@ def test_bulk_review_campaign_preview_can_resolve_core_portfolio_universe_candid
     assert resolver.calls == [
         {
             "as_of_date": date(2026, 5, 10),
-            "tenant_id": "default",
+            "tenant_id": "tenant-sg",
             "booking_center_code": "Singapore",
             "model_portfolio_ids": ["MODEL_PB_SG_GLOBAL_BAL_DPM"],
             "include_inactive_mandates": False,

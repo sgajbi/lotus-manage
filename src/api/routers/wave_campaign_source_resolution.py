@@ -37,6 +37,7 @@ from src.core.waves.campaign_candidate_source_contracts import (
 def resolve_bulk_review_campaign_portfolios(
     *,
     request: DpmWavePreviewRequest,
+    admitted_tenant_id: str | None,
     correlation_id: str,
     core_resolver_factory: Callable[[], Any],
 ) -> list[dict[str, object]]:
@@ -45,6 +46,7 @@ def resolve_bulk_review_campaign_portfolios(
             update={
                 "portfolios": resolve_core_dpm_portfolio_universe_candidates(
                     request=request,
+                    admitted_tenant_id=_require_core_universe_tenant(admitted_tenant_id),
                     correlation_id=correlation_id,
                     core_resolver_factory=core_resolver_factory,
                 )
@@ -118,6 +120,15 @@ def resolve_bulk_review_campaign_portfolios(
         )
         for payload in candidate_payloads
     ]
+
+
+def _require_core_universe_tenant(admitted_tenant_id: str | None) -> str:
+    if admitted_tenant_id is not None and admitted_tenant_id.strip():
+        return admitted_tenant_id
+    raise wave_service.DpmWaveValidationError(
+        "DPM_CORE_SOURCE_TENANT_REQUIRED",
+        "An admitted X-Tenant-Id is required before resolving a Core population.",
+    )
 
 
 def _candidate_payloads(candidates: Sequence[object]) -> list[dict[str, object]]:

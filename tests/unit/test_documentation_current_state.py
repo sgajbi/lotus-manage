@@ -2989,6 +2989,9 @@ def test_the_wiki_tenant_scope_claims_are_derived_from_the_served_contract() -> 
 
     api_surface = (ROOT / "wiki" / "API-Surface.md").read_text(encoding="utf-8")
     assert "required `tenant_id` query parameter" in api_surface
+    assert "legacy compatibility assertion" in api_surface
+    assert "response whose tenant scope is blank or differs from the admitted header" in api_surface
+    assert "Core #798 owns the route-to-SQL tenant predicate" in api_surface
     assert "matched\n  by no caller at all rather than by whoever asks" in api_surface, (
         "the page must keep saying that a NULL-tenant run is quarantined rather "
         "than defaulted; that is the property the migration relies on"

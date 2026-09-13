@@ -77,6 +77,7 @@ def _candidate_page(
     source_digest: str | None = PORTFOLIO_UNIVERSE_CONTENT_HASH,
     source_batch_fingerprint: str | None = None,
     snapshot_id: str = "snapshot-001",
+    tenant_id: str | None = "default",
 ) -> DpmCorePortfolioUniverseCandidateResponse:
     resolved_candidates = (
         [DpmCorePortfolioUniverseCandidate.model_validate(candidate) for candidate in candidates]
@@ -98,7 +99,7 @@ def _candidate_page(
         product_name="DpmPortfolioUniverseCandidate",
         product_version="v1",
         as_of_date=date(2026, 5, 10),
-        tenant_id="default",
+        tenant_id=tenant_id,
         candidates=resolved_candidates,
         page=DpmCorePortfolioUniversePageMetadata(
             page_size=1000,
@@ -228,6 +229,51 @@ def test_resolve_candidate_pages_passes_bounded_page_tokens() -> None:
     assert resolver.calls[0]["page_token"] is None
     assert resolver.calls[1]["page_token"] == "page-2"
     assert resolver.calls[1]["page_size"] == 1
+
+
+@pytest.mark.parametrize(
+    ("tenant_id", "expected_code"),
+    [
+        (None, "DPM_CORE_PORTFOLIO_UNIVERSE_TENANT_REQUIRED"),
+        ("tenant-other", "DPM_CORE_PORTFOLIO_UNIVERSE_TENANT_MISMATCH"),
+    ],
+)
+def test_resolve_core_dpm_portfolio_universe_candidates_rejects_unadmitted_response_scope(
+    tenant_id: str | None,
+    expected_code: str,
+) -> None:
+    with pytest.raises(DpmWaveDependencyFailedError) as exc_info:
+        _resolve(pages=[_candidate_page(tenant_id=tenant_id)])
+
+    assert exc_info.value.code == expected_code
+
+
+def test_resolve_core_dpm_portfolio_universe_candidates_requires_admitted_tenant_before_io() -> (
+    None
+):
+    resolver = _UniverseResolver([_candidate_page()])
+
+    with pytest.raises(DpmWaveDependencyFailedError) as exc_info:
+        resolve_core_dpm_portfolio_universe_candidates(
+            as_of_date=date(2026, 5, 10),
+            tenant_id=None,
+            booking_center_code="Singapore",
+            model_portfolio_ids=["MODEL_PB_SG_GLOBAL_BAL_DPM"],
+            include_inactive_mandates=False,
+            campaign_candidate_page_size=1000,
+            correlation_id="corr-universe-missing-tenant",
+            core_resolver_factory=lambda: resolver,
+        )
+
+    assert exc_info.value.code == "DPM_CORE_PORTFOLIO_UNIVERSE_TENANT_REQUIRED"
+    assert resolver.calls == []
+
+
+def test_resolve_core_dpm_portfolio_universe_candidates_rejects_empty_population() -> None:
+    with pytest.raises(DpmWaveDependencyFailedError) as exc_info:
+        _resolve(pages=[_candidate_page(returned_candidate_count=0)])
+
+    assert exc_info.value.code == "DPM_CORE_PORTFOLIO_UNIVERSE_EMPTY"
 
 
 def test_candidate_portfolio_payloads_preserve_page_and_candidate_source_refs() -> None:

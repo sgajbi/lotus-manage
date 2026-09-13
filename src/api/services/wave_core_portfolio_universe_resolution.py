@@ -138,9 +138,10 @@ def resolve_core_dpm_portfolio_universe_candidates(
     correlation_id: str,
     core_resolver_factory: CoreResolverFactory,
 ) -> list[dict[str, object]]:
+    admitted_tenant_id = _require_admitted_tenant_id(tenant_id)
     request = _PortfolioUniverseResolutionRequest(
         as_of_date=as_of_date,
-        tenant_id=tenant_id,
+        tenant_id=admitted_tenant_id,
         booking_center_code=booking_center_code,
         model_portfolio_ids=model_portfolio_ids,
         include_inactive_mandates=include_inactive_mandates,
@@ -182,6 +183,10 @@ def _resolve_candidate_pages(
             page_token=next_page_token,
             correlation_id=request.correlation_id,
         )
+        _require_response_tenant_id(
+            response_tenant_id=candidate_page.tenant_id,
+            admitted_tenant_id=request.tenant_id,
+        )
         candidate_pages.append(candidate_page)
         if candidate_page.supportability.state != "READY":
             break
@@ -195,6 +200,37 @@ def _resolve_candidate_pages(
         raise CoreResolverError("DPM_CORE_PORTFOLIO_UNIVERSE_NON_TERMINATING")
 
     return candidate_pages
+
+
+def _require_admitted_tenant_id(tenant_id: str | None) -> str:
+    admitted_tenant_id = _clean_optional_text(tenant_id)
+    if admitted_tenant_id is None:
+        raise DpmWaveDependencyFailedError(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_TENANT_REQUIRED",
+            message=(
+                "An admitted tenant scope is required before resolving the Core DPM portfolio "
+                "universe."
+            ),
+        )
+    return admitted_tenant_id
+
+
+def _require_response_tenant_id(
+    *,
+    response_tenant_id: str | None,
+    admitted_tenant_id: str | None,
+) -> None:
+    returned_tenant_id = _clean_optional_text(response_tenant_id)
+    if returned_tenant_id is None:
+        raise DpmWaveDependencyFailedError(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_TENANT_REQUIRED",
+            message="Core DPM portfolio-universe candidates did not return an admitted tenant scope.",
+        )
+    if returned_tenant_id != admitted_tenant_id:
+        raise DpmWaveDependencyFailedError(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_TENANT_MISMATCH",
+            message="Core DPM portfolio-universe candidates returned a different tenant scope.",
+        )
 
 
 def _portfolio_payloads_from_candidate_pages(

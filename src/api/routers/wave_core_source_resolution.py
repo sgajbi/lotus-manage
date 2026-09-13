@@ -50,21 +50,26 @@ class _CioModelChangeCohortRequest:
 def resolve_pm_book_portfolios(
     *,
     request: DpmWavePreviewRequest,
+    admitted_tenant_id: str,
     correlation_id: str,
     core_resolver_factory: CoreResolverFactory,
 ) -> list[dict[str, object]]:
-    membership_request = _pm_book_membership_request_for_wave(request)
+    membership_request = _pm_book_membership_request_for_wave(request, admitted_tenant_id)
     membership = _resolve_pm_book_membership(
         core_resolver_factory=core_resolver_factory,
         membership_request=membership_request,
         correlation_id=correlation_id,
     )
-    _require_pm_book_membership_ready(membership)
+    _require_pm_book_membership_ready(
+        membership,
+        admitted_tenant_id=admitted_tenant_id,
+    )
     return build_pm_book_resolved_portfolios(membership)
 
 
 def _pm_book_membership_request_for_wave(
     request: DpmWavePreviewRequest,
+    admitted_tenant_id: str,
 ) -> _PmBookMembershipRequest:
     if request.portfolios:
         raise wave_service.DpmWaveValidationError(
@@ -85,7 +90,7 @@ def _pm_book_membership_request_for_wave(
     return _PmBookMembershipRequest(
         portfolio_manager_id=portfolio_manager_id,
         as_of_date=as_of_date,
-        tenant_id=request.tenant_id,
+        tenant_id=admitted_tenant_id,
         booking_center_code=request.booking_center_code,
         portfolio_types=portfolio_types,
     )
@@ -119,7 +124,11 @@ def _resolve_pm_book_membership(
         ) from exc
 
 
-def _require_pm_book_membership_ready(membership: Any) -> None:
+def _require_pm_book_membership_ready(
+    membership: Any,
+    *,
+    admitted_tenant_id: str,
+) -> None:
     if membership.supportability.state != "READY":
         raise source_dependency_failed_http_exception(
             code=membership.supportability.reason,
@@ -130,26 +139,38 @@ def _require_pm_book_membership_ready(membership: Any) -> None:
             code="DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
             message="PM-book membership returned no affected portfolios.",
         )
+    _require_admitted_core_response_tenant(
+        response_tenant_id=getattr(membership, "tenant_id", None),
+        admitted_tenant_id=admitted_tenant_id,
+        required_code="DPM_CORE_PM_BOOK_MEMBERSHIP_TENANT_REQUIRED",
+        mismatch_code="DPM_CORE_PM_BOOK_MEMBERSHIP_TENANT_MISMATCH",
+        source_name="PM-book membership",
+    )
 
 
 def resolve_cio_model_change_portfolios(
     *,
     request: DpmWavePreviewRequest,
+    admitted_tenant_id: str,
     correlation_id: str,
     core_resolver_factory: CoreResolverFactory,
 ) -> list[dict[str, object]]:
-    cohort_request = _cio_model_change_cohort_request_for_wave(request)
+    cohort_request = _cio_model_change_cohort_request_for_wave(request, admitted_tenant_id)
     cohort = _resolve_cio_model_change_cohort(
         core_resolver_factory=core_resolver_factory,
         cohort_request=cohort_request,
         correlation_id=correlation_id,
     )
-    _require_cio_model_change_cohort_ready(cohort)
+    _require_cio_model_change_cohort_ready(
+        cohort,
+        admitted_tenant_id=admitted_tenant_id,
+    )
     return build_cio_model_change_resolved_portfolios(cohort)
 
 
 def _cio_model_change_cohort_request_for_wave(
     request: DpmWavePreviewRequest,
+    admitted_tenant_id: str,
 ) -> _CioModelChangeCohortRequest:
     if request.portfolios:
         raise wave_service.DpmWaveValidationError(
@@ -164,7 +185,7 @@ def _cio_model_change_cohort_request_for_wave(
     return _CioModelChangeCohortRequest(
         model_portfolio_id=model_portfolio_id,
         as_of_date=parse_wave_as_of_date(request.as_of_date),
-        tenant_id=request.tenant_id,
+        tenant_id=admitted_tenant_id,
         booking_center_code=request.booking_center_code,
     )
 
@@ -196,7 +217,11 @@ def _resolve_cio_model_change_cohort(
         ) from exc
 
 
-def _require_cio_model_change_cohort_ready(cohort: Any) -> None:
+def _require_cio_model_change_cohort_ready(
+    cohort: Any,
+    *,
+    admitted_tenant_id: str,
+) -> None:
     if cohort.supportability.state != "READY":
         raise source_dependency_failed_http_exception(
             code=cohort.supportability.reason,
@@ -206,4 +231,32 @@ def _require_cio_model_change_cohort_ready(cohort: Any) -> None:
         raise source_dependency_failed_http_exception(
             code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY",
             message="CIO model-change affected cohort returned no portfolios.",
+        )
+    _require_admitted_core_response_tenant(
+        response_tenant_id=getattr(cohort, "tenant_id", None),
+        admitted_tenant_id=admitted_tenant_id,
+        required_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_TENANT_REQUIRED",
+        mismatch_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_TENANT_MISMATCH",
+        source_name="CIO model-change affected cohort",
+    )
+
+
+def _require_admitted_core_response_tenant(
+    *,
+    response_tenant_id: object,
+    admitted_tenant_id: str,
+    required_code: str,
+    mismatch_code: str,
+    source_name: str,
+) -> None:
+    returned_tenant_id = response_tenant_id.strip() if isinstance(response_tenant_id, str) else ""
+    if not returned_tenant_id:
+        raise source_dependency_failed_http_exception(
+            code=required_code,
+            message=f"Core {source_name} did not return an admitted tenant scope.",
+        )
+    if returned_tenant_id != admitted_tenant_id:
+        raise source_dependency_failed_http_exception(
+            code=mismatch_code,
+            message=f"Core {source_name} returned a different tenant scope.",
         )

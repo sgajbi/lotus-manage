@@ -20,6 +20,7 @@ from src.api.routers.wave_request_models import DpmWavePreviewRequest
 def resolve_core_dpm_portfolio_universe_candidates(
     *,
     request: DpmWavePreviewRequest,
+    admitted_tenant_id: str,
     correlation_id: str,
     core_resolver_factory: Callable[[], Any],
 ) -> list[dict[str, object]]:
@@ -32,7 +33,7 @@ def resolve_core_dpm_portfolio_universe_candidates(
     try:
         return _resolve_core_dpm_portfolio_universe_candidates(
             as_of_date=as_of_date,
-            tenant_id=request.tenant_id,
+            tenant_id=admitted_tenant_id,
             booking_center_code=request.booking_center_code,
             model_portfolio_ids=request.model_portfolio_ids,
             include_inactive_mandates=request.include_inactive_mandates,
