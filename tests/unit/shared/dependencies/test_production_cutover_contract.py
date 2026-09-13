@@ -7,7 +7,6 @@ from src.api.production_cutover_contract import (
     applied_migration_versions,
     expected_migration_versions,
     normalize_stored_migration_version,
-    validate_production_cutover_contract,
 )
 
 
@@ -37,38 +36,6 @@ class _FakeConnection:
         if "FROM schema_migrations" in sql:
             return _FakeCursor(rows=self._rows)
         raise AssertionError(f"Unexpected SQL: {sql}")
-
-
-def test_validate_cutover_requires_production_profile(monkeypatch):
-    monkeypatch.setattr(contract_module, "app_persistence_profile_name", lambda: "LOCAL")
-    with pytest.raises(RuntimeError) as exc:
-        validate_production_cutover_contract(check_migrations=False)
-    assert str(exc.value) == "CUTOVER_PROFILE_NOT_PRODUCTION"
-
-
-def test_validate_cutover_delegates_to_guardrails(monkeypatch):
-    called = {"guardrails": 0}
-    monkeypatch.setattr(contract_module, "app_persistence_profile_name", lambda: "PRODUCTION")
-    monkeypatch.setattr(
-        contract_module,
-        "validate_persistence_profile_guardrails",
-        lambda: called.__setitem__("guardrails", called["guardrails"] + 1),
-    )
-    validate_production_cutover_contract(check_migrations=False)
-    assert called["guardrails"] == 1
-
-
-def test_validate_cutover_can_include_migration_check(monkeypatch):
-    called = {"migrations": 0}
-    monkeypatch.setattr(contract_module, "app_persistence_profile_name", lambda: "PRODUCTION")
-    monkeypatch.setattr(contract_module, "validate_persistence_profile_guardrails", lambda: None)
-    monkeypatch.setattr(
-        contract_module,
-        "validate_cutover_migrations_applied",
-        lambda: called.__setitem__("migrations", called["migrations"] + 1),
-    )
-    validate_production_cutover_contract(check_migrations=True)
-    assert called["migrations"] == 1
 
 
 def test_expected_migration_versions_for_namespaces():

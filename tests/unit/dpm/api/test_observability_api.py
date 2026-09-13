@@ -39,6 +39,20 @@ def test_health_ready_validates_cutover_migrations_in_production(monkeypatch):
     assert called["migrations"] == 1
 
 
+def test_health_ready_route_refuses_production_when_migration_is_missing(monkeypatch):
+    monkeypatch.setattr(main_module, "app_persistence_profile_name", lambda: "PRODUCTION")
+    monkeypatch.setattr(main_module, "validate_persistence_profile_guardrails", lambda: None)
+    monkeypatch.setattr(
+        main_module,
+        "validate_cutover_migrations_applied",
+        lambda: (_ for _ in ()).throw(RuntimeError("CUTOVER_MIGRATION_MISSING:dpm:9999")),
+    )
+
+    response = TestClient(app, raise_server_exceptions=False).get("/health/ready")
+
+    assert response.status_code == 500
+
+
 def test_health_ready_skips_cutover_migrations_outside_production(monkeypatch):
     called = {"guardrails": 0, "migrations": 0}
     monkeypatch.setattr(main_module, "app_persistence_profile_name", lambda: "LOCAL")

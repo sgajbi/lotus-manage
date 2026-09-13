@@ -3,21 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from src.api.persistence_profile import (
-    app_persistence_profile_name,
-    validate_persistence_profile_guardrails,
-)
 from src.api.services.rebalance_run_support_config import supportability_postgres_dsn
 from src.core.common.capabilities import has_psycopg
 from src.infrastructure.postgres_access import connect_postgres
-
-
-def validate_production_cutover_contract(*, check_migrations: bool) -> None:
-    if app_persistence_profile_name() != "PRODUCTION":
-        raise RuntimeError("CUTOVER_PROFILE_NOT_PRODUCTION")
-    validate_persistence_profile_guardrails()
-    if check_migrations:
-        validate_cutover_migrations_applied()
 
 
 def validate_cutover_migrations_applied() -> None:
