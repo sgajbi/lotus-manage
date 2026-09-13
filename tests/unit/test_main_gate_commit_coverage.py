@@ -91,6 +91,11 @@ def test_coverage_audit_workflow_runs_the_fail_closed_audit() -> None:
     assert "workflow_dispatch" in workflow
     assert "python scripts/audit_main_gate_coverage.py" in workflow
     assert "--fail-on-gap" in workflow
+    assert "fixed-recovery-ledger:" in workflow
+    assert "live-main-coverage:" in workflow
+    assert "--start-sha 393ee58d01fc7cb74a386701c3170d17921db284" in workflow
+    assert "--end-sha d5c92dbf6d0750b96c1f03fef77212d8922edb50" in workflow
+    assert "--expected-commits 100" in workflow
 
 
 def test_audit_counts_only_verdict_bearing_runs_and_fails_closed(monkeypatch, capsys) -> None:
@@ -238,6 +243,69 @@ def test_audit_passes_when_every_commit_has_a_verdict(monkeypatch, capsys) -> No
     output = capsys.readouterr().out
     assert "1 passing, 1 with a failing verdict" in output
     assert "FAILING  bbbbbbbbb" in output
+
+
+def test_fixed_range_is_a_named_population_not_a_moving_window(monkeypatch, capsys) -> None:
+    """A recovery ledger must call its two endpoints, never a date cutoff."""
+
+    start = "a" * 40
+    end = "b" * 40
+    entries = [f"{start} {start[:9]} first", f"{end} {end[:9]} last"]
+    recorded: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        audit,
+        "_fixed_range",
+        lambda received_start, received_end: (
+            recorded.append((received_start, received_end)) or entries
+        ),
+    )
+    monkeypatch.setattr(audit, "_run_conclusions", lambda sha: ["success"])
+    monkeypatch.setattr(audit.shutil, "which", lambda name: "/usr/bin/gh")
+    monkeypatch.setattr(
+        audit.argparse.ArgumentParser,
+        "parse_args",
+        lambda self: argparse_namespace(
+            limit=400,
+            since_days=None,
+            start_sha=start,
+            end_sha=end,
+            expected_commits=2,
+            fail_on_gap=True,
+        ),
+    )
+
+    assert audit.main() == 0
+    assert recorded == [(start, end)]
+    assert "fixed inclusive range" in capsys.readouterr().out
+
+
+def test_fixed_range_count_drift_fails_closed(monkeypatch, capsys) -> None:
+    """Changing the named population cannot be silently relabelled as recovery."""
+
+    start = "a" * 40
+    end = "b" * 40
+    monkeypatch.setattr(
+        audit,
+        "_fixed_range",
+        lambda received_start, received_end: [f"{start} {start[:9]} only"],
+    )
+    monkeypatch.setattr(audit, "_run_conclusions", lambda sha: ["success"])
+    monkeypatch.setattr(audit.shutil, "which", lambda name: "/usr/bin/gh")
+    monkeypatch.setattr(
+        audit.argparse.ArgumentParser,
+        "parse_args",
+        lambda self: argparse_namespace(
+            limit=400,
+            since_days=None,
+            start_sha=start,
+            end_sha=end,
+            expected_commits=2,
+            fail_on_gap=True,
+        ),
+    )
+
+    assert audit.main() == 1
+    assert "RANGE COUNT MISMATCH" in capsys.readouterr().out
 
 
 def argparse_namespace(**kwargs):

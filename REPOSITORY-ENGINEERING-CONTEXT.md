@@ -312,8 +312,13 @@ Important validation expectations:
     `.github/workflows/main-gate-coverage-audit.yml` runs `scripts/audit_main_gate_coverage.py`
     daily with `--fail-on-gap` and is fail-closed by design: a missing `gh`, an unfetchable run
     listing, or a cancelled run all fail rather than pass, because only a verdict-bearing run
-    (success or failure) evidences evaluation. Its permissions are read-only - a watchdog able to
-    dispatch could manufacture the coverage it audits.
+    (success or failure) evidences evaluation. Its `Fixed Historical Recovery Ledger` names the
+    inclusive `393ee58d..d5c92dbf` 100-commit population observed in Cycle 6; it must stay fixed
+    until each previously ungated revision carries a governed verdict, so a rolling window cannot
+    age the evidence gap away. Its separate recent-window job remains the live-control watch. A
+    failing historical verdict is recorded outcome, not missing coverage or current-release proof.
+    Its permissions are read-only - a watchdog able to dispatch could manufacture the coverage it
+    audits.
 
     The main releasability workflow keeps manual `workflow_dispatch` support but must not also
     carry a direct `push` trigger, because that creates duplicate automatic proof runs for the same

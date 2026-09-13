@@ -14,6 +14,7 @@ to `main`.
 | Is the branch locally fit for PR? | `make check`, focused tests, targeted contract validators | Blocking local proof before push or PR updates. |
 | Is the PR mergeable? | Pull Request Merge Gate | Required GitHub checks must be green; solo development does not require a reviewer when CI and conversations are clean. |
 | Is main releasable after merge? | Main Releasability Gate | Post-merge proof must point to the merged `main` SHA when the workflow applies. |
+| Are historical and live main revisions evaluated? | Main Gate Coverage Audit | The fixed Cycle 6 recovery ledger is the inclusive 100-commit `393ee58d..d5c92dbf` population and fails until each revision has a verdict; the separate seven-day audit watches new main history. A historical failed verdict is recorded outcome, not missing coverage or current-release approval. |
 | Did docs or wiki truth change? | Repo docs tests; `Sync-RepoWikis.ps1 -CheckOnly -AllowUnpublishedSourceChanges` before merge when the branch intentionally changes `wiki/`; publish after merge; rerun strict `Sync-RepoWikis.ps1 -CheckOnly` after publication | Repo-local `wiki/` is source truth; GitHub wiki is a publication target. |
 | Is live source integration claimed? | `make live-api-validate-core`, `make demo-certify` where applicable | Live proof is required before claiming stateful Core-backed readiness or demo certification. |
 
@@ -24,6 +25,7 @@ to `main`.
 1. `Remote Feature Lane`
 2. `Pull Request Merge Gate`
 3. `Main Releasability Gate`
+4. `Main Gate Coverage Audit` (scheduled/manual recovery and live-control evidence)
 
 ## Local command mapping
 

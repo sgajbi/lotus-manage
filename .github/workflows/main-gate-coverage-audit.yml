@@ -10,8 +10,8 @@ permissions:
   actions: read
 
 jobs:
-  audit:
-    name: Audit / Every Main Commit Has A Gate Verdict
+  fixed-recovery-ledger:
+    name: Audit / Fixed Historical Recovery Ledger
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -23,12 +23,37 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Audit main gate coverage (fail closed)
+      - name: Audit fixed historical coverage recovery (fail closed)
         env:
           GH_TOKEN: ${{ github.token }}
         # Invoked BARE. Piping this would report the pipe's exit code and leave
         # the step green while the audit failed on every run - the same
         # cannot-fail defect the audit itself exists to detect.
+        run: |
+          set -euo pipefail
+          git fetch origin main --quiet
+          python scripts/audit_main_gate_coverage.py \
+            --start-sha 393ee58d01fc7cb74a386701c3170d17921db284 \
+            --end-sha d5c92dbf6d0750b96c1f03fef77212d8922edb50 \
+            --expected-commits 100 \
+            --fail-on-gap
+
+  live-main-coverage:
+    name: Audit / Every Recent Main Commit Has A Gate Verdict
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The audit walks main's history; a shallow checkout would silently
+          # audit a window smaller than the one it reports.
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Audit recent main gate coverage (fail closed)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git fetch origin main --quiet
