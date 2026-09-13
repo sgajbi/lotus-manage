@@ -273,8 +273,11 @@ Recovery and replay posture:
 - Approval decisions, assignment actions, assignment tasks/transitions, maker-checker controls, and
   launch audit writes use stable refs or deterministic launch idempotency. Identical replay is
   safe; same-ref changed payloads must fail as conflicts.
-- Campaign workflow appends use optimistic content-hash protection. A stale append returns
-  `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409 rather than overwriting newer evidence.
+- Campaign workflow appends use optimistic content-hash protection at the durable write boundary.
+  A stale append returns `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409 rather than
+  overwriting newer evidence. Append-only launch history is operational audit evidence, not
+  definition content: it retains the definition hash and the derived campaign-membership/member
+  source hashes across an identical launch/replay.
 - Campaign launch is recoverable after partial wave creation as described above. This is the only
   current cross-aggregate campaign recovery path; other workflow evidence families remain
   single-aggregate appends guarded by refs and content hashes.

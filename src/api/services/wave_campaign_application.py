@@ -773,7 +773,7 @@ class DpmWaveCampaignApplicationService:
             correlation_id=launch_command.correlation_id,
             idempotency_key=launch_command.idempotency_key,
         )
-        if launched_definition.content_hash != definition.content_hash:
+        if launched_definition.launch_history != definition.launch_history:
             self.campaign_definition_repository.record_definition_launch(
                 definition=launched_definition,
                 expected_content_hash=definition.content_hash,

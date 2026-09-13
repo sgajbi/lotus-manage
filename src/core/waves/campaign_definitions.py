@@ -657,6 +657,11 @@ def _normalize_campaign_definition_hash_fields(
     if not include_hash:
         payload["content_hash"] = ""
     payload["created_at"] = ""
+    # Launch records are append-only operational audit evidence, not a change to
+    # the persisted campaign definition. In particular, ``launched_at`` must not
+    # move source references or membership hashes for an otherwise identical
+    # campaign launch.
+    payload.pop("launch_history", None)
 
 
 def _drop_empty_campaign_definition_evidence_collections(payload: dict[str, object]) -> None:

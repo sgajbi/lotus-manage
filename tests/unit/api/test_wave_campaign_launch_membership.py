@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import pytest
 
 from src.api.services import wave_service
@@ -12,6 +14,9 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
     DpmWaveSourceRef,
+)
+from src.core.waves.campaign_definition_launch_history import (
+    record_bulk_review_campaign_definition_launch,
 )
 
 
@@ -86,6 +91,33 @@ def test_campaign_launch_membership_projects_absent_governance_diagnostics() -> 
     assert diagnostics["campaign_governance_status"] == "NOT_SUPPLIED"
     assert diagnostics["campaign_actor_entitlement_state"] == "NOT_SUPPLIED"
     assert diagnostics["excluded_candidate_count"] == 0
+
+
+def test_campaign_launch_membership_hashes_are_stable_after_append_only_launch_audit() -> None:
+    definition = _definition()
+    before_launch = build_campaign_definition_launch_portfolios(
+        definition=definition,
+        actor_id="pm_001",
+        requested_as_of_date="2026-05-10",
+    )
+    launched = record_bulk_review_campaign_definition_launch(
+        definition=definition,
+        wave_id="dwv_campaign_launch_membership_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-launch-membership-001",
+        idempotency_key="campaign-launch:campaign-launch-membership:2026.05:ready",
+        launched_at=datetime(2026, 5, 10, tzinfo=timezone.utc),
+    )
+    after_launch = build_campaign_definition_launch_portfolios(
+        definition=launched,
+        actor_id="pm_001",
+        requested_as_of_date="2026-05-10",
+    )
+
+    assert len(launched.launch_history) == 1
+    assert launched.content_hash == definition.content_hash
+    assert after_launch == before_launch
 
 
 @pytest.mark.parametrize(

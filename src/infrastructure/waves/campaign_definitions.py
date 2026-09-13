@@ -61,6 +61,30 @@ def _validate_workflow_update_operation(operation: str) -> None:
         raise ValueError(f"Unsupported campaign workflow update operation: {operation}")
 
 
+def _validate_workflow_append_fence(
+    *,
+    existing: DpmBulkReviewCampaignDefinition,
+    updated: DpmBulkReviewCampaignDefinition,
+    operation: str,
+) -> None:
+    """Reject a stale operational launch append even when definition identity is stable."""
+    if operation == "launch" and existing.content_hash == updated.content_hash:
+        existing_history = existing.launch_history
+        updated_history = updated.launch_history
+        if (
+            len(updated_history) != len(existing_history) + 1
+            or updated_history[: len(existing_history)] != existing_history
+        ):
+            raise DpmBulkReviewCampaignDefinitionConflictError(
+                "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
+            )
+        return
+    if existing.launch_history != updated.launch_history:
+        raise DpmBulkReviewCampaignDefinitionConflictError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
+        )
+
+
 class _CampaignWorkflowUpdateMixin:
     def record_definition_launch(
         self,
@@ -135,6 +159,8 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
                 raise DpmBulkReviewCampaignDefinitionConflictError(
                     "BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT"
                 )
+            if existing is not None:
+                return
             self._definitions[key] = deepcopy(definition)
 
     def get_definition(
@@ -265,6 +291,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
             return self._record_active_definition_update(
                 definition,
                 expected_content_hash=expected_content_hash,
+                operation=operation,
             )
 
     def _record_active_definition_update(
@@ -272,12 +299,13 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
         definition: DpmBulkReviewCampaignDefinition,
         *,
         expected_content_hash: str,
+        operation: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         key = _campaign_definition_key(definition)
         existing = self._definitions.get(key)
         if existing is None:
             return None
-        if existing.content_hash == definition.content_hash:
+        if existing == definition:
             return deepcopy(existing)
         if existing.status != "ACTIVE":
             raise DpmBulkReviewCampaignDefinitionConflictError(
@@ -287,6 +315,11 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
             raise DpmBulkReviewCampaignDefinitionConflictError(
                 "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
             )
+        _validate_workflow_append_fence(
+            existing=existing,
+            updated=definition,
+            operation=operation,
+        )
         self._definitions[key] = deepcopy(definition)
         return deepcopy(definition)
 
@@ -620,6 +653,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
         return self._record_active_definition_update(
             definition,
             expected_content_hash=expected_content_hash,
+            operation=operation,
         )
 
     def _record_active_definition_update(
@@ -627,6 +661,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
         definition: DpmBulkReviewCampaignDefinition,
         *,
         expected_content_hash: str,
+        operation: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with closing(self._connect()) as connection:
             persisted = connection.execute(
@@ -641,7 +676,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 connection.rollback()
                 return None
             existing = _load_campaign_definition_payload(_payload(persisted))
-            if existing.content_hash == definition.content_hash:
+            if existing == definition:
                 connection.rollback()
                 return existing
             if existing.status != "ACTIVE":
@@ -654,6 +689,15 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 raise DpmBulkReviewCampaignDefinitionConflictError(
                     "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
                 )
+            try:
+                _validate_workflow_append_fence(
+                    existing=existing,
+                    updated=definition,
+                    operation=operation,
+                )
+            except DpmBulkReviewCampaignDefinitionConflictError:
+                connection.rollback()
+                raise
             updated = connection.execute(
                 """
                 UPDATE dpm_bulk_review_campaign_definitions
@@ -663,6 +707,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                   AND campaign_version = %s
                   AND status = 'ACTIVE'
                   AND content_hash = %s
+                  AND payload_json = %s::jsonb
                 """,
                 (
                     definition.content_hash,
@@ -670,7 +715,8 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                     definition.tenant_id,
                     definition.campaign_id,
                     definition.campaign_version,
-                    expected_content_hash,
+                    str(persisted["content_hash"]),
+                    _persisted_campaign_definition_payload_json(persisted),
                 ),
             )
             rowcount = getattr(updated, "rowcount", 1)
@@ -930,6 +976,11 @@ def _payload(row: Any) -> str | dict[str, Any]:
     if not isinstance(payload, str):
         return json.dumps(payload, default=str)
     return payload
+
+
+def _persisted_campaign_definition_payload_json(row: Any) -> str:
+    payload = _payload(row)
+    return payload if isinstance(payload, str) else json.dumps(payload)
 
 
 def _import_psycopg() -> tuple[Any, Any]:
