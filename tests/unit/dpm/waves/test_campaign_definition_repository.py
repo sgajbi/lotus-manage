@@ -908,7 +908,7 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
 
     assert returned == launched
     assert replayed == launched
-    assert launched.content_hash != definition.content_hash
+    assert launched.content_hash == definition.content_hash
     assert len(launched.launch_history) == 1
     assert launched.launch_history[0].wave_id == "dwv_campaign_launch_001"
     assert (
@@ -939,6 +939,72 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
         )
         is None
     )
+
+
+def test_campaign_definition_reupsert_preserves_existing_launch_history() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+    launched = record_bulk_review_campaign_definition_launch(
+        definition=definition,
+        wave_id="dwv_campaign_launch_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-definition-launch-001",
+        idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
+        launched_at=datetime(2026, 5, 10, tzinfo=timezone.utc),
+    )
+    repository.record_definition_launch(
+        definition=launched,
+        expected_content_hash=definition.content_hash,
+    )
+
+    repository.save_definition(definition=definition)
+
+    assert (
+        repository.get_definition(
+            tenant_id=definition.tenant_id,
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == launched
+    )
+
+
+def test_campaign_definition_rejects_nonlaunch_append_built_before_a_launch() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+    launched = record_bulk_review_campaign_definition_launch(
+        definition=definition,
+        wave_id="dwv_campaign_launch_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-definition-launch-001",
+        idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
+        launched_at=datetime(2026, 5, 10, tzinfo=timezone.utc),
+    )
+    stale_approval = record_bulk_review_campaign_definition_approval_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+    )
+    repository.record_definition_launch(
+        definition=launched,
+        expected_content_hash=definition.content_hash,
+    )
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
+    ):
+        repository.record_definition_approval_decision(
+            definition=stale_approval,
+            expected_content_hash=definition.content_hash,
+        )
 
 
 def test_campaign_definition_launch_review_and_assignment_lifecycle_conflicts() -> None:
@@ -2688,7 +2754,8 @@ def test_postgres_campaign_definition_repository_records_launch_history() -> Non
     assert connection.committed is True
     update_sql, update_args = connection.statements[1]
     assert "AND content_hash = %s" in update_sql
-    assert update_args[-1] == definition.content_hash
+    assert "AND payload_json = %s::jsonb" in update_sql
+    assert update_args[-2] == definition.content_hash
 
 
 def test_postgres_campaign_definition_repository_records_approval_decisions() -> None:

@@ -2709,6 +2709,7 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
             "campaign-holdings-apple-tesla-20260510/versions/2026.05"
         )
         put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        definition_hash = put_response.json()["content_hash"]
         launch_request = {
             "requested_as_of_date": "2026-05-10",
             "actor_id": "pm_001",
@@ -2748,8 +2749,14 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
         "BulkReviewCampaignMembership",
         "BulkReviewCampaignGovernance",
     }
+    assert {
+        ref["content_hash"]
+        for ref in item["source_refs"]
+        if ref["source_type"] == "BulkReviewCampaignDefinition"
+    } == {definition_hash}
     assert wave_repository.get_wave(wave_id=wave["wave_id"], tenant_id="tenant-sg") is not None
     assert fetched.status_code == 200
+    assert fetched.json()["content_hash"] == definition_hash
     assert len(fetched.json()["launch_history"]) == 1
     assert fetched.json()["launch_history"][0]["wave_id"] == wave["wave_id"]
     assert events.status_code == 200
