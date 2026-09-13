@@ -312,12 +312,15 @@ required and an absent one is refused rather than answered from an assumed tenan
 
 The header is the admitted selector for both the wave data `lotus-manage` owns and the Core
 population request it makes for `PM_BOOK_REVIEW`, `CIO_MODEL_CHANGE`, or
-`CORE_DPM_PORTFOLIO_UNIVERSE`. Those preview/create bodies retain optional `tenant_id` only as a
-legacy compatibility assertion: when present, its normalized value must equal `X-Tenant-Id`; when
-absent, Manage forwards the admitted header value. A missing or contradictory admitted scope is
-refused before Core I/O. Manage also refuses a PM-book, CIO-cohort, or each paginated Core-universe
-response whose tenant scope is blank or differs from the admitted header; it never attaches that
-population to a wave. This consumer receipt check does not certify Core source isolation: Core #798 owns the route-to-SQL tenant predicate and PostgreSQL two-tenant proof.
+`CORE_DPM_PORTFOLIO_UNIVERSE`. Manage sends that admitted value as the per-request Core
+`X-Tenant-Id` header, including source retries and every universe continuation page; it never sets
+tenant scope as a pooled-client default. Those preview/create bodies retain optional `tenant_id`
+only as a legacy compatibility assertion: when present, its normalized value must equal
+`X-Tenant-Id`; when absent, Manage forwards the admitted header value. A missing or contradictory
+admitted scope is refused before Core I/O. Manage also refuses a PM-book, CIO-cohort, or each
+paginated Core-universe response whose tenant scope is blank or differs from the admitted header;
+it never attaches that population to a wave. This consumer receipt check does not certify Core
+source isolation: Core #798 owns the route-to-SQL tenant predicate and PostgreSQL two-tenant proof.
 
 One wave-prefixed route is **not** in that set and must not be assumed fenced:
 `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews`. It reads the outcome-review aggregate,

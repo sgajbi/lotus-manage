@@ -1,5 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from decimal import Decimal
+from threading import Barrier
 
 import httpx
 import pytest
@@ -1650,6 +1652,7 @@ def test_core_resolver_fetches_portfolio_manager_book_membership_source_product(
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["tenant_id"] = request.headers.get("X-Tenant-Id")
         seen["payload"] = request.read()
         return httpx.Response(200, json=_pm_book_membership_payload())
 
@@ -1672,6 +1675,7 @@ def test_core_resolver_fetches_portfolio_manager_book_membership_source_product(
         "https://core.example.test/integration/portfolio-manager-books/PM_SG_DPM_001/memberships"
     )
     assert seen["correlation_id"] == "corr-pm-book-001"
+    assert seen["tenant_id"] == "default"
     assert b'"as_of_date":"2026-05-03"' in seen["payload"]
     assert b'"tenant_id":"default"' in seen["payload"]
     assert b'"booking_center_code":"Singapore"' in seen["payload"]
@@ -1688,6 +1692,7 @@ def test_core_resolver_fetches_dpm_portfolio_universe_candidates_source_product(
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["tenant_id"] = request.headers.get("X-Tenant-Id")
         seen["payload"] = request.read()
         return httpx.Response(200, json=_dpm_portfolio_universe_candidate_payload())
 
@@ -1709,6 +1714,7 @@ def test_core_resolver_fetches_dpm_portfolio_universe_candidates_source_product(
 
     assert seen["url"] == "https://core.example.test/integration/dpm/portfolio-universe/candidates"
     assert seen["correlation_id"] == "corr-dpm-universe-001"
+    assert seen["tenant_id"] == "default"
     assert b'"as_of_date":"2026-05-10"' in seen["payload"]
     assert b'"tenant_id":"default"' in seen["payload"]
     assert b'"booking_center_code":"Singapore"' in seen["payload"]
@@ -1733,6 +1739,7 @@ def test_core_resolver_fetches_cio_model_change_affected_cohort_source_product()
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["tenant_id"] = request.headers.get("X-Tenant-Id")
         seen["payload"] = request.read()
         return httpx.Response(200, json=_cio_model_change_cohort_payload())
 
@@ -1755,6 +1762,7 @@ def test_core_resolver_fetches_cio_model_change_affected_cohort_source_product()
         "MODEL_PB_SG_GLOBAL_BAL_DPM/affected-mandates"
     )
     assert seen["correlation_id"] == "corr-cio-model-change-001"
+    assert seen["tenant_id"] == "default"
     assert b'"as_of_date":"2026-05-03"' in seen["payload"]
     assert b'"tenant_id":"default"' in seen["payload"]
     assert b'"booking_center_code":"Singapore"' in seen["payload"]
@@ -1762,6 +1770,66 @@ def test_core_resolver_fetches_cio_model_change_affected_cohort_source_product()
     assert response.product_name == "CioModelChangeAffectedCohort"
     assert response.supportability.state == "READY"
     assert response.affected_mandates[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
+
+
+def test_core_population_header_survives_retry_without_mutating_shared_client_defaults():
+    seen_tenant_headers: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_tenant_headers.append(request.headers.get("X-Tenant-Id"))
+        if len(seen_tenant_headers) == 1:
+            return httpx.Response(503, json={"detail": "retry"})
+        return httpx.Response(200, json=_pm_book_membership_payload())
+
+    shared_client = httpx.Client(transport=httpx.MockTransport(handler))
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            max_attempts=2,
+        ),
+        client=shared_client,
+    )
+
+    resolver.resolve_portfolio_manager_book_membership(
+        portfolio_manager_id="PM_SG_DPM_001",
+        as_of_date=date(2026, 5, 3),
+        tenant_id="tenant-sg",
+        correlation_id="corr-retry-tenant-header",
+    )
+
+    assert seen_tenant_headers == ["tenant-sg", "tenant-sg"]
+    assert "X-Tenant-Id" not in shared_client.headers
+
+
+def test_core_population_headers_are_isolated_for_concurrent_tenants_on_one_client():
+    seen: list[tuple[str | None, bytes]] = []
+    both_requests_in_flight = Barrier(2)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.headers.get("X-Tenant-Id"), request.read()))
+        both_requests_in_flight.wait(timeout=3)
+        return httpx.Response(200, json=_pm_book_membership_payload())
+
+    shared_client = httpx.Client(transport=httpx.MockTransport(handler))
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=shared_client,
+    )
+
+    def resolve(tenant_id: str) -> None:
+        resolver.resolve_portfolio_manager_book_membership(
+            portfolio_manager_id="PM_SHARED",
+            as_of_date=date(2026, 5, 3),
+            tenant_id=tenant_id,
+            correlation_id=f"corr-{tenant_id}",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        list(executor.map(resolve, ["tenant-a", "tenant-b"]))
+
+    assert {tenant_id for tenant_id, _ in seen} == {"tenant-a", "tenant-b"}
+    assert all(f'"tenant_id":"{tenant_id}"'.encode() in body for tenant_id, body in seen)
+    assert "X-Tenant-Id" not in shared_client.headers
 
 
 def test_core_resolver_fetches_instrument_eligibility_from_dedicated_source_product():

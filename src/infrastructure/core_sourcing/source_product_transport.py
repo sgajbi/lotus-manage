@@ -13,8 +13,24 @@ SourceProductMethod = Literal["get", "post"]
 TRANSIENT_SOURCE_STATUS_CODES = frozenset({502, 503, 504})
 
 
-def source_product_headers(correlation_id: Optional[str]) -> dict[str, str]:
-    return {"X-Correlation-Id": correlation_id} if correlation_id else {}
+def source_product_headers(
+    correlation_id: Optional[str],
+    *,
+    admitted_tenant_id: Optional[str] = None,
+) -> dict[str, str]:
+    """Build request-scoped source headers without mutating shared client state.
+
+    The tenant value is admitted by the owning Manage route/application flow.  It is
+    deliberately separate from the source-product JSON selector: that selector is
+    retained only for producer compatibility and cannot become authority by itself.
+    """
+
+    headers: dict[str, str] = {}
+    if correlation_id:
+        headers["X-Correlation-Id"] = correlation_id
+    if admitted_tenant_id:
+        headers["X-Tenant-Id"] = admitted_tenant_id
+    return headers
 
 
 def source_product_response_payload(
