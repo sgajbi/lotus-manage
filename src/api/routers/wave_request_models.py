@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from src.api.request_models import RebalanceRequest
+from src.api.routers.mandate_tenant_query import NormalisedTenantId
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignGovernanceInput
 from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.vocabulary import ConstructionMethod
@@ -239,9 +240,13 @@ class DpmWavePreviewRequest(BaseModel):
         ),
         examples=[0.05],
     )
-    tenant_id: str | None = Field(
+    tenant_id: NormalisedTenantId | None = Field(
         default=None,
-        description="Optional tenant selector forwarded to source products where supported.",
+        description=(
+            "Legacy compatibility assertion for Core source selection. When supplied for a "
+            "Core-resolved population it must equal the admitted X-Tenant-Id; it never selects "
+            "a source population independently."
+        ),
         examples=["default"],
     )
     booking_center_code: str | None = Field(

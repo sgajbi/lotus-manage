@@ -310,12 +310,14 @@ command centre take `tenant_id` as above. **The wave aggregate takes the tenant 
 `X-Tenant-Id` header instead — 15 of them, not a named subset.** On those surfaces the tenant is
 required and an absent one is refused rather than answered from an assumed tenant.
 
-The header is the only selector for the wave and mandate data `lotus-manage` owns. It is **not**
-the only `tenant_id` a wave request can carry: `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` preview and
-create bodies accept an optional `tenant_id`, which is forwarded to upstream source products for
-cohort evaluation and is not reconciled against the header. They are different things with the same
-name — the header admits the caller, the body field filters a source lookup — so do not assume
-setting one constrains the other.
+The header is the admitted selector for both the wave data `lotus-manage` owns and the Core
+population request it makes for `PM_BOOK_REVIEW`, `CIO_MODEL_CHANGE`, or
+`CORE_DPM_PORTFOLIO_UNIVERSE`. Those preview/create bodies retain optional `tenant_id` only as a
+legacy compatibility assertion: when present, its normalized value must equal `X-Tenant-Id`; when
+absent, Manage forwards the admitted header value. A missing or contradictory admitted scope is
+refused before Core I/O. Manage also refuses a PM-book, CIO-cohort, or each paginated Core-universe
+response whose tenant scope is blank or differs from the admitted header; it never attaches that
+population to a wave. This consumer receipt check does not certify Core source isolation: Core #798 owns the route-to-SQL tenant predicate and PostgreSQL two-tenant proof.
 
 One wave-prefixed route is **not** in that set and must not be assumed fenced:
 `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews`. It reads the outcome-review aggregate,

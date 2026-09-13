@@ -51,11 +51,11 @@ def _source_supportability(state: str = "READY", reason: str = "SOURCE_READY") -
 
 
 def test_pm_book_membership_request_for_wave_maps_source_query() -> None:
-    membership_request = _pm_book_membership_request_for_wave(_pm_book_request())
+    membership_request = _pm_book_membership_request_for_wave(_pm_book_request(), "tenant-admitted")
 
     assert membership_request.portfolio_manager_id == "PM_SG_DPM_001"
     assert membership_request.as_of_date.isoformat() == "2026-05-19"
-    assert membership_request.tenant_id == "tenant-private-bank"
+    assert membership_request.tenant_id == "tenant-admitted"
     assert membership_request.booking_center_code == "SG"
     assert membership_request.portfolio_types == ["DISCRETIONARY", "DPM"]
 
@@ -71,7 +71,7 @@ def test_pm_book_membership_request_for_wave_rejects_caller_supplied_portfolios(
     )
 
     with pytest.raises(wave_service.DpmWaveValidationError) as exc_info:
-        _pm_book_membership_request_for_wave(request)
+        _pm_book_membership_request_for_wave(request, "tenant-admitted")
 
     assert exc_info.value.code == "PM_BOOK_REVIEW_REJECTS_CALLER_PORTFOLIOS"
 
@@ -85,7 +85,9 @@ def test_pm_book_membership_ready_helper_rejects_incomplete_or_empty_source_memb
                     reason="PM_BOOK_MEMBERSHIP_INCOMPLETE",
                 ),
                 members=[object()],
-            )
+                tenant_id="tenant-admitted",
+            ),
+            admitted_tenant_id="tenant-admitted",
         )
     assert exc_info.value.status_code == 424
     assert exc_info.value.detail["code"] == "PM_BOOK_MEMBERSHIP_INCOMPLETE"
@@ -95,18 +97,22 @@ def test_pm_book_membership_ready_helper_rejects_incomplete_or_empty_source_memb
             SimpleNamespace(
                 supportability=_source_supportability(),
                 members=[],
-            )
+                tenant_id="tenant-admitted",
+            ),
+            admitted_tenant_id="tenant-admitted",
         )
     assert exc_info.value.status_code == 424
     assert exc_info.value.detail["code"] == "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY"
 
 
 def test_cio_model_change_cohort_request_for_wave_maps_source_query() -> None:
-    cohort_request = _cio_model_change_cohort_request_for_wave(_cio_model_change_request())
+    cohort_request = _cio_model_change_cohort_request_for_wave(
+        _cio_model_change_request(), "tenant-admitted"
+    )
 
     assert cohort_request.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert cohort_request.as_of_date.isoformat() == "2026-05-19"
-    assert cohort_request.tenant_id == "tenant-private-bank"
+    assert cohort_request.tenant_id == "tenant-admitted"
     assert cohort_request.booking_center_code == "SG"
 
 
@@ -121,7 +127,7 @@ def test_cio_model_change_cohort_request_for_wave_rejects_caller_supplied_portfo
     )
 
     with pytest.raises(wave_service.DpmWaveValidationError) as exc_info:
-        _cio_model_change_cohort_request_for_wave(request)
+        _cio_model_change_cohort_request_for_wave(request, "tenant-admitted")
 
     assert exc_info.value.code == "CIO_MODEL_CHANGE_REJECTS_CALLER_PORTFOLIOS"
 
@@ -135,7 +141,9 @@ def test_cio_model_change_cohort_ready_helper_rejects_incomplete_or_empty_source
                     reason="CIO_MODEL_CHANGE_COHORT_INCOMPLETE",
                 ),
                 affected_mandates=[object()],
-            )
+                tenant_id="tenant-admitted",
+            ),
+            admitted_tenant_id="tenant-admitted",
         )
     assert exc_info.value.status_code == 424
     assert exc_info.value.detail["code"] == "CIO_MODEL_CHANGE_COHORT_INCOMPLETE"
@@ -145,7 +153,62 @@ def test_cio_model_change_cohort_ready_helper_rejects_incomplete_or_empty_source
             SimpleNamespace(
                 supportability=_source_supportability(),
                 affected_mandates=[],
-            )
+                tenant_id="tenant-admitted",
+            ),
+            admitted_tenant_id="tenant-admitted",
         )
     assert exc_info.value.status_code == 424
     assert exc_info.value.detail["code"] == "DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY"
+
+
+@pytest.mark.parametrize(
+    ("ready_check", "response", "expected_code"),
+    [
+        (
+            _require_pm_book_membership_ready,
+            SimpleNamespace(
+                supportability=_source_supportability(),
+                members=[object()],
+                tenant_id=None,
+            ),
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_TENANT_REQUIRED",
+        ),
+        (
+            _require_pm_book_membership_ready,
+            SimpleNamespace(
+                supportability=_source_supportability(),
+                members=[object()],
+                tenant_id="tenant-other",
+            ),
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_TENANT_MISMATCH",
+        ),
+        (
+            _require_cio_model_change_cohort_ready,
+            SimpleNamespace(
+                supportability=_source_supportability(),
+                affected_mandates=[object()],
+                tenant_id=None,
+            ),
+            "DPM_CORE_CIO_MODEL_CHANGE_COHORT_TENANT_REQUIRED",
+        ),
+        (
+            _require_cio_model_change_cohort_ready,
+            SimpleNamespace(
+                supportability=_source_supportability(),
+                affected_mandates=[object()],
+                tenant_id="tenant-other",
+            ),
+            "DPM_CORE_CIO_MODEL_CHANGE_COHORT_TENANT_MISMATCH",
+        ),
+    ],
+)
+def test_core_source_ready_checks_reject_missing_or_foreign_tenant_response(
+    ready_check,
+    response: object,
+    expected_code: str,
+) -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        ready_check(response, admitted_tenant_id="tenant-admitted")
+
+    assert exc_info.value.status_code == 424
+    assert exc_info.value.detail["code"] == expected_code

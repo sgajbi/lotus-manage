@@ -107,6 +107,31 @@ def _risk_event_request(
     return DpmWavePreviewRequest.model_validate(payload)
 
 
+def _core_population_request(
+    trigger_type: str,
+    **overrides: object,
+) -> DpmWavePreviewRequest:
+    payload: dict[str, object] = {
+        "trigger_type": trigger_type,
+        "trigger_id": "wave-core-population-20260519",
+        "rationale": "Resolve a source-owned Core population.",
+        "as_of_date": "2026-05-19",
+        "actor_id": "pm_001",
+        "tenant_id": "tenant-other",
+        "portfolio_manager_id": "PM_SG_DPM_001",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "campaign_candidate_source": "CORE_DPM_PORTFOLIO_UNIVERSE",
+    }
+    payload.update(overrides)
+    return DpmWavePreviewRequest.model_validate(payload)
+
+
+def _campaign_application_service() -> DpmWaveCampaignApplicationService:
+    return DpmWaveCampaignApplicationService(
+        campaign_definition_repository=InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    )
+
+
 class _RiskEventCohort:
     risk_event_id = "RISK_EVT_20260519"
     product_name = "RiskEventAffectedCohort"
@@ -176,13 +201,53 @@ def test_portfolio_resolution_dispatch_preserves_explicit_portfolio_payloads() -
         correlation_id="corr-wave-dispatch",
         advise_authority_client=None,
         risk_authority_client=None,
-        campaign_application_service=DpmWaveCampaignApplicationService(
-            campaign_definition_repository=InMemoryDpmBulkReviewCampaignDefinitionRepository()
-        ),
+        campaign_application_service=_campaign_application_service(),
         core_resolver_factory=object,
     )
 
     assert resolved == [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
+
+
+@pytest.mark.parametrize(
+    "trigger_type",
+    ["PM_BOOK_REVIEW", "CIO_MODEL_CHANGE", "BULK_REVIEW_CAMPAIGN"],
+)
+def test_core_population_rejects_conflicting_legacy_tenant_before_core_io(
+    trigger_type: str,
+) -> None:
+    with pytest.raises(wave_service.DpmWaveValidationError) as exc_info:
+        resolve_portfolio_inputs_for_request(
+            request=_core_population_request(trigger_type),
+            tenant_id="tenant-admitted",
+            correlation_id="corr-core-authority-mismatch",
+            advise_authority_client=None,
+            risk_authority_client=None,
+            campaign_application_service=_campaign_application_service(),
+            core_resolver_factory=lambda: pytest.fail("Core must not be constructed"),
+        )
+
+    assert exc_info.value.code == "DPM_CORE_SOURCE_TENANT_MISMATCH"
+
+
+@pytest.mark.parametrize(
+    "trigger_type",
+    ["PM_BOOK_REVIEW", "CIO_MODEL_CHANGE", "BULK_REVIEW_CAMPAIGN"],
+)
+def test_core_population_rejects_missing_admitted_tenant_before_core_io(
+    trigger_type: str,
+) -> None:
+    with pytest.raises(wave_service.DpmWaveValidationError) as exc_info:
+        resolve_portfolio_inputs_for_request(
+            request=_core_population_request(trigger_type, tenant_id=None),
+            tenant_id=None,
+            correlation_id="corr-core-authority-missing",
+            advise_authority_client=None,
+            risk_authority_client=None,
+            campaign_application_service=_campaign_application_service(),
+            core_resolver_factory=lambda: pytest.fail("Core must not be constructed"),
+        )
+
+    assert exc_info.value.code == "DPM_CORE_SOURCE_TENANT_REQUIRED"
 
 
 def test_risk_event_resolution_helpers_reject_missing_source_evidence() -> None:
