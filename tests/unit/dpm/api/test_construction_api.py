@@ -1323,7 +1323,10 @@ def test_generate_construction_alternative_set_preserves_degraded_stateful_sourc
                 "input_mode": "stateful",
                 "stateful_input": _stateful_input_payload(),
             },
-            headers={"Idempotency-Key": "idem-construction-stateful-degraded"},
+            headers={
+                "Idempotency-Key": "idem-construction-stateful-degraded",
+                "X-Tenant-Id": "tenant_001",
+            },
         )
 
     app.dependency_overrides = {}
@@ -1332,6 +1335,39 @@ def test_generate_construction_alternative_set_preserves_degraded_stateful_sourc
     body = response.json()
     assert body["input_mode"] == "stateful"
     assert body["source_supportability_state"] == "DEGRADED"
+
+
+@pytest.mark.parametrize(
+    ("tenant_header", "expected_detail"),
+    [
+        (None, "DPM_STATEFUL_TENANT_HEADER_REQUIRED"),
+        ("tenant_other", "DPM_STATEFUL_TENANT_MISMATCH"),
+    ],
+)
+def test_stateful_construction_rejects_unadmitted_tenant_before_core_sourcing(
+    monkeypatch, tenant_header, expected_detail
+) -> None:
+    repository = InMemoryConstructionRepository()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        core_resolver_service,
+        "build_core_resolver_client",
+        lambda: pytest.fail("unadmitted tenant must not reach Core resolver"),
+    )
+    headers = {"Idempotency-Key": "idem-construction-tenant-rejected"}
+    if tenant_header is not None:
+        headers["X-Tenant-Id"] = tenant_header
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json={"input_mode": "stateful", "stateful_input": _stateful_input_payload()},
+            headers=headers,
+        )
+
+    app.dependency_overrides = {}
+    assert response.status_code == 422
+    assert response.json()["detail"] == expected_detail
 
 
 def test_stateful_construction_attaches_core_transaction_cost_curve(monkeypatch) -> None:
@@ -1350,7 +1386,10 @@ def test_stateful_construction_attaches_core_transaction_cost_curve(monkeypatch)
                 "input_mode": "stateful",
                 "stateful_input": _stateful_input_payload(),
             },
-            headers={"Idempotency-Key": "idem-construction-stateful-cost-curve"},
+            headers={
+                "Idempotency-Key": "idem-construction-stateful-cost-curve",
+                "X-Tenant-Id": "tenant_001",
+            },
         )
 
     app.dependency_overrides = {}
@@ -1389,7 +1428,10 @@ def test_stateful_construction_attaches_core_cashflow_projection(monkeypatch) ->
                 "stateful_input": _stateful_input_payload(),
                 "methods": ["LIQUIDITY_AWARE"],
             },
-            headers={"Idempotency-Key": "idem-construction-stateful-cashflow"},
+            headers={
+                "Idempotency-Key": "idem-construction-stateful-cashflow",
+                "X-Tenant-Id": "tenant_001",
+            },
         )
 
     app.dependency_overrides = {}
@@ -1430,7 +1472,10 @@ def test_stateful_currency_overlay_preserves_external_hedge_readiness_fail_close
                 "stateful_input": _stateful_input_payload(),
                 "methods": ["CURRENCY_OVERLAY"],
             },
-            headers={"Idempotency-Key": "idem-construction-stateful-hedge-readiness"},
+            headers={
+                "Idempotency-Key": "idem-construction-stateful-hedge-readiness",
+                "X-Tenant-Id": "tenant_001",
+            },
         )
 
     app.dependency_overrides = {}
@@ -1511,7 +1556,10 @@ def test_stateful_construction_preserves_external_order_execution_acknowledgemen
                 "stateful_input": _stateful_input_payload(),
                 "methods": ["HEURISTIC_EXPLAINABLE"],
             },
-            headers={"Idempotency-Key": "idem-construction-stateful-order-ack"},
+            headers={
+                "Idempotency-Key": "idem-construction-stateful-order-ack",
+                "X-Tenant-Id": "tenant_001",
+            },
         )
 
     app.dependency_overrides = {}
@@ -1566,7 +1614,10 @@ def test_stateful_construction_marks_degraded_core_cashflow_projection(monkeypat
                 "stateful_input": _stateful_input_payload(),
                 "methods": ["LIQUIDITY_AWARE"],
             },
-            headers={"Idempotency-Key": "idem-construction-stateful-cashflow-degraded"},
+            headers={
+                "Idempotency-Key": "idem-construction-stateful-cashflow-degraded",
+                "X-Tenant-Id": "tenant_001",
+            },
         )
 
     app.dependency_overrides = {}

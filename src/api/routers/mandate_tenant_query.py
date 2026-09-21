@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Query
+from fastapi import Header, Query
 from pydantic import AfterValidator
 
 MANDATE_TENANT_QUERY_DESCRIPTION = (
@@ -48,6 +48,20 @@ def normalise_mandate_tenant(value: str) -> str:
 # are three doors into the same store, so a tenant that normalises on one and not
 # the others still partitions that tenant's evidence.
 NormalisedTenantId = Annotated[str, AfterValidator(normalise_mandate_tenant)]
+
+MandateTenantIdHeader = Annotated[
+    str,
+    Header(
+        pattern=r"\S",
+        min_length=1,
+        description=(
+            "Required caller-asserted tenant scope for a mandate refresh. It must match the "
+            "request tenant before Core sourcing or Manage persistence; it is not authentication "
+            "proof."
+        ),
+    ),
+    AfterValidator(normalise_mandate_tenant),
+]
 
 MandateTenantId = Annotated[
     str,
@@ -95,6 +109,7 @@ def require_mandate_tenant(tenant_id: str | None) -> str:
 __all__ = [
     "MANDATE_TENANT_QUERY_DESCRIPTION",
     "MandateTenantId",
+    "MandateTenantIdHeader",
     "NormalisedTenantId",
     "normalise_mandate_tenant",
     "DpmMandateTenantRequiredError",

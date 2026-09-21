@@ -94,6 +94,7 @@ def _resolve_stateful_source_context(
     *,
     envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
+    admitted_tenant_id: Optional[str] = None,
 ) -> DpmResolvedSourceContext:
     resolver_factory = resolve_callable_override(
         "build_core_resolver_client",
@@ -102,6 +103,7 @@ def _resolve_stateful_source_context(
     return resolve_stateful_source_context(
         envelope=envelope,
         correlation_id=correlation_id,
+        admitted_tenant_id=admitted_tenant_id,
         stateful_enabled=core_resolver_service.stateful_core_sourcing_enabled(),
         resolver_factory=resolver_factory,
     )
@@ -111,10 +113,12 @@ def resolve_rebalance_request_envelope(
     *,
     envelope: RebalanceExecutionRequestEnvelope,
     correlation_id: Optional[str],
+    admitted_tenant_id: Optional[str] = None,
 ) -> tuple[RebalanceRequest, Optional[DpmResolvedSourceContext]]:
     return resolve_rebalance_request_envelope_from_source(
         envelope=envelope,
         correlation_id=correlation_id,
+        admitted_tenant_id=admitted_tenant_id,
         stateful_context_resolver=_resolve_stateful_source_context,
         rebalance_request_builder=build_rebalance_request_from_core_context,
     )
@@ -124,10 +128,12 @@ def resolve_batch_request_envelope(
     *,
     envelope: BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
+    admitted_tenant_id: Optional[str] = None,
 ) -> tuple[BatchRebalanceRequest, Optional[DpmResolvedSourceContext]]:
     return resolve_batch_request_envelope_from_source(
         envelope=envelope,
         correlation_id=correlation_id,
+        admitted_tenant_id=admitted_tenant_id,
         stateful_context_resolver=_resolve_stateful_source_context,
         batch_request_builder=build_batch_rebalance_request_from_core_context,
     )

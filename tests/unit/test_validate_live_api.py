@@ -338,6 +338,7 @@ def test_live_api_validation_probes_stateful_source_backed_construction(monkeypa
         if path == "/api/v1/construction/alternative-sets/generate":
             body = json.loads(request.content.decode("utf-8")) if request.content else {}
             if body.get("input_mode") == "stateful":
+                assert request.headers.get("X-Tenant-Id") == body["stateful_input"]["tenant_id"]
                 return _json_response(
                     200,
                     _stateful_source_backed_construction_response(returned_curve_point_count=2),
@@ -383,6 +384,8 @@ def test_live_api_validation_probes_stateful_source_backed_construction(monkeypa
         if path == "/api/v1/rebalance/proposals":
             return _json_response(404, {"detail": "Not Found"})
         if path == "/api/v1/rebalance/simulate":
+            request_body = json.loads(request.content.decode())
+            assert request.headers.get("X-Tenant-Id") == request_body["stateful_input"]["tenant_id"]
             return _json_response(
                 200,
                 {
@@ -830,6 +833,7 @@ def test_live_api_validation_can_probe_available_stateful_core_sourcing(monkeypa
         if path == "/api/v1/construction/alternative-sets/generate":
             body = json.loads(request.content.decode("utf-8")) if request.content else {}
             if body.get("input_mode") == "stateful":
+                assert request.headers.get("X-Tenant-Id") == body["stateful_input"]["tenant_id"]
                 return _json_response(200, _stateful_source_backed_construction_response())
         construction = _construction_response(request)
         if construction is not None:
@@ -895,6 +899,7 @@ def test_live_api_validation_can_probe_available_stateful_core_sourcing(monkeypa
             return _json_response(404, {"detail": "Not Found"})
         if path == "/api/v1/rebalance/simulate":
             request_body = json.loads(request.content.decode())
+            assert request.headers.get("X-Tenant-Id") == request_body["stateful_input"]["tenant_id"]
             assert request_body["stateful_input"]["portfolio_id"] == "PB_SG_GLOBAL_BAL_001"
             assert request_body["stateful_input"]["model_portfolio_id"] == (
                 "MODEL_PB_SG_GLOBAL_BAL_DPM"

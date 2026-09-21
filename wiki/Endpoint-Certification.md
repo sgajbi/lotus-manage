@@ -212,6 +212,9 @@ Functional behavior:
 
 - `refresh-from-core` composes `DiscretionaryMandateBinding:v1`,
   `DpmModelPortfolioTarget:v1`, and optional `MarketDataCoverageWindow:v1`.
+- Refresh requires matching normalized `X-Tenant-Id` and body `tenant_id` before Core reads or
+  Manage persistence. Manage carries that admitted scope on each Core source request; missing or
+  conflicting scope fails closed, and the header does not establish authenticated identity.
 - Refresh returns the persisted `DpmMandateDigitalTwin`, a generated mandate-health snapshot,
   derived monitoring exceptions, and explicit field-gap codes for source products not yet
   available in core.
@@ -1216,10 +1219,12 @@ Request surface:
   `stateless_input.market_data_snapshot`, `stateless_input.model_portfolio`,
   `stateless_input.shelf_entries`, `stateless_input.options`
 - For `input_mode=stateful`: `stateful_input.portfolio_id`, `stateful_input.as_of`,
-  optional mandate/model/policy/tenant/booking-center selectors, and optional `options_override`
+  required `stateful_input.tenant_id`, optional mandate/model/policy/booking-center selectors,
+  and optional `options_override`
 - Required header: `Idempotency-Key`
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
-  `X-Tenant-Id`
+  `X-Tenant-Id` for stateless mode; `X-Tenant-Id` is required and must match the body tenant for
+  stateful mode before any Core sourcing
 
 Functional coverage:
 
@@ -1309,7 +1314,8 @@ Request surface:
   `market_data_snapshot`, `model_portfolio`, `shelf_entries`, plus a named `scenarios` map.
 - For `input_mode=stateful`: `stateful_input` selectors plus a top-level named `scenarios` map.
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
-  `X-Tenant-Id`.
+  `X-Tenant-Id` for stateless mode. Stateful mode requires matching `X-Tenant-Id` and
+  `stateful_input.tenant_id` before Core resolution.
 - Scenario names must match `[a-z0-9_\-]{1,64}`.
 - Maximum scenario count is 20.
 
@@ -1374,7 +1380,8 @@ Request surface:
   containing the `BatchRebalanceRequest`; `input_mode=stateful` carries `stateful_input` selectors
   plus top-level `scenarios` and remains disabled by default until live core-backed proof exists.
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
-  `X-Tenant-Id`.
+  `X-Tenant-Id` for stateless mode. Stateful mode requires matching `X-Tenant-Id` and
+  `stateful_input.tenant_id` before Core resolution.
 - Response: `DpmAsyncAcceptedResponse` with `operation_id`, initial `status`, `correlation_id`,
   `status_url`, and `execute_url`.
 - Retrieval: `GET /api/v1/rebalance/operations/{operation_id}` or

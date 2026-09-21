@@ -187,12 +187,14 @@ def _probe_stateful_core_sourcing_available(
     portfolio_id: str,
     as_of: str,
 ) -> ProbeResult:
+    payload = _stateful_simulate_payload(portfolio_id=portfolio_id, as_of=as_of)
     response = client.post(
         "/api/v1/rebalance/simulate",
-        json=_stateful_simulate_payload(portfolio_id=portfolio_id, as_of=as_of),
+        json=payload,
         headers={
             "Idempotency-Key": f"live-stateful-available-{uuid.uuid4().hex[:10]}",
             "X-Correlation-Id": f"corr-live-stateful-available-{uuid.uuid4().hex[:10]}",
+            "X-Tenant-Id": payload["stateful_input"]["tenant_id"],
         },
     )
     body = response.json() if response.content else {}
@@ -541,6 +543,7 @@ def _probe_stateful_source_backed_construction(
         headers={
             "Idempotency-Key": f"live-stateful-source-backed-{uuid.uuid4().hex[:10]}",
             "X-Correlation-Id": f"corr-live-stateful-source-backed-{uuid.uuid4().hex[:10]}",
+            "X-Tenant-Id": payload["stateful_input"]["tenant_id"],
         },
     )
     body = response.json() if response.content else {}

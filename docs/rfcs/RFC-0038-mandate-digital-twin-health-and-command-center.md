@@ -432,6 +432,12 @@ Purpose:
 2. persist source lineage,
 3. expose partial-readiness state if core products are stale or incomplete.
 
+The refresh command requires caller-asserted `X-Tenant-Id` equal to normalized body `tenant_id`.
+Manage rejects omission or disagreement before Core reads or persistence, then forwards the
+admitted scope in each mandatory and optional Core source request. A JSON selector alone is not
+Core tenant admission. This is routing-scope agreement, not authenticated-principal proof; #624
+continues to own the external trusted-identity dependency.
+
 ### 7.2 Health APIs
 
 `GET /api/v1/mandates/{mandate_id}/health`

@@ -52,12 +52,14 @@ sequenceDiagram
     participant Gateway as lotus-gateway
     participant Manage as lotus-manage
     participant Core as lotus-core
-    Gateway->>Manage: POST /api/v1/rebalance/simulate input_mode=stateful
+    Gateway->>Manage: POST /api/v1/rebalance/simulate input_mode=stateful, matching X-Tenant-Id
     Manage->>Manage: Check feature gate and resolver configuration
     alt stateful gates disabled
         Manage-->>Gateway: 409 DPM_STATEFUL_INPUT_DISABLED
+    else tenant header absent or mismatched
+        Manage-->>Gateway: 422 DPM_STATEFUL_TENANT_*
     else stateful gates enabled and core source products ready
-        Manage->>Core: Compose RFC-087 source-data products
+        Manage->>Core: Compose RFC-087 source-data products with per-request X-Tenant-Id
         Core-->>Manage: Portfolio, model, mandate, eligibility, tax lots, market data, FX, lineage
         Manage->>Manage: Transform context and run DPM engine
         Manage-->>Gateway: Result with source lineage and supportability
@@ -288,6 +290,11 @@ body. Manage rejects missing or conflicting scope before calling Core or writing
 evidence, then records the header value as run ownership. Gateway PR #786 implements this contract
 at `ec5c421ba22aaec765524aa807f6c4a2dc8a0a29`. This is routing-scope agreement, not an
 authenticated-principal claim.
+
+The governed mandate refresh command has the same header/body tenant agreement. Manage uses the
+admitted value for its Core mandate-binding, model-target, market-coverage, and optional source
+requests; Core will reject a selector body without the per-request `X-Tenant-Id` header. This
+transport rule does not grant tenant access or change Core's product authority.
 
 The implementation handoff contract is maintained in
 [`docs/architecture/dpm-command-center-gateway-workbench-handoff.md`](https://github.com/sgajbi/lotus-manage/blob/main/docs/architecture/dpm-command-center-gateway-workbench-handoff.md).

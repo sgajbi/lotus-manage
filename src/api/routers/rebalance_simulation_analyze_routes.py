@@ -86,7 +86,11 @@ def analyze_scenarios(
     x_tenant_id: Annotated[
         Optional[str],
         Header(
-            description="Optional tenant identifier used for tenant policy-pack default lookup.",
+            description=(
+                "Required for stateful Core sourcing and must match stateful_input.tenant_id; "
+                "optional for stateless tenant policy-pack lookup. Caller-asserted routing scope, "
+                "not authenticated-principal proof."
+            ),
             examples=["tenant_001"],
         ),
     ] = None,
@@ -96,6 +100,7 @@ def analyze_scenarios(
         batch_request, source_context = service.resolve_batch_request_envelope(
             envelope=request,
             correlation_id=x_correlation_id,
+            admitted_tenant_id=x_tenant_id,
         )
     except service.DpmRebalanceEnvelopeError as exc:
         raise rebalance_envelope_http_exception(exc) from exc

@@ -65,6 +65,15 @@ def generate_alternative_set(
             examples=["corr-construction-001"],
         ),
     ] = None,
+    x_tenant_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Required for stateful Core sourcing and must match stateful_input.tenant_id; "
+                "not authenticated-principal proof."
+            ),
+        ),
+    ] = None,
     repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
@@ -77,6 +86,7 @@ def generate_alternative_set(
         ) = rebalance_simulation_service.resolve_rebalance_request_envelope(
             envelope=request.to_execution_envelope(),
             correlation_id=x_correlation_id,
+            admitted_tenant_id=x_tenant_id,
         )
     except rebalance_simulation_service.DpmRebalanceEnvelopeError as exc:
         raise rebalance_envelope_http_exception(exc) from exc

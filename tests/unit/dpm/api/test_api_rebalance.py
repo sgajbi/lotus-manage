@@ -143,10 +143,10 @@ def _core_execution_context() -> DpmCoreExecutionContext:
 
 class _FakeCoreResolver:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, str | None]] = []
+        self.calls: list[tuple[str, str | None, str | None]] = []
 
     def resolve_execution_context(self, *, stateful_input, correlation_id):
-        self.calls.append((stateful_input.portfolio_id, correlation_id))
+        self.calls.append((stateful_input.portfolio_id, correlation_id, stateful_input.tenant_id))
         return _core_execution_context()
 
 
@@ -206,7 +206,7 @@ def test_stateful_simulate_enabled_without_core_base_url_returns_unavailable(mon
                 "input_mode": "stateful",
                 "stateful_input": _stateful_input_payload(),
             },
-            headers={"Idempotency-Key": "test-key-stateful-no-core"},
+            headers={"Idempotency-Key": "test-key-stateful-no-core", "X-Tenant-Id": "tenant_001"},
         )
 
     assert response.status_code == 503
@@ -227,12 +227,13 @@ def test_stateful_simulate_uses_resolved_core_context_and_lineage(monkeypatch):
             headers={
                 "Idempotency-Key": "test-key-stateful-simulate-ready",
                 "X-Correlation-Id": "corr-stateful-simulate",
+                "X-Tenant-Id": " tenant_001 ",
             },
         )
 
     assert response.status_code == 200
     body = response.json()
-    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-simulate")]
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-simulate", "tenant_001")]
     assert body["correlation_id"] == "corr-stateful-simulate"
     assert body["lineage"]["input_mode"] == "stateful"
     assert body["lineage"]["source_system"] == "lotus-core"
@@ -261,12 +262,12 @@ def test_stateful_analyze_uses_shared_core_context_for_each_scenario(monkeypatch
                     "position_cap": {"options": {"single_position_max_weight": "0.5"}},
                 },
             },
-            headers={"X-Correlation-Id": "corr-stateful-analyze"},
+            headers={"X-Correlation-Id": "corr-stateful-analyze", "X-Tenant-Id": "tenant_001"},
         )
 
     assert response.status_code == 200
     body = response.json()
-    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-analyze")]
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-analyze", "tenant_001")]
     assert set(body["results"]) == {"baseline", "position_cap"}
     assert body["base_snapshot_ids"] == {
         "portfolio_snapshot_id": "core-pf-snap-001",
@@ -290,14 +291,14 @@ def test_stateful_analyze_async_persists_resolved_core_lineage(monkeypatch):
                 "stateful_input": _stateful_input_payload(),
                 "scenarios": {"baseline": {"options": {}}},
             },
-            headers={"X-Correlation-Id": "corr-stateful-async"},
+            headers={"X-Correlation-Id": "corr-stateful-async", "X-Tenant-Id": "tenant_001"},
         )
         operation = raw_client.get(
             f"/api/v1/rebalance/operations/{accepted.json()['operation_id']}"
         )
 
     assert accepted.status_code == 202
-    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-async")]
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-async", "tenant_001")]
     assert operation.status_code == 200
     operation_body = operation.json()
     assert operation_body["status"] == "SUCCEEDED"
@@ -305,6 +306,33 @@ def test_stateful_analyze_async_persists_resolved_core_lineage(monkeypatch):
     assert result["lineage"]["input_mode"] == "stateful"
     assert result["lineage"]["source_system"] == "lotus-core"
     assert result["lineage"]["stateful_context_hash"].startswith("sha256:")
+
+
+@pytest.mark.parametrize(
+    ("tenant_header", "expected_detail"),
+    [
+        (None, "DPM_STATEFUL_TENANT_HEADER_REQUIRED"),
+        ("tenant_other", "DPM_STATEFUL_TENANT_MISMATCH"),
+    ],
+)
+def test_stateful_simulate_rejects_unadmitted_tenant_before_core_sourcing(
+    monkeypatch, tenant_header, expected_detail
+):
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+    headers = {"Idempotency-Key": "test-key-stateful-tenant-rejected"}
+    if tenant_header is not None:
+        headers["X-Tenant-Id"] = tenant_header
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={"input_mode": "stateful", "stateful_input": _stateful_input_payload()},
+            headers=headers,
+        )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == expected_detail
+    assert fake_resolver.calls == []
 
 
 def test_simulate_endpoint_success(client):

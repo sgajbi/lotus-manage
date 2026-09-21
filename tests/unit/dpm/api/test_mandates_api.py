@@ -405,7 +405,7 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
-            headers={"X-Correlation-Id": "corr_test_mandate"},
+            headers={"X-Correlation-Id": "corr_test_mandate", "X-Tenant-Id": " default "},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "as_of_date": "2026-05-03",
@@ -450,7 +450,34 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
         "cashflow_projection",
         "benchmark_assignment",
     ]
+    assert all(kwargs["tenant_id"] == "default" for _, kwargs in resolver.calls)
     assert repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="default") is not None
+
+
+@pytest.mark.parametrize(
+    ("headers", "expected_status"),
+    [({}, 422), ({"X-Tenant-Id": "other-tenant"}, 409)],
+)
+def test_refresh_rejects_unadmitted_tenant_before_core_or_persistence(
+    headers: dict[str, str], expected_status: int
+) -> None:
+    repository = InMemoryDpmMandateRepository()
+    resolver = FakeCoreResolver()
+
+    with _client(repository, resolver) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers=headers,
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
+        )
+
+    assert response.status_code == expected_status
+    assert resolver.calls == []
+    assert repository.get_latest_mandate(mandate_id=MANDATE_ID, tenant_id="tenant-test") is None
 
 
 def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_health() -> None:
@@ -460,6 +487,7 @@ def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_he
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "tenant_id": "tenant-test",
@@ -488,6 +516,7 @@ def test_refresh_from_core_rejects_inactive_benchmark_assignment_without_local_m
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "tenant_id": "tenant-test",
@@ -512,6 +541,7 @@ def test_refresh_from_core_preserves_gap_when_optional_profile_is_incomplete() -
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "tenant_id": "tenant-test",
@@ -755,6 +785,7 @@ def test_refresh_maps_core_unavailable_to_503() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver(unavailable=True)) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "tenant_id": "tenant-test",
@@ -770,6 +801,7 @@ def test_refresh_maps_core_incomplete_to_424() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver(incomplete=True)) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "tenant_id": "tenant-test",
@@ -811,6 +843,7 @@ def test_refresh_accepts_validation_errors_as_422() -> None:
     with _client(InMemoryDpmMandateRepository(), FakeCoreResolver()) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "tenant_id": "tenant-test",
@@ -836,6 +869,7 @@ def test_response_contract_is_json_serializable() -> None:
     with _client(repository, resolver) as client:
         response = client.post(
             f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
             json={
                 "portfolio_id": PORTFOLIO_ID,
                 "tenant_id": "tenant-test",

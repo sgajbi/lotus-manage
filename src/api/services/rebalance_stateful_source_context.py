@@ -38,12 +38,14 @@ def resolve_stateful_source_context(
     *,
     envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
+    admitted_tenant_id: Optional[str] = None,
     stateful_enabled: bool,
     resolver_factory: CoreResolverFactory,
 ) -> DpmResolvedSourceContext:
     stateful_input = _stateful_source_input(
         envelope=envelope,
         stateful_enabled=stateful_enabled,
+        admitted_tenant_id=admitted_tenant_id,
     )
     context = _resolve_core_execution_context(
         stateful_input=stateful_input,
@@ -63,12 +65,21 @@ def _stateful_source_input(
     *,
     envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
     stateful_enabled: bool,
+    admitted_tenant_id: Optional[str],
 ) -> Any:
     if envelope.stateful_input is None:
         raise DpmRebalanceEnvelopeValidationError("DPM_STATEFUL_INPUT_REQUIRED")
     if not stateful_enabled:
         raise DpmRebalanceStatefulInputDisabledError("DPM_STATEFUL_INPUT_DISABLED")
-    return envelope.stateful_input
+    tenant_id = envelope.stateful_input.tenant_id
+    if admitted_tenant_id is None or not admitted_tenant_id.strip():
+        raise DpmRebalanceEnvelopeValidationError("DPM_STATEFUL_TENANT_HEADER_REQUIRED")
+    if tenant_id is None or not tenant_id.strip():
+        raise DpmRebalanceEnvelopeValidationError("DPM_STATEFUL_TENANT_SELECTOR_REQUIRED")
+    admitted = admitted_tenant_id.strip()
+    if tenant_id.strip() != admitted:
+        raise DpmRebalanceEnvelopeValidationError("DPM_STATEFUL_TENANT_MISMATCH")
+    return envelope.stateful_input.model_copy(update={"tenant_id": admitted})
 
 
 def _resolve_core_execution_context(
