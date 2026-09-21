@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from decimal import Decimal
+import json
 from threading import Barrier
 
 import httpx
@@ -1358,6 +1359,56 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert context.source_readiness is not None
     assert context.source_readiness.supportability.state == "READY"
     assert context.source_readiness.lineage["source_system"] == "lotus-core"
+
+
+@pytest.mark.parametrize("tenant_id", ["tenant-sg", "tenant-other"])
+def test_core_snapshot_selector_carries_the_admitted_tenant(tenant_id: str) -> None:
+    seen: list[tuple[str | None, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        header_tenant = request.headers.get("X-Tenant-Id")
+        body_tenant = payload.get("tenant_id")
+        seen.append((header_tenant, body_tenant))
+        if header_tenant != tenant_id or body_tenant != tenant_id:
+            return httpx.Response(422, json={"detail": "tenant_id required"})
+        return httpx.Response(200, json=_core_snapshot_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    snapshot = client.resolve_portfolio_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        consumer_system="lotus-manage",
+        tenant_id=tenant_id,
+        correlation_id="corr-core-snapshot-tenant",
+    )
+
+    assert snapshot.portfolio_id == "PB_SG_GLOBAL_BAL_001"
+    assert seen == [(tenant_id, tenant_id)]
+
+
+@pytest.mark.parametrize("tenant_id", ["", "  "])
+def test_core_snapshot_refuses_missing_tenant_before_source_io(tenant_id: str) -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        pytest.fail("Core must not be called without admitted tenant context")
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_CONTEXT_INCOMPLETE"):
+        client.resolve_portfolio_snapshot(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            consumer_system="lotus-manage",
+            tenant_id=tenant_id,
+            correlation_id="corr-core-snapshot-missing-tenant",
+        )
 
 
 def test_core_resolver_preserves_incomplete_source_readiness_without_promoting_context():

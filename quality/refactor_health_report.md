@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-09-21T02:14:26+00:00`
+- Generated at: `2026-09-21T17:19:01+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `f8c4b0c3db4da4e60ec52d545ca18b82e2483b27`
+- Baseline source snapshot: `0fa2011fe2ed07363eb569cf50395b12eb469e0c`
 
-- Report source snapshot: `9a9e535e+worktree`
+- Report source snapshot: `0fa2011f+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,8 +15,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 948 | 948 | +0 |
-| Total Python LOC | 223675 | 223946 | +271 |
-| Test functions | 3253 | 3257 | +4 |
+| Total Python LOC | 223946 | 224000 | +54 |
+| Test functions | 3257 | 3259 | +2 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -40,11 +40,11 @@
 | 1 | tests/unit/dpm/api/test_waves_api.py | 7866 |
 | 2 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3676 |
 | 3 | tests/unit/test_ci_workflow_gate_enforcement.py | 3395 |
-| 4 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
-| 5 | tests/unit/dpm/api/test_api_rebalance.py | 3329 |
+| 4 | tests/unit/dpm/api/test_api_rebalance.py | 3357 |
+| 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
 | 7 | tests/unit/test_documentation_current_state.py | 3000 |
-| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2738 |
+| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2771 |
 | 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2711 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
 
@@ -59,7 +59,7 @@
 | 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
 | 7 | tests/unit/test_documentation_current_state.py | 3000 |
-| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2771 |
+| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2822 |
 | 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2711 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
 

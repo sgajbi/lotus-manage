@@ -408,17 +408,20 @@ class DpmCoreResolverClient:
         tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> PortfolioSnapshot:
+        if not tenant_id or not tenant_id.strip():
+            raise DpmCoreResolverError("DPM_CORE_CONTEXT_INCOMPLETE")
         url = self._config.resolve_portfolio_snapshot_url(portfolio_id)
         payload = {
             "as_of_date": as_of_date.isoformat(),
             "consumer_system": consumer_system,
             "sections": ["positions_baseline", "portfolio_totals"],
+            "tenant_id": tenant_id.strip(),
         }
         response = self._post_source_product(
             url=url,
             payload=payload,
             correlation_id=correlation_id,
-            admitted_tenant_id=tenant_id,
+            admitted_tenant_id=tenant_id.strip(),
             unavailable_code="DPM_CORE_RESOLVER_UNAVAILABLE",
             incomplete_code="DPM_CORE_CONTEXT_INCOMPLETE",
         )
