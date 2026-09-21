@@ -51,6 +51,13 @@ def mandate_source_unavailable_http_exception(
     )
 
 
+def mandate_tenant_mismatch_http_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="DPM_MANDATE_TENANT_MISMATCH",
+    )
+
+
 def mandate_diff_unavailable_http_exception(
     exc: DpmMandateDiffUnavailableError,
 ) -> HTTPException:

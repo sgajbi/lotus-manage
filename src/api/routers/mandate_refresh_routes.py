@@ -9,12 +9,14 @@ from src.api.dependencies import get_mandate_repository
 from src.api.routers.mandate_http import (
     mandate_source_incomplete_http_exception,
     mandate_source_unavailable_http_exception,
+    mandate_tenant_mismatch_http_exception,
 )
 from src.api.routers.mandate_models import (
     MANDATE_RESPONSE_EXAMPLE,
     DpmMandateRefreshFromCoreRequest,
     DpmMandateRefreshFromCoreResponse,
 )
+from src.api.routers.mandate_tenant_query import MandateTenantIdHeader
 from src.api.routers.mandates import get_core_resolver_client, router
 from src.api.services.core_resolver_service import CoreResolverClient
 from src.api.services.mandate_service import (
@@ -33,7 +35,9 @@ from src.core.mandate_repository import DpmMandateRepository
         "Use this endpoint when lotus-manage must source the latest mandate binding and model "
         "targets from lotus-core, compile the mandate digital twin, generate a health snapshot, "
         "persist the result, and return explicit source-data gap codes. This is the canonical "
-        "state acquisition command for RFC-0038."
+        "state acquisition command for RFC-0038. Required caller-asserted X-Tenant-Id must "
+        "match the request tenant before any Core sourcing or Manage persistence; it is not "
+        "authentication proof."
     ),
     responses={
         200: {
@@ -66,11 +70,14 @@ from src.core.mandate_repository import DpmMandateRepository
         },
         424: {"description": "Core returned incomplete mandate source products."},
         503: {"description": "Core mandate source products were unavailable."},
+        409: {"description": "Request tenant does not match admitted caller tenant scope."},
+        422: {"description": "Required tenant admission or request body is invalid."},
     },
 )
 async def refresh_mandate(
     mandate_id: str,
     request: DpmMandateRefreshFromCoreRequest,
+    x_tenant_id: MandateTenantIdHeader,
     x_correlation_id: Annotated[
         Optional[str],
         Header(
@@ -81,6 +88,8 @@ async def refresh_mandate(
     repository: DpmMandateRepository = Depends(get_mandate_repository),
     core_resolver: CoreResolverClient = Depends(get_core_resolver_client),
 ) -> DpmMandateRefreshFromCoreResponse:
+    if request.tenant_id != x_tenant_id:
+        raise mandate_tenant_mismatch_http_exception()
     try:
         result = refresh_mandate_from_core(
             repository=repository,
@@ -88,7 +97,7 @@ async def refresh_mandate(
             portfolio_id=request.portfolio_id,
             mandate_id=mandate_id,
             as_of_date=request.as_of_date,
-            tenant_id=request.tenant_id,
+            tenant_id=x_tenant_id,
             booking_center_code=request.booking_center_code,
             model_portfolio_id=request.model_portfolio_id,
             reference_currency=request.reference_currency,

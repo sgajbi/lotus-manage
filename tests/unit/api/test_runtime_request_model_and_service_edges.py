@@ -58,7 +58,7 @@ from tests.shared.factories import valid_api_payload
 
 
 def _stateful_input() -> DpmStatefulInput:
-    return DpmStatefulInput(portfolio_id="PF_TEST", as_of=date(2026, 4, 10))
+    return DpmStatefulInput(portfolio_id="PF_TEST", as_of=date(2026, 4, 10), tenant_id="tenant_001")
 
 
 def test_request_envelopes_require_matching_stateful_payloads() -> None:
@@ -211,7 +211,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         core_resolver_service, "build_core_resolver_client", lambda: _UnavailableResolver()
     )
     with pytest.raises(service.DpmRebalanceCoreResolverUnavailableError) as unavailable:
-        service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
+        service._resolve_stateful_source_context(
+            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+        )
     assert rebalance_envelope_http_exception(unavailable.value).status_code == 503
 
     class _IncompleteResolver:
@@ -222,7 +224,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         core_resolver_service, "build_core_resolver_client", lambda: _IncompleteResolver()
     )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as incomplete:
-        service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
+        service._resolve_stateful_source_context(
+            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+        )
     assert incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
     assert rebalance_envelope_http_exception(incomplete.value).status_code == 424
 
@@ -234,7 +238,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         core_resolver_service, "build_core_resolver_client", lambda: _DerivedIncompleteResolver()
     )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as derived_incomplete:
-        service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
+        service._resolve_stateful_source_context(
+            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+        )
     assert derived_incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
     assert rebalance_envelope_http_exception(derived_incomplete.value).status_code == 424
 
@@ -246,7 +252,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         core_resolver_service, "build_core_resolver_client", lambda: _InvalidResolver()
     )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as invalid:
-        service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
+        service._resolve_stateful_source_context(
+            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+        )
     assert rebalance_envelope_http_exception(invalid.value).status_code == 424
 
 
@@ -323,6 +331,7 @@ def test_stateful_source_context_helpers_project_gates_and_success_posture() -> 
         stateful_source_context._stateful_source_input(
             envelope=envelope,
             stateful_enabled=True,
+            admitted_tenant_id="tenant_001",
         )
         == stateful_input
     )
@@ -330,6 +339,7 @@ def test_stateful_source_context_helpers_project_gates_and_success_posture() -> 
         stateful_source_context._stateful_source_input(
             envelope=envelope,
             stateful_enabled=False,
+            admitted_tenant_id="tenant_001",
         )
 
     ready_context = SimpleNamespace(supportability=SimpleNamespace(state="READY"))

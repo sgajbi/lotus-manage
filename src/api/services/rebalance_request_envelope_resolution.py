@@ -24,6 +24,7 @@ def resolve_rebalance_request_envelope(
     *,
     envelope: RebalanceExecutionRequestEnvelope,
     correlation_id: Optional[str],
+    admitted_tenant_id: Optional[str] = None,
     stateful_context_resolver: StatefulContextResolver,
     rebalance_request_builder: RebalanceRequestBuilder,
 ) -> tuple[RebalanceRequest, Optional[DpmResolvedSourceContext]]:
@@ -35,6 +36,7 @@ def resolve_rebalance_request_envelope(
     source_context = stateful_context_resolver(
         envelope=envelope,
         correlation_id=correlation_id,
+        admitted_tenant_id=admitted_tenant_id,
     )
     try:
         resolved = rebalance_request_builder(
@@ -50,6 +52,7 @@ def resolve_batch_request_envelope(
     *,
     envelope: BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
+    admitted_tenant_id: Optional[str] = None,
     stateful_context_resolver: StatefulContextResolver,
     batch_request_builder: BatchRequestBuilder,
 ) -> tuple[BatchRebalanceRequest, Optional[DpmResolvedSourceContext]]:
@@ -61,6 +64,7 @@ def resolve_batch_request_envelope(
     source_context = stateful_context_resolver(
         envelope=envelope,
         correlation_id=correlation_id,
+        admitted_tenant_id=admitted_tenant_id,
     )
     try:
         request = batch_request_builder(

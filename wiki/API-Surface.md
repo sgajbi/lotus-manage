@@ -310,6 +310,17 @@ command centre take `tenant_id` as above. **The wave aggregate takes the tenant 
 `X-Tenant-Id` header instead — 15 of them, not a named subset.** On those surfaces the tenant is
 required and an absent one is refused rather than answered from an assumed tenant.
 
+Mandate refresh is a write with both doors: `POST /api/v1/mandates/{mandate_id}/refresh-from-core`
+requires `X-Tenant-Id` equal to normalized body `tenant_id`. Omission returns `422`, disagreement
+returns `409`, and neither reaches Core or Manage persistence. Manage forwards the admitted value
+per request to Core's mandatory and optional products; a body selector alone does not satisfy Core
+tenant admission. This caller-asserted scope is not authenticated-principal proof.
+
+Stateful rebalance and alternative-set construction require `X-Tenant-Id` equal to
+`stateful_input.tenant_id` before Core resolution. Missing or disagreeing scope returns `422`;
+stateless execution does not gain a mandatory tenant header. The header is caller-asserted routing
+scope, not an IAM grant.
+
 The header is the admitted selector for both the wave data `lotus-manage` owns and the Core
 population request it makes for `PM_BOOK_REVIEW`, `CIO_MODEL_CHANGE`, or
 `CORE_DPM_PORTFOLIO_UNIVERSE`. Manage sends that admitted value as the per-request Core

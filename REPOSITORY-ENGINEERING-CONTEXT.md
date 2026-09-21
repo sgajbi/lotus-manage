@@ -63,10 +63,16 @@ repository, while Manage owns only its declared consumption and fail-closed beha
 2. Monitoring-run creation requires normalized `X-Tenant-Id` to equal the body `tenant_id` before
    Core resolution or repository side effects. The admitted value is persisted as domain owner,
    database owner, payload owner, and retained audit-filter tenant.
-3. Caller-asserted tenant, actor, and role headers are routing and authorization inputs in the
+3. Mandate refresh requires the same header/body agreement before sourcing or persistence. Manage
+   forwards the normalized admitted tenant as a per-request Core header across mandatory and
+   optional source products; a selector body is not a substitute for Core tenant admission.
+   Stateful rebalance and construction envelopes likewise require matching `X-Tenant-Id` and
+   `stateful_input.tenant_id` before resolver construction; stateless envelopes do not acquire a
+   new tenant requirement.
+4. Caller-asserted tenant, actor, and role headers are routing and authorization inputs in the
    current runtime; they are not proof of an authenticated principal. Production identity and grant
    resolution remain external security-governance responsibilities.
-4. Wave and proof-pack reads, writes, transitions, replay, and retained-row handling use explicit
+5. Wave and proof-pack reads, writes, transitions, replay, and retained-row handling use explicit
    tenant ownership. Source-product selectors remain distinct from aggregate ownership and must not
    be silently treated as interchangeable authority.
 

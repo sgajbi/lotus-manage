@@ -48,7 +48,9 @@ Current posture under RFC-0082:
    context as ready; it is advertised in `/api/v1/integration/capabilities` only when the stateful
    capability flag, stateful sourcing gate, and `DPM_CORE_BASE_URL` are all configured, and the
    retired monolithic core route is not configured. `DPM_CORE_QUERY_BASE_URL` is also required when
-   stateful construction consumes query-plane source products such as `PortfolioCashflowProjection:v1`.
+    stateful construction consumes query-plane source products such as `PortfolioCashflowProjection:v1`.
+   Stateful rebalance and construction requests require matching `X-Tenant-Id` and
+   `stateful_input.tenant_id` before Core resolution; stateless execution remains unchanged.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 
@@ -159,6 +161,9 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/rebalance/policies/*`
 - mandate digital twin and health
   `/api/v1/mandates/*`
+  `POST /api/v1/mandates/{mandate_id}/refresh-from-core` requires matching normalized
+  `X-Tenant-Id` and body `tenant_id` before Core sourcing or Manage persistence. Manage
+  forwards that caller-asserted scope per Core request; it is not authenticated-principal proof.
 - DPM monitoring, exceptions, and command center
   `/api/v1/dpm/monitoring/*`, `/api/v1/dpm/exceptions*`, `/api/v1/dpm/command-center`
   `POST /api/v1/dpm/monitoring/run-once` requires `X-Tenant-Id`; its normalized value must

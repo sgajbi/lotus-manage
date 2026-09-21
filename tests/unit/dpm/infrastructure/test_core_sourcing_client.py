@@ -1390,10 +1390,10 @@ def test_core_resolver_preserves_incomplete_source_readiness_without_promoting_c
 
 
 def test_core_resolver_routes_cashflow_projection_to_query_base_url():
-    seen: list[str] = []
+    seen: list[tuple[str, str | None]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        seen.append(str(request.url))
+        seen.append((str(request.url), request.headers.get("X-Tenant-Id")))
         return _composed_context_response_for(request)
 
     client = DpmCoreResolverClient(
@@ -1413,12 +1413,13 @@ def test_core_resolver_routes_cashflow_projection_to_query_base_url():
     assert (
         "https://core-query.example.test/portfolios/PB_SG_GLOBAL_BAL_001/"
         "cashflow-projection?as_of_date=2026-03-25&horizon_days=90&include_projected=true"
-    ) in seen
+    ) in [url for url, _ in seen]
     assert all(
         url.startswith("https://core-control.example.test/")
-        for url in seen
+        for url, _ in seen
         if "cashflow-projection" not in url
     )
+    assert all(tenant_id == "tenant_001" for _, tenant_id in seen)
 
 
 def test_core_resolver_cashflow_projection_path_can_be_disabled():
@@ -1547,6 +1548,7 @@ def test_core_resolver_fetches_model_portfolio_targets_from_dedicated_source_pro
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["tenant_id"] = request.headers.get("X-Tenant-Id")
         seen["payload"] = request.read()
         return httpx.Response(200, json=_model_portfolio_target_payload())
 
@@ -1566,6 +1568,7 @@ def test_core_resolver_fetches_model_portfolio_targets_from_dedicated_source_pro
         "https://core.example.test/integration/model-portfolios/MODEL_PB_SG_GLOBAL_BAL_DPM/targets"
     )
     assert seen["correlation_id"] == "corr-targets-001"
+    assert seen["tenant_id"] == "tenant_sg_pb"
     assert b'"as_of_date":"2026-04-10"' in seen["payload"]
     assert b'"tenant_id":"tenant_sg_pb"' in seen["payload"]
     assert response.product_name == "DpmModelPortfolioTarget"
@@ -1582,6 +1585,7 @@ def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["tenant_id"] = request.headers.get("X-Tenant-Id")
         seen["payload"] = request.read()
         return httpx.Response(200, json=_mandate_binding_payload())
 
@@ -1604,6 +1608,7 @@ def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/mandate-binding"
     )
     assert seen["correlation_id"] == "corr-mandate-001"
+    assert seen["tenant_id"] == "tenant_sg_pb"
     assert b'"as_of_date":"2026-04-10"' in seen["payload"]
     assert b'"tenant_id":"tenant_sg_pb"' in seen["payload"]
     assert b'"mandate_id":"MANDATE_PB_SG_GLOBAL_BAL_001"' in seen["payload"]
@@ -1615,12 +1620,36 @@ def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
     assert response.rebalance_bands.default_band == Decimal("0.0250000000")
 
 
+def test_core_resolver_does_not_invent_tenant_header_for_unscoped_mandate_read():
+    seen_tenant_headers: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_tenant_headers.append(request.headers.get("X-Tenant-Id"))
+        return httpx.Response(401, json={"detail": "TENANT_CONTEXT_REQUIRED"})
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_MANDATE_BINDING_INCOMPLETE"):
+        client.resolve_mandate_binding(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            tenant_id=None,
+            correlation_id="corr-unscoped-mandate",
+        )
+
+    assert seen_tenant_headers == [None]
+
+
 def test_core_resolver_fetches_benchmark_assignment_source_product():
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["tenant_id"] = request.headers.get("X-Tenant-Id")
         seen["payload"] = request.read()
         return httpx.Response(200, json=_benchmark_assignment_payload())
 
@@ -1633,6 +1662,7 @@ def test_core_resolver_fetches_benchmark_assignment_source_product():
         portfolio_id="PB_SG_GLOBAL_BAL_001",
         as_of_date=date(2026, 4, 10),
         reporting_currency="SGD",
+        tenant_id="tenant_sg_pb",
         correlation_id="corr-benchmark-001",
     )
 
@@ -1640,6 +1670,7 @@ def test_core_resolver_fetches_benchmark_assignment_source_product():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/benchmark-assignment"
     )
     assert seen["correlation_id"] == "corr-benchmark-001"
+    assert seen["tenant_id"] == "tenant_sg_pb"
     assert b'"as_of_date":"2026-04-10"' in seen["payload"]
     assert b'"reporting_currency":"SGD"' in seen["payload"]
     assert response.product_name == "BenchmarkAssignment"
@@ -1912,6 +1943,7 @@ def test_core_resolver_fetches_market_data_coverage_from_dedicated_source_produc
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["tenant_id"] = request.headers.get("X-Tenant-Id")
         seen["payload"] = request.read()
         return httpx.Response(200, json=_market_data_coverage_payload())
 
@@ -1932,6 +1964,7 @@ def test_core_resolver_fetches_market_data_coverage_from_dedicated_source_produc
 
     assert seen["url"] == "https://core.example.test/integration/market-data/coverage"
     assert seen["correlation_id"] == "corr-market-data-001"
+    assert seen["tenant_id"] == "tenant_sg_pb"
     assert b'"as_of_date":"2026-04-10"' in seen["payload"]
     assert b'"instrument_ids":["EQ_US_AAPL"]' in seen["payload"]
     assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen["payload"]

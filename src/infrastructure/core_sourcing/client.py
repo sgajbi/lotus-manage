@@ -203,6 +203,7 @@ class DpmCoreResolverClient:
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
             consumer_system="lotus-manage",
+            tenant_id=stateful_input.tenant_id,
             correlation_id=correlation_id,
         )
         held_instrument_ids = _held_instrument_ids(portfolio_snapshot)
@@ -264,6 +265,7 @@ class DpmCoreResolverClient:
             as_of_date=stateful_input.as_of,
             horizon_days=90,
             include_projected=True,
+            tenant_id=stateful_input.tenant_id,
             correlation_id=correlation_id,
         )
         client_income_needs_schedule = self._try_resolve_client_income_needs_schedule(
@@ -403,6 +405,7 @@ class DpmCoreResolverClient:
         portfolio_id: str,
         as_of_date: date,
         consumer_system: str,
+        tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> PortfolioSnapshot:
         url = self._config.resolve_portfolio_snapshot_url(portfolio_id)
@@ -415,6 +418,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_RESOLVER_UNAVAILABLE",
             incomplete_code="DPM_CORE_CONTEXT_INCOMPLETE",
         )
@@ -439,6 +443,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE",
             incomplete_code="DPM_CORE_MODEL_TARGETS_INCOMPLETE",
         )
@@ -467,6 +472,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_MANDATE_BINDING_UNAVAILABLE",
             incomplete_code="DPM_CORE_MANDATE_BINDING_INCOMPLETE",
         )
@@ -478,6 +484,7 @@ class DpmCoreResolverClient:
         portfolio_id: str,
         as_of_date: date,
         reporting_currency: Optional[str] = None,
+        tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> DpmCoreBenchmarkAssignmentResponse:
         url = self._config.resolve_benchmark_assignment_url(portfolio_id)
@@ -488,6 +495,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_BENCHMARK_ASSIGNMENT_UNAVAILABLE",
             incomplete_code="DPM_CORE_BENCHMARK_ASSIGNMENT_INCOMPLETE",
         )
@@ -603,6 +611,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE",
             incomplete_code="DPM_CORE_INSTRUMENT_ELIGIBILITY_INCOMPLETE",
         )
@@ -634,6 +643,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE",
             incomplete_code="DPM_CORE_PORTFOLIO_TAX_LOTS_INCOMPLETE",
         )
@@ -666,6 +676,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE",
             incomplete_code="DPM_CORE_MARKET_DATA_COVERAGE_INCOMPLETE",
         )
@@ -703,6 +714,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_SOURCE_READINESS_UNAVAILABLE",
             incomplete_code="DPM_CORE_SOURCE_READINESS_INCOMPLETE",
         )
@@ -740,6 +752,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_TRANSACTION_COST_CURVE_UNAVAILABLE",
             incomplete_code="DPM_CORE_TRANSACTION_COST_CURVE_INCOMPLETE",
         )
@@ -752,6 +765,7 @@ class DpmCoreResolverClient:
         as_of_date: date,
         horizon_days: int = 90,
         include_projected: bool = True,
+        tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> DpmCorePortfolioCashflowProjectionResponse:
         url = self._config.resolve_portfolio_cashflow_projection_url(portfolio_id)
@@ -764,6 +778,7 @@ class DpmCoreResolverClient:
             url=url,
             params=params,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
             incomplete_code="DPM_CORE_CASHFLOW_PROJECTION_INCOMPLETE",
         )
@@ -790,6 +805,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_INCOME_NEEDS_UNAVAILABLE",
             incomplete_code="DPM_CORE_INCOME_NEEDS_INCOMPLETE",
         )
@@ -816,6 +832,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_LIQUIDITY_RESERVE_UNAVAILABLE",
             incomplete_code="DPM_CORE_LIQUIDITY_RESERVE_INCOMPLETE",
         )
@@ -844,6 +861,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_PLANNED_WITHDRAWAL_UNAVAILABLE",
             incomplete_code="DPM_CORE_PLANNED_WITHDRAWAL_INCOMPLETE",
         )
@@ -872,6 +890,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_EXTERNAL_HEDGE_READINESS_UNAVAILABLE",
             incomplete_code="DPM_CORE_EXTERNAL_HEDGE_READINESS_INCOMPLETE",
         )
@@ -900,6 +919,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_EXTERNAL_CURRENCY_EXPOSURE_UNAVAILABLE",
             incomplete_code="DPM_CORE_EXTERNAL_CURRENCY_EXPOSURE_INCOMPLETE",
         )
@@ -928,6 +948,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_EXTERNAL_HEDGE_POLICY_UNAVAILABLE",
             incomplete_code="DPM_CORE_EXTERNAL_HEDGE_POLICY_INCOMPLETE",
         )
@@ -958,6 +979,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_UNAVAILABLE",
             incomplete_code="DPM_CORE_EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_INCOMPLETE",
         )
@@ -987,6 +1009,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_EXTERNAL_FX_FORWARD_CURVE_UNAVAILABLE",
             incomplete_code="DPM_CORE_EXTERNAL_FX_FORWARD_CURVE_INCOMPLETE",
         )
@@ -1015,6 +1038,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_UNAVAILABLE",
             incomplete_code="DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_INCOMPLETE",
         )
@@ -1041,6 +1065,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_CLIENT_RESTRICTIONS_UNAVAILABLE",
             incomplete_code="DPM_CORE_CLIENT_RESTRICTIONS_INCOMPLETE",
         )
@@ -1067,6 +1092,7 @@ class DpmCoreResolverClient:
             url=url,
             payload=payload,
             correlation_id=correlation_id,
+            admitted_tenant_id=tenant_id,
             unavailable_code="DPM_CORE_SUSTAINABILITY_PREFERENCES_UNAVAILABLE",
             incomplete_code="DPM_CORE_SUSTAINABILITY_PREFERENCES_INCOMPLETE",
         )
@@ -1106,6 +1132,7 @@ class DpmCoreResolverClient:
         as_of_date: date,
         horizon_days: int,
         include_projected: bool,
+        tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> DpmCorePortfolioCashflowProjectionResponse | None:
         try:
@@ -1114,6 +1141,7 @@ class DpmCoreResolverClient:
                 as_of_date=as_of_date,
                 horizon_days=horizon_days,
                 include_projected=include_projected,
+                tenant_id=tenant_id,
                 correlation_id=correlation_id,
             )
         except DpmCoreResolverError:
