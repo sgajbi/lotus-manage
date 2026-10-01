@@ -31,6 +31,7 @@ from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories,
 )
+from src.core.waves.simulation_repository import DpmWaveSimulationRepository
 from src.core.waves.repository import DpmWaveRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
@@ -430,7 +431,7 @@ def get_pm_quality_summary_invocation_preview_application_service(
     )
 
 
-def get_wave_repository() -> DpmWaveRepository:
+def get_wave_repository() -> DpmWaveSimulationRepository:
     """Return the RFC-0041 rebalance-wave repository for local and test runtimes."""
 
     dsn = _repository_dsn("DPM_WAVE_POSTGRES_DSN")

@@ -150,6 +150,30 @@ Privacy and support rules:
 - Runtime shutdown closes shared transports. If a test or diagnostic manually constructs injected
   fake clients, that test owns its fake lifecycle.
 
+## Durable wave-simulation operations
+
+Use the asynchronous operation family for restart-safe book-scale wave simulation. The synchronous
+`POST /api/v1/rebalance/waves/{wave_id}/simulate` route remains bounded and does not provide durable
+per-item claims.
+
+| Check | Route or signal | Operator decision |
+| --- | --- | --- |
+| Admit | `POST /api/v1/rebalance/waves/{wave_id}/simulation-operations` with `Idempotency-Key` | A `202` means immutable operation/item inputs and the `SIMULATING` transition were persisted. Exact retry is safe; a changed-payload conflict requires investigation or a new key, never blind key replacement. |
+| Progress | `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}` | Use persisted counts/status. `RUNNING` means at least one live fence; `PARTIALLY_COMPLETED` may include retryable failed items awaiting an explicit retry. |
+| Lifecycle metric | `lotus_manage_async_operation_total{event,execution_mode,outcome}` | Wave admission emits `event="submit",execution_mode="accept_only"`; bounded worker calls emit `event="execute",execution_mode="manual"`. Labels never carry tenant, portfolio, operation, idempotency, request, source, actor, or claim identity. |
+| Item evidence | `GET .../{operation_id}/results?limit=...&offset=...` | Page by stable ordinal. Route incidents with bounded `error_code`; do not copy portfolio ids, input hashes, source hashes, or raw payloads into logs/support notes. |
+| Worker drain | `POST .../{operation_id}/work` | Run multiple worker instances only within the persisted `max_concurrency`. A zero claim can mean no remaining capacity or no eligible work; re-read operation status before retrying. |
+| Expired lease | A replacement worker increments `claim_generation`/`attempt_count`; stale publication is refused | Allow replacement recovery. Deterministic construction identity reuses an already committed artifact. Do not manually rewrite item rows or delete the construction artifact. |
+| Retry | `POST .../{operation_id}/retry` | Retry only typed retryable failures below `max_attempts`. Attempt history remains monotonic; exhausted work terminates with `DPM_WAVE_SIMULATION_RETRY_EXHAUSTED`. |
+| Cancel | `POST .../{operation_id}/cancel` | Pending/failed work becomes cancelled. In-flight work retains its fence and may publish before expiry; cancellation is not rollback of construction, approval, handoff, order, execution, or booking truth. |
+| Source conflict | `DPM_WAVE_SIMULATION_SOURCE_REVISION_CONFLICT` | Re-admit only after the owning workflow establishes a new source-checked wave/revision. Never calculate against a changed model/source snapshot under the old operation. |
+
+The reproducible local envelope probe is
+`python scripts/measure_wave_simulation_workload.py --dsn <postgres-dsn> --items 100 --concurrency 4 --interrupt-count 4`.
+The committed issue #715 result is a controlled workstation measurement, not production capacity.
+Repeat it on the target tier with representative database, network, source-service, contention, and
+workload conditions before setting worker counts or service-level objectives.
+
 ## PM-quality lifecycle operations
 
 PM operating-quality evidence is immutable governance and supportability state, not an HR,

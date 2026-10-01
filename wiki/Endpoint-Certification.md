@@ -1751,6 +1751,50 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url "$LOTUS_MANAGE
 python scripts/openapi_quality_gate.py
 ```
 
+## Certified endpoint family: durable wave-simulation operations
+
+Routes:
+
+- `POST /api/v1/rebalance/waves/{wave_id}/simulation-operations`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}/results`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/work`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/retry`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/cancel`
+
+Purpose:
+
+Admit immutable tenant-owned wave work before financial calculation, expose durable progress and
+stable paged results, and support bounded horizontally deployed workers with leased fenced claims,
+incremental terminal checkpoints, explicit retry, and cancellation.
+
+Functional coverage:
+
+- exact admission replay and changed-input conflict;
+- atomic operation/item plus `SIMULATING` persistence;
+- operation-wide concurrency and attempt budgets;
+- deterministic construction-artifact recovery after process replacement;
+- stale-owner fencing, retry exhaustion, cancellation races, and source-revision refusal;
+- tenant-scoped status/results with no input-payload or claim-token disclosure;
+- a real PostgreSQL 100-item/concurrency-4 interrupted recovery test with sequential financial
+  oracle comparison.
+
+Non-functional posture:
+
+- financial work runs outside database claim transactions;
+- the committed load probe is a declared local operating envelope, not production capacity;
+- these routes do not create approved instructions, orders, acknowledgements, fills, settlement,
+  authoritative core booking, or an OMS claim.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_wave_simulation_operations_api.py tests/unit/dpm/waves/test_wave_simulation_operation_repository.py -q
+DPM_POSTGRES_INTEGRATION_DSN=<postgres-dsn> python -m pytest tests/integration/dpm/waves/test_wave_simulation_operations_postgres.py -q
+python scripts/openapi_quality_gate.py
+python scripts/api_vocabulary_inventory.py --validate-only
+```
+
 ## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, read models, report input, and supportability
 
 Routes:

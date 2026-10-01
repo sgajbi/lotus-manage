@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.core.common.capabilities import has_psycopg
@@ -18,9 +18,10 @@ from src.core.waves.repository import (
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
+from src.infrastructure.waves.simulation_postgres import PostgresDpmWaveSimulationMixin
 
 
-class PostgresDpmWaveRepository:
+class PostgresDpmWaveRepository(PostgresDpmWaveSimulationMixin):
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
             raise RuntimeError("DPM_WAVE_POSTGRES_DSN_REQUIRED")
@@ -304,7 +305,7 @@ def _insert_idempotency_marker(
             idempotency_key,
             wave.wave_id,
             request_hash,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
             tenant_id,
         ),
     )

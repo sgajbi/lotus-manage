@@ -7,10 +7,15 @@ import sys
 import tempfile
 from pathlib import Path
 
+try:
+    from scripts.workspace_paths import resolve_lotus_platform_root
+except ModuleNotFoundError:  # Direct ``python scripts/...`` execution.
+    from workspace_paths import resolve_lotus_platform_root
+
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_DECLARATION_DIR = ROOT / "contracts" / "domain-data-products"
-PLATFORM_ROOT = ROOT.parent / "lotus-platform"
+PLATFORM_ROOT = resolve_lotus_platform_root(repository_root=ROOT)
 PLATFORM_DECLARATION_DIR = PLATFORM_ROOT / "platform-contracts" / "domain-data-products"
 PLATFORM_VOCABULARY_DIR = PLATFORM_ROOT / "platform-contracts" / "domain-vocabulary"
 PLATFORM_VALIDATOR_PATH = PLATFORM_DECLARATION_DIR / "validate_domain_data_product_contracts.py"

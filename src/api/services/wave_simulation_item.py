@@ -52,6 +52,7 @@ def simulate_item(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     risk_authority_client: RiskAuthorityClient | None,
+    construction_idempotency_key: str | None = None,
 ) -> DpmRebalanceWaveItem:
     if item.state != "SOURCE_READY":
         return item
@@ -64,7 +65,7 @@ def simulate_item(
     try:
         alternative_set = construction_service.generate_construction_alternative_set(
             request=rebalance_request,
-            idempotency_key=f"wave:{item.wave_item_id}:simulate",
+            idempotency_key=(construction_idempotency_key or f"wave:{item.wave_item_id}:simulate"),
             correlation_id=correlation_id,
             repository=construction_repository,
             methods=methods,

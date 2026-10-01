@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import uuid
+from collections import Counter
+from collections.abc import Iterable
 from copy import deepcopy
+from datetime import datetime
 from threading import Lock
-from typing import Iterable
 
-from src.core.waves.models import DpmRebalanceWave
+from src.core.waves.models import DpmRebalanceWave, DpmRebalanceWaveItem
 from src.core.waves.repository import (
     DpmWaveAlreadyExistsError,
     DpmWaveCorrelationConflictError,
@@ -14,14 +17,27 @@ from src.core.waves.repository import (
     DpmWaveVersionConflictError,
     wave_idempotency_mapping_key,
 )
+from src.core.waves.simulation_operations import (
+    DpmWaveSimulationItemClaim,
+    DpmWaveSimulationItemPage,
+    DpmWaveSimulationItemRecord,
+    DpmWaveSimulationOperation,
+    derive_wave_simulation_operation_status,
+)
+from src.core.waves.simulation_repository import DpmWaveSimulationOperationConflictError
+from src.infrastructure.waves.simulation_publication import DpmWaveSimulationPublicationMixin
 
 
-class InMemoryDpmWaveRepository(DpmWaveRepository):
+class InMemoryDpmWaveRepository(DpmWaveSimulationPublicationMixin, DpmWaveRepository):
     def __init__(self) -> None:
         self._lock = Lock()
         self._waves: dict[str, DpmRebalanceWave] = {}
         self._idempotency_index: dict[str, tuple[str, str | None]] = {}
         self._correlation_index: dict[tuple[str, str], str] = {}
+        self._simulation_operations: dict[str, DpmWaveSimulationOperation] = {}
+        self._simulation_operation_idempotency: dict[tuple[str, str], str] = {}
+        self._simulation_operation_correlations: dict[tuple[str, str], str] = {}
+        self._simulation_items: dict[tuple[str, str], DpmWaveSimulationItemRecord] = {}
 
     def save_wave(
         self,
@@ -152,6 +168,340 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
                 raise DpmWaveVersionConflictError("DPM_WAVE_VERSION_CONFLICT")
             self._waves[wave.wave_id] = deepcopy(wave.model_copy(update={"tenant_id": tenant_id}))
 
+    def admit_simulation_operation(
+        self,
+        *,
+        operation: DpmWaveSimulationOperation,
+        items: list[DpmWaveSimulationItemRecord],
+        simulating_wave: DpmRebalanceWave,
+    ) -> tuple[DpmWaveSimulationOperation, bool]:
+        with self._lock:
+            index_key = (operation.tenant_id, operation.idempotency_key_hash)
+            existing_id = self._simulation_operation_idempotency.get(index_key)
+            if existing_id is not None:
+                existing = self._simulation_operations[existing_id]
+                if existing.request_hash != operation.request_hash:
+                    raise DpmWaveSimulationOperationConflictError(
+                        "DPM_WAVE_SIMULATION_IDEMPOTENCY_CONFLICT"
+                    )
+                return deepcopy(existing), True
+            correlation_key = (operation.tenant_id, operation.correlation_id)
+            if correlation_key in self._simulation_operation_correlations:
+                raise DpmWaveSimulationOperationConflictError(
+                    "DPM_WAVE_SIMULATION_CORRELATION_CONFLICT"
+                )
+            wave = self._waves.get(operation.wave_id)
+            if wave is None or wave.tenant_id != operation.tenant_id:
+                raise DpmWaveSimulationOperationConflictError("DPM_WAVE_SIMULATION_WAVE_NOT_FOUND")
+            if wave.version != operation.admitted_wave_version:
+                raise DpmWaveSimulationOperationConflictError(
+                    "DPM_WAVE_SIMULATION_WAVE_VERSION_CONFLICT"
+                )
+            _validate_simulation_admission_items(operation=operation, items=items, wave=wave)
+            if (
+                simulating_wave.wave_id != wave.wave_id
+                or simulating_wave.tenant_id != operation.tenant_id
+                or simulating_wave.state != "SIMULATING"
+                or simulating_wave.version != wave.version + 1
+            ):
+                raise DpmWaveSimulationOperationConflictError(
+                    "DPM_WAVE_SIMULATION_TRANSITION_CONFLICT"
+                )
+            self._simulation_operations[operation.operation_id] = deepcopy(operation)
+            self._simulation_operation_idempotency[index_key] = operation.operation_id
+            self._simulation_operation_correlations[correlation_key] = operation.operation_id
+            for item in items:
+                self._simulation_items[(operation.operation_id, item.wave_item_id)] = deepcopy(item)
+            self._waves[wave.wave_id] = deepcopy(simulating_wave)
+            return deepcopy(operation), False
+
+    def get_simulation_operation(
+        self, *, tenant_id: str, operation_id: str
+    ) -> DpmWaveSimulationOperation | None:
+        with self._lock:
+            operation = self._simulation_operations.get(operation_id)
+            if operation is None or operation.tenant_id != tenant_id:
+                return None
+            return deepcopy(operation)
+
+    def get_simulation_operation_by_idempotency(
+        self, *, tenant_id: str, idempotency_key_hash: str
+    ) -> DpmWaveSimulationOperation | None:
+        with self._lock:
+            operation_id = self._simulation_operation_idempotency.get(
+                (tenant_id, idempotency_key_hash)
+            )
+            if operation_id is None:
+                return None
+            return deepcopy(self._simulation_operations[operation_id])
+
+    def list_simulation_items(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        limit: int,
+        offset: int,
+    ) -> DpmWaveSimulationItemPage:
+        with self._lock:
+            operation = self._simulation_operations.get(operation_id)
+            if operation is None or operation.tenant_id != tenant_id:
+                return DpmWaveSimulationItemPage(items=[], total_count=0, next_offset=None)
+            items = sorted(
+                (
+                    item
+                    for (stored_operation_id, _), item in self._simulation_items.items()
+                    if stored_operation_id == operation_id and item.tenant_id == tenant_id
+                ),
+                key=lambda item: (item.ordinal, item.wave_item_id),
+            )
+            page = items[offset : offset + limit]
+            next_offset = offset + len(page) if offset + len(page) < len(items) else None
+            return DpmWaveSimulationItemPage(
+                items=deepcopy(page), total_count=len(items), next_offset=next_offset
+            )
+
+    def simulation_item_counts(self, *, tenant_id: str, operation_id: str) -> dict[str, int]:
+        with self._lock:
+            operation = self._simulation_operations.get(operation_id)
+            if operation is None or operation.tenant_id != tenant_id:
+                return {}
+            counts = Counter(
+                item.status
+                for item in _simulation_items_for_operation(
+                    items=self._simulation_items,
+                    operation_id=operation_id,
+                    tenant_id=tenant_id,
+                )
+            )
+            return {
+                status: counts.get(status, 0)
+                for status in ("PENDING", "RUNNING", "SUCCEEDED", "FAILED", "CANCELLED")
+            }
+
+    def claim_simulation_items(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        worker_id: str,
+        limit: int,
+        claimed_at: datetime,
+        lease_expires_at: datetime,
+    ) -> list[DpmWaveSimulationItemClaim]:
+        with self._lock:
+            operation = self._simulation_operations.get(operation_id)
+            if operation is None or operation.tenant_id != tenant_id:
+                return []
+            if operation.status in {"CANCEL_REQUESTED", "CANCELLED", "SUCCEEDED", "FAILED"}:
+                return []
+            owned_items = _simulation_items_for_operation(
+                items=self._simulation_items,
+                operation_id=operation_id,
+                tenant_id=tenant_id,
+            )
+            active_count = sum(
+                item.status == "RUNNING"
+                and item.lease_expires_at is not None
+                and item.lease_expires_at > claimed_at
+                for item in owned_items
+            )
+            capacity = max(0, operation.max_concurrency - active_count)
+            claim_limit = min(max(0, limit), capacity)
+            candidates = [
+                item
+                for item in owned_items
+                if item.status == "PENDING"
+                or (
+                    item.status == "RUNNING"
+                    and item.lease_expires_at is not None
+                    and item.lease_expires_at <= claimed_at
+                )
+            ]
+            claims: list[DpmWaveSimulationItemClaim] = []
+            for item in sorted(candidates, key=lambda row: (row.ordinal, row.wave_item_id))[
+                :claim_limit
+            ]:
+                recovery_exhausted = item.attempt_count >= operation.max_attempts
+                attempt_count = item.attempt_count + (0 if recovery_exhausted else 1)
+                claim_generation = item.claim_generation + 1
+                claim_token = f"wsc_{uuid.uuid4().hex}"
+                updated = item.model_copy(
+                    update={
+                        "status": "RUNNING",
+                        "attempt_count": attempt_count,
+                        "claim_generation": claim_generation,
+                        "worker_id": worker_id,
+                        "claim_token": claim_token,
+                        "claimed_at": claimed_at,
+                        "lease_expires_at": lease_expires_at,
+                        "updated_at": claimed_at,
+                    }
+                )
+                self._simulation_items[(operation_id, item.wave_item_id)] = updated
+                claims.append(
+                    DpmWaveSimulationItemClaim(
+                        operation_id=operation_id,
+                        tenant_id=tenant_id,
+                        wave_id=item.wave_id,
+                        wave_item_id=item.wave_item_id,
+                        portfolio_id=item.portfolio_id,
+                        input_payload=deepcopy(item.input_payload),
+                        input_hash=item.input_hash,
+                        source_identity_hash=item.source_identity_hash,
+                        worker_id=worker_id,
+                        claim_token=claim_token,
+                        claim_generation=claim_generation,
+                        attempt_count=attempt_count,
+                        lease_expires_at=lease_expires_at,
+                        recovery_exhausted=recovery_exhausted,
+                    )
+                )
+            self._refresh_simulation_operation_status(
+                operation_id=operation_id, updated_at=claimed_at
+            )
+            return claims
+
+    def retry_simulation_items(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        wave_item_ids: list[str] | None,
+        retried_at: datetime,
+    ) -> int:
+        with self._lock:
+            operation = self._simulation_operations.get(operation_id)
+            if (
+                operation is None
+                or operation.tenant_id != tenant_id
+                or operation.cancel_reason_code
+            ):
+                return 0
+            requested = None if wave_item_ids is None else set(wave_item_ids)
+            retried = 0
+            for item in _simulation_items_for_operation(
+                items=self._simulation_items,
+                operation_id=operation_id,
+                tenant_id=tenant_id,
+            ):
+                if requested is not None and item.wave_item_id not in requested:
+                    continue
+                if not item.retryable or item.status != "FAILED":
+                    continue
+                if item.attempt_count >= operation.max_attempts:
+                    continue
+                self._simulation_items[(operation_id, item.wave_item_id)] = item.model_copy(
+                    update={
+                        "status": "PENDING",
+                        "worker_id": None,
+                        "claim_token": None,
+                        "claimed_at": None,
+                        "lease_expires_at": None,
+                        "error_code": None,
+                        "error_message": None,
+                        "retryable": False,
+                        "completed_at": None,
+                        "updated_at": retried_at,
+                    }
+                )
+                retried += 1
+            self._refresh_simulation_operation_status(
+                operation_id=operation_id, updated_at=retried_at
+            )
+            return retried
+
+    def cancel_simulation_operation(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        reason_code: str,
+        cancelled_at: datetime,
+    ) -> DpmWaveSimulationOperation | None:
+        with self._lock:
+            operation = self._simulation_operations.get(operation_id)
+            if operation is None or operation.tenant_id != tenant_id:
+                return None
+            if operation.status in {"SUCCEEDED", "FAILED", "CANCELLED"}:
+                return deepcopy(operation)
+            operation = operation.model_copy(
+                update={"cancel_reason_code": reason_code, "updated_at": cancelled_at}
+            )
+            self._simulation_operations[operation_id] = operation
+            for item in _simulation_items_for_operation(
+                items=self._simulation_items,
+                operation_id=operation_id,
+                tenant_id=tenant_id,
+            ):
+                if item.status in {"PENDING", "FAILED"}:
+                    self._simulation_items[(operation_id, item.wave_item_id)] = item.model_copy(
+                        update={
+                            "status": "CANCELLED",
+                            "retryable": False,
+                            "completed_at": cancelled_at,
+                            "updated_at": cancelled_at,
+                        }
+                    )
+            return deepcopy(
+                self._refresh_simulation_operation_status(
+                    operation_id=operation_id, updated_at=cancelled_at
+                )
+            )
+
+    def _publish_simulation_item_terminal(
+        self,
+        *,
+        claim: DpmWaveSimulationItemClaim,
+        completed_at: datetime,
+        status: str,
+        result_item: DpmRebalanceWaveItem | None,
+        error_code: str | None,
+        error_message: str | None,
+        retryable: bool,
+    ) -> bool:
+        with self._lock:
+            item = self._simulation_items.get((claim.operation_id, claim.wave_item_id))
+            if (
+                item is None
+                or item.tenant_id != claim.tenant_id
+                or item.status != "RUNNING"
+                or item.claim_token != claim.claim_token
+                or item.claim_generation != claim.claim_generation
+                or item.lease_expires_at is None
+                or completed_at > item.lease_expires_at
+            ):
+                return False
+            self._simulation_items[(claim.operation_id, claim.wave_item_id)] = item.model_copy(
+                update={
+                    "status": status,
+                    "result_item": result_item,
+                    "error_code": error_code,
+                    "error_message": error_message,
+                    "retryable": retryable,
+                    "completed_at": completed_at,
+                    "updated_at": completed_at,
+                }
+            )
+            self._refresh_simulation_operation_status(
+                operation_id=claim.operation_id, updated_at=completed_at
+            )
+            return True
+
+    def _refresh_simulation_operation_status(
+        self, *, operation_id: str, updated_at: datetime
+    ) -> DpmWaveSimulationOperation:
+        operation = self._simulation_operations[operation_id]
+        items = _simulation_items_for_operation(
+            items=self._simulation_items,
+            operation_id=operation_id,
+            tenant_id=operation.tenant_id,
+        )
+        status = derive_wave_simulation_operation_status(operation=operation, items=items)
+        updated = operation.model_copy(update={"status": status, "updated_at": updated_at})
+        self._simulation_operations[operation_id] = updated
+        return updated
+
 
 def _raise_if_idempotency_conflict(
     *,
@@ -256,3 +606,43 @@ def _copied_wave_page(
     offset: int,
 ) -> list[DpmRebalanceWave]:
     return deepcopy(waves[offset : offset + limit])
+
+
+def _validate_simulation_admission_items(
+    *,
+    operation: DpmWaveSimulationOperation,
+    items: list[DpmWaveSimulationItemRecord],
+    wave: DpmRebalanceWave,
+) -> None:
+    wave_items = {item.wave_item_id: item for item in wave.items}
+    item_ids = [item.wave_item_id for item in items]
+    if len(item_ids) != len(set(item_ids)):
+        raise DpmWaveSimulationOperationConflictError("DPM_WAVE_SIMULATION_DUPLICATE_ITEM")
+    ordinals = [item.ordinal for item in items]
+    if sorted(ordinals) != list(range(len(items))):
+        raise DpmWaveSimulationOperationConflictError("DPM_WAVE_SIMULATION_ITEM_ORDINAL_CONFLICT")
+    for item in items:
+        wave_item = wave_items.get(item.wave_item_id)
+        if (
+            item.operation_id != operation.operation_id
+            or item.tenant_id != operation.tenant_id
+            or item.wave_id != operation.wave_id
+            or wave_item is None
+            or wave_item.portfolio_id != item.portfolio_id
+        ):
+            raise DpmWaveSimulationOperationConflictError(
+                "DPM_WAVE_SIMULATION_ITEM_IDENTITY_CONFLICT"
+            )
+
+
+def _simulation_items_for_operation(
+    *,
+    items: dict[tuple[str, str], DpmWaveSimulationItemRecord],
+    operation_id: str,
+    tenant_id: str,
+) -> list[DpmWaveSimulationItemRecord]:
+    return [
+        item
+        for (stored_operation_id, _), item in items.items()
+        if stored_operation_id == operation_id and item.tenant_id == tenant_id
+    ]

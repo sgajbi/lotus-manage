@@ -528,6 +528,15 @@ Operationally important truths:
     store or expose generated summary text, project downstream summary UX, reconstruct prompts or
     model responses, contact clients, generate client-ready messages, approve trades, route
     orders, or claim OMS execution.
+18. Book-scale wave simulation uses the durable asynchronous operation routes under
+    `/api/v1/rebalance/waves/*/simulation-operations`. Admission persists immutable tenant, input,
+    source, method, concurrency, and retry identity before `202`; horizontally deployed workers use
+    bounded leases and fencing, persist each result/failure incrementally, and recover deterministic
+    construction artifacts after process replacement. Status, stable paged results, retry, and
+    cancellation are supported APIs. The existing synchronous `/simulate` route remains a bounded
+    convenience and is not restart-safe book-scale orchestration. See
+    [issue #715 evidence](docs/evidence/issue-715-wave-simulation/README.md) for the real PostgreSQL
+    recovery proof and measured local operating envelope; neither is a production capacity claim.
 
 ## Documentation Map
 

@@ -103,9 +103,14 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    evidence inputs, and downstream handoff metadata without taking ownership of rendering, archive,
    report materialization, or AI-generated content.
 4. The RFC-0041 foundation provides explicit-list and source-resolved rebalance waves, simulations,
-   lifecycle controls, evidence, campaigns, and bounded source readiness. It does not claim client
-   contact, maker-checker approval outside implemented controls, OMS execution, or suitability
-   approval.
+   lifecycle controls, evidence, campaigns, and bounded source readiness. Book-scale simulation is
+   admitted through durable tenant-scoped operations with persisted immutable item inputs/source
+   identity, operation-wide concurrency/attempt budgets, leased fenced worker claims, incremental
+   item checkpoints, stable paging, retry, and cancellation. Financial work stays outside claim
+   transactions and uses deterministic operation/item construction identity for restart recovery.
+   The synchronous simulation route remains bounded and is not a restart-safe worker substitute.
+   RFC-0041 does not claim client contact, maker-checker approval outside implemented controls, OMS
+   execution, or suitability approval.
 5. The RFC-0042 foundation provides outcome-review creation, refresh, comparison, search, and
    handoffs over source-owned realized evidence; missing or incomplete upstream evidence remains
    explicit rather than inferred.

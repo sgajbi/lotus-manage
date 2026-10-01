@@ -1,0 +1,51 @@
+{
+  "claim": "controlled_local_measurement_not_production_capacity_certification",
+  "environment": {
+    "logical_cpu_count": 16,
+    "machine": "AMD64",
+    "operating_system": "Windows",
+    "python": "3.13.3"
+  },
+  "measured_at": "2026-10-01T05:40:18.366844+00:00",
+  "resources": {
+    "postgres_database_bytes_after": 11312151,
+    "postgres_database_bytes_before": 9870359,
+    "postgres_database_growth_bytes": 1441792,
+    "python_process_cpu_seconds": 23.734375,
+    "python_traced_heap_current_bytes": 576258,
+    "python_traced_heap_peak_bytes": 10358126,
+    "wall_seconds_including_admission_and_interruption": 19.044361
+  },
+  "results": {
+    "completed_per_worker": [
+      25,
+      25,
+      25,
+      25
+    ],
+    "completed_portfolios_per_second": 5.4357,
+    "completion_latency_seconds": {
+      "max": 18.316561,
+      "p50": 8.997311,
+      "p95": 17.178981,
+      "p99": 18.107293
+    },
+    "duplicate_alternative_count": 0,
+    "error_counts": {},
+    "restart_backlog_drain_seconds": 18.396981,
+    "status_counts": {
+      "SUCCEEDED": 100
+    },
+    "unique_alternative_set_count": 100
+  },
+  "schema_version": "wave-simulation-load-probe.v1",
+  "workload": {
+    "configured_concurrency": 4,
+    "input_profile": "multi-currency holdings, tax lots, restricted instrument, cash bands, minimum notionals, turnover cap, settlement ladder and group constraint",
+    "interrupted_after_artifact_commit_count": 4,
+    "item_count": 100,
+    "methods": [
+      "HEURISTIC_EXPLAINABLE"
+    ]
+  }
+}

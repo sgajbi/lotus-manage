@@ -6,13 +6,18 @@ import sys
 import tempfile
 from pathlib import Path
 
+try:
+    from scripts.workspace_paths import resolve_lotus_platform_root
+except ModuleNotFoundError:  # Direct ``python scripts/...`` execution.
+    from workspace_paths import resolve_lotus_platform_root
+
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_TELEMETRY_DIR = ROOT / "contracts" / "trust-telemetry"
 LOCAL_PRODUCT_DECLARATION_PATH = (
     ROOT / "contracts" / "domain-data-products" / "lotus-manage-products.v1.json"
 )
-PLATFORM_ROOT = ROOT.parent / "lotus-platform"
+PLATFORM_ROOT = resolve_lotus_platform_root(repository_root=ROOT)
 PLATFORM_AUTOMATION_DIR = PLATFORM_ROOT / "automation"
 PLATFORM_VALIDATOR_PATH = PLATFORM_AUTOMATION_DIR / "validate_trust_telemetry.py"
 PLATFORM_CATALOG_PATH = PLATFORM_ROOT / "generated" / "domain-product-catalog.json"

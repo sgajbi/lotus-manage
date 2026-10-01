@@ -12,6 +12,7 @@ nearest durable doc in the same slice.
 | `runbooks/` | Service operations and recovery guidance. | Include observable symptoms, commands, and rollback/recovery posture. |
 | `rfcs/` | RFC source, conventions, and work-to-be-done ledger. | Do not claim RFC closure until code, tests, docs, wiki, and merge posture agree. |
 | `standards/` | Repo-local standards and generated API vocabulary inventory. | Regenerate or validate inventories with the owning script before committing. |
+| `evidence/` | Committed issue/RFC evidence that must remain reviewable after generated `output/` cleanup. | State scope, exact commands/results, and non-claims; do not commit secrets or raw client payloads. |
 | `demo/` | Demo payloads and demo README. | Keep examples aligned with implemented API contracts. |
 
 Wiki pages are authored in `wiki/`, not in a separate `*.wiki.git` clone. `wiki/` intentionally has

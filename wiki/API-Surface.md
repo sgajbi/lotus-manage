@@ -151,7 +151,26 @@ flowchart LR
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
   classifies item readiness from manage-owned mandate and source-readiness evidence.
 - `POST /api/v1/rebalance/waves/{wave_id}/simulate`
-  delegates ready items to RFC-0039 construction alternatives.
+  delegates ready items to RFC-0039 construction alternatives synchronously. This remains a
+  bounded convenience and is not the restart-safe book-scale path.
+- `POST /api/v1/rebalance/waves/{wave_id}/simulation-operations`
+  admits a durable asynchronous operation before financial work. `Idempotency-Key` exact retries
+  return the existing immutable operation; changed input, method, limit, or source identity under
+  the same key returns a typed conflict.
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}`
+  returns tenant-scoped durable status, bounded state counts, concurrency/attempt limits, and
+  immutable request/source hashes without exposing stored input payloads or claim tokens.
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}/results`
+  returns stable ordinal paging with typed per-item failures and persisted alternative-set refs.
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/work`
+  claims and executes bounded financial work under an operation-wide concurrency budget. Leases,
+  fencing, and deterministic construction identity allow replacement workers to resume without
+  duplicate successful calculation.
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/retry`
+  returns selected or all eligible retryable failures to pending without resetting attempt history.
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/cancel`
+  cancels unclaimed work. Already claimed work may publish before lease expiry; completed financial,
+  approval, and handoff artifacts are not deleted or relabelled.
 - `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
   records actor-attributed construction selection for a wave item.
 - `POST /api/v1/rebalance/waves/{wave_id}/approve`
@@ -172,6 +191,8 @@ flowchart LR
   persisted handoff evidence contains an external execution claim, this endpoint fails closed with
   `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` instead of propagating unsupported OMS truth downstream.
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}/results`
   returns product-safe operator diagnostics and bounded reason-code posture.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
   checks whether a persisted bulk-review campaign definition is ready for new preview/create use.
@@ -329,7 +350,7 @@ Source-service callers must use the canonical snake_case query parameters `consu
 
 The tenant is not always a query parameter. Mandate reads, monitoring-exception reads and the
 command centre take `tenant_id` as above. **The wave aggregate takes the tenant as the
-`X-Tenant-Id` header instead — 15 of them, not a named subset.** On those surfaces the tenant is
+`X-Tenant-Id` header instead — 21 of them, not a named subset.** On those surfaces the tenant is
 required and an absent one is refused rather than answered from an assumed tenant.
 
 Mandate refresh is a write with both doors: `POST /api/v1/mandates/{mandate_id}/refresh-from-core`
@@ -367,6 +388,8 @@ tenant-partitioned response. It is listed with the other unscoped reads below.
 - `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`
 - `GET /api/v1/rebalance/waves/{wave_id}/report-input`
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}/results`
 - `POST /api/v1/rebalance/waves`
 - `POST /api/v1/rebalance/waves/preview`
 - `POST /api/v1/rebalance/waves/{wave_id}/approve`
@@ -374,6 +397,10 @@ tenant-partitioned response. It is listed with the other unscoped reads below.
 - `POST /api/v1/rebalance/waves/{wave_id}/handoff`
 - `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
 - `POST /api/v1/rebalance/waves/{wave_id}/simulate`
+- `POST /api/v1/rebalance/waves/{wave_id}/simulation-operations`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/work`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/retry`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/cancel`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
 - `POST /api/v1/rebalance/waves/{wave_id}/stage`
 
@@ -381,7 +408,7 @@ Those are method-and-path rather than friendly names deliberately: a test assert
 the served contract, so a renamed or added operation fails this page instead of quietly ageing it.
 
 Do not build a client from a subset of that list. An earlier version of this page named only four
-of the fifteen, and a consumer enumerating wave operations from it reproduced exactly that gap.
+of the then-fifteen, and a consumer enumerating wave operations from it reproduced exactly that gap.
 
 **The bulk-review campaign operations under `/rebalance/waves/campaign-*` also require
 `X-Tenant-Id`, and the served OpenAPI document does not say so.** They read the header through a

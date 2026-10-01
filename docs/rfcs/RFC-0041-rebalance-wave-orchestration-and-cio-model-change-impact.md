@@ -958,7 +958,8 @@ RFC-0041 is complete only when:
 2. platform/scaffolding gaps are fixed or consciously classified,
 3. wave domain, state machine, persistence, events, and retention are implemented,
 4. preview/create/source-check/simulate/select/approve/stage/handoff/search/supportability APIs are
-   implemented and certified,
+   implemented and certified, and book-scale simulation uses durable admission, tenant-scoped
+   status/results, fenced bounded worker claims, incremental checkpoints, retry, and cancellation,
 5. every wave item state is source-backed or truthfully degraded/blocked/not-supported,
 6. aggregate metrics reconcile to item evidence,
 7. proof-pack linkage is source-honest,
@@ -984,7 +985,7 @@ RFC-0041 is complete only when:
 | Debt removed | Removed misleading RFC claims around unsupported book/PM search filters and stale `MANUAL_PORTFOLIO_LIST` wording. Avoided manage-local clones of RFC-0039 construction and RFC-0040 proof-pack methodology. |
 | Platform/scaffold improvements | Slice 1 improved `lotus-platform` RFC evidence scaffolding through PR #296 (`47d3c7f`) so future state-machine/API-heavy RFCs start with stronger evidence manifests. |
 | Cross-app changes and evidence | Runtime realization is now implementation-backed through `lotus-gateway` PR #196/#197/#201, `lotus-workbench` PR #165/#168, `lotus-platform` PR #306, `lotus-manage` PR #120/#124/#126, `lotus-report` PR #91, `lotus-render` PR #12, `lotus-archive` PR #24, `lotus-ai` PR #63, and `lotus-core` PR #339 plus `CioModelChangeAffectedCohort:v1` source ownership. Earlier `lotus-gateway` PR #183 (`e0e4b1b`) and `lotus-workbench` PR #143 (`c4888d4`) remain the downstream RFC-alignment history. |
-| APIs certified | 13 RFC-0041 wave operations are OpenAPI-certified with route grouping, examples, request/response schemas, error posture, and vocabulary inventory validation. |
+| APIs certified | The original 13 RFC-0041 wave operations plus six durable asynchronous simulation-operation routes are OpenAPI-certified with route grouping, examples, request/response schemas, error posture, and vocabulary inventory validation. |
 | Wave states and sections proven | Live proof validated mixed `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, `SOURCE_BLOCKED`, `PARTIALLY_SIMULATED`, approval-with-exceptions, `STAGED`, `HANDOFF_READY`, and `CANCELLED` behavior with aggregate reconciliation. |
 | Report/AI/proof-pack handoff posture | Wave selection delegates proof-pack generation to RFC-0040 and exposes proof-pack/handoff posture. Report materialization is implementation-backed through `lotus-report`/`lotus-render`/`lotus-archive`, and AI PM memo generation is implementation-backed through `lotus-ai` plus Gateway/Workbench consumers. Manage remains evidence and report-input authority only. |
 | External execution boundary | `lotus-manage` intentionally stops at internal operations handoff. The report-input seam now fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` if persisted handoff evidence ever contains an external execution claim, so downstream report/render/archive/AI paths cannot propagate unsupported OMS truth. |
@@ -1136,6 +1137,41 @@ approve trades, generate or route orders, contact clients, orchestrate external 
 or claim OMS execution. RFC41-WTBD-003 is closed for Lotus-owned supportability; global
 portfolio-universe campaign discovery and broader workflow automation beyond controlled
 Manage-side assignment tasks remain deferred owner dependencies and unsupported claims.
+
+2026-10-01 durable wave-simulation addendum:
+
+Issue #715 closes the later-identified orchestration checkpoint gap without changing RFC-0041's
+financial or execution-authority boundaries. `POST
+/api/v1/rebalance/waves/{wave_id}/simulation-operations` atomically persists an immutable,
+tenant-owned operation, per-item input/source hashes, methods, concurrency/attempt limits, and the
+wave's `SIMULATING` transition before returning `202`. Exact retries resolve the existing operation;
+changed economic or source input under the same key fails explicitly. Separate worker calls claim
+only the remaining operation budget, calculate outside the database transaction, and publish only
+through the current unexpired token/generation fence. Item result/failure state is incremental and
+tenant-scoped; retry preserves attempts; cancellation cancels unclaimed work while documented
+in-flight races may still publish under their valid fence.
+
+Construction recovery uses the deterministic
+`wave-operation:{operation_id}:{wave_item_id}:simulate` key. A replacement worker therefore reuses
+an artifact committed before process death and publishes one final item disposition instead of
+repeating successful financial work. Source identity is revalidated immediately before calculation,
+and a changed source/model revision fails closed. The supported status and stable paged-results
+routes do not expose immutable input payloads or claim tokens.
+
+Real PostgreSQL tests prove competing claims, operation-wide concurrency, stale fencing, worker
+death after artifact commit, retry exhaustion, cancellation, source-revision conflict, and tenant
+isolation. The deterministic evaluation runs 100 items at concurrency 4, interrupts four after
+artifact commit, drains them through four replacement workers, reaches 100 explained terminal
+dispositions with 100 unique alternative sets, and matches financial comparison metrics to a
+sequential oracle. A separate reproducible local load probe records 5.4357 completed portfolios/s,
+p95 17.178981s, p99 18.107293s, zero errors, zero duplicate alternatives, and an 18.396981s restart
+backlog drain on its declared workstation/PostgreSQL profile. This is a tested local operating
+envelope, not production capacity; production sizing requires target-tier repetition with real
+network, database, source-service, workload-mix, and contention conditions.
+
+The synchronous `/simulate` route remains supported only as a bounded convenience. Neither route
+family creates approved trade instructions, orders, acknowledgements, fills, settlement, or
+authoritative core booking. Those remain downstream of RFC-0041 and outside issue #715.
 
 Gold-pass decision:
 
