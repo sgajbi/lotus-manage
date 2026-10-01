@@ -72,6 +72,15 @@ Current declarations:
    methodology is published at
    `docs/methodologies/pm-quality/scoring-and-fairness.md`.
 
+The separately versioned
+`../approved-instruction-packages/lotus-manage-approved-instruction-package.v1.json` is an
+implementation contract for `ApprovedDpmInstructionPackage:v1`. It is intentionally not an active
+mesh producer declaration: it has no certified external execution or core-booking consumer path.
+It documents the implemented retrieval-only package and receipt API, immutable identity/replay,
+approval binding, mapping/funding/source lineage, and explicit non-claims while adapter submission,
+acknowledgement, fills, settlement, core booking, reconciliation, and production IdP admission stay
+with their external owners.
+
 Local validation:
 
 ```powershell

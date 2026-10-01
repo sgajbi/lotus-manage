@@ -1795,6 +1795,56 @@ python -m pytest tests/integration/dpm/composites/test_composite_membership_post
 python scripts/openapi_quality_gate.py
 ```
 
+## Implemented, not externally certified: approved instruction-package retrieval
+
+Routes:
+
+- `POST /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}/preview`
+- `PUT /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}`
+- `GET /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}`
+- `GET /api/v1/rebalance/instruction-packages`
+- `POST /api/v1/rebalance/instruction-packages/batch-release`
+- `POST /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}/receipts`
+
+Purpose:
+
+Provides a durable Manage-side retrieval record for independently approved DPM economic
+instructions. Preview returns canonical material in `PENDING_EXTERNAL_APPROVAL`, not a package.
+Release requires a `HANDOFF_READY` item, READY proof pack, current mandate/model, persisted READY
+run, complete account/instrument mappings, funding evidence, and an approval binding over the
+canonical material. Package and receipt identities are immutable and tenant-scoped.
+
+Functional coverage:
+
+- exact retries recover one immutable package or retrieval receipt, while changed material at the
+  same identity conflicts; later approved material for the same wave item must explicitly
+  supersede the earlier package;
+- mapping, stale mandate/model, unavailable proof/run, unsupported intent/dependency, and
+  insufficient certified reserve fail closed;
+- package reads and deterministic snapshot pages are tenant fenced;
+- bounded batch release uses `RELEASE_ELIGIBLE_ITEMS_ONLY`, returning source/mapping/funding/
+  approval refusals without authorizing the refused item; immutable conflicts fail the request;
+- PostgreSQL storage has migration/restart, tenant-fence, and concurrent identity coverage.
+
+Non-functional and boundary posture:
+
+- production persistence is PostgreSQL; the in-memory adapter is only development/test support;
+- the route does not run a campaign worker or assert horizontal capacity; its batch is bounded to
+  20 independent synchronous candidates;
+- caller-supplied headers are an integration seam, not IdP-backed production authorization;
+- retrieval and its receipt do not submit an order or prove adapter acknowledgement, fill,
+  settlement, cancellation, reconciliation, or authoritative core booking. The external execution
+  adapter and core owner retain those facts.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/instruction_packages/test_instruction_package_application.py -q
+python -m pytest tests/integration/dpm/instruction_packages/test_instruction_packages_postgres.py -q
+python scripts/openapi_quality_gate.py
+python scripts/api_vocabulary_inventory.py --validate-only
+```
+
 ## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, read models, report input, and supportability
 
 Routes:

@@ -43,6 +43,7 @@ from src.api.routers.rebalance_simulation import (
 from src.api.routers.integration_capabilities import (
     router as integration_capabilities_router,
 )
+from src.api.routers.instruction_packages import router as instruction_package_router
 from src.api.routers.mandate_tenant_query import DpmMandateTenantRequiredError
 from src.api.routers.mandates import router as mandates_router
 from src.api.routers.monitoring import router as monitoring_router
@@ -196,6 +197,13 @@ app = FastAPI(
                 "Core asset facts."
             ),
         },
+        {
+            "name": "lotus-manage Approved Instruction Packages",
+            "description": (
+                "Immutable approval-bound instruction packages for execution-adapter retrieval. "
+                "Receipt is distinct from order submission, fills, settlement, and core booking."
+            ),
+        },
     ],
     lifespan=_app_lifespan,
 )
@@ -231,6 +239,7 @@ app.include_router(mandates_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
 app.include_router(construction_router, prefix="/api/v1")
 app.include_router(composite_membership_router, prefix="/api/v1")
+app.include_router(instruction_package_router, prefix="/api/v1")
 app.include_router(proof_pack_router, prefix="/api/v1")
 app.include_router(waves_router, prefix="/api/v1")
 app.include_router(outcome_reviews_router, prefix="/api/v1")

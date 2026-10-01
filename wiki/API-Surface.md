@@ -84,6 +84,42 @@ This is a source-record API, not a composite calculation, automatic eligibility 
 Performance member-return publication, or OMS interface. Consumer materialization and delivery
 acknowledgement remain owned and evidenced separately.
 
+## Approved instruction-package surfaces
+
+`/api/v1/rebalance/instruction-packages/*` publishes immutable, tenant-fenced package versions for
+an execution adapter to retrieve after management approval. It is deliberately a retrieval boundary,
+not an OMS or core-booking boundary. The authoritative contract is
+[`lotus-manage-approved-instruction-package.v1.json`](https://github.com/sgajbi/lotus-manage/blob/main/contracts/approved-instruction-packages/lotus-manage-approved-instruction-package.v1.json).
+
+- `POST /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}/preview`
+  validates a `HANDOFF_READY` item, READY proof pack, current mandate/model, persisted READY run,
+  mappings, and funding posture and returns canonical **pending approval material** plus the hash an
+  external approval must bind. It creates no package and is not adapter-readable.
+- `PUT /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}`
+  creates one immutable package only when the supplied approval hash binds the exact material.
+  Exact response-loss retries recover the existing package; changed material at the same identity
+  returns a conflict. A newly approved set for a wave item must explicitly supersede the prior
+  package version; it cannot silently create a competing current set.
+- `GET /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}` and
+  `GET /api/v1/rebalance/instruction-packages` provide tenant-fenced exact reads and deterministic
+  created-at snapshot pagination. Consumers must retrieve every page before treating a list as
+  complete.
+- `POST /api/v1/rebalance/instruction-packages/batch-release` accepts at most 20 independent
+  candidates and explicitly applies `RELEASE_ELIGIBLE_ITEMS_ONLY`: a mapping, source, funding, or
+  approval refusal is reported for that candidate and never authorizes it or suppresses another
+  eligible candidate. Identity conflicts fail the request rather than being converted into a
+  partial result.
+- `POST /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}/receipts`
+  stores a durable receipt keyed by package version and adapter consumer. It says only that the
+  adapter retrieved the package.
+
+Every package preserves the original run-local intent identity, derived stable instruction identity,
+exact quantity/currency/side, explicit order and settlement terms, mapping revision/hash, source
+revisions, funding evidence, approval evidence, and correlation lineage. The current header-based
+identity seam is not production IdP certification. This surface neither submits an order nor proves
+external acknowledgement, fill, settlement, cancellation, reconciliation, or authoritative core
+booking.
+
 ## Construction alternative surfaces
 
 - `POST /api/v1/construction/alternative-sets/generate`

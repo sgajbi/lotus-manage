@@ -116,6 +116,13 @@ repository, while Manage owns only its declared consumption and fail-closed beha
 7. PM operating quality owns its policy, score-run, fairness-analysis, review-action, and summary
    records. It provides bounded operational evidence, not employee ranking, conduct adjudication,
    client-contact, execution, or HR decisions.
+8. Approved DPM instruction packages are immutable, tenant-scoped retrieval records built only
+   from a `HANDOFF_READY` wave item, READY proof pack, current mandate/model, persisted READY run,
+   exact mapping evidence, funding posture, and an approval binding over canonical material. Preview
+   material remains pending external approval; package receipt proves retrieval only. Packages do
+   not submit orders or establish acknowledgement, fill, settlement, reconciliation, or core-booking
+   truth. PostgreSQL migration `0035_approved_instruction_packages.sql` is required for durable
+   production persistence; in-memory storage is development/test only.
 
 ### Integration truth ownership
 
@@ -126,6 +133,7 @@ repository, while Manage owns only its declared consumption and fail-closed beha
 | PM-book and cohort resolution | Manage consumes typed membership/cohort products and records selected source evidence; it does not infer membership locally | The producing Core, Risk, or Advise repository owns each served cohort contract |
 | Risk and performance | Manage validates and preserves typed source context and supportability posture without recomputing external methodology | `lotus-risk` and `lotus-performance` own methodology, figures, thresholds, and source-product availability |
 | Observed transaction costs | Manage applies source-owned average bps only when `TransactionCostCurve:v1` covers every candidate `(security_id, transaction_type)` key; it suppresses partial aggregates and preserves exact missing-side reasons | `lotus-core` owns observed booked-fee grouping, curve methodology, lineage, and availability; predictive execution costs remain unsupported |
+| Approved instruction retrieval | Manage publishes immutable approved package material and retrieval-only receipts with source, mapping, funding, and approval lineage; batch release refuses blocked candidates without authorizing them | An execution adapter owns order submission/acknowledgement; the core owner owns fills, settlement, authoritative booking, and reconciliation |
 | Gateway and Workbench | Manage owns backend contracts and refusal semantics; consumer compatibility is proven in their repositories | `lotus-gateway` owns BFF admission/forwarding and `lotus-workbench` owns UI behavior and browser evidence |
 | Reports, rendering, archive, and AI | Manage emits bounded handoff and evidence inputs with stable lineage | `lotus-report`, `lotus-render`, `lotus-archive`, and `lotus-ai` own downstream persistence, materialization, signing, and generated content |
 | Platform contracts and canonical journeys | Manage declares repository-native contracts and participates in governed validation | `lotus-platform` owns shared contracts, routing standards, canonical runtime orchestration, and cross-repository evidence |

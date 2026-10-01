@@ -28,6 +28,7 @@ that an order was sent, acknowledged, filled, or booked.
 | Calculate alternatives | Simulation and analysis results with supported policies and diagnostics | Check deployment capabilities and result supportability before presenting an actionable choice. |
 | Review and stage | Workflow decisions, wave item state, and retained evidence | Keep actor, approval, and selected-result identity attached to the workflow. |
 | Hand off internally | Internal operations evidence with `external_execution_claimed=false` | Preserve the external execution boundary in screens, reports, and downstream messages. |
+| Publish approved retrieval package | Immutable package with reviewed economic instructions, mapping, funding, source, and approval lineage; retrieval-only adapter receipt | Use exact package identity and receipt lineage; do not treat retrieval as order acknowledgement or execution. |
 | Submit, fill, and book | External execution remains a separately governed integration dependency | Require approved instruction, acknowledgement, fill, and authoritative booking contracts before claiming an end-to-end trade workflow. |
 
 Use capability discovery to determine which features a deployment enables, then inspect the
@@ -70,6 +71,15 @@ support, and [Security and Governance](Security-and-Governance) for authority bo
 7. `lotus-idea` action intake creates durable management-review work only for
    `REVIEW_FOR_REBALANCE`; neither transport acceptance nor a review `APPROVED` outcome proves
    rebalance execution, an order, suitability, client publication, or supported-feature posture
+8. approved instruction packages are Manage-owned retrieval records only: an external approval
+   binds canonical material, and each package is pinned to a READY run/proof pack and current
+   mandate/model; preview is not a package and a receipt is not a fill, settlement, or booking
+9. the bounded package batch endpoint uses `RELEASE_ELIGIBLE_ITEMS_ONLY`; blocked source/mapping/
+   funding/approval candidates remain refused and immutable conflicts fail rather than silently
+   partializing
+10. the execution adapter and core-booking owner must separately prove submission, acknowledgement,
+    fills, settlement, authoritative booking, reconciliation, production identity admission, and
+    operational capacity before any end-to-end execution claim
 
 ## Core Sourcing Target
 
