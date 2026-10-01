@@ -45,6 +45,7 @@ def test_idempotency_history_records_multiple_events_for_same_key_when_replayed_
         request_hash="sha256:test-idem-history-1",
         portfolio_id="pf_idem_history",
         idempotency_key="idem-history-1",
+        tenant_id="tenant-test",
         created_at=datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc),
     )
     service.record_run(
@@ -52,6 +53,7 @@ def test_idempotency_history_records_multiple_events_for_same_key_when_replayed_
         request_hash="sha256:test-idem-history-2",
         portfolio_id="pf_idem_history",
         idempotency_key="idem-history-1",
+        tenant_id="tenant-test",
         created_at=datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc) + timedelta(seconds=1),
     )
 

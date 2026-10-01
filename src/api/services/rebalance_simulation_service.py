@@ -146,7 +146,7 @@ def simulate_rebalance(
     correlation_id: Optional[str],
     policy_pack_id: Optional[str],
     tenant_default_policy_pack_id: Optional[str] = None,
-    tenant_id: Optional[str] = None,
+    tenant_id: str,
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> RebalanceResult:
     current_logger = _resolved_logger()
@@ -175,6 +175,7 @@ def simulate_rebalance(
         policy_pack_definition=execution_context.policy_pack_definition,
         replay_enabled=execution_context.replay_enabled,
         source_context=source_context,
+        tenant_id=tenant_id,
         support_service_factory=get_dpm_run_support_service,
         run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),
         record_for_support=resolve_callable_override(

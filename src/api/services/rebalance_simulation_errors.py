@@ -33,6 +33,10 @@ class DpmRebalanceIdempotencyConflictError(DpmRebalanceSimulationError):
     pass
 
 
+class DpmRebalanceSubmissionInProgressError(DpmRebalanceSimulationError):
+    pass
+
+
 class DpmRebalanceIdempotencyStoreInconsistentError(DpmRebalanceSimulationError):
     pass
 

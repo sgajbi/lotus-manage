@@ -4,12 +4,14 @@ FILE: tests/api/test_api_rebalance.py
 
 import asyncio
 import inspect
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
+from threading import Barrier
 
 import pytest
 from fastapi.testclient import TestClient
@@ -62,12 +64,21 @@ def client():
                 body = kwargs.get("json")
                 if isinstance(body, dict) and "stateless_input" not in body:
                     kwargs["json"] = {"input_mode": "stateless", "stateless_input": body}
+            headers = dict(kwargs.get("headers") or {})
+            headers.setdefault("X-Tenant-Id", "tenant-test")
+            kwargs["headers"] = headers
             return self._test_client.post(url, *args, **kwargs)
 
         def get(self, url: str, *args, **kwargs):
+            headers = dict(kwargs.get("headers") or {})
+            headers.setdefault("X-Tenant-Id", "tenant-test")
+            kwargs["headers"] = headers
             return self._test_client.get(url, *args, **kwargs)
 
         def put(self, url: str, *args, **kwargs):
+            headers = dict(kwargs.get("headers") or {})
+            headers.setdefault("X-Tenant-Id", "tenant-test")
+            kwargs["headers"] = headers
             return self._test_client.put(url, *args, **kwargs)
 
         def delete(self, url: str, *args, **kwargs):
@@ -79,6 +90,70 @@ def client():
 
 def get_valid_payload():
     return valid_api_payload()
+
+
+def test_concurrent_simulate_requests_publish_one_tenant_owned_run() -> None:
+    payload = {"input_mode": "stateless", "stateless_input": get_valid_payload()}
+    shared_key = "test-key-concurrent-tenant-owned"
+    barrier = Barrier(2)
+
+    with TestClient(app) as raw_client:
+
+        def submit(correlation_id: str):
+            barrier.wait(timeout=5)
+            return raw_client.post(
+                "/api/v1/rebalance/simulate",
+                json=payload,
+                headers={
+                    "Idempotency-Key": shared_key,
+                    "X-Correlation-Id": correlation_id,
+                    "X-Tenant-Id": "tenant-concurrent-a",
+                },
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            responses = list(pool.map(submit, ["corr-concurrent-a", "corr-concurrent-b"]))
+
+        assert [response.status_code for response in responses] == [200, 200]
+        run_ids = {response.json()["rebalance_run_id"] for response in responses}
+        assert len(run_ids) == 1
+        run_id = run_ids.pop()
+
+        owned = raw_client.get(
+            f"/api/v1/rebalance/runs/{run_id}",
+            headers={"X-Tenant-Id": "tenant-concurrent-a"},
+        )
+        foreign = raw_client.get(
+            f"/api/v1/rebalance/runs/{run_id}",
+            headers={"X-Tenant-Id": "tenant-concurrent-b"},
+        )
+        foreign_key = raw_client.get(
+            f"/api/v1/rebalance/runs/idempotency/{shared_key}",
+            headers={"X-Tenant-Id": "tenant-concurrent-b"},
+        )
+        foreign_bundle = raw_client.get(
+            f"/api/v1/rebalance/runs/{run_id}/support-bundle",
+            headers={"X-Tenant-Id": "tenant-concurrent-b"},
+        )
+        missing_scope = raw_client.get(f"/api/v1/rebalance/runs/{run_id}")
+
+        assert owned.status_code == 200
+        assert foreign.status_code == 404
+        assert foreign_key.status_code == 404
+        assert foreign_bundle.status_code == 404
+        assert missing_scope.status_code == 422
+
+        independent = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json=payload,
+            headers={
+                "Idempotency-Key": shared_key,
+                "X-Correlation-Id": "corr-concurrent-tenant-b",
+                "X-Tenant-Id": "tenant-concurrent-b",
+            },
+        )
+        assert independent.status_code == 200
+        assert independent.json()["rebalance_run_id"] != run_id
 
 
 def _stateful_input_payload() -> dict[str, object]:
@@ -188,7 +263,10 @@ def test_stateful_simulate_is_feature_gated_by_default():
                     "booking_center_code": "SG",
                 },
             },
-            headers={"Idempotency-Key": "test-key-stateful-disabled"},
+            headers={
+                "Idempotency-Key": "test-key-stateful-disabled",
+                "X-Tenant-Id": "tenant_001",
+            },
         )
 
     assert response.status_code == 409
@@ -331,7 +409,11 @@ def test_stateful_simulate_rejects_unadmitted_tenant_before_core_sourcing(
         )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == expected_detail
+    if tenant_header is None:
+        assert response.json()["detail"][0]["loc"] == ["header", "x-tenant-id"]
+        assert response.json()["detail"][0]["type"] == "missing"
+    else:
+        assert response.json()["detail"] == expected_detail
     assert fake_resolver.calls == []
 
 
@@ -394,6 +476,15 @@ def test_simulate_missing_idempotency_key_422(client):
     assert response.status_code == 422
     errors = response.json()["detail"]
     assert any(e["type"] == "missing" and "idempotency-key" in e["loc"] for e in errors)
+
+
+def test_simulate_blank_idempotency_key_422(client):
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=get_valid_payload(),
+        headers={"Idempotency-Key": "   "},
+    )
+    assert response.status_code == 422
 
 
 def test_simulate_payload_validation_error_422(client):
@@ -498,7 +589,7 @@ def test_rebalance_async_operation_http_exception_mapping():
         assert http_exc.detail == detail
 
 
-def test_simulate_idempotency_replay_can_be_disabled(client, monkeypatch):
+def test_simulate_durable_idempotency_cannot_be_disabled(client, monkeypatch):
     monkeypatch.setenv("DPM_IDEMPOTENCY_REPLAY_ENABLED", "false")
     payload = get_valid_payload()
     headers = {"Idempotency-Key": "test-key-idem-disabled"}
@@ -508,7 +599,7 @@ def test_simulate_idempotency_replay_can_be_disabled(client, monkeypatch):
 
     assert first.status_code == 200
     assert second.status_code == 200
-    assert first.json()["rebalance_run_id"] != second.json()["rebalance_run_id"]
+    assert first.json()["rebalance_run_id"] == second.json()["rebalance_run_id"]
 
 
 def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
@@ -717,6 +808,7 @@ def test_dpm_support_runs_list_respects_retention_policy(client, monkeypatch):
         request_hash="sha256:runs-retention-old",
         portfolio_id=payload["portfolio_snapshot"]["portfolio_id"],
         idempotency_key="idem-runs-retention-old",
+        tenant_id="tenant-test",
         created_at=datetime.now(timezone.utc) - timedelta(days=2),
     )
 
@@ -796,9 +888,8 @@ def test_dpm_idempotency_history_api_disabled_enabled_and_history_payload(client
         json=payload,
         headers={"Idempotency-Key": "test-key-history-1", "X-Correlation-Id": "corr-history-2"},
     )
-    assert simulate_two.status_code == 200
-    run_two = simulate_two.json()["rebalance_run_id"]
-    assert run_one != run_two
+    assert simulate_two.status_code == 409
+    assert simulate_two.json()["detail"] == "IDEMPOTENCY_KEY_CONFLICT: request hash mismatch"
 
     disabled = client.get("/api/v1/rebalance/idempotency/test-key-history-1/history")
     assert disabled.status_code == 404
@@ -809,17 +900,11 @@ def test_dpm_idempotency_history_api_disabled_enabled_and_history_payload(client
     assert history.status_code == 200
     body = history.json()
     assert body["idempotency_key"] == "test-key-history-1"
-    assert len(body["history"]) == 2
-    assert [event["correlation_id"] for event in body["history"]] == [
-        "corr-history-1",
-        "corr-history-2",
-    ]
+    assert len(body["history"]) == 1
+    assert [event["correlation_id"] for event in body["history"]] == ["corr-history-1"]
     assert body["history"][0]["rebalance_run_id"] == run_one
     assert body["history"][0]["correlation_id"] == "corr-history-1"
     assert body["history"][0]["request_hash"].startswith("sha256:")
-    assert body["history"][1]["rebalance_run_id"] == run_two
-    assert body["history"][1]["correlation_id"] == "corr-history-2"
-    assert body["history"][1]["request_hash"].startswith("sha256:")
 
     missing = client.get("/api/v1/rebalance/idempotency/test-key-history-missing/history")
     assert missing.status_code == 404
@@ -1461,7 +1546,7 @@ def test_dpm_workflow_action_router_exception_mappings(client, monkeypatch):
 
     with patch.object(
         dpm_runs_router.DpmRunSupportService,
-        "apply_workflow_action",
+        "apply_workflow_action_for_tenant",
         side_effect=DpmRunNotFoundError("DPM_RUN_NOT_FOUND"),
     ):
         not_found = client.post("/api/v1/rebalance/runs/rr_missing/workflow/actions", json=payload)
@@ -1470,7 +1555,7 @@ def test_dpm_workflow_action_router_exception_mappings(client, monkeypatch):
 
     with patch.object(
         dpm_runs_router.DpmRunSupportService,
-        "apply_workflow_action",
+        "apply_workflow_action_for_tenant",
         side_effect=DpmWorkflowDisabledError("DPM_WORKFLOW_DISABLED"),
     ):
         disabled = client.post("/api/v1/rebalance/runs/rr_missing/workflow/actions", json=payload)
@@ -1479,7 +1564,7 @@ def test_dpm_workflow_action_router_exception_mappings(client, monkeypatch):
 
     with patch.object(
         dpm_runs_router.DpmRunSupportService,
-        "apply_workflow_action_by_correlation",
+        "apply_workflow_action_by_correlation_for_tenant",
         side_effect=DpmWorkflowTransitionError("DPM_WORKFLOW_INVALID_TRANSITION"),
     ):
         transition = client.post(
@@ -1491,7 +1576,7 @@ def test_dpm_workflow_action_router_exception_mappings(client, monkeypatch):
 
     with patch.object(
         dpm_runs_router.DpmRunSupportService,
-        "apply_workflow_action_by_correlation",
+        "apply_workflow_action_by_correlation_for_tenant",
         side_effect=DpmWorkflowDisabledError("DPM_WORKFLOW_DISABLED"),
     ):
         disabled_by_correlation = client.post(
@@ -1510,7 +1595,7 @@ def test_dpm_workflow_action_router_exception_mappings(client, monkeypatch):
 
     with patch.object(
         dpm_runs_router.DpmRunSupportService,
-        "apply_workflow_action_by_idempotency",
+        "apply_workflow_action_by_idempotency_for_tenant",
         side_effect=DpmWorkflowDisabledError("DPM_WORKFLOW_DISABLED"),
     ):
         disabled_idem = client.post(
@@ -1522,7 +1607,7 @@ def test_dpm_workflow_action_router_exception_mappings(client, monkeypatch):
 
     with patch.object(
         dpm_runs_router.DpmRunSupportService,
-        "apply_workflow_action_by_idempotency",
+        "apply_workflow_action_by_idempotency_for_tenant",
         side_effect=DpmWorkflowTransitionError("DPM_WORKFLOW_INVALID_TRANSITION"),
     ):
         transition_idem = client.post(
@@ -1546,7 +1631,10 @@ def test_simulate_generates_correlation_id_when_header_missing(client):
 
 def test_simulate_returns_503_when_idempotency_store_write_fails(client):
     payload = get_valid_payload()
-    with patch("src.api.main.record_dpm_run_for_support", side_effect=RuntimeError("boom")):
+    with patch(
+        "src.core.rebalance_runs.DpmRunSupportService.complete_simulation_submission",
+        side_effect=RuntimeError("boom"),
+    ):
         response = client.post(
             "/api/v1/rebalance/simulate",
             json=payload,
@@ -1560,14 +1648,15 @@ def test_simulate_returns_503_when_idempotency_lookup_points_to_missing_run(clie
     payload = get_valid_payload()
 
     class _InconsistentIdempotencyService:
-        def get_idempotency_lookup(self, *, idempotency_key):
+        def claim_simulation_submission(self, **kwargs):
             return SimpleNamespace(
-                idempotency_key=idempotency_key,
                 request_hash="sha256:matches",
+                status="COMPLETED",
+                claim_token="winner",
                 rebalance_run_id="rr_missing_for_idem",
             )
 
-        def get_run(self, *, rebalance_run_id):
+        def get_run_for_tenant(self, *, tenant_id, rebalance_run_id):
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
 
     with (
@@ -1589,19 +1678,22 @@ def test_simulate_returns_503_when_idempotency_lookup_points_to_missing_run(clie
     assert response.json()["detail"] == "DPM_IDEMPOTENCY_STORE_INCONSISTENT"
 
 
-def test_simulate_ignores_supportability_persistence_errors_when_replay_disabled(
+def test_simulate_keeps_durable_persistence_mandatory_when_replay_flag_is_disabled(
     client, monkeypatch
 ):
     monkeypatch.setenv("DPM_IDEMPOTENCY_REPLAY_ENABLED", "false")
     payload = get_valid_payload()
-    with patch("src.api.main.record_dpm_run_for_support", side_effect=RuntimeError("boom")):
+    with patch(
+        "src.core.rebalance_runs.DpmRunSupportService.complete_simulation_submission",
+        side_effect=RuntimeError("boom"),
+    ):
         response = client.post(
             "/api/v1/rebalance/simulate",
             json=payload,
             headers={"Idempotency-Key": "test-key-supportability-error-disabled"},
         )
-    assert response.status_code == 200
-    assert response.json()["status"] in {"READY", "PENDING_REVIEW", "BLOCKED"}
+    assert response.status_code == 503
+    assert response.json()["detail"] == "DPM_IDEMPOTENCY_STORE_WRITE_FAILED"
 
 
 def test_simulate_rfc7807_domain_error_mapping(client):
@@ -2304,7 +2396,7 @@ def test_analyze_policy_pack_explicit_tenant_header_precedence_over_resolver(cli
     assert analyze_options.max_turnover_pct == Decimal("0.07")
 
 
-def test_dpm_policy_pack_idempotency_override_disables_replay(client, monkeypatch):
+def test_dpm_policy_pack_cannot_disable_durable_idempotency(client, monkeypatch):
     monkeypatch.setenv("DPM_IDEMPOTENCY_REPLAY_ENABLED", "true")
     monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
     monkeypatch.setenv(
@@ -2322,7 +2414,7 @@ def test_dpm_policy_pack_idempotency_override_disables_replay(client, monkeypatc
 
     assert first.status_code == 200
     assert second.status_code == 200
-    assert first.json()["rebalance_run_id"] != second.json()["rebalance_run_id"]
+    assert first.json()["rebalance_run_id"] == second.json()["rebalance_run_id"]
 
 
 def test_dpm_policy_pack_idempotency_override_enables_replay(client, monkeypatch):

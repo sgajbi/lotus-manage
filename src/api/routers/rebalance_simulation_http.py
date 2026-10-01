@@ -17,6 +17,7 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceIdempotencyConflictError,
     DpmRebalanceIdempotencyStoreInconsistentError,
     DpmRebalanceIdempotencyStoreWriteFailedError,
+    DpmRebalanceSubmissionInProgressError,
     DpmRebalancePolicyPackCatalogUnavailableError,
     DpmRebalanceSimulationError,
     DpmRebalanceSupportabilityStoreUnavailableError,
@@ -42,6 +43,12 @@ def rebalance_envelope_http_exception(exc: DpmRebalanceEnvelopeError) -> HTTPExc
 def rebalance_simulation_http_exception(exc: DpmRebalanceSimulationError) -> HTTPException:
     if isinstance(exc, DpmRebalanceIdempotencyConflictError):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail)
+    if isinstance(exc, DpmRebalanceSubmissionInProgressError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.detail,
+            headers={"Retry-After": "1"},
+        )
     if isinstance(
         exc,
         (

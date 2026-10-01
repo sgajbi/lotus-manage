@@ -36,6 +36,7 @@ from src.core.rebalance_runs import (
 )
 def get_run_idempotency_history(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     idempotency_key: Annotated[
         str,
         Path(
@@ -49,5 +50,7 @@ def get_run_idempotency_history(
     shared._assert_idempotency_history_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
     return read_run_with_not_found_http_mapping(
-        lambda: service.get_idempotency_history(idempotency_key=idempotency_key)
+        lambda: service.get_idempotency_history_for_tenant(
+            tenant_id=x_tenant_id, idempotency_key=idempotency_key
+        )
     )

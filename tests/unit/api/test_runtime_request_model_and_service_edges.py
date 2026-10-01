@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -52,8 +52,10 @@ from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationConflictError,
     DpmRunNotFoundError,
+    DpmRunSupportService,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.infrastructure.rebalance_runs.in_memory import InMemoryDpmRunRepository
 from tests.shared.factories import valid_api_payload
 
 
@@ -1062,30 +1064,194 @@ def test_batch_scenario_execution_runs_engine_and_records_supportability() -> No
 
 def test_rebalance_sync_execution_runs_engine_and_records_supportability() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
-    support_calls: list[dict] = []
+    support_service = DpmRunSupportService(repository=InMemoryDpmRunRepository())
 
     result = sync_execution.execute_simulation_request(
         request=request,
+        tenant_id="tenant-test",
         idempotency_key="idem_sync",
         request_hash="sha256:sync",
         correlation_id="corr-sync",
         policy_pack_definition=None,
         replay_enabled=False,
         source_context=None,
-        support_service_factory=lambda: (_ for _ in ()).throw(
-            AssertionError("replay-disabled execution should not resolve support service first")
-        ),
+        support_service_factory=lambda: support_service,
         run_simulation_fn=run_simulation,
-        record_for_support=lambda **kwargs: support_calls.append(kwargs),
+        record_for_support=lambda **_kwargs: None,
         current_logger=SimpleNamespace(warning=lambda *_args, **_kwargs: None),
     )
 
     assert result.correlation_id == "corr-sync"
     assert result.lineage.request_hash == "sha256:sync"
     assert result.lineage.input_mode == "stateless"
-    assert support_calls[0]["request_hash"] == "sha256:sync"
-    assert support_calls[0]["idempotency_key"] == "idem_sync"
-    assert support_calls[0]["portfolio_id"] == request.portfolio_snapshot.portfolio_id
+    stored = support_service.get_run_for_tenant(
+        tenant_id="tenant-test",
+        rebalance_run_id=result.rebalance_run_id,
+    )
+    assert stored.request_hash == "sha256:sync"
+    assert stored.idempotency_key == "idem_sync"
+    assert stored.portfolio_id == request.portfolio_snapshot.portfolio_id
+
+
+def test_sync_wait_handles_missing_conflicting_completed_expired_and_timed_out_claims(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime.now(timezone.utc)
+
+    class _ClaimService:
+        def __init__(self, claim):
+            self.claim = claim
+
+        def get_simulation_submission_claim(self, **_kwargs):
+            return self.claim
+
+    common = {
+        "tenant_id": "tenant-test",
+        "idempotency_key": "idem-wait",
+        "request_hash": "sha256:wait",
+        "source_context": None,
+    }
+    assert (
+        sync_execution._wait_for_completed_submission(
+            support_service=_ClaimService(None),
+            **common,
+        )
+        is None
+    )
+
+    mismatched = SimpleNamespace(
+        request_hash="sha256:other",
+        status="IN_PROGRESS",
+        claim_expires_at=now + timedelta(minutes=1),
+    )
+    with pytest.raises(service.DpmRebalanceIdempotencyConflictError):
+        sync_execution._wait_for_completed_submission(
+            support_service=_ClaimService(mismatched),
+            **common,
+        )
+
+    expected = SimpleNamespace(rebalance_run_id="rr-completed")
+    monkeypatch.setattr(sync_execution, "_load_completed_result", lambda **_kwargs: expected)
+    completed = SimpleNamespace(
+        request_hash="sha256:wait",
+        status="COMPLETED",
+        rebalance_run_id="rr-completed",
+        claim_expires_at=now,
+    )
+    assert (
+        sync_execution._wait_for_completed_submission(
+            support_service=_ClaimService(completed),
+            **common,
+        )
+        is expected
+    )
+
+    expired = SimpleNamespace(
+        request_hash="sha256:wait",
+        status="IN_PROGRESS",
+        claim_expires_at=now - timedelta(seconds=1),
+    )
+    assert (
+        sync_execution._wait_for_completed_submission(
+            support_service=_ClaimService(expired),
+            **common,
+        )
+        is None
+    )
+
+    monotonic_values = iter([0.0, 11.0])
+    monkeypatch.setattr(sync_execution.time, "monotonic", lambda: next(monotonic_values))
+    assert (
+        sync_execution._wait_for_completed_submission(
+            support_service=_ClaimService(expired),
+            **common,
+        )
+        is None
+    )
+
+
+def test_sync_foreign_claim_resolution_and_inconsistent_completed_claim(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    claim = SimpleNamespace(
+        request_hash="sha256:claim",
+        status="IN_PROGRESS",
+        claim_token="other-worker",
+    )
+    expected = SimpleNamespace(rebalance_run_id="rr-replayed")
+    monkeypatch.setattr(
+        sync_execution,
+        "_wait_for_completed_submission",
+        lambda **_kwargs: expected,
+    )
+    assert (
+        sync_execution._resolved_claim_result(
+            support_service=SimpleNamespace(),
+            tenant_id="tenant-test",
+            idempotency_key="idem-claim",
+            request_hash="sha256:claim",
+            claim_token="this-worker",
+            claim=claim,
+            source_context=None,
+        )
+        is expected
+    )
+
+    monkeypatch.setattr(
+        sync_execution,
+        "_wait_for_completed_submission",
+        lambda **_kwargs: None,
+    )
+    with pytest.raises(sync_execution.DpmRebalanceSubmissionInProgressError):
+        sync_execution._resolved_claim_result(
+            support_service=SimpleNamespace(),
+            tenant_id="tenant-test",
+            idempotency_key="idem-claim",
+            request_hash="sha256:claim",
+            claim_token="this-worker",
+            claim=claim,
+            source_context=None,
+        )
+
+    with pytest.raises(sync_execution.DpmRebalanceIdempotencyStoreInconsistentError):
+        sync_execution._load_completed_result(
+            support_service=SimpleNamespace(),
+            tenant_id="tenant-test",
+            rebalance_run_id=None,
+            source_context=None,
+        )
+
+
+def test_sync_unexpected_engine_failure_abandons_the_owned_claim() -> None:
+    support_service = DpmRunSupportService(repository=InMemoryDpmRunRepository())
+    request = RebalanceRequest.model_validate(valid_api_payload())
+
+    def fail_engine(**_kwargs):
+        raise KeyError("engine failure")
+
+    with pytest.raises(KeyError, match="engine failure"):
+        sync_execution.execute_simulation_request(
+            request=request,
+            tenant_id="tenant-test",
+            idempotency_key="idem-engine-failure",
+            request_hash="sha256:engine-failure",
+            correlation_id="corr-engine-failure",
+            policy_pack_definition=None,
+            replay_enabled=False,
+            source_context=None,
+            support_service_factory=lambda: support_service,
+            run_simulation_fn=fail_engine,
+            record_for_support=lambda **_kwargs: None,
+            current_logger=SimpleNamespace(warning=lambda *_args, **_kwargs: None),
+        )
+
+    claim = support_service.get_simulation_submission_claim(
+        tenant_id="tenant-test",
+        idempotency_key="idem-engine-failure",
+    )
+    assert claim is not None
+    assert claim.status == "IN_PROGRESS"
+    assert claim.claim_expires_at <= datetime.now(timezone.utc)
 
 
 def test_rebalance_policy_pack_execution_loads_selected_catalog_only_when_needed() -> None:

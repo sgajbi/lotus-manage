@@ -30,6 +30,7 @@ from src.core.rebalance_runs import (
 )
 def get_run_by_correlation(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     correlation_id: Annotated[
         str,
         Path(
@@ -42,5 +43,7 @@ def get_run_by_correlation(
     shared._assert_support_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
     return read_run_with_not_found_http_mapping(
-        lambda: service.get_run_by_correlation(correlation_id=correlation_id)
+        lambda: service.get_run_by_correlation_for_tenant(
+            tenant_id=x_tenant_id, correlation_id=correlation_id
+        )
     )

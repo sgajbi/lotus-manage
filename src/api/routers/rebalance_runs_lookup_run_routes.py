@@ -31,6 +31,7 @@ from src.core.rebalance_runs import (
 )
 def get_run_by_run_id(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     rebalance_run_id: Annotated[
         str,
         Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
@@ -40,5 +41,5 @@ def get_run_by_run_id(
     shared._assert_support_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
     return read_run_with_not_found_http_mapping(
-        lambda: service.get_run(rebalance_run_id=rebalance_run_id)
+        lambda: service.get_run_for_tenant(tenant_id=x_tenant_id, rebalance_run_id=rebalance_run_id)
     )

@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from src.api.routers.route_registration import register_route_modules
+from src.api.routers.mandate_tenant_query import require_mandate_tenant
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
     reject_unexpected_query_params,
@@ -25,6 +26,28 @@ from src.core.rebalance_runs import DpmRunSupportService
 from src.core.models import RebalanceResult
 
 router = APIRouter(tags=["lotus-manage Run Supportability"])
+
+
+def _require_dpm_run_tenant_id(
+    x_tenant_id: Annotated[
+        str,
+        Header(
+            min_length=1,
+            description=(
+                "Required caller-asserted tenant scope for durable rebalance-run ownership. "
+                "This local header is not production identity-provider proof."
+            ),
+            examples=["tenant_001"],
+        ),
+    ],
+) -> str:
+    return require_mandate_tenant(x_tenant_id)
+
+
+DpmRunTenantIdHeader = Annotated[
+    str,
+    Depends(_require_dpm_run_tenant_id),
+]
 
 
 def _assert_support_apis_enabled() -> None:

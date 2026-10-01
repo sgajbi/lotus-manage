@@ -37,6 +37,7 @@ from src.core.rebalance_runs import (
 )
 def get_dpm_run_support_bundle_by_operation(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     operation_id: Annotated[
         str,
         Path(
@@ -53,7 +54,8 @@ def get_dpm_run_support_bundle_by_operation(
     shared._assert_support_bundle_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
     return read_support_bundle_with_http_mapping(
-        lambda: service.get_run_support_bundle_by_operation(
+        lambda: service.get_run_support_bundle_by_operation_for_tenant(
+            tenant_id=x_tenant_id,
             operation_id=operation_id,
             include_artifact=include_artifact,
             include_async_operation=include_async_operation,

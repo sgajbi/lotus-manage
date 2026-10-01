@@ -31,6 +31,7 @@ from src.core.rebalance_runs import (
 )
 def get_run_by_request_hash(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     request_hash: Annotated[
         str,
         Path(
@@ -43,5 +44,7 @@ def get_run_by_request_hash(
     shared._assert_support_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
     return read_run_with_not_found_http_mapping(
-        lambda: service.get_run_by_request_hash(request_hash=request_hash)
+        lambda: service.get_run_by_request_hash_for_tenant(
+            tenant_id=x_tenant_id, request_hash=request_hash
+        )
     )

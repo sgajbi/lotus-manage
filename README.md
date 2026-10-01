@@ -50,7 +50,9 @@ Current posture under RFC-0082:
    retired monolithic core route is not configured. `DPM_CORE_QUERY_BASE_URL` is also required when
     stateful construction consumes query-plane source products such as `PortfolioCashflowProjection:v1`.
    Stateful rebalance and construction requests require matching `X-Tenant-Id` and
-   `stateful_input.tenant_id` before Core resolution; stateless execution remains unchanged.
+   `stateful_input.tenant_id` before Core resolution. Synchronous stateless simulation requires
+   `X-Tenant-Id` for durable run ownership; other stateless execution surfaces retain their
+   documented contracts.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 
@@ -67,6 +69,11 @@ Current posture under RFC-0082:
    development and CI declare both as required `dev` dependencies. Solver-mode proof surfaces load
    that prerequisite during test collection and execute unconditionally; a missing, suppressed, or
    broken solver runtime must fail the lane instead of becoming a passing skip.
+6. `POST /api/v1/rebalance/simulate` requires `X-Tenant-Id` in both input modes. Its durable
+   PostgreSQL admission key is `(tenant_id, Idempotency-Key)` plus the canonical request hash, so
+   concurrent identical submissions publish one authoritative run and changed-payload reuse is
+   rejected. Run, artifact, history, workflow, and support-bundle descendants are tenant-fenced;
+   unattributed legacy rows are quarantined rather than assigned to a caller.
 
 ## Strategic DPM Roadmap
 

@@ -46,6 +46,7 @@ from src.core.rebalance_runs import (
 )
 def list_runs(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     created_from: Annotated[
         Optional[datetime],
         Query(
@@ -112,7 +113,8 @@ def list_runs(
             "cursor",
         },
     )
-    return service.list_runs(
+    return service.list_runs_for_tenant(
+        tenant_id=x_tenant_id,
         created_from=created_from,
         created_to=created_to,
         status=status_filter,

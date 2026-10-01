@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-21T02:01:48.832207+00:00",
+  "generatedAt": "2026-09-30T23:03:41.008437+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -16921,6 +16921,18 @@
       "attributeRef": "#/attributeCatalog/lotus.cursor"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "portfolio_id",
       "kind": "request_option",
       "location": "query",
@@ -16957,6 +16969,18 @@
       "attributeRef": "#/attributeCatalog/lotus.correlation_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "request_hash",
       "kind": "request_option",
       "location": "path",
@@ -16969,16 +16993,16 @@
       "attributeRef": "#/attributeCatalog/lotus.request_hash"
     },
     {
-      "name": "idempotency_key",
+      "name": "x_tenant_id",
       "kind": "request_option",
-      "location": "path",
+      "location": "header",
       "required": true,
       "type": "string",
-      "description": "Idempotency key supplied to `/rebalance/simulate`.",
-      "example": "STANDARD_VALUE",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
       "allowedValues": [],
-      "semanticId": "lotus.idempotency_key",
-      "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "idempotency_key",
@@ -16991,6 +17015,42 @@
       "allowedValues": [],
       "semanticId": "lotus.idempotency_key",
       "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
+      "name": "idempotency_key",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Idempotency key supplied to `/rebalance/simulate`.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.idempotency_key",
+      "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "rebalance_run_id",
@@ -17003,6 +17063,18 @@
       "allowedValues": [],
       "semanticId": "lotus.rebalance_run_id",
       "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "rebalance_run_id",
@@ -17051,6 +17123,18 @@
       "allowedValues": [],
       "semanticId": "lotus.include_idempotency_history",
       "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "correlation_id",
@@ -17101,6 +17185,18 @@
       "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "idempotency_key",
       "kind": "request_option",
       "location": "path",
@@ -17147,6 +17243,18 @@
       "allowedValues": [],
       "semanticId": "lotus.include_idempotency_history",
       "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "operation_id",
@@ -17197,6 +17305,18 @@
       "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "rebalance_run_id",
       "kind": "request_option",
       "location": "path",
@@ -17207,6 +17327,18 @@
       "allowedValues": [],
       "semanticId": "lotus.rebalance_run_id",
       "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "created_from",
@@ -17509,6 +17641,18 @@
       "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "correlation_id",
       "kind": "request_option",
       "location": "path",
@@ -17521,6 +17665,18 @@
       "attributeRef": "#/attributeCatalog/lotus.correlation_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "idempotency_key",
       "kind": "request_option",
       "location": "path",
@@ -17531,6 +17687,18 @@
       "allowedValues": [],
       "semanticId": "lotus.idempotency_key",
       "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "rebalance_run_id",
@@ -17557,6 +17725,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "correlation_id",
       "kind": "request_option",
       "location": "path",
@@ -17581,6 +17761,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "idempotency_key",
       "kind": "request_option",
       "location": "path",
@@ -17603,6 +17795,18 @@
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "rebalance_run_id",
@@ -17617,6 +17821,18 @@
       "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "correlation_id",
       "kind": "request_option",
       "location": "path",
@@ -17629,6 +17845,18 @@
       "attributeRef": "#/attributeCatalog/lotus.correlation_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "idempotency_key",
       "kind": "request_option",
       "location": "path",
@@ -17639,6 +17867,18 @@
       "allowedValues": [],
       "semanticId": "lotus.idempotency_key",
       "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "idempotency_key",
@@ -18253,6 +18493,18 @@
       "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required durable run ownership scope. For stateful Core sourcing it must also match stateful_input.tenant_id. Caller-asserted routing scope, not authenticated-principal proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "x_correlation_id",
       "kind": "request_option",
       "location": "header",
@@ -18287,18 +18539,6 @@
       "allowedValues": [],
       "semanticId": "lotus.x_tenant_policy_pack_id",
       "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
-    },
-    {
-      "name": "x_tenant_id",
-      "kind": "request_option",
-      "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Required for stateful Core sourcing and must match stateful_input.tenant_id; optional for stateless tenant policy-pack lookup. Caller-asserted routing scope, not authenticated-principal proof.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.x_tenant_id",
-      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "x_correlation_id",
@@ -22249,6 +22489,14 @@
             "type": "object",
             "semanticId": "lotus.cursor",
             "attributeRef": "#/attributeCatalog/lotus.cursor"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -22639,6 +22887,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -24758,6 +25014,14 @@
             "type": "string",
             "semanticId": "lotus.request_hash",
             "attributeRef": "#/attributeCatalog/lotus.request_hash"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -26877,6 +27141,14 @@
             "type": "string",
             "semanticId": "lotus.idempotency_key",
             "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -26932,6 +27204,14 @@
             "type": "string",
             "semanticId": "lotus.idempotency_key",
             "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -27003,6 +27283,14 @@
             "type": "string",
             "semanticId": "lotus.rebalance_run_id",
             "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -29146,6 +29434,14 @@
             "type": "boolean",
             "semanticId": "lotus.include_idempotency_history",
             "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -33825,6 +34121,14 @@
             "type": "boolean",
             "semanticId": "lotus.include_idempotency_history",
             "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -38504,6 +38808,14 @@
             "type": "boolean",
             "semanticId": "lotus.include_idempotency_history",
             "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -43183,6 +43495,14 @@
             "type": "boolean",
             "semanticId": "lotus.include_idempotency_history",
             "attributeRef": "#/attributeCatalog/lotus.include_idempotency_history"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -47838,6 +48158,14 @@
             "type": "string",
             "semanticId": "lotus.rebalance_run_id",
             "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -50839,6 +51167,14 @@
             "type": "string",
             "semanticId": "lotus.rebalance_run_id",
             "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -50966,6 +51302,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -51093,6 +51437,14 @@
             "type": "string",
             "semanticId": "lotus.idempotency_key",
             "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -51228,6 +51580,14 @@
             "type": "object",
             "semanticId": "lotus.x_correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "action",
@@ -51397,6 +51757,14 @@
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "action",
             "location": "body",
             "required": true,
@@ -51564,6 +51932,14 @@
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "action",
             "location": "body",
             "required": true,
@@ -51721,6 +52097,14 @@
             "type": "string",
             "semanticId": "lotus.rebalance_run_id",
             "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -51824,6 +52208,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -51927,6 +52319,14 @@
             "type": "string",
             "semanticId": "lotus.idempotency_key",
             "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -54190,6 +54590,14 @@
             "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
@@ -54212,14 +54620,6 @@
             "type": "object",
             "semanticId": "lotus.x_tenant_policy_pack_id",
             "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
-          },
-          {
-            "name": "x-tenant-id",
-            "location": "header",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.x_tenant_id",
-            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "input_mode",

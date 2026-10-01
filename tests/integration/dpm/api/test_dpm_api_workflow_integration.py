@@ -1,11 +1,18 @@
 import pytest
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient as FastApiTestClient
 
 from src.api.dependencies import get_mandate_repository
 from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from tests.shared.factories import valid_api_payload
+
+
+class TestClient(FastApiTestClient):
+    """Integration client with one explicit admitted tenant for run-owned surfaces."""
+
+    def __init__(self, *args, headers=None, **kwargs):
+        super().__init__(*args, headers=headers or {"X-Tenant-Id": "tenant-integration"}, **kwargs)
 
 
 async def _override_get_db_session():

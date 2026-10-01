@@ -2,11 +2,15 @@
 
 This file provides repository-local engineering context for `lotus-manage`.
 
-For platform-wide truth, read:
+Use the startup sequence in `AGENTS.md`: repository contract, platform quickstart, this repository
+context, then the platform skill-routing map. Load the wider engineering context only for
+cross-repository architecture or shared policy. Use the context reference map to locate a
+particular standard, contract, or runbook when needed.
 
-1. `../lotus-platform/context/LOTUS-QUICKSTART-CONTEXT.md`
-2. `../lotus-platform/context/LOTUS-ENGINEERING-CONTEXT.md`
-3. `../lotus-platform/context/CONTEXT-REFERENCE-MAP.md`
+Platform paths resolve from the directory holding the checkouts. If no sibling Platform checkout
+exists, use the canonical GitHub fallback in `AGENTS.md`. Repository-local ownership and mandatory
+controls remain authoritative; conditional reading does not waive applicable validation or
+security requirements.
 
 ## Repository Role
 
@@ -67,14 +71,22 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    forwards the normalized admitted tenant as a per-request Core header across mandatory and
    optional source products; a selector body is not a substitute for Core tenant admission.
    Stateful rebalance and construction envelopes likewise require matching `X-Tenant-Id` and
-   `stateful_input.tenant_id` before resolver construction; stateless envelopes do not acquire a
-   new tenant requirement.
+   `stateful_input.tenant_id` before resolver construction. Synchronous stateless simulation also
+   requires `X-Tenant-Id` for durable run ownership; other stateless surfaces retain their own
+   documented admission contract.
 4. Caller-asserted tenant, actor, and role headers are routing and authorization inputs in the
    current runtime; they are not proof of an authenticated principal. Production identity and grant
    resolution remain external security-governance responsibilities.
 5. Wave and proof-pack reads, writes, transitions, replay, and retained-row handling use explicit
    tenant ownership. Source-product selectors remain distinct from aggregate ownership and must not
    be silently treated as interchangeable authority.
+6. Synchronous rebalance admission requires normalized `X-Tenant-Id` for both stateless and
+   stateful requests. PostgreSQL atomically owns `(tenant_id, Idempotency-Key)` before calculation,
+   binds that identity to one immutable canonical request hash, and atomically publishes the run,
+   artifact, mapping, history, and lineage. Active competing requests either recover the winner or
+   receive a bounded in-progress response; expired claims may be fenced and retried. Historical
+   runs and mappings without verified tenant ownership remain preserved but unreachable through
+   normal tenant-scoped APIs.
 
 ### Supported capability posture
 

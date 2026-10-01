@@ -53,6 +53,7 @@ class _Connection:
             "dpm:0027",
             "dpm:0028",
             "dpm:0029",
+            "dpm:0032",
         }
         self.statements: list[str] = []
         self.rollback_count = 0
@@ -100,10 +101,10 @@ def test_registry_matches_every_final_nullable_tenant_dataset() -> None:
                 nullable_tables.add(table)
         nullable_tables.update(
             re.findall(
-                r"ALTER TABLE\s+(dpm_[a-z0-9_]+).*?"
+                r"ALTER TABLE\s+(dpm_[a-z0-9_]+)[^;]*?"
                 r"ADD COLUMN IF NOT EXISTS tenant_id\s+TEXT(?:\s+NULL)?\s*;",
                 sql,
-                flags=re.DOTALL | re.IGNORECASE,
+                flags=re.IGNORECASE,
             )
         )
         not_null_tables.update(
@@ -116,7 +117,7 @@ def test_registry_matches_every_final_nullable_tenant_dataset() -> None:
 
     final_nullable_tables = nullable_tables - not_null_tables
     assert {dataset.name for dataset in QUARANTINED_TENANT_DATASETS} == final_nullable_tables
-    assert len(QUARANTINED_TENANT_DATASETS) == 7
+    assert len(QUARANTINED_TENANT_DATASETS) == 11
 
 
 def test_monitoring_run_inventory_requires_its_bounded_scan_index() -> None:
@@ -141,7 +142,7 @@ def test_clean_estate_is_an_explicit_successful_zero_read_only_report() -> None:
     assert report["status"] == "success"
     assert report["readOnly"] is True
     assert report["totalQuarantinedRows"] == 0
-    assert len(report["datasets"]) == 7
+    assert len(report["datasets"]) == 11
     assert all(dataset["totalCount"] == 0 for dataset in report["datasets"])
     assert all(dataset["rows"] == [] for dataset in report["datasets"])
     assert all(dataset["truncated"] is False for dataset in report["datasets"])

@@ -56,6 +56,7 @@ def test_lineage_edges_are_recorded_for_run_idempotency_and_operation():
         request_hash="sha256:test-lineage",
         portfolio_id="pf_lineage",
         idempotency_key="idem-lineage-1",
+        tenant_id="tenant-test",
     )
     accepted = service.submit_analyze_async(
         correlation_id="corr-op-lineage-1",

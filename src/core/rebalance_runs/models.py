@@ -9,6 +9,7 @@ DpmAsyncOperationType = Literal["ANALYZE_SCENARIOS"]
 DpmAsyncOperationStatus = Literal["PENDING", "RUNNING", "SUCCEEDED", "FAILED"]
 DpmWorkflowStatus = Literal["NOT_REQUIRED", "PENDING_REVIEW", "APPROVED", "REJECTED"]
 DpmWorkflowActionType = Literal["APPROVE", "REJECT", "REQUEST_CHANGES"]
+DpmSimulationSubmissionStatus = Literal["IN_PROGRESS", "COMPLETED"]
 DpmLineageEdgeType = Literal["CORRELATION_TO_RUN", "IDEMPOTENCY_TO_RUN", "OPERATION_TO_CORRELATION"]
 DpmSupportabilityState = Literal[
     "ready",
@@ -38,6 +39,14 @@ DpmTemporalIdentityStatus = Literal[
 
 
 class DpmRunRecord(BaseModel):
+    tenant_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Tenant that owns the run. Null is reserved for quarantined legacy rows and never "
+            "matches a tenant-scoped API read."
+        ),
+        examples=["tenant_001"],
+    )
     rebalance_run_id: str = Field(
         description="Internal lotus-manage run identifier.", examples=["rr_abc12345"]
     )
@@ -65,6 +74,14 @@ class DpmRunRecord(BaseModel):
 
 
 class DpmRunIdempotencyRecord(BaseModel):
+    tenant_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Tenant that owns this idempotency mapping. Null is reserved for legacy test and "
+            "quarantine representations; production writes require an owner."
+        ),
+        examples=["tenant_001"],
+    )
     idempotency_key: str = Field(
         description="Idempotency key supplied to simulate endpoint.",
         examples=["demo-idem-001"],
@@ -467,6 +484,13 @@ class DpmRunIdempotencyHistoryItem(BaseModel):
 
 
 class DpmRunIdempotencyHistoryRecord(BaseModel):
+    tenant_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Tenant that owns this history event. Null identifies quarantined legacy evidence."
+        ),
+        examples=["tenant_001"],
+    )
     idempotency_key: str = Field(
         description="Idempotency key supplied to simulate endpoint.",
         examples=["demo-idem-001"],
@@ -508,6 +532,18 @@ class DpmRunIdempotencyHistoryResponse(BaseModel):
             ]
         ],
     )
+
+
+class DpmSimulationSubmissionClaimRecord(BaseModel):
+    tenant_id: str
+    idempotency_key: str
+    request_hash: str
+    status: DpmSimulationSubmissionStatus
+    claim_token: str
+    claimed_at: datetime
+    claim_expires_at: datetime
+    rebalance_run_id: Optional[str] = None
+    completed_at: Optional[datetime] = None
 
 
 class DpmAsyncAcceptedResponse(BaseModel):
@@ -891,6 +927,10 @@ class DpmRunWorkflowActionRequest(BaseModel):
 
 
 class DpmLineageEdgeRecord(BaseModel):
+    tenant_id: Optional[str] = Field(
+        default=None,
+        description="Owning tenant scope; null is quarantined legacy or unowned async lineage.",
+    )
     source_entity_id: str = Field(
         description="Lineage source entity identifier.",
         examples=["corr-1234-abcd"],

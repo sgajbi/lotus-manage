@@ -140,6 +140,7 @@ def test_live_postgres_idempotency_workflow_lineage_and_summary(
     repository.save_run(run)
     repository.save_idempotency_mapping(
         DpmRunIdempotencyRecord(
+            tenant_id="tenant-supportability",
             idempotency_key=run.idempotency_key or "",
             request_hash=run.request_hash,
             rebalance_run_id=run.rebalance_run_id,
@@ -230,6 +231,7 @@ def test_live_postgres_async_and_retention_purge_contract(
     )
     repository.save_idempotency_mapping(
         DpmRunIdempotencyRecord(
+            tenant_id="tenant-supportability",
             idempotency_key=run.idempotency_key or "",
             request_hash=run.request_hash,
             rebalance_run_id=run.rebalance_run_id,
@@ -621,6 +623,14 @@ def test_live_postgres_supportability_summary_status_breakdown(
     assert summary.run_status_counts == {"BLOCKED": 1, "READY": 1}
     assert summary.operation_status_counts == {"FAILED": 1, "SUCCEEDED": 1}
 
+    scoped = repository.get_supportability_summary(portfolio_id="pf-summary-2")
+    assert scoped.run_count == 2
+    assert scoped.run_status_counts == {"BLOCKED": 1, "READY": 1}
+    assert scoped.operation_count == 0
+    assert scoped.operation_status_counts == {}
+    assert scoped.oldest_run_created_at == ready_run.created_at
+    assert scoped.newest_run_created_at == blocked_run.created_at
+
 
 def test_live_postgres_purge_expired_runs_disabled_for_non_positive_retention(
     repository: PostgresDpmRunRepository,
@@ -653,6 +663,7 @@ def _build_run(
     idempotency_key: str,
 ) -> DpmRunRecord:
     return DpmRunRecord(
+        tenant_id="tenant-supportability",
         rebalance_run_id=run_id,
         correlation_id=correlation_id,
         request_hash=request_hash,
@@ -668,6 +679,6 @@ def _reset_tables(repository: PostgresDpmRunRepository) -> None:
         connection.execute(
             "TRUNCATE TABLE dpm_lineage_edges, dpm_workflow_decisions, "
             "dpm_run_idempotency_history, dpm_run_idempotency, "
-            "dpm_run_artifacts, dpm_async_operations, dpm_runs CASCADE"
+            "dpm_run_submission_claims, dpm_run_artifacts, dpm_async_operations, dpm_runs CASCADE"
         )
         connection.commit()
