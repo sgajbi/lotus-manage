@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-09-30T23:58:45+00:00`
+- Generated at: `2026-10-01T00:19:07+00:00`
 
 - Baseline ref: `origin/main`
 
 - Baseline source snapshot: `cda690ce72e19fb9f2ba9d5613ce4c6ee591ea1c`
 
-- Report source snapshot: `cda690ce+worktree`
+- Report source snapshot: `c0ef1c36`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,7 +15,7 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 948 | 949 | +1 |
-| Total Python LOC | 224000 | 226462 | +2462 |
+| Total Python LOC | 224000 | 226504 | +2504 |
 | Test functions | 3259 | 3271 | +12 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
@@ -86,7 +86,7 @@
 | --- | --- | --- | --- |
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 791 |
-| 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 422 |
+| 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 426 |
 | 4 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 380 |
 | 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
@@ -119,7 +119,7 @@
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1068 | 1558 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 275 | 791 |
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
-| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 118 | 422 |
+| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 119 | 426 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
