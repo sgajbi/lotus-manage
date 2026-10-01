@@ -51,7 +51,10 @@ from src.core.mandate_models import (
     default_source_analytics_posture as _default_source_analytics_posture,
     effective_mandate_twin,
 )
-from src.core.mandate_health_scoring import calculate_mandate_health
+from src.core.mandate_health_scoring import (
+    _recommended_action_for_dimension,
+    calculate_mandate_health,
+)
 
 __all__ = [
     "DIMENSION_WEIGHTS",
@@ -491,20 +494,36 @@ def monitoring_exceptions_from_health(
 ) -> list[DpmMonitoringException]:
     detected_at = snapshot.calculated_at
     exceptions: list[DpmMonitoringException] = []
+    score_by_dimension = {score.dimension: score for score in snapshot.dimension_scores}
+    published = {(reason.dimension, reason.reason_code) for reason in snapshot.top_reasons}
     for reason in snapshot.top_reasons:
+        score = score_by_dimension[reason.dimension]
+        matching_assessment = next(
+            (
+                assessment
+                for assessment in score.budget_assessments
+                if assessment.reason_code == reason.reason_code
+            ),
+            None,
+        )
+        identity_parts = [
+            tenant_id,
+            snapshot.as_of_date.isoformat(),
+            snapshot.portfolio_id,
+            reason.dimension.value,
+        ]
+        if reason.dimension == MandateHealthDimension.TAX_TURNOVER:
+            if matching_assessment is None:
+                identity_parts.append("TAX_LOTS")
+            elif matching_assessment.control == "TAX_BUDGET":
+                identity_parts.append("TAX_BUDGET")
         exceptions.append(
             DpmMonitoringException(
                 # Tenant-scoped and injective (issue #648). Without the
                 # tenant, two tenants assessing the same portfolio, date and
                 # dimension derive the same id, and the second write replaces
                 # the first's payload and state.
-                exception_id=derived_identity(
-                    "me",
-                    tenant_id,
-                    snapshot.as_of_date.isoformat(),
-                    snapshot.portfolio_id,
-                    reason.dimension.value,
-                ),
+                exception_id=derived_identity("me", *identity_parts),
                 mandate_id=snapshot.mandate_id,
                 portfolio_id=snapshot.portfolio_id,
                 detected_at=detected_at,
@@ -513,9 +532,49 @@ def monitoring_exceptions_from_health(
                 severity=reason.severity,
                 reason_code=reason.reason_code,
                 recommended_action=reason.recommended_action,
+                measured_value=score.measured_value,
+                threshold_value=score.threshold_value,
+                budget_assessment=matching_assessment,
                 source_lineage=source_lineage,
             )
         )
+    for score in snapshot.dimension_scores:
+        for assessment in score.budget_assessments:
+            if (
+                assessment.state == MandateHealthState.READY
+                or (score.dimension, assessment.reason_code) in published
+            ):
+                continue
+            exceptions.append(
+                DpmMonitoringException(
+                    exception_id=derived_identity(
+                        "me",
+                        tenant_id,
+                        snapshot.as_of_date.isoformat(),
+                        snapshot.portfolio_id,
+                        score.dimension.value,
+                        *(["TAX_BUDGET"] if assessment.control == "TAX_BUDGET" else []),
+                    ),
+                    mandate_id=snapshot.mandate_id,
+                    portfolio_id=snapshot.portfolio_id,
+                    detected_at=detected_at,
+                    as_of_date=snapshot.as_of_date,
+                    dimension=score.dimension,
+                    severity=(
+                        MonitoringSeverity.CRITICAL
+                        if assessment.state == MandateHealthState.BLOCKED
+                        else MonitoringSeverity.WARNING
+                    ),
+                    reason_code=assessment.reason_code,
+                    recommended_action=_recommended_action_for_dimension(
+                        score.dimension, assessment.state, assessment.reason_code
+                    ),
+                    measured_value=assessment.measured_value,
+                    threshold_value=assessment.threshold_value,
+                    budget_assessment=assessment,
+                    source_lineage=source_lineage,
+                )
+            )
     return exceptions
 
 

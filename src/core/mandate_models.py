@@ -115,7 +115,18 @@ class DpmMandateConstraintSet(BaseModel):
     region_max_weight: Optional[Decimal] = Field(default=None)
     currency_max_weight: Optional[Decimal] = Field(default=None)
     turnover_budget: Optional[Decimal] = Field(default=None)
-    tax_budget_base: Optional[Decimal] = Field(default=None)
+    tax_budget_base: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Maximum cumulative realized-gain allowance in the portfolio base currency "
+            "for the caller-attested mandate budget period; not tax liability."
+        ),
+    )
+    tax_budget_period_start: Optional[date] = Field(
+        default=None,
+        description="Optional source-stated start of the tax-budget measurement period.",
+    )
     max_tracking_error: Optional[Decimal] = Field(default=None)
     max_active_share: Optional[Decimal] = Field(default=None)
     minimum_trade_notional: Optional[Decimal] = Field(default=None, ge=0)
@@ -234,6 +245,27 @@ class DpmMandateHealthReason(BaseModel):
     recommended_action: MandateRecommendedAction
 
 
+class DpmMandateBudgetAssessment(BaseModel):
+    control: Literal["TAX_BUDGET", "TURNOVER_BUDGET"]
+    state: MandateHealthState
+    reason_code: str
+    measured_value: Optional[Decimal] = None
+    threshold_value: Optional[Decimal] = None
+    remaining_value: Optional[Decimal] = None
+    currency: Optional[str] = None
+    period_start: Optional[date] = None
+    as_of_date: date
+    basis: Literal[
+        "NO_DECLARED_LIMIT",
+        "USAGE_MISSING",
+        "INCOMPARABLE",
+        "DECLARED_PERIOD_MATCHED",
+        "CALLER_ASSERTED_SAME_PERIOD",
+    ]
+    limit_source_ref: Optional[str] = None
+    usage_source_ref: Optional[str] = None
+
+
 class DpmMandateDimensionScore(BaseModel):
     dimension: MandateHealthDimension
     weight: int
@@ -243,6 +275,7 @@ class DpmMandateDimensionScore(BaseModel):
     measured_value: Optional[Decimal | str | int] = Field(default=None)
     threshold_value: Optional[Decimal | str | int] = Field(default=None)
     evidence_refs: list[str] = Field(default_factory=list)
+    budget_assessments: list[DpmMandateBudgetAssessment] = Field(default_factory=list)
 
 
 class DpmMandateSourceHealthContext(BaseModel):
@@ -298,8 +331,41 @@ class DpmMandateHealthInput(BaseModel):
     projected_net_cashflow: Optional[Decimal] = Field(default=None)
     projected_cashflow_currency: Optional[str] = Field(default=None)
     tax_lot_missing_security_ids: list[str] = Field(default_factory=list)
-    turnover_budget_used: Optional[Decimal] = Field(default=None)
-    tax_budget_used_base: Optional[Decimal] = Field(default=None)
+    turnover_budget_used: Optional[Decimal] = Field(default=None, ge=0)
+    tax_budget_used_base: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Caller-supplied cumulative realized gains consumed against tax_budget_base, "
+            "in the portfolio base currency and through the twin as-of date. Not tax paid."
+        ),
+    )
+    tax_budget_used_currency: Optional[str] = Field(
+        default=None,
+        pattern=r"^[A-Z]{3}$",
+        description=(
+            "Optional asserted usage currency. Omission asserts the twin base currency; "
+            "a supplied mismatch makes comparison unassessed."
+        ),
+    )
+    tax_budget_used_period_start: Optional[date] = Field(
+        default=None,
+        description=(
+            "Optional usage-window start. If either side states a period start, both must "
+            "state the same date for a comparable assessment."
+        ),
+    )
+    tax_budget_used_as_of_date: Optional[date] = Field(
+        default=None,
+        description="Optional usage cut; omission asserts the twin as-of date.",
+    )
+    tax_budget_usage_source_ref: Optional[str] = Field(
+        default=None,
+        description=(
+            "Caller-provided measurement reference. It is retained as evidence, not verified "
+            "as a bank/Core source by this endpoint."
+        ),
+    )
     tracking_error: Optional[Decimal] = Field(
         default=None,
         ge=0,
@@ -466,6 +532,7 @@ class DpmMonitoringException(BaseModel):
     recommended_action: MandateRecommendedAction
     measured_value: Optional[Decimal | str | int] = None
     threshold_value: Optional[Decimal | str | int] = None
+    budget_assessment: Optional[DpmMandateBudgetAssessment] = None
     source_lineage: list[DpmSourceProductLineage] = Field(default_factory=list)
     resolved_at: Optional[datetime] = None
     resolution_reason: Optional[str] = None

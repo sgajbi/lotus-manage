@@ -463,6 +463,7 @@ def _ready_input(**overrides: object) -> DpmMandateHealthInput:
             "FI_US_TREASURY_10Y": Decimal("0.40"),
         },
         "cash_weight": Decimal("0.05"),
+        "turnover_budget_used": Decimal("0"),
         # Explicit zero is observed evidence, not a substitute for missing
         # tracking-error evidence. Keep the shared ready fixture truthful.
         "tracking_error": Decimal("0"),
@@ -1535,6 +1536,213 @@ def test_turnover_near_limit_is_pending_review_not_blocked() -> None:
     assert _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER).reason_code == (
         "TURNOVER_BUDGET_NEAR_LIMIT"
     )
+
+
+@pytest.mark.parametrize(
+    ("used", "expected_state", "expected_reason", "expected_score", "remaining"),
+    [
+        (Decimal("0"), MandateHealthState.READY, "TAX_TURNOVER_READY", 100, Decimal("1000")),
+        (
+            Decimal("999.99"),
+            MandateHealthState.READY,
+            "TAX_TURNOVER_READY",
+            100,
+            Decimal("0.01"),
+        ),
+        (
+            Decimal("1000"),
+            MandateHealthState.PENDING_REVIEW,
+            "TAX_BUDGET_EXHAUSTED",
+            97,
+            Decimal("0"),
+        ),
+        (
+            Decimal("1000.01"),
+            MandateHealthState.BLOCKED,
+            "TAX_BUDGET_EXCEEDED",
+            94,
+            Decimal("-0.01"),
+        ),
+        (
+            Decimal("1000000"),
+            MandateHealthState.BLOCKED,
+            "TAX_BUDGET_EXCEEDED",
+            94,
+            Decimal("-999000"),
+        ),
+        (
+            None,
+            MandateHealthState.PENDING_REVIEW,
+            "TAX_BUDGET_USAGE_MISSING",
+            96,
+            None,
+        ),
+    ],
+)
+def test_tax_budget_assesses_cumulative_base_realized_gain_allowance(
+    used, expected_state, expected_reason, expected_score, remaining
+) -> None:
+    twin = _twin(
+        constraints=DpmMandateConstraintSet(
+            cash_band_min_weight=Decimal("0.02"),
+            cash_band_max_weight=Decimal("0.10"),
+            turnover_budget=Decimal("0.15"),
+            tax_budget_base=Decimal("1000"),
+            tax_budget_period_start=date(2026, 1, 1),
+            max_tracking_error=Decimal("0.05"),
+        )
+    )
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            twin=twin,
+            tax_budget_used_base=used,
+            tax_budget_used_currency="SGD",
+            tax_budget_used_period_start=date(2026, 1, 1),
+            tax_budget_used_as_of_date=AS_OF,
+            tax_budget_usage_source_ref="caller:realized-gain-ledger:2026-05-03",
+        ),
+        tenant_id="tenant-tax-budget",
+    )
+    score = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+    tax, turnover = score.budget_assessments
+    assert (snapshot.health_state, snapshot.health_score) == (expected_state, expected_score)
+    assert score.reason_code == expected_reason
+    assert tax.control == "TAX_BUDGET"
+    assert tax.measured_value == used
+    assert tax.threshold_value == Decimal("1000")
+    assert tax.remaining_value == remaining
+    assert tax.currency == "SGD"
+    assert tax.period_start == date(2026, 1, 1)
+    assert tax.as_of_date == AS_OF
+    assert tax.basis == ("USAGE_MISSING" if used is None else "DECLARED_PERIOD_MATCHED")
+    assert tax.usage_source_ref == (
+        None if used is None else "caller:realized-gain-ledger:2026-05-03"
+    )
+    assert turnover.state == MandateHealthState.READY
+    assert turnover.measured_value == Decimal("0")
+
+
+def test_tax_budget_no_limit_zero_and_conflicting_basis_are_distinct() -> None:
+    without_limit = calculate_mandate_health(_ready_input(), tenant_id="tenant-no-tax-limit")
+    no_limit_score = _dimension(without_limit, MandateHealthDimension.TAX_TURNOVER)
+    assert no_limit_score.state == MandateHealthState.READY
+    assert no_limit_score.budget_assessments[0].reason_code == "TAX_BUDGET_NOT_APPLICABLE"
+
+    zero_limit_twin = _twin(
+        constraints=_twin().constraints.model_copy(update={"tax_budget_base": Decimal("0")})
+    )
+    exhausted = calculate_mandate_health(
+        _ready_input(twin=zero_limit_twin, tax_budget_used_base=Decimal("0")),
+        tenant_id="tenant-zero-tax-limit",
+    )
+    assert _dimension(exhausted, MandateHealthDimension.TAX_TURNOVER).reason_code == (
+        "TAX_BUDGET_EXHAUSTED"
+    )
+
+    for mismatch in (
+        {"tax_budget_used_currency": "USD"},
+        {"tax_budget_used_as_of_date": date(2026, 5, 2)},
+        {"tax_budget_used_period_start": date(2026, 2, 1)},
+    ):
+        twin = _twin(
+            constraints=zero_limit_twin.constraints.model_copy(
+                update={"tax_budget_period_start": date(2026, 1, 1)}
+            )
+        )
+        snapshot = calculate_mandate_health(
+            _ready_input(twin=twin, tax_budget_used_base=Decimal("0"), **mismatch),
+            tenant_id="tenant-tax-mismatch",
+        )
+        score = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+        assert score.state == MandateHealthState.PENDING_REVIEW
+        assert score.reason_code == "TAX_BUDGET_BASIS_MISMATCH"
+        assert score.budget_assessments[0].basis == "INCOMPARABLE"
+
+
+def test_tax_and_turnover_findings_remain_independent_in_monitoring_exceptions() -> None:
+    twin = _twin(
+        constraints=_twin().constraints.model_copy(update={"tax_budget_base": Decimal("1000")})
+    )
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            twin=twin,
+            tax_budget_used_base=Decimal("1000.01"),
+            turnover_budget_used=Decimal("0.13"),
+        ),
+        tenant_id="tenant-both-budgets",
+    )
+    score = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+    assert snapshot.health_state == MandateHealthState.BLOCKED
+    assert snapshot.health_score == 94
+    assert score.reason_code == "TAX_BUDGET_EXCEEDED"
+    assert [(finding.control, finding.reason_code) for finding in score.budget_assessments] == [
+        ("TAX_BUDGET", "TAX_BUDGET_EXCEEDED"),
+        ("TURNOVER_BUDGET", "TURNOVER_BUDGET_NEAR_LIMIT"),
+    ]
+    exceptions = monitoring_exceptions_from_health(
+        snapshot, source_lineage=twin.source_lineage, tenant_id="tenant-both-budgets"
+    )
+    budget_exceptions = {
+        item.reason_code: item
+        for item in exceptions
+        if item.reason_code in {"TAX_BUDGET_EXCEEDED", "TURNOVER_BUDGET_NEAR_LIMIT"}
+    }
+    assert set(budget_exceptions) == {"TAX_BUDGET_EXCEEDED", "TURNOVER_BUDGET_NEAR_LIMIT"}
+    assert len({item.exception_id for item in budget_exceptions.values()}) == 2
+    assert budget_exceptions["TAX_BUDGET_EXCEEDED"].budget_assessment.remaining_value == (
+        Decimal("-0.01")
+    )
+    assert budget_exceptions["TURNOVER_BUDGET_NEAR_LIMIT"].measured_value == Decimal("0.13")
+    assert budget_exceptions["TURNOVER_BUDGET_NEAR_LIMIT"].threshold_value == Decimal("0.15")
+    turnover_only = calculate_mandate_health(
+        _ready_input(turnover_budget_used=Decimal("0.13")), tenant_id="tenant-both-budgets"
+    )
+    turnover_only_exception = next(
+        item
+        for item in monitoring_exceptions_from_health(
+            turnover_only,
+            source_lineage=twin.source_lineage,
+            tenant_id="tenant-both-budgets",
+        )
+        if item.reason_code == "TURNOVER_BUDGET_NEAR_LIMIT"
+    )
+    assert (
+        turnover_only_exception.exception_id
+        == budget_exceptions["TURNOVER_BUDGET_NEAR_LIMIT"].exception_id
+    )
+
+    missing_lots = calculate_mandate_health(
+        _ready_input(
+            twin=twin,
+            tax_budget_used_base=Decimal("1000.01"),
+            turnover_budget_used=Decimal("0.13"),
+            tax_lot_missing_security_ids=["EQ_1"],
+        ),
+        tenant_id="tenant-both-budgets",
+    )
+    missing_lots_score = _dimension(missing_lots, MandateHealthDimension.TAX_TURNOVER)
+    assert missing_lots_score.reason_code == "TAX_LOTS_INCOMPLETE"
+    assert missing_lots_score.state == MandateHealthState.BLOCKED
+    assert {item.reason_code for item in missing_lots_score.budget_assessments} == {
+        "TAX_BUDGET_EXCEEDED",
+        "TURNOVER_BUDGET_NEAR_LIMIT",
+    }
+    assert {
+        item.reason_code
+        for item in monitoring_exceptions_from_health(
+            missing_lots, source_lineage=twin.source_lineage, tenant_id="tenant-both-budgets"
+        )
+    } >= {"TAX_LOTS_INCOMPLETE", "TAX_BUDGET_EXCEEDED", "TURNOVER_BUDGET_NEAR_LIMIT"}
+
+
+@pytest.mark.parametrize("value", [Decimal("-0.01"), Decimal("NaN"), Decimal("Infinity")])
+def test_tax_budget_limit_and_usage_reject_invalid_amounts(value: Decimal) -> None:
+    with pytest.raises(ValidationError):
+        DpmMandateConstraintSet(tax_budget_base=value)
+    with pytest.raises(ValidationError):
+        DpmMandateHealthInput(twin=_twin(), tax_budget_used_base=value)
+    with pytest.raises(ValidationError):
+        DpmMandateHealthInput(twin=_twin(), turnover_budget_used=value)
 
 
 def test_monitoring_exceptions_are_derived_from_health_reasons_with_lineage() -> None:

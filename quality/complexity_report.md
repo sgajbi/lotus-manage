@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-01T14:49:35+00:00`
+- Generated at: `2026-10-01T15:53:52+00:00`
 
-- Baseline source snapshot: `5240420e2d3d6e470701c108dc5e5e9dead890ff`
+- Baseline source snapshot: `6163521fa7a07cdad8a6f87f75f15cbf3b4352df`
 
-- Report source snapshot: `781d8293+worktree`
+- Report source snapshot: `2f15bf12+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -34,16 +34,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
-| 2 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
-| 3 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
-| 4 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
-| 5 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
-| 6 | build | src/core/rebalance_runs/operation_support_bundle.py | 11 | 37 |
-| 7 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
-| 8 | _campaign_workflow_labels_for_http_exception | src/api/routers/wave_campaign_workflow_telemetry.py | 11 | 21 |
-| 9 | validate_revision_windows_and_hash | src/core/composite_membership.py | 11 | 19 |
-| 10 | _scenario_outcomes | src/core/rebalance_runs/operation_support_bundle.py | 10 | 39 |
+| 1 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
+| 2 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
+| 3 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
+| 4 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
+| 5 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
+| 6 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
+| 7 | monitoring_exceptions_from_health | src/core/mandates.py | 11 | 90 |
+| 8 | build | src/core/rebalance_runs/operation_support_bundle.py | 11 | 37 |
+| 9 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
+| 10 | _campaign_workflow_labels_for_http_exception | src/api/routers/wave_campaign_workflow_telemetry.py | 11 | 21 |
 
 ### Most Complex Current Test Functions
 

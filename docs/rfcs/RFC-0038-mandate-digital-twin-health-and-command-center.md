@@ -311,7 +311,7 @@ Initial default weights:
 | `ALLOCATION_DRIFT` | 18 | Distance from model or permitted mandate bands. |
 | `RISK_DRIFT` | 12 | Risk profile, tracking error, concentration, drawdown/stress posture. |
 | `CASH_LIQUIDITY` | 10 | Cash band, known liquidity needs, overdraft risk, settlement readiness. An unsourced mandate cash band yields `CASH_BAND_NOT_SOURCED` at PENDING_REVIEW rather than a READY score. |
-| `TAX_TURNOVER` | 10 | Tax budget and turnover budget usage. An unsourced turnover budget yields `TURNOVER_BUDGET_NOT_SOURCED` at PENDING_REVIEW rather than a READY score. |
+| `TAX_TURNOVER` | 10 | Tax-budget and turnover-budget usage. Missing applicable tax usage is PENDING_REVIEW, not zero; an unsourced turnover limit remains `TURNOVER_BUDGET_NOT_SOURCED` at PENDING_REVIEW. Existing turnover scoring with a declared limit but no measured usage is unchanged in this tax-budget slice and must not be interpreted as certified turnover compliance (#745). |
 | `ELIGIBILITY_RESTRICTIONS` | 10 | Product shelf, restricted instruments, client exclusions, ESG constraints. |
 | `PERFORMANCE_ATTENTION` | 8 | Underperformance, attribution flags, benchmark-relative concerns. |
 | `WORKFLOW_READINESS` | 7 | Approval, stale workflow, pending decision, operation blockage. |
@@ -319,6 +319,24 @@ Initial default weights:
 | `MODEL_FRESHNESS` | 5 | Model version currency and CIO change posture. |
 
 Weights must total 100.
+
+The explicit health-input tax budget is a non-negative cumulative **realized-gain allowance**, not
+tax liability or a tax-rate estimate. `tax_budget_base` and `tax_budget_used_base` are in the twin
+portfolio base currency; the used amount is cumulative through `twin.as_of_date`. Omitted usage
+currency/as-of fields assert that basis; a supplied contradiction makes the comparison
+`TAX_BUDGET_BASIS_MISMATCH`/PENDING_REVIEW. The limit and usage may both declare a period start;
+when either does, both must match. With no declared start, the assessment records
+`CALLER_ASSERTED_SAME_PERIOD`; with matching declared starts it records
+`DECLARED_PERIOD_MATCHED`. These are caller-provided claims, not proof that Core or a bank tax
+ledger supplied a period or realized gains. A missing budget is non-applicable, a missing usage
+measurement is `TAX_BUDGET_USAGE_MISSING`/PENDING_REVIEW, usage below a comparable budget passes,
+equality is `TAX_BUDGET_EXHAUSTED`/PENDING_REVIEW (no remaining gain allowance), and excess is
+`TAX_BUDGET_EXCEEDED`/BLOCKED. Finite non-negative validation precedes persistence. The nominal
+remaining amount is budget minus usage, including negative excess, never tax payable. Tax-lot
+incompleteness remains a hard blocker. Within the single 10% dimension, the most severe state
+drives its score; separate `budget_assessments` and monitoring exceptions retain simultaneous tax
+and turnover findings without double-weighting. Source identifiers are preserved as declared
+input references; this endpoint does not certify live bank tax ingestion or trade-release policy.
 
 ### 6.2 Dimension Score Rules
 

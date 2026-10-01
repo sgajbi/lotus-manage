@@ -66,7 +66,11 @@ async def read_mandate_health(
         "Use this endpoint to recalculate and persist mandate health from an explicit health "
         "input. This is primarily for certification, operations, and later command-center "
         "orchestration where the caller has already resolved the source-backed mandate twin and "
-        "current monitoring measurements."
+        "current monitoring measurements. A declared tax_budget_base is a base-currency "
+        "cumulative realized-gain allowance, not tax liability. tax_budget_used_base is a "
+        "caller-supplied cumulative measurement through the twin as-of date; omitted currency "
+        "and date assert that same basis. Missing or contradictory evidence cannot pass as "
+        "tax-compliant. This route does not verify a live bank tax source."
     ),
     responses={
         200: {"description": "Recalculated and persisted mandate health snapshot."},
