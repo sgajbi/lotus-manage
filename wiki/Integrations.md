@@ -51,6 +51,11 @@ support, and [Security and Governance](Security-and-Governance) for authority bo
 - `lotus-idea`
   source authority for opportunity candidates and conversion intents; Manage owns the resulting
   durable management-review action and its outcome history
+- `lotus-performance`
+  owner of immutable composite member-return facts and composite calculation. Manage supplies only
+  pinned composite definitions and effective-dated eligibility decisions through the authenticated
+  composite source product; it does not calculate returns or infer historical members from the
+  current portfolio book.
 
 ## Boundary rules
 

@@ -61,6 +61,29 @@ evidence.
 - `/api/v1/integration/capabilities`
   backend-owned feature and workflow discovery for gateway and platform consumers
 
+## Composite membership source product
+
+`/api/v1/rebalance/composites/*` exposes Manage-owned immutable composite definitions and pinned,
+effective-dated eligibility revisions. Every route requires `X-Tenant-Id`, `X-Actor-Id`, and
+`X-Role`; writes additionally require `DPM_COMPOSITE_ADMIN` or `DPM_PORTFOLIO_MANAGER`. Replaying
+the same version/content is idempotent, while changed content at the same identity returns a
+conflict. Readers must pin both definition and membership revisions; Manage never substitutes a
+current portfolio-book membership for historical eligibility.
+
+- `PUT /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}` creates an
+  immutable definition revision with strategy, reporting currency, effective lifecycle, policy,
+  source-authority declaration, trusted actor, and correlation lineage.
+- `PUT /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}`
+  persists include, exclude, or pending-review decisions with inclusive effective dates, source cut,
+  source snapshot, policy, trusted decision actor, and correction-impact lineage.
+- `GET .../membership/{membership_revision}/as-of?as_of_date=YYYY-MM-DD` returns only the decisions
+  effective on that date from the explicitly pinned revision, retaining exclusions and terminated
+  periods for historical consumers.
+
+This is a source-record API, not a composite calculation, automatic eligibility engine, broker,
+Performance member-return publication, or OMS interface. Consumer materialization and delivery
+acknowledgement remain owned and evidenced separately.
+
 ## Construction alternative surfaces
 
 - `POST /api/v1/construction/alternative-sets/generate`

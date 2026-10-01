@@ -1751,6 +1751,50 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url "$LOTUS_MANAGE
 python scripts/openapi_quality_gate.py
 ```
 
+## Certified endpoint family: composite definition and membership source records
+
+Routes:
+
+- `PUT /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}`
+- `GET /api/v1/rebalance/composites/definitions`
+- `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}`
+- `PUT /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}`
+- `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership`
+- `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}`
+- `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/as-of`
+
+Purpose:
+
+Provides Manage-owned, tenant-scoped composite definition and effective-dated membership source
+records. Consumers must pin both revisions; the as-of route evaluates only the pinned revision and
+does not infer members from the current portfolio book.
+
+Functional coverage:
+
+- trusted tenant, actor, and role admission, with writes limited to composite administrators and
+  portfolio managers,
+- idempotent immutable replay and changed-content conflict refusal,
+- tenant-fenced detail reads and deterministic bounded pages,
+- inclusive effective-date include/exclude decisions, immutable correction lineage, and retained
+  original/corrected revisions,
+- PostgreSQL migration, restart, tenant fence, and missing parent-definition/correction fencing.
+
+Non-functional posture:
+
+- definition and membership records are durable locally when the Composite PostgreSQL DSN is
+  configured; the in-memory adapter is limited to development and test use,
+- this is not automatic eligibility determination, composite-return calculation, broker delivery,
+  consumer acknowledgement, or an OMS interface. `lotus-performance` owns member-return facts and
+  calculation; its materialization workflow must retain this revision identity.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/api/test_composite_membership_routes.py tests/unit/dpm/composites/test_composite_membership.py -q
+python -m pytest tests/integration/dpm/composites/test_composite_membership_postgres.py -q
+python scripts/openapi_quality_gate.py
+```
+
 ## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, read models, report input, and supportability
 
 Routes:

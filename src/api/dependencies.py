@@ -12,6 +12,10 @@ from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
 )
 from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
+from src.api.services.composite_membership_application import (
+    DpmCompositeMembershipApplicationService,
+)
+from src.core.composite_repository import DpmCompositeRepository
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
@@ -34,6 +38,10 @@ from src.core.portfolio_memory.source_repositories import (
 from src.core.waves.repository import DpmWaveRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
+from src.infrastructure.composites import (
+    InMemoryDpmCompositeRepository,
+    PostgresDpmCompositeRepository,
+)
 from src.infrastructure.construction import PostgresConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository, PostgresDpmMandateRepository
 from src.infrastructure.proof_packs import (
@@ -91,6 +99,7 @@ _PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY = InMemoryDpmPmQualitySummaryInvocatio
 )
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _CAMPAIGN_DEFINITION_REPOSITORY = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+_COMPOSITE_REPOSITORY = InMemoryDpmCompositeRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
 _POSTGRES_CONSTRUCTION_REPOSITORY: PostgresConstructionRepository | None = None
 _POSTGRES_PROOF_PACK_REPOSITORY: PostgresDpmProofPackRepository | None = None
@@ -111,6 +120,7 @@ _POSTGRES_WAVE_REPOSITORY: PostgresDpmWaveRepository | None = None
 _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY: (
     PostgresDpmBulkReviewCampaignDefinitionRepository | None
 ) = None
+_POSTGRES_COMPOSITE_REPOSITORY: PostgresDpmCompositeRepository | None = None
 
 
 async def get_db_session() -> AsyncIterator[None]:
@@ -454,6 +464,24 @@ def get_campaign_definition_repository() -> DpmBulkReviewCampaignDefinitionRepos
             )
         return _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY
     return _CAMPAIGN_DEFINITION_REPOSITORY
+
+
+def get_composite_repository() -> DpmCompositeRepository:
+    """Return the composite source-product repository for the active persistence profile."""
+
+    dsn = _repository_dsn("DPM_COMPOSITE_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_COMPOSITE_REPOSITORY
+        if _POSTGRES_COMPOSITE_REPOSITORY is None:
+            _POSTGRES_COMPOSITE_REPOSITORY = PostgresDpmCompositeRepository(dsn=dsn)
+        return _POSTGRES_COMPOSITE_REPOSITORY
+    return _COMPOSITE_REPOSITORY
+
+
+def get_composite_membership_application_service(
+    repository: DpmCompositeRepository = Depends(get_composite_repository),
+) -> DpmCompositeMembershipApplicationService:
+    return DpmCompositeMembershipApplicationService(repository=repository)
 
 
 def get_wave_campaign_application_service(

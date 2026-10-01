@@ -22,6 +22,7 @@ from src.api.persistence_profile import app_persistence_profile_name
 from src.api.production_cutover_contract import validate_cutover_migrations_applied
 from src.api.response_headers import apply_observability_headers
 from src.api.routers.construction import router as construction_router
+from src.api.routers.composite_membership import router as composite_membership_router
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
     router as rebalance_run_support_router,
@@ -187,6 +188,14 @@ app = FastAPI(
                 "RFC42-WTBD-008 configurable PM operating quality score-run lifecycle endpoints."
             ),
         },
+        {
+            "name": "lotus-manage Composite Membership",
+            "description": (
+                "Manage-owned immutable composite definitions and effective-dated eligibility "
+                "revisions. This source product does not calculate composite returns or own "
+                "Core asset facts."
+            ),
+        },
     ],
     lifespan=_app_lifespan,
 )
@@ -221,6 +230,7 @@ app.include_router(integration_capabilities_router, prefix="/api/v1")
 app.include_router(mandates_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
 app.include_router(construction_router, prefix="/api/v1")
+app.include_router(composite_membership_router, prefix="/api/v1")
 app.include_router(proof_pack_router, prefix="/api/v1")
 app.include_router(waves_router, prefix="/api/v1")
 app.include_router(outcome_reviews_router, prefix="/api/v1")
