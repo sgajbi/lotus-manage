@@ -323,3 +323,26 @@ def test_async_simulation_operation_routes_fail_closed_for_unknown_or_wrong_tena
         ).status_code
         == 404
     )
+
+
+def test_async_simulation_results_and_retry_are_safe_before_any_failed_work() -> None:
+    repository = InMemoryDpmWaveRepository()
+    repository.save_wave(
+        wave=_source_checked_wave(),
+        idempotency_key=None,
+        request_hash=None,
+        tenant_id=TENANT_ID,
+    )
+    client = _client(repository)
+    operation_id = _admit(client).json()["operation_id"]
+
+    results = client.get(
+        f"{BASE_PATH}/simulation-operations/{operation_id}/results?limit=1&offset=0"
+    )
+    assert results.status_code == 200
+    assert results.json()["total_count"] == 1
+    assert results.json()["next_offset"] is None
+
+    retry = client.post(f"{BASE_PATH}/simulation-operations/{operation_id}/retry", json={})
+    assert retry.status_code == 200
+    assert retry.json()["status"] == "PENDING"
