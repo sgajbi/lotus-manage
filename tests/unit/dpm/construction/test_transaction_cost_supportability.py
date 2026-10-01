@@ -1,5 +1,8 @@
 from decimal import Decimal
 
+import pytest
+from pydantic import ValidationError
+
 from src.api.services.construction_transaction_cost_supportability import (
     _observed_transaction_cost_money,
     _observed_transaction_cost_term,
@@ -148,6 +151,53 @@ def test_transaction_cost_curve_points_by_key_indexes_security_and_transaction_t
 
     assert sorted(points_by_key) == [("EQ_A", "SELL"), ("EQ_B", "BUY")]
     assert points_by_key[("EQ_A", "SELL")].average_cost_bps == Decimal("10")
+
+
+@pytest.mark.parametrize(
+    "points",
+    [
+        [("EQ_A", "SELL", "20"), ("EQ_A", "SELL", "100")],
+        [("EQ_A", "SELL", "100"), ("EQ_A", "SELL", "20")],
+        [("EQ_A", "SELL", "20"), ("EQ_A", "SELL", "20")],
+    ],
+)
+def test_transaction_cost_context_rejects_repeated_security_trade_side(
+    points: list[tuple[str, str, str]],
+) -> None:
+    with pytest.raises(ValidationError, match="TRANSACTION_COST_CURVE_DUPLICATE_POINT"):
+        _transaction_cost_context(points=points)
+
+
+def test_cost_estimate_defends_against_unvalidated_duplicate_context() -> None:
+    valid = _transaction_cost_context(security_ids=["EQ_A", "EQ_B"])
+    conflicting = valid.curve_points[0].model_copy(update={"average_cost_bps": Decimal("100")})
+    bypassed = valid.model_copy(update={"curve_points": [*valid.curve_points, conflicting]})
+    result = _trade_result()
+
+    assert transaction_cost_curve_points_by_key(context=bypassed) == {}
+    assert observed_transaction_cost_estimate(result=result, context=bypassed) is None
+    assert (
+        transaction_cost_status(result=result, context=bypassed)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert "TRANSACTION_COST_CURVE_DUPLICATE_POINT" in transaction_cost_reason_codes(
+        result=result, context=bypassed
+    )
+
+
+def test_transaction_cost_context_accepts_distinct_sides_and_valid_zero() -> None:
+    context = _transaction_cost_context(
+        points=[("EQ_A", "SELL", "0"), ("EQ_A", "BUY", "20"), ("EQ_B", "BUY", "0")]
+    )
+
+    assert set(transaction_cost_curve_points_by_key(context=context)) == {
+        ("EQ_A", "SELL"),
+        ("EQ_A", "BUY"),
+        ("EQ_B", "BUY"),
+    }
+    estimate = observed_transaction_cost_estimate(result=_trade_result(), context=context)
+    assert estimate is not None
+    assert estimate.amount == Decimal("0.0000")
 
 
 def test_observed_transaction_cost_term_helpers_match_supported_trade_terms() -> None:

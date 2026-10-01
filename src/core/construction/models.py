@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.construction.vocabulary import (
     ConstructionMethod,
@@ -217,6 +218,24 @@ class AuthoritativeTransactionCostPoint(BaseModel):
     )
 
 
+class _TransactionCostPointIdentity(Protocol):
+    security_id: str
+    transaction_type: str
+
+
+def duplicate_transaction_cost_point_keys(
+    points: Iterable[_TransactionCostPointIdentity],
+) -> set[tuple[str, str]]:
+    seen: set[tuple[str, str]] = set()
+    duplicates: set[tuple[str, str]] = set()
+    for point in points:
+        key = (point.security_id, point.transaction_type)
+        if key in seen:
+            duplicates.add(key)
+        seen.add(key)
+    return duplicates
+
+
 class AuthoritativeTransactionCostContext(BaseModel):
     supportability_status: ConstructionMethodStatus = Field(
         description="Source-owner supportability status for observed transaction-cost evidence."
@@ -256,6 +275,12 @@ class AuthoritativeTransactionCostContext(BaseModel):
         default_factory=list,
         description="Source-owner bounded reason codes.",
     )
+
+    @model_validator(mode="after")
+    def _require_unique_cost_point_keys(self) -> "AuthoritativeTransactionCostContext":
+        if duplicate_transaction_cost_point_keys(self.curve_points):
+            raise ValueError("TRANSACTION_COST_CURVE_DUPLICATE_POINT")
+        return self
 
 
 class AuthoritativeClientRestrictionRule(BaseModel):

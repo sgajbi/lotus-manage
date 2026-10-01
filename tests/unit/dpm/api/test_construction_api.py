@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -9,9 +11,15 @@ from src.api.dependencies import (
 from src.api.main import app
 import src.api.services.construction_service as construction_service
 import src.api.services.core_resolver_service as core_resolver_service
+from src.api.services.construction_transaction_cost_source_context import (
+    transaction_cost_context_from_curve,
+)
 from src.core.dpm_source_context import DpmCoreExecutionContext
 from src.infrastructure.construction import InMemoryConstructionRepository
 from tests.shared.factories import valid_api_payload
+from tests.unit.dpm.construction.source_product_context_fixtures import (
+    transaction_cost_curve_response,
+)
 
 
 async def override_get_db_session():
@@ -911,6 +919,99 @@ def test_cost_aware_method_requires_complete_trade_side_coverage_and_persists_qu
             "TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS" in (cost_trace["reason_codes"])
         )
         assert "not a predictive execution quote" in cost_trace["description"]
+
+
+@pytest.mark.parametrize("duplicate_kind", ["conflicting_bps", "identical", "different_currency"])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_cost_aware_api_rejects_duplicate_point_identity_before_persistence(
+    duplicate_kind: str, reverse: bool
+) -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _two_trade_cost_payload()
+    authority_context = _two_trade_transaction_cost_authority_context_payload(
+        a_side="SELL", b_side="BUY", average_cost_bps="20"
+    )
+    cost_context = authority_context["transaction_cost_context"]
+    original = cost_context["curve_points"][0]
+    duplicate = dict(original)
+    if duplicate_kind == "conflicting_bps":
+        duplicate.update(average_cost_bps="100", min_cost_bps="100", max_cost_bps="100")
+    elif duplicate_kind == "different_currency":
+        duplicate["currency"] = "USD"
+    ordered_pair = [duplicate, original] if reverse else [original, duplicate]
+    cost_context["curve_points"] = [*ordered_pair, cost_context["curve_points"][1]]
+    cost_context["returned_curve_point_count"] = 3
+    payload["authority_context"] = authority_context
+    idempotency_key = f"duplicate-cost-{duplicate_kind}-{reverse}"
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": idempotency_key},
+        )
+
+    assert response.status_code == 422
+    assert any(
+        "TRANSACTION_COST_CURVE_DUPLICATE_POINT" in item["msg"]
+        for item in response.json()["detail"]
+    )
+    assert (
+        repository.list_alternative_sets(
+            portfolio_id=payload["stateless_input"]["portfolio_snapshot"]["portfolio_id"], limit=10
+        )
+        == []
+    )
+    assert repository.get_alternative_set_by_idempotency(idempotency_key=idempotency_key) is None
+
+
+def test_cost_aware_api_retains_qualified_core_duplicate_evidence_without_estimate() -> None:
+    curve = transaction_cost_curve_response()
+    first = curve.curve_points[0].model_copy(
+        update={"security_id": "EQ_A", "transaction_type": "SELL", "currency": "SGD"}
+    )
+    second = first.model_copy(update={"security_id": "EQ_B", "transaction_type": "BUY"})
+    conflicting = first.model_copy(update={"average_cost_bps": Decimal("100")})
+    curve = curve.model_copy(
+        update={
+            "curve_points": [first, second, conflicting],
+            "supportability": curve.supportability.model_copy(
+                update={
+                    "state": "READY",
+                    "reason": "TRANSACTION_COST_CURVE_READY",
+                    "returned_curve_point_count": 3,
+                }
+            ),
+        }
+    )
+    context = transaction_cost_context_from_curve(curve)
+    payload = _two_trade_cost_payload()
+    payload["authority_context"] = {"transaction_cost_context": context.model_dump(mode="json")}
+    repository = InMemoryConstructionRepository()
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "qualified-core-duplicate"},
+        )
+        assert response.status_code == 200
+        readback = client.get(
+            f"/api/v1/construction/alternative-sets/{response.json()['alternative_set_id']}"
+        )
+
+    assert readback.status_code == 200
+    assert readback.json() == response.json()
+    alternative = response.json()["alternatives"][0]
+    trace = next(
+        trace
+        for trace in alternative["constraint_trace"]
+        if trace["constraint"] == "ESTIMATED_COST"
+    )
+    assert alternative["method_status"] == "DEGRADED"
+    assert alternative["comparison_metrics"]["estimated_transaction_cost"] is None
+    assert "ESTIMATED_COST" not in {term["term"] for term in alternative["objective_trace"]}
+    assert "TRANSACTION_COST_CURVE_DUPLICATE_POINT" in trace["reason_codes"]
 
 
 def test_cost_aware_method_degrades_without_source_owned_cost_curve() -> None:

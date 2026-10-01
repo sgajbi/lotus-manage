@@ -118,6 +118,13 @@ certification evidence are missing.
 
 Consumer adapter rule:
 
+`TransactionCostCurve:v1` evidence is keyed by `(security_id, transaction_type)`, not currency
+or transport order. A repeated key is invalid even when the rows are identical; distinct BUY and
+SELL rows remain separate. Caller-supplied duplicate context is refused with validation 422
+before alternative-set persistence. A duplicate in Core source rows, including beyond the bounded
+projection, produces a degraded context with `TRANSACTION_COST_CURVE_DUPLICATE_POINT`, no
+observed-cost estimate, and preserved source lineage. Explicit zero-cost points remain valid.
+
 Core and Risk source-product response mappings fail closed before domain model construction. Core
 portfolio snapshots must provide portfolio identity, business date, valuation currency,
 `positions_baseline`, `portfolio_totals`, row identifiers, explicit quantities, row currencies, and

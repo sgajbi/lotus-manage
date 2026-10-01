@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from src.api.services import construction_transaction_cost_source_context
 from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
@@ -89,3 +91,36 @@ def test_transaction_cost_context_falls_back_to_page_fingerprint_source_id() -> 
     context = transaction_cost_context_from_curve(curve)
 
     assert context.source_id == "curve-page-fingerprint"
+
+
+def test_transaction_cost_context_degrades_duplicate_source_keys_before_bounded_projection() -> (
+    None
+):
+    curve = transaction_cost_curve_response()
+    first = curve.curve_points[0]
+    unique = [first.model_copy(update={"security_id": f"EQ_{index}"}) for index in range(1, 10)]
+    duplicate_after_projection_limit = first.model_copy(update={"average_cost_bps": Decimal("100")})
+    curve = curve.model_copy(
+        update={
+            "curve_points": [first, *unique, duplicate_after_projection_limit],
+            "page": curve.page.model_copy(update={"returned_component_count": 11}),
+            "supportability": curve.supportability.model_copy(
+                update={
+                    "state": "READY",
+                    "reason": "TRANSACTION_COST_CURVE_READY",
+                    "returned_curve_point_count": 11,
+                }
+            ),
+        }
+    )
+
+    context = transaction_cost_context_from_curve(curve)
+
+    assert context.supportability_status == ConstructionMethodStatus.DEGRADED
+    assert context.curve_points == []
+    assert context.returned_curve_point_count == 11
+    assert context.source_id == "curve-lineage"
+    assert context.reason_codes == [
+        "TRANSACTION_COST_CURVE_READY",
+        "TRANSACTION_COST_CURVE_DUPLICATE_POINT",
+    ]
