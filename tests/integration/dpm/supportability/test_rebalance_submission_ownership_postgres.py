@@ -382,9 +382,7 @@ def test_migration_from_0031_preserves_legacy_rows_and_builds_empty_owned_mappin
         admin.commit()
         admin.execute(f'SET search_path TO "{schema}"')
         all_migrations = postgres_migrations._load_migrations(namespace="dpm")
-        assert {"0032", "0033"}.issubset(
-            {migration.version for migration in all_migrations}
-        )
+        assert {"0032", "0033"}.issubset({migration.version for migration in all_migrations})
         pre_0032_migrations = [
             migration for migration in all_migrations if migration.version < "0032"
         ]
