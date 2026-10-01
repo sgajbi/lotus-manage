@@ -1038,7 +1038,9 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     operation_schema_ref = support_bundle_by_operation["responses"]["200"]["content"][
         "application/json"
     ]["schema"]["$ref"]
-    assert operation_schema_ref.endswith("/DpmRunSupportBundleResponse")
+    assert operation_schema_ref.endswith("/DpmOperationSupportBundleResponse")
+    operation_schema = openapi["components"]["schemas"]["DpmOperationSupportBundleResponse"]
+    assert {"operation_id", "status", "scenarios"}.issubset(operation_schema["required"])
     expected_params = {
         "operation_id",
         "include_artifact",
@@ -1077,6 +1079,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "CORRELATION_TO_RUN",
         "IDEMPOTENCY_TO_RUN",
         "OPERATION_TO_CORRELATION",
+        "OPERATION_TO_RUN",
     }
 
     idempotency_history = openapi["paths"][

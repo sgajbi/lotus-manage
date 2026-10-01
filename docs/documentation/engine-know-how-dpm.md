@@ -308,7 +308,7 @@ Swagger contract quality:
   - workflow decision history (`workflow_history`)
   - lineage edges for run id (`lineage`)
   - optional deterministic run artifact (`artifact`)
-  - optional async operation mapped by run correlation (`async_operation`)
+  - optional originating async operation only for a run with explicit operation membership (`async_operation`)
   - optional idempotency mapping history (`idempotency_history`)
 - Query options:
   - `include_artifact`
@@ -334,12 +334,29 @@ Swagger contract quality:
 - Unsupported query parameters return `422`.
 
 ### `GET /api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle`
-- Purpose: retrieve the same supportability bundle when asynchronous operation id is available.
+- Purpose: retrieve operation-scoped evidence for **all** requested scenarios. This is a distinct
+  response model from the singular run-ID bundle. Consumers of the old `.run` shape must read
+  `.scenarios[scenario_key].bundle.run` for each `succeeded` scenario instead.
+- `operation_id`, `status`, and `scenarios` are always present. Each scenario reports
+  `succeeded` (with a full run `bundle`), `failed` (with the recorded error), or `missing`
+  (no authoritative run evidence); a missing outcome must not be treated as success.
+- `historical_runs` identifies persisted but non-authoritative attempt runs by scenario key,
+  execution attempt, and bundle. A reclaimed attempt uses attempt-qualified scenario correlation
+  IDs. The terminal operation result plus explicit `OPERATION_TO_RUN` membership and attempt
+  select the current runs; matching correlation text alone never establishes ownership.
+- Direct run-ID support bundles remain singular and link back through `async_operation` only when
+  explicit membership exists. Unrelated synchronous runs, even with matching correlation text,
+  never acquire an async-operation link.
 - Query options:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
-- Unsupported query parameters return `422`.
+- These flags apply to each nested run bundle; `include_async_operation=false` also omits the
+  operation-level status object. Missing or expired operations and foreign tenant scopes return
+  `404`; unsupported query parameters return `422`.
+- Legacy runs written before explicit membership was introduced are not inferred from correlation
+  prefixes. A legacy operation may therefore show `missing` until separately reconciled from
+  authoritative producer evidence; this endpoint never silently chooses an arbitrary run.
 
 ### `GET /api/v1/rebalance/runs`
 - Purpose: list lotus-manage runs for supportability investigations.
@@ -384,6 +401,7 @@ Swagger contract quality:
   - `CORRELATION_TO_RUN`
   - `IDEMPOTENCY_TO_RUN`
   - `OPERATION_TO_CORRELATION`
+  - `OPERATION_TO_RUN` (scenario key and fenced execution attempt in edge metadata)
 - Filters:
   - `edge_type`
   - `created_from`

@@ -1666,6 +1666,12 @@ def test_dpm_async_operation_ttl_expiry_by_id_and_correlation(client, monkeypatc
     assert by_correlation.status_code == 404
     assert by_correlation.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
 
+    bundle = client.get(
+        f"/api/v1/rebalance/runs/by-operation/{accepted.operation_id}/support-bundle"
+    )
+    assert bundle.status_code == 404
+    assert bundle.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
+
 
 def test_dpm_supportability_summary_endpoint(client):
     payload = get_valid_payload()
@@ -1805,7 +1811,7 @@ def test_dpm_run_support_bundle_endpoint(client):
     run_id = simulate.json()["rebalance_run_id"]
 
     service = get_dpm_run_support_service()
-    accepted = service.submit_analyze_async(
+    service.submit_analyze_async(
         tenant_id="tenant-test",
         correlation_id="corr-support-bundle-1",
         request_json={"scenarios": {"baseline": {"options": {}}}},
@@ -1818,8 +1824,8 @@ def test_dpm_run_support_bundle_endpoint(client):
     assert body["run"]["correlation_id"] == "corr-support-bundle-1"
     assert body["artifact"] is not None
     assert body["artifact"]["rebalance_run_id"] == run_id
-    assert body["async_operation"] is not None
-    assert body["async_operation"]["operation_id"] == accepted.operation_id
+    # A matching correlation on an unrelated synchronous run is not membership.
+    assert body["async_operation"] is None
     assert body["workflow_history"]["run_id"] == run_id
     assert body["workflow_history"]["decisions"] == []
     assert body["lineage"]["entity_id"] == run_id
@@ -1902,46 +1908,109 @@ def test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency(client):
     )
 
 
-def test_dpm_run_support_bundle_endpoint_by_operation(client):
-    payload = get_valid_payload()
-    simulate = client.post(
+def test_dpm_run_support_bundle_endpoint_by_operation(client, monkeypatch):
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "ACCEPT_ONLY")
+    unrelated = client.post(
         "/api/v1/rebalance/simulate",
-        json=payload,
+        json=get_valid_payload(),
         headers={
-            "Idempotency-Key": "test-key-support-bundle-3",
             "X-Correlation-Id": "corr-support-bundle-3",
+            "Idempotency-Key": "idem-unrelated-support-bundle-3",
         },
     )
-    assert simulate.status_code == 200
-    run_id = simulate.json()["rebalance_run_id"]
-
-    service = get_dpm_run_support_service()
-    accepted = service.submit_analyze_async(
-        tenant_id="tenant-test",
-        correlation_id="corr-support-bundle-3",
-        request_json={"scenarios": {"baseline": {"options": {}}}},
+    assert unrelated.status_code == 200
+    unrelated_id = unrelated.json()["rebalance_run_id"]
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}, "alternative": {"options": {}}}
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={"X-Correlation-Id": "corr-support-bundle-3"},
     )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+    executed = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+    assert executed.status_code == 200
+    assert executed.json()["status"] == "SUCCEEDED"
 
-    by_operation = client.get(
-        f"/api/v1/rebalance/runs/by-operation/{accepted.operation_id}/support-bundle"
-    )
+    by_operation = client.get(f"/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle")
     assert by_operation.status_code == 200
     by_operation_body = by_operation.json()
-    assert by_operation_body["run"]["rebalance_run_id"] == run_id
+    assert by_operation_body["operation_id"] == operation_id
     assert by_operation_body["async_operation"] is not None
-    assert by_operation_body["async_operation"]["operation_id"] == accepted.operation_id
+    assert by_operation_body["async_operation"]["operation_id"] == operation_id
+    assert by_operation_body["historical_runs"] == []
+    assert set(by_operation_body["scenarios"]) == {"baseline", "alternative"}
+    for scenario_key, evidence in by_operation_body["scenarios"].items():
+        assert evidence["status"] == "succeeded"
+        run_id = evidence["bundle"]["run"]["rebalance_run_id"]
+        assert run_id == executed.json()["result"]["results"][scenario_key]["rebalance_run_id"]
+        direct = client.get(f"/api/v1/rebalance/runs/{run_id}/support-bundle")
+        assert direct.status_code == 200
+        assert direct.json()["async_operation"]["operation_id"] == operation_id
+        assert run_id != unrelated_id
+    assert (
+        client.get(f"/api/v1/rebalance/runs/{unrelated_id}/support-bundle").json()[
+            "async_operation"
+        ]
+        is None
+    )
+
+    omitted = client.get(
+        f"/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle"
+        "?include_artifact=false&include_async_operation=false&include_idempotency_history=false"
+    )
+    assert omitted.status_code == 200
+    assert omitted.json()["async_operation"] is None
+    for evidence in omitted.json()["scenarios"].values():
+        assert evidence["bundle"]["artifact"] is None
+        assert evidence["bundle"]["async_operation"] is None
+        assert evidence["bundle"]["idempotency_history"] is None
+
+    foreign = client.get(
+        f"/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle",
+        headers={"X-Tenant-Id": "another-tenant"},
+    )
+    assert foreign.status_code == 404
+    assert foreign.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
 
     missing = client.get("/api/v1/rebalance/runs/by-operation/dop_missing/support-bundle")
     assert missing.status_code == 404
     assert missing.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
 
     unsupported_by_operation = client.get(
-        f"/api/v1/rebalance/runs/by-operation/{accepted.operation_id}/support-bundle?artifact=false"
+        f"/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle?artifact=false"
     )
     assert unsupported_by_operation.status_code == 422
     assert unsupported_by_operation.json()["detail"] == (
         "UNSUPPORTED_QUERY_PARAMETER: artifact not supported for this endpoint"
     )
+
+
+def test_operation_support_bundle_exposes_partial_failure_without_inventing_run(
+    client, monkeypatch
+):
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "ACCEPT_ONLY")
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {
+        "baseline": {"options": {}},
+        "invalid": {"options": {"max_turnover_pct": "-1"}},
+    }
+    accepted = client.post("/api/v1/rebalance/analyze/async", json=payload)
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+    executed = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+    assert executed.status_code == 200
+    assert executed.json()["status"] == "SUCCEEDED"
+    bundle = client.get(f"/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle")
+    assert bundle.status_code == 200
+    scenarios = bundle.json()["scenarios"]
+    assert scenarios["baseline"]["status"] == "succeeded"
+    assert scenarios["invalid"]["status"] == "failed"
+    assert scenarios["invalid"]["bundle"] is None
+    assert scenarios["invalid"]["error"].startswith("INVALID_OPTIONS")
 
 
 def test_dpm_run_support_bundle_endpoint_disabled_and_not_found(client, monkeypatch):
@@ -1953,6 +2022,11 @@ def test_dpm_run_support_bundle_endpoint_disabled_and_not_found(client, monkeypa
     disabled = client.get("/api/v1/rebalance/runs/rr_missing/support-bundle")
     assert disabled.status_code == 404
     assert disabled.json()["detail"] == "DPM_SUPPORT_BUNDLE_APIS_DISABLED"
+    disabled_operation = client.get(
+        "/api/v1/rebalance/runs/by-operation/dop_missing/support-bundle"
+    )
+    assert disabled_operation.status_code == 404
+    assert disabled_operation.json()["detail"] == "DPM_SUPPORT_BUNDLE_APIS_DISABLED"
 
 
 def test_dpm_run_support_service_env_parsing_defaults(monkeypatch):

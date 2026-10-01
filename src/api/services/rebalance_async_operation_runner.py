@@ -35,6 +35,7 @@ def run_analyze_async_operation_from_store(
         result = execute_batch_fn(
             request=payload.request,
             correlation_id=claim.correlation_id,
+            operation_claim=claim,
             request_policy_pack_id=payload.request_policy_pack_id,
             tenant_default_policy_pack_id=payload.tenant_default_policy_pack_id,
             tenant_id=payload.tenant_id,

@@ -93,6 +93,11 @@ Current posture under RFC-0082:
    concurrent identical submissions publish one authoritative run and changed-payload reuse is
    rejected. Run, artifact, history, workflow, and support-bundle descendants are tenant-fenced;
    unattributed legacy rows are quarantined rather than assigned to a caller.
+   Async batch support bundles are operation-scoped: each requested scenario has an explicit
+   succeeded/failed/missing outcome, successful runs have attempt-fenced operation membership,
+   run and membership edges commit atomically in PostgreSQL, and recovered attempts remain
+   identified as non-authoritative historical evidence. Direct
+   run bundles link to async operations only through that durable membership, not correlation text.
 7. Currency-bearing request and shelf minimum-trade thresholds are compared in each candidate
    trade's price currency. The engine uses Decimal direct/inverse quotes from the supplied governed
    market-data snapshot, records quote and applied-conversion provenance in diagnostics, preserves

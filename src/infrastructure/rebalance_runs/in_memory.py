@@ -149,6 +149,31 @@ class InMemoryDpmRunRepository(DpmRunRepository):
             self._runs[run.rebalance_run_id] = deepcopy(run)
             self._run_id_by_correlation[run.correlation_id] = run.rebalance_run_id
 
+    def save_run_with_lineage(
+        self, *, run: DpmRunRecord, lineage_edges: list[DpmLineageEdgeRecord]
+    ) -> None:
+        if any(
+            edge.tenant_id != run.tenant_id or edge.target_entity_id != run.rebalance_run_id
+            for edge in lineage_edges
+        ):
+            raise ValueError("DPM_RUN_LINEAGE_SCOPE_MISMATCH")
+        with self._lock:
+            if (
+                run.rebalance_run_id in self._runs
+                or run.correlation_id in self._run_id_by_correlation
+            ):
+                raise DpmRunRepositoryConflictError("DPM_RUN_ALREADY_EXISTS")
+            self._runs[run.rebalance_run_id] = deepcopy(run)
+            self._run_id_by_correlation[run.correlation_id] = run.rebalance_run_id
+            for edge in lineage_edges:
+                self._lineage_edges_by_entity.setdefault(edge.source_entity_id, []).append(
+                    deepcopy(edge)
+                )
+                if edge.target_entity_id != edge.source_entity_id:
+                    self._lineage_edges_by_entity.setdefault(edge.target_entity_id, []).append(
+                        deepcopy(edge)
+                    )
+
     def get_run(self, *, rebalance_run_id: str) -> Optional[DpmRunRecord]:
         with self._lock:
             run = self._runs.get(rebalance_run_id)

@@ -10,7 +10,9 @@ DpmAsyncOperationStatus = Literal["PENDING", "RUNNING", "SUCCEEDED", "FAILED"]
 DpmWorkflowStatus = Literal["NOT_REQUIRED", "PENDING_REVIEW", "APPROVED", "REJECTED"]
 DpmWorkflowActionType = Literal["APPROVE", "REJECT", "REQUEST_CHANGES"]
 DpmSimulationSubmissionStatus = Literal["IN_PROGRESS", "COMPLETED"]
-DpmLineageEdgeType = Literal["CORRELATION_TO_RUN", "IDEMPOTENCY_TO_RUN", "OPERATION_TO_CORRELATION"]
+DpmLineageEdgeType = Literal[
+    "CORRELATION_TO_RUN", "IDEMPOTENCY_TO_RUN", "OPERATION_TO_CORRELATION", "OPERATION_TO_RUN"
+]
 DpmSupportabilityState = Literal[
     "ready",
     "stale",
@@ -427,7 +429,7 @@ class DpmRunSupportBundleResponse(BaseModel):
     )
     async_operation: Optional["DpmAsyncOperationStatusResponse"] = Field(
         default=None,
-        description="Latest async operation mapped by run correlation id when available.",
+        description="Originating async operation only when explicit run membership exists.",
         examples=[None],
     )
     workflow_history: "DpmRunWorkflowHistoryResponse" = Field(
@@ -442,6 +444,41 @@ class DpmRunSupportBundleResponse(BaseModel):
             "Append-only idempotency mapping history for run idempotency key when available."
         ),
         examples=[None],
+    )
+
+
+class DpmOperationScenarioEvidence(BaseModel):
+    status: Literal["succeeded", "failed", "missing"] = Field(
+        description="Authoritative outcome for this scenario in the current operation attempt."
+    )
+    bundle: Optional[DpmRunSupportBundleResponse] = Field(
+        default=None,
+        description="Run support bundle only for an authoritative successful scenario.",
+    )
+    error: Optional[str] = Field(
+        default=None, description="Recorded scenario failure code when available."
+    )
+
+
+class DpmOperationHistoricalRun(BaseModel):
+    scenario_key: str = Field(description="Scenario key that produced this non-authoritative run.")
+    execution_attempt: int = Field(ge=1, description="Fenced attempt that persisted the run.")
+    bundle: DpmRunSupportBundleResponse = Field(
+        description="Retained non-authoritative attempt evidence, not a current scenario result."
+    )
+
+
+class DpmOperationSupportBundleResponse(BaseModel):
+    operation_id: str = Field(description="Owning asynchronous operation identifier.")
+    status: DpmAsyncOperationStatus = Field(description="Current operation status.")
+    async_operation: Optional["DpmAsyncOperationStatusResponse"] = Field(
+        default=None, description="Operation status when include_async_operation is true."
+    )
+    scenarios: Dict[str, DpmOperationScenarioEvidence] = Field(
+        description="Every requested scenario and its current authoritative outcome."
+    )
+    historical_runs: list[DpmOperationHistoricalRun] = Field(
+        default_factory=list, description="Identified persisted but non-authoritative attempt runs."
     )
 
 

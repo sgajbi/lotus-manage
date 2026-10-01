@@ -4,7 +4,7 @@ from typing import Optional
 
 from src.api.services import rebalance_run_support_config
 from src.core.models import RebalanceResult
-from src.core.rebalance_runs import DpmRunSupportService
+from src.core.rebalance_runs import DpmAsyncExecutionClaim, DpmRunSupportService
 from src.core.rebalance_runs.repository import DpmRunRepository
 
 _REPOSITORY: Optional[DpmRunRepository] = None
@@ -68,6 +68,8 @@ def record_dpm_run_for_support(
     request_hash: str,
     portfolio_id: str,
     idempotency_key: Optional[str],
+    operation_claim: Optional[DpmAsyncExecutionClaim] = None,
+    scenario_key: Optional[str] = None,
 ) -> None:
     service = get_dpm_run_support_service()
     service.record_run(
@@ -75,6 +77,8 @@ def record_dpm_run_for_support(
         request_hash=request_hash,
         portfolio_id=portfolio_id,
         idempotency_key=idempotency_key,
+        operation_claim=operation_claim,
+        scenario_key=scenario_key,
     )
 
 

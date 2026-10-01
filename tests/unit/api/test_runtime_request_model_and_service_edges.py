@@ -1473,7 +1473,7 @@ def test_run_analyze_async_operation_accepts_legacy_request_payload(monkeypatch)
             "failed_scenarios": {},
         }
     )
-    monkeypatch.setattr(service, "execute_batch_analysis", lambda **_kwargs: expected)
+    monkeypatch.setattr(api_main, "_execute_batch_analysis", lambda **_kwargs: expected)
 
     service.run_analyze_async_operation(
         tenant_id="tenant-test", operation_id="op_legacy", service=fake_service

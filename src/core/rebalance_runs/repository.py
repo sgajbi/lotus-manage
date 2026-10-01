@@ -53,6 +53,10 @@ class DpmRunRepository(Protocol):
 
     def save_run(self, run: DpmRunRecord) -> None: ...
 
+    def save_run_with_lineage(
+        self, *, run: DpmRunRecord, lineage_edges: list[DpmLineageEdgeRecord]
+    ) -> None: ...
+
     def get_run(self, *, rebalance_run_id: str) -> Optional[DpmRunRecord]: ...
 
     def get_run_for_tenant(
