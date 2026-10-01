@@ -16,6 +16,14 @@ from src.core.waves.simulation_operations import (
 )
 from src.core.waves.simulation_repository import DpmWaveSimulationOperationConflictError
 from src.infrastructure.waves.in_memory import InMemoryDpmWaveRepository
+from src.api.services.wave_errors import DpmWaveValidationError
+from src.api.services.wave_simulation_operations import (
+    _operation_items_are_terminal,
+    _reconciled_wave_items,
+    _resolve_item_payloads,
+    _simulation_inputs_for_claim,
+    operation_counts,
+)
 
 NOW = datetime(2026, 10, 1, 1, tzinfo=UTC)
 TENANT = "tenant-sg"
@@ -301,3 +309,69 @@ def test_results_are_tenant_scoped_and_paged_before_projection(
     assert second_page.next_offset is None
     assert foreign.items == []
     assert foreign.total_count == 0
+
+
+def test_simulation_input_resolution_and_terminal_policy_fail_closed() -> None:
+    wave = _wave()
+    assert _resolve_item_payloads(
+        wave=wave,
+        item_payloads=[{"portfolio_id": "portfolio-0", "stateless_input": {"x": "y"}}],
+    ) == {"item-0": {"stateless_input": {"x": "y"}}}
+    with pytest.raises(DpmWaveValidationError, match="resolve to exactly one wave item"):
+        _resolve_item_payloads(wave=wave, item_payloads=[{"portfolio_id": "missing"}])
+    with pytest.raises(DpmWaveValidationError, match="Conflicting inputs"):
+        _resolve_item_payloads(
+            wave=wave,
+            item_payloads=[
+                {"wave_item_id": "item-0", "stateless_input": {"x": "one"}},
+                {"wave_item_id": "item-0", "stateless_input": {"x": "two"}},
+            ],
+        )
+    records = _items()
+    records[0] = records[0].model_copy(update={"status": "FAILED", "retryable": True})
+    assert _operation_items_are_terminal(operation=_operation(), items=records) is False
+    records[0] = records[0].model_copy(update={"attempt_count": 2})
+    for index in range(1, 4):
+        records[index] = records[index].model_copy(update={"status": "SUCCEEDED"})
+    assert _operation_items_are_terminal(operation=_operation(), items=records) is True
+    assert operation_counts(records) == {
+        "PENDING": 0,
+        "RUNNING": 0,
+        "SUCCEEDED": 3,
+        "FAILED": 1,
+        "CANCELLED": 0,
+    }
+
+
+def test_reconciliation_keeps_absent_record_and_blocks_failed_record() -> None:
+    wave = _wave()
+    failed = _items()[0].model_copy(
+        update={
+            "status": "FAILED",
+            "error_code": "SOURCE_CONFLICT",
+            "error_message": "source changed",
+            "attempt_count": 2,
+        }
+    )
+    reconciled = _reconciled_wave_items(wave=wave, records=[failed])
+    assert reconciled[0].state == "SIMULATION_BLOCKED"
+    assert reconciled[0].reason_codes == ["SOURCE_CONFLICT"]
+    assert reconciled[1:] == wave.items[1:]
+    claim = repository_claim_for_input_test()
+    assert _simulation_inputs_for_claim(claim) == {}
+
+
+def repository_claim_for_input_test():
+    repository = InMemoryDpmWaveRepository()
+    repository.save_wave(wave=_wave(), idempotency_key=None, request_hash=None, tenant_id=TENANT)
+    repository.admit_simulation_operation(
+        operation=_operation(), items=_items(), simulating_wave=_simulating_wave()
+    )
+    return repository.claim_simulation_items(
+        tenant_id=TENANT,
+        operation_id=OPERATION_ID,
+        worker_id="worker-input",
+        limit=1,
+        claimed_at=NOW,
+        lease_expires_at=NOW + timedelta(minutes=1),
+    )[0]
