@@ -215,7 +215,10 @@ Key code areas:
   stateful source-context models and transformation helpers for governed core sourcing
 - `src/core/mandates.py`
   mandate digital-twin, mandate health, monitoring exception, monitoring run, and command-center
-  domain models
+  domain models. A configured maximum tracking-error limit is applicable only when Manage receives
+  an explicit measurement or usable source-owned Risk health context: missing evidence produces
+  `TRACKING_ERROR_EVIDENCE_MISSING`, score 60, `PENDING_REVIEW`, and `FIX_SOURCE_DATA`; explicit
+  zero remains a valid measured pass, while a mandate with no such limit is non-applicable.
 - `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
 - `src/api/routers/mandates.py` and `src/api/routers/monitoring.py`

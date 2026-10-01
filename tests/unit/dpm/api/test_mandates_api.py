@@ -941,6 +941,111 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
     assert latest.json()["health_snapshot_id"] == recalculated.json()["health_snapshot_id"]
 
 
+@pytest.mark.parametrize(
+    (
+        "case",
+        "tracking_error",
+        "risk_health_context",
+        "has_limit",
+        "expected_state",
+        "expected_reason",
+        "expected_measured",
+        "expected_threshold",
+    ),
+    [
+        (
+            "missing",
+            None,
+            None,
+            True,
+            "PENDING_REVIEW",
+            "TRACKING_ERROR_EVIDENCE_MISSING",
+            None,
+            "0.05",
+        ),
+        ("zero", Decimal("0"), None, True, "READY", "RISK_DRIFT_READY", None, None),
+        (
+            "breach",
+            Decimal("0.10"),
+            None,
+            True,
+            "PENDING_REVIEW",
+            "TRACKING_ERROR_ABOVE_LIMIT",
+            "0.10",
+            "0.05",
+        ),
+        (
+            "unavailable",
+            None,
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "MandateRiskHealthContext",
+                "source_product_version": "v1",
+                "as_of_date": "2026-05-03",
+                "health_state": "unavailable",
+                "threshold_breached": None,
+                "request_fingerprint": "sha256:risk-unavailable",
+            },
+            True,
+            "PENDING_REVIEW",
+            "SOURCE_RISK_HEALTH_UNAVAILABLE",
+            "MandateRiskHealthContext:unavailable",
+            "ready",
+        ),
+        ("not-applicable", None, None, False, "READY", "RISK_DRIFT_READY", None, None),
+    ],
+)
+def test_health_recalculate_persists_tracking_error_applicability(
+    case: str,
+    tracking_error: Decimal | None,
+    risk_health_context: dict[str, object] | None,
+    has_limit: bool,
+    expected_state: str,
+    expected_reason: str,
+    expected_measured: str | None,
+    expected_threshold: str | None,
+) -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin()
+    if has_limit:
+        twin = twin.model_copy(
+            update={
+                "constraints": twin.constraints.model_copy(
+                    update={"max_tracking_error": Decimal("0.05")}
+                )
+            }
+        )
+    health_input = DpmMandateHealthInput(
+        twin=twin,
+        current_weights={"EQ_US_AAPL": Decimal("0.60")},
+        target_weights={"EQ_US_AAPL": Decimal("0.60")},
+        cash_weight=Decimal("0.05"),
+        tracking_error=tracking_error,
+        risk_health_context=risk_health_context,
+    )
+    tenant_id = f"tracking-error-{case}"
+
+    with _client(repository) as client:
+        recalculated = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id={tenant_id}",
+            json=health_input.model_dump(mode="json"),
+        )
+        persisted = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id={tenant_id}")
+
+    assert recalculated.status_code == 200
+    assert persisted.status_code == 200
+    assert persisted.json() == recalculated.json()
+    risk = next(
+        score
+        for score in persisted.json()["dimension_scores"]
+        if score["dimension"] == "RISK_DRIFT"
+    )
+    assert risk["state"] == expected_state
+    assert risk["reason_code"] == expected_reason
+    assert risk["measured_value"] == expected_measured
+    assert risk["threshold_value"] == expected_threshold
+
+
 def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineage() -> None:
     repository = InMemoryDpmMandateRepository()
     now = datetime(2026, 5, 6, 12, 0, tzinfo=timezone.utc)
