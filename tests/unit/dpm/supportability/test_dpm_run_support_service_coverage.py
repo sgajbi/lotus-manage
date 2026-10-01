@@ -188,6 +188,44 @@ def test_service_rejects_duplicate_async_operation_correlation():
         )
 
 
+def test_record_run_rejects_unscoped_or_inconsistent_operation_membership():
+    repository = InMemoryDpmRunRepository()
+    service = DpmRunSupportService(repository=repository)
+    accepted = service.submit_analyze_async(
+        tenant_id="tenant-test",
+        correlation_id="corr-membership-claim",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+    )
+    claim = service.prepare_analyze_operation_execution(
+        tenant_id="tenant-test", operation_id=accepted.operation_id
+    )
+    result = _sample_result(correlation_id="corr-membership-run")
+    kwargs = {
+        "result": result,
+        "request_hash": "sha256:req-membership-run",
+        "portfolio_id": "pf_service_artifact_1",
+        "idempotency_key": None,
+    }
+    with pytest.raises(ValueError, match="DPM_RUN_TENANT_REQUIRED_FOR_IDEMPOTENCY"):
+        service.record_run(**(kwargs | {"idempotency_key": "idem-without-tenant"}))
+    with pytest.raises(ValueError, match="DPM_RUN_INVALID_OPERATION_MEMBERSHIP"):
+        service.record_run(**kwargs, operation_claim=claim)
+    with pytest.raises(ValueError, match="DPM_RUN_INVALID_OPERATION_MEMBERSHIP"):
+        service.record_run(
+            **kwargs,
+            tenant_id="foreign-tenant",
+            operation_claim=claim,
+            scenario_key="baseline",
+        )
+    with pytest.raises(ValueError, match="DPM_RUN_INVALID_OPERATION_MEMBERSHIP"):
+        service.record_run(**kwargs, tenant_id="tenant-test", scenario_key="baseline")
+    assert repository.get_run(rebalance_run_id=result.rebalance_run_id) is None
+    assert not any(
+        edge.edge_type == "OPERATION_TO_RUN"
+        for edge in repository.list_lineage_edges(entity_id=accepted.operation_id)
+    )
+
+
 def test_service_apply_workflow_action_missing_run():
     service = _build_service(workflow_enabled=True)
     with pytest.raises(DpmRunNotFoundError, match="DPM_RUN_NOT_FOUND"):

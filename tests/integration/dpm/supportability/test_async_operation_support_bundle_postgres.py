@@ -238,6 +238,12 @@ def test_run_and_membership_are_one_postgres_transaction(postgres_http) -> None:
         created_at=now,
         metadata_json={"scenario_key": "baseline", "execution_attempt": 1},
     )
+    with pytest.raises(ValueError, match="DPM_RUN_LINEAGE_SCOPE_MISMATCH"):
+        repository.save_run_with_lineage(
+            run=run,
+            lineage_edges=[invalid_edge.model_copy(update={"tenant_id": "foreign-tenant"})],
+        )
+    assert repository.get_run(rebalance_run_id=run.rebalance_run_id) is None
     with pytest.raises(NotNullViolation):
         repository.save_run_with_lineage(run=run, lineage_edges=[invalid_edge])
     assert repository.get_run(rebalance_run_id=run.rebalance_run_id) is None
