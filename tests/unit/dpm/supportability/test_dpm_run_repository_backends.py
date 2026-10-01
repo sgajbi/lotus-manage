@@ -78,6 +78,48 @@ def test_repository_run_and_idempotency_contract(repository):
     assert stored_idem.rebalance_run_id == "rr_repo_1"
 
 
+def test_run_membership_insert_is_scoped_and_cannot_rewrite_an_existing_run(repository):
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    run = DpmRunRecord(
+        rebalance_run_id="rr_membership_1",
+        correlation_id="corr_membership_1",
+        request_hash="batch:baseline",
+        portfolio_id="pf_membership_1",
+        created_at=now,
+        result_json={"status": "READY"},
+    )
+    edge = DpmLineageEdgeRecord(
+        source_entity_id="dop_membership_1",
+        edge_type="OPERATION_TO_RUN",
+        target_entity_id=run.rebalance_run_id,
+        created_at=now,
+        metadata_json={"scenario_key": "baseline", "execution_attempt": 1},
+    )
+    with pytest.raises(ValueError, match="DPM_RUN_LINEAGE_SCOPE_MISMATCH"):
+        repository.save_run_with_lineage(
+            run=run,
+            lineage_edges=[edge.model_copy(update={"target_entity_id": "rr_foreign"})],
+        )
+    assert repository.get_run(rebalance_run_id=run.rebalance_run_id) is None
+
+    repository.save_run_with_lineage(run=run, lineage_edges=[edge])
+    assert repository.get_run(rebalance_run_id=run.rebalance_run_id).result_json == run.result_json
+    assert len(repository.list_lineage_edges(entity_id=run.rebalance_run_id)) == 1
+    with pytest.raises(DpmRunRepositoryConflictError, match="DPM_RUN_ALREADY_EXISTS"):
+        repository.save_run_with_lineage(
+            run=run.model_copy(update={"result_json": {"status": "TAMPERED"}}),
+            lineage_edges=[edge],
+        )
+    with pytest.raises(DpmRunRepositoryConflictError, match="DPM_RUN_ALREADY_EXISTS"):
+        repository.save_run_with_lineage(
+            run=run.model_copy(update={"rebalance_run_id": "rr_membership_other"}),
+            lineage_edges=[edge.model_copy(update={"target_entity_id": "rr_membership_other"})],
+        )
+    assert repository.get_run(rebalance_run_id=run.rebalance_run_id).result_json == run.result_json
+    assert repository.get_run(rebalance_run_id="rr_membership_other") is None
+    assert len(repository.list_lineage_edges(entity_id=run.rebalance_run_id)) == 1
+
+
 def test_repository_list_runs_filter_and_cursor_contract(repository):
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
     repository.save_run(
