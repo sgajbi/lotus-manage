@@ -300,7 +300,14 @@ class DpmMandateHealthInput(BaseModel):
     tax_lot_missing_security_ids: list[str] = Field(default_factory=list)
     turnover_budget_used: Optional[Decimal] = Field(default=None)
     tax_budget_used_base: Optional[Decimal] = Field(default=None)
-    tracking_error: Optional[Decimal] = Field(default=None)
+    tracking_error: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Optional non-negative observed tracking error; zero is measured evidence, "
+            "while omission means no measurement was supplied."
+        ),
+    )
     performance_under_review: bool = False
     risk_health_context: Optional[DpmMandateSourceHealthContext] = Field(
         default=None,

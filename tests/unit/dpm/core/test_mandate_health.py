@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
@@ -1205,6 +1206,24 @@ def test_tracking_error_applicability_distinguishes_missing_zero_breach_and_no_l
     not_applicable_risk = _dimension(not_applicable, MandateHealthDimension.RISK_DRIFT)
     assert not_applicable_risk.state == MandateHealthState.READY
     assert not_applicable_risk.reason_code == "RISK_DRIFT_READY"
+
+
+@pytest.mark.parametrize("value", [Decimal("-0.01"), Decimal("-0.000000000001")])
+def test_health_input_rejects_negative_tracking_error_before_scoring(value: Decimal) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        DpmMandateHealthInput(twin=_twin(), tracking_error=value)
+
+    assert exc_info.value.errors()[0]["loc"] == ("tracking_error",)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+
+
+@pytest.mark.parametrize("value", [Decimal("NaN"), Decimal("Infinity"), Decimal("-Infinity")])
+def test_health_input_preserves_nonfinite_decimal_rejection(value: Decimal) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        DpmMandateHealthInput(twin=_twin(), tracking_error=value)
+
+    assert exc_info.value.errors()[0]["loc"] == ("tracking_error",)
+    assert exc_info.value.errors()[0]["type"] == "finite_number"
 
 
 def test_unavailable_risk_context_still_explains_missing_tracking_error() -> None:

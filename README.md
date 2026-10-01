@@ -243,6 +243,9 @@ Key code areas:
   an explicit measurement or usable source-owned Risk health context: missing evidence produces
   `TRACKING_ERROR_EVIDENCE_MISSING`, score 60, `PENDING_REVIEW`, and `FIX_SOURCE_DATA`; explicit
   zero remains a valid measured pass, while a mandate with no such limit is non-applicable.
+  A supplied observation must be finite and non-negative even if a source Risk context is
+  present or the mandate has no tracking-error limit; invalid input returns validation 422
+  before health or exception persistence.
 - `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
 - `src/api/routers/mandates.py` and `src/api/routers/monitoring.py`

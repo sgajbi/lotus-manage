@@ -149,7 +149,10 @@ assess it from an explicit tracking-error measurement or a usable source-owned R
 but it must not turn absent evidence into a zero or a passed control. Missing evidence is score 60,
 `PENDING_REVIEW`, `TRACKING_ERROR_EVIDENCE_MISSING`, and `FIX_SOURCE_DATA`; explicit zero remains a
 valid pass, and a mandate without the limit remains non-applicable. This is consumer scoring policy,
-not Manage ownership of tracking-error methodology.
+not Manage ownership of tracking-error methodology. Supplied `tracking_error` is an observed
+non-negative, finite Decimal at the public health-input boundary, independent of a mandate limit
+or source Risk context; a negative/non-finite value must fail validation before recalculation or
+derived exception persistence, while `None` remains missing evidence and explicit zero is valid.
 
 ## Architecture And Module Map
 
