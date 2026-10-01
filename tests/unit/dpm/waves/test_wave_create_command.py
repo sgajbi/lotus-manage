@@ -1,8 +1,11 @@
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+
 from src.api.services import wave_create_command
 from src.api.services.wave_create_command import create_persisted_wave
 from src.api.services.wave_creation import create_wave_request_hash
 from src.core.mandates import DpmMandateDigitalTwin
-from src.core.waves import DpmRebalanceWave
+from src.core.waves import DpmRebalanceWave, DpmWaveIdempotencyRecord
 from src.core.waves.repository import wave_idempotency_mapping_key
 from src.infrastructure.waves import InMemoryDpmWaveRepository
 
@@ -18,8 +21,13 @@ class _MandateRepository:
 
 
 class _WaveRepository:
-    def __init__(self, existing: DpmRebalanceWave | None = None) -> None:
+    def __init__(
+        self,
+        existing: DpmRebalanceWave | None = None,
+        existing_hash: str | None = None,
+    ) -> None:
         self.existing = existing
+        self.existing_hash = existing_hash
         self.idempotency_lookups: list[str] = []
         self.idempotency_tenants: list[str] = []
         self.saved_wave: DpmRebalanceWave | None = None
@@ -33,6 +41,18 @@ class _WaveRepository:
         self.idempotency_tenants.append(tenant_id)
         return self.existing
 
+    def get_wave_idempotency_record(
+        self, *, idempotency_key: str, tenant_id: str
+    ) -> DpmWaveIdempotencyRecord | None:
+        self.idempotency_lookups.append(idempotency_key)
+        self.idempotency_tenants.append(tenant_id)
+        if self.existing is None:
+            return None
+        return DpmWaveIdempotencyRecord(
+            wave=self.existing,
+            request_hash=self.existing_hash,
+        )
+
     def save_wave(
         self,
         *,
@@ -44,6 +64,20 @@ class _WaveRepository:
         self.saved_wave = wave
         self.idempotency_key = idempotency_key
         self.request_hash = request_hash
+
+
+class _CompetingWaveRepository(InMemoryDpmWaveRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self._lookup_barrier = Barrier(2)
+
+    def get_wave_idempotency_record(self, *, idempotency_key: str, tenant_id: str):
+        record = super().get_wave_idempotency_record(
+            idempotency_key=idempotency_key, tenant_id=tenant_id
+        )
+        if record is None:
+            self._lookup_barrier.wait(timeout=5)
+        return record
 
 
 def _source_ref() -> dict[str, object]:
@@ -81,7 +115,19 @@ def _request_for(*, tenant_id: str) -> dict[str, object]:
 
 def test_create_persisted_wave_replays_existing_idempotent_wave() -> None:
     existing = DpmRebalanceWave.model_construct(wave_id="dwv_existing", state="CREATED")
-    repository = _WaveRepository(existing=existing)
+    portfolios = _portfolios()
+    repository = _WaveRepository(
+        existing=existing,
+        existing_hash=create_wave_request_hash(
+            tenant_id="tenant-test",
+            trigger_type="EXPLICIT_PORTFOLIO_LIST",
+            trigger_id="manual-create-command",
+            rationale="Create command replay.",
+            as_of_date="2026-06-01",
+            actor_id="pm_001",
+            portfolios=portfolios,
+        ),
+    )
 
     wave, replayed = create_persisted_wave(
         trigger_type="EXPLICIT_PORTFOLIO_LIST",
@@ -90,7 +136,7 @@ def test_create_persisted_wave_replays_existing_idempotent_wave() -> None:
         as_of_date="2026-06-01",
         actor_id="pm_001",
         correlation_id="corr-create-command",
-        portfolios=_portfolios(),
+        portfolios=portfolios,
         idempotency_key="idem-create-command",
         mandate_repository=_MandateRepository(),  # type: ignore[arg-type]
         wave_repository=repository,  # type: ignore[arg-type]
@@ -210,3 +256,21 @@ def test_the_stored_mapping_key_is_injective_across_tenant_and_key() -> None:
     assert wave_idempotency_mapping_key(
         tenant_id="tenant-a", idempotency_key="k"
     ) == wave_idempotency_mapping_key(tenant_id="tenant-a", idempotency_key="k")
+
+
+def test_competing_identical_creates_converge_without_an_orphan_wave() -> None:
+    repository = _CompetingWaveRepository()
+    command = {
+        **_request_for(tenant_id="tenant-a"),
+        "idempotency_key": "idem-competing-create",
+        "mandate_repository": _MandateRepository(),
+        "wave_repository": repository,
+    }
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _: create_persisted_wave(**command), range(2)))
+
+    wave_ids = {wave.wave_id for wave, _replayed in results}
+    assert len(wave_ids) == 1
+    assert sorted(replayed for _wave, replayed in results) == [False, True]
+    assert [wave.wave_id for wave in repository.list_waves(tenant_id="tenant-a")] == list(wave_ids)

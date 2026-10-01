@@ -79,7 +79,11 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    resolution remain external security-governance responsibilities.
 5. Wave and proof-pack reads, writes, transitions, replay, and retained-row handling use explicit
    tenant ownership. Source-product selectors remain distinct from aggregate ownership and must not
-   be silently treated as interchangeable authority.
+   be silently treated as interchangeable authority. Durable wave creation binds each
+   tenant-scoped idempotency key to one canonical request fingerprint. Omitted correlation ids are
+   derived from `(tenant_id, Idempotency-Key)`, not the business trigger; explicit correlation ids
+   are unique per tenant. Both persistence adapters reject changed-key and correlation collisions
+   consistently, and competing exact creates converge without an orphan aggregate.
 6. Synchronous rebalance admission requires normalized `X-Tenant-Id` for both stateless and
    stateful requests. PostgreSQL atomically owns `(tenant_id, Idempotency-Key)` before calculation,
    binds that identity to one immutable canonical request hash, and atomically publishes the run,

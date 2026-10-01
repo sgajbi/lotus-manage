@@ -4,6 +4,7 @@ from src.api.services.wave_creation import (
     promote_preview_to_created_wave,
 )
 from src.api.services.wave_persistence import save_wave_or_raise
+from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_preview import build_preview_wave
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository
@@ -37,12 +38,14 @@ def create_persisted_wave(
     # tenant's wave as a replay (issue #648). The lookup is now tenant-scoped:
     # another tenant's mapping is not found rather than found and refused,
     # because refusing would disclose that some other tenant holds that key.
-    existing = wave_repository.get_wave_by_idempotency(
+    existing = wave_repository.get_wave_idempotency_record(
         idempotency_key=idempotency_key,
         tenant_id=tenant_id,
     )
     if existing is not None:
-        return existing, True
+        if existing.request_hash != request_hash:
+            raise DpmWaveValidationError("WAVE_CREATE_CONFLICT", "DPM_WAVE_IDEMPOTENCY_CONFLICT")
+        return existing.wave, True
 
     preview = build_preview_wave(
         tenant_id=tenant_id,
@@ -62,13 +65,26 @@ def create_persisted_wave(
         correlation_id=correlation_id,
         idempotency_key=idempotency_key,
     )
-    save_wave_or_raise(
-        wave_repository=wave_repository,
-        wave=wave,
-        idempotency_key=idempotency_key,
-        request_hash=request_hash,
-        tenant_id=tenant_id,
-    )
+    try:
+        save_wave_or_raise(
+            wave_repository=wave_repository,
+            wave=wave,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            tenant_id=tenant_id,
+        )
+    except DpmWaveValidationError as exc:
+        if str(exc) not in {
+            "DPM_WAVE_CORRELATION_CONFLICT",
+            "DPM_WAVE_IDEMPOTENCY_CONFLICT",
+        }:
+            raise
+        winner = wave_repository.get_wave_idempotency_record(
+            idempotency_key=idempotency_key, tenant_id=tenant_id
+        )
+        if winner is None or winner.request_hash != request_hash:
+            raise
+        return winner.wave, True
     return wave, False
 
 

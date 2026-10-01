@@ -144,6 +144,12 @@ the payload marker while leaving dependent evidence migrated.
 
 - If health fails, verify startup migration state and storage adapter configuration first.
 - For supportability anomalies, inspect persisted supportability state and correlation IDs before retry.
+- For `POST /api/v1/rebalance/waves` conflicts, retain the admitted tenant and hashed support
+  identifiers. `DPM_WAVE_IDEMPOTENCY_CONFLICT` means the key already owns a different canonical
+  create request; do not retry it with changed economics. `DPM_WAVE_CORRELATION_CONFLICT` means a
+  caller-supplied correlation already identifies another wave in that tenant; use a new correlation
+  only for a genuinely distinct command. Do not add random correlation headers to exact retries:
+  omitting the header deliberately derives a stable correlation from the tenant and idempotency key.
 - For PM operating-quality incidents, use
   [wiki/Operations-Runbook.md#pm-quality-lifecycle-operations](../wiki/Operations-Runbook.md#pm-quality-lifecycle-operations).
   Triage by Problem Details `reasonCode`, `correlationId`, route `instance`, content hash,

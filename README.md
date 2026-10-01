@@ -192,6 +192,12 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/rebalance/waves/{wave_id}/proof-pack`,
   `/api/v1/rebalance/waves/{wave_id}/report-input`,
   `/api/v1/rebalance/waves/{wave_id}/supportability`
+  Durable create identity is `(tenant, Idempotency-Key)` plus the canonical request fingerprint.
+  Exact retries return the original wave; changed requests under a claimed key return
+  `WAVE_CREATE_CONFLICT`. When `X-Correlation-Id` is omitted, Manage derives a stable correlation
+  from that tenant-scoped command, so distinct commands for one business trigger remain
+  independent. Explicit correlation ids are unique per tenant, and concurrent exact creates
+  converge without leaving an orphan wave or idempotency mapping.
   Bulk-review campaign membership is catalog-visible but mesh-deferred/future-wave in trust
   telemetry until product-specific platform policy and runtime certification evidence are promoted.
 - integration capabilities

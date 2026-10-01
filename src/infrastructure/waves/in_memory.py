@@ -7,7 +7,9 @@ from typing import Iterable
 from src.core.waves.models import DpmRebalanceWave
 from src.core.waves.repository import (
     DpmWaveAlreadyExistsError,
+    DpmWaveCorrelationConflictError,
     DpmWaveIdempotencyConflictError,
+    DpmWaveIdempotencyRecord,
     DpmWaveRepository,
     DpmWaveVersionConflictError,
     wave_idempotency_mapping_key,
@@ -19,6 +21,7 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
         self._lock = Lock()
         self._waves: dict[str, DpmRebalanceWave] = {}
         self._idempotency_index: dict[str, tuple[str, str | None]] = {}
+        self._correlation_index: dict[tuple[str, str], str] = {}
 
     def save_wave(
         self,
@@ -44,6 +47,9 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
                 request_hash=request_hash,
             )
             _raise_if_wave_exists(waves=self._waves, wave_id=wave.wave_id)
+            correlation_key = (tenant_id, wave.correlation_id)
+            if correlation_key in self._correlation_index:
+                raise DpmWaveCorrelationConflictError("DPM_WAVE_CORRELATION_CONFLICT")
             _index_idempotency_key(
                 idempotency_index=self._idempotency_index,
                 idempotency_key=mapping_key,
@@ -53,6 +59,7 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
             # Stamped from the argument, so a caller cannot persist a wave
             # claiming one tenant while the record says another.
             _store_wave(waves=self._waves, wave=wave.model_copy(update={"tenant_id": tenant_id}))
+            self._correlation_index[correlation_key] = wave.wave_id
 
     def get_wave(self, *, wave_id: str, tenant_id: str) -> DpmRebalanceWave | None:
         with self._lock:
@@ -73,6 +80,14 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
         # (issue #648). Deriving the mapping key means another tenant's mapping
         # is simply not found, rather than found and refused - a refusal would
         # disclose that some other tenant holds that key.
+        record = self.get_wave_idempotency_record(
+            idempotency_key=idempotency_key, tenant_id=tenant_id
+        )
+        return None if record is None else record.wave
+
+    def get_wave_idempotency_record(
+        self, *, idempotency_key: str, tenant_id: str
+    ) -> DpmWaveIdempotencyRecord | None:
         mapping_key = wave_idempotency_mapping_key(
             tenant_id=tenant_id, idempotency_key=idempotency_key
         )
@@ -80,7 +95,7 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
             indexed = self._idempotency_index.get(mapping_key)
             if indexed is None:
                 return None
-            wave_id, _request_hash = indexed
+            wave_id, request_hash = indexed
             wave = self._waves.get(wave_id)
             # The mapping's tenant is not the aggregate's tenant. Migration
             # 0027 added the wave column nullable with no backfill, so between
@@ -96,7 +111,7 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
             # exactly as it is - not stamped, not resurrected.
             if wave is None or wave.tenant_id != tenant_id:
                 return None
-            return deepcopy(wave)
+            return DpmWaveIdempotencyRecord(wave=deepcopy(wave), request_hash=request_hash)
 
     def list_waves(
         self,
