@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 from fastapi.testclient import TestClient
+import pytest
 
 from src.api.dependencies import (
     get_construction_repository,
@@ -207,6 +208,103 @@ def test_async_simulation_worker_publishes_financial_result_and_reconciles_wave(
     assert (
         len(construction_repository.list_alternative_sets(portfolio_id=PORTFOLIO_ID, limit=10)) == 1
     )
+
+
+@pytest.mark.parametrize(
+    "item_input",
+    [
+        {"wave_item_id": ITEM_ID, "portfolio_id": "FOREIGN_PORTFOLIO"},
+        {"wave_item_id": "unknown-wave-item", "portfolio_id": PORTFOLIO_ID},
+    ],
+)
+def test_async_simulation_rejects_conflicting_selectors_without_construction_artifact(
+    item_input: dict[str, str],
+) -> None:
+    repository = InMemoryDpmWaveRepository()
+    construction_repository = InMemoryConstructionRepository()
+    repository.save_wave(
+        wave=_source_checked_wave(), idempotency_key=None, request_hash=None, tenant_id=TENANT_ID
+    )
+    client = _client(repository, construction_repository)
+    payload = _admission_payload()
+    payload["item_inputs"][0].update(item_input)  # type: ignore[index]
+
+    refused = client.post(
+        f"{BASE_PATH}/{WAVE_ID}/simulation-operations",
+        headers={"Idempotency-Key": f"selector-{item_input['wave_item_id']}"},
+        json=payload,
+    )
+
+    assert refused.status_code == 422
+    assert refused.json()["detail"]["code"] in {
+        "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT",
+        "DPM_WAVE_SIMULATION_INPUT_ITEM_NOT_FOUND",
+    }
+    assert repository.get_wave(wave_id=WAVE_ID, tenant_id=TENANT_ID).state == "SOURCE_CHECKED"  # type: ignore[union-attr]
+    assert construction_repository.list_alternative_sets(portfolio_id=PORTFOLIO_ID, limit=10) == []
+    assert (
+        construction_repository.list_alternative_sets(portfolio_id="FOREIGN_PORTFOLIO", limit=10)
+        == []
+    )
+
+
+def test_simulation_rejects_foreign_nested_portfolio_before_async_or_sync_execution() -> None:
+    for path, headers in [
+        (f"{BASE_PATH}/{WAVE_ID}/simulation-operations", {"Idempotency-Key": "foreign-async"}),
+        (f"{BASE_PATH}/{WAVE_ID}/simulate", {}),
+    ]:
+        repository = InMemoryDpmWaveRepository()
+        construction_repository = InMemoryConstructionRepository()
+        repository.save_wave(
+            wave=_source_checked_wave(),
+            idempotency_key=None,
+            request_hash=None,
+            tenant_id=TENANT_ID,
+        )
+        client = _client(repository, construction_repository)
+        payload = _admission_payload()
+        payload["item_inputs"][0]["stateless_input"]["portfolio_snapshot"]["portfolio_id"] = (  # type: ignore[index]
+            "FOREIGN_PORTFOLIO"
+        )
+
+        refused = client.post(path, headers=headers, json=payload)
+
+        assert refused.status_code == 422
+        assert refused.json()["detail"]["code"] == "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"
+        assert repository.get_wave(wave_id=WAVE_ID, tenant_id=TENANT_ID).state == "SOURCE_CHECKED"  # type: ignore[union-attr]
+        assert (
+            construction_repository.list_alternative_sets(
+                portfolio_id="FOREIGN_PORTFOLIO", limit=10
+            )
+            == []
+        )
+
+
+def test_simulation_operation_openapi_documents_observed_not_found_and_conflict_errors() -> None:
+    repository = InMemoryDpmWaveRepository()
+    repository.save_wave(
+        wave=_source_checked_wave(), idempotency_key=None, request_hash=None, tenant_id=TENANT_ID
+    )
+    client = _client(repository)
+    schema = client.app.openapi()
+    paths = schema["paths"]
+    admission = paths[f"{BASE_PATH}/{{wave_id}}/simulation-operations"]["post"]["responses"]
+    assert {"404", "409"}.issubset(admission)
+    assert admission["409"]["content"]["application/json"]["schema"]["$ref"].endswith(
+        "/DpmWaveOperationProblemResponse"
+    )
+    for suffix, method in [
+        ("{operation_id}", "get"),
+        ("{operation_id}/results", "get"),
+        ("{operation_id}/work", "post"),
+        ("{operation_id}/retry", "post"),
+        ("{operation_id}/cancel", "post"),
+    ]:
+        response = paths[f"{BASE_PATH}/simulation-operations/{suffix}"][method]["responses"]
+        assert "404" in response
+        assert response["404"]["content"]["application/json"]["schema"]["$ref"].endswith(
+            "/DpmWaveOperationProblemResponse"
+        )
 
 
 def test_async_simulation_fails_closed_when_source_identity_changes_after_admission() -> None:

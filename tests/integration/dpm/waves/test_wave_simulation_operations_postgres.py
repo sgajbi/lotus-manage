@@ -24,6 +24,7 @@ from src.core.waves.simulation_operations import (
     DpmWaveSimulationItemRecord,
     DpmWaveSimulationOperation,
 )
+from src.core.waves.simulation_repository import DpmWaveSimulationOperationConflictError
 from src.infrastructure.waves.postgres import PostgresDpmWaveRepository
 from src.infrastructure.construction import (
     InMemoryConstructionRepository,
@@ -314,6 +315,7 @@ def test_cancellation_keeps_running_work_fenced_and_cancels_unclaimed_work(
     )
     assert cancelled is not None
     assert cancelled.status == "CANCEL_REQUESTED"
+    assert cancelled.cancel_reason_code == "OPERATOR_CANCELLED"
     page = repository.list_simulation_items(
         tenant_id=tenant_id, operation_id=operation_id, limit=10, offset=0
     )
@@ -329,6 +331,24 @@ def test_cancellation_keeps_running_work_fenced_and_cancels_unclaimed_work(
             lease_expires_at=now + timedelta(minutes=1),
         )
         == []
+    )
+    terminal = repository.cancel_simulation_operation(
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        reason_code="SECOND_CANCEL_IGNORED",
+        cancelled_at=now + timedelta(seconds=5),
+    )
+    assert terminal is not None
+    assert terminal.status == "CANCEL_REQUESTED"
+    assert terminal.cancel_reason_code == "OPERATOR_CANCELLED"
+    assert (
+        repository.retry_simulation_items(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+            wave_item_ids=None,
+            retried_at=now + timedelta(seconds=6),
+        )
+        == 0
     )
 
     result_item = (
@@ -823,3 +843,87 @@ def test_postgres_operation_controls_are_tenant_fenced_and_retry_cancel_safe(dsn
         )
         == []
     )
+
+
+def test_postgres_admission_refuses_ambiguous_or_stale_durable_identity(dsn: str) -> None:
+    tenant_id, wave_id, operation_id = _ids()
+    repository = PostgresDpmWaveRepository(dsn=dsn)
+    wave = _wave(tenant_id=tenant_id, wave_id=wave_id, item_count=1)
+    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None, tenant_id=tenant_id)
+    now = datetime(2026, 10, 1, tzinfo=UTC)
+    operation = DpmWaveSimulationOperation(
+        operation_id=operation_id,
+        tenant_id=tenant_id,
+        wave_id=wave_id,
+        request_hash="sha256:request-original",
+        idempotency_key_hash="wsi-durable-admission",
+        correlation_id="corr-durable-admission",
+        actor_id="integration-test",
+        source_identity_hash="sha256:source-original",
+        admitted_wave_version=wave.version,
+        methods=["HEURISTIC_EXPLAINABLE"],
+        max_concurrency=1,
+        max_attempts=2,
+        created_at=now,
+        updated_at=now,
+    )
+    item = DpmWaveSimulationItemRecord(
+        operation_id=operation_id,
+        tenant_id=tenant_id,
+        wave_id=wave_id,
+        wave_item_id=wave.items[0].wave_item_id,
+        ordinal=0,
+        portfolio_id=wave.items[0].portfolio_id,
+        input_payload={"portfolio_id": wave.items[0].portfolio_id},
+        input_hash="sha256:input-original",
+        source_identity_hash="sha256:item-source-original",
+        updated_at=now,
+    )
+    simulating_wave = wave.model_copy(update={"state": "SIMULATING", "version": wave.version + 1})
+    stored, replayed = repository.admit_simulation_operation(
+        operation=operation, items=[item], simulating_wave=simulating_wave
+    )
+    assert stored == operation
+    assert replayed is False
+    replay, replayed = repository.admit_simulation_operation(
+        operation=operation, items=[item], simulating_wave=simulating_wave
+    )
+    assert replay == operation
+    assert replayed is True
+    with pytest.raises(DpmWaveSimulationOperationConflictError, match="IDEMPOTENCY_CONFLICT"):
+        repository.admit_simulation_operation(
+            operation=operation.model_copy(update={"request_hash": "sha256:request-changed"}),
+            items=[item],
+            simulating_wave=simulating_wave,
+        )
+
+    stale_wave_id = f"{wave_id}-stale"
+    stale_wave = _wave(tenant_id=tenant_id, wave_id=stale_wave_id, item_count=1)
+    repository.save_wave(
+        wave=stale_wave, idempotency_key=None, request_hash=None, tenant_id=tenant_id
+    )
+    stale_operation = operation.model_copy(
+        update={
+            "operation_id": f"{operation_id}-stale",
+            "wave_id": stale_wave_id,
+            "idempotency_key_hash": "wsi-durable-admission-stale",
+            "correlation_id": "corr-durable-admission-stale",
+            "admitted_wave_version": stale_wave.version + 1,
+        }
+    )
+    stale_item = item.model_copy(
+        update={
+            "operation_id": stale_operation.operation_id,
+            "wave_id": stale_wave_id,
+            "wave_item_id": stale_wave.items[0].wave_item_id,
+            "portfolio_id": stale_wave.items[0].portfolio_id,
+        }
+    )
+    with pytest.raises(DpmWaveSimulationOperationConflictError, match="WAVE_VERSION_CONFLICT"):
+        repository.admit_simulation_operation(
+            operation=stale_operation,
+            items=[stale_item],
+            simulating_wave=stale_wave.model_copy(
+                update={"state": "SIMULATING", "version": stale_wave.version + 1}
+            ),
+        )

@@ -25,6 +25,7 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveSimulationOperationResponse,
     DpmWaveSimulationOperationResultsResponse,
     DpmWaveSimulationWorkResponse,
+    DpmWaveOperationProblemResponse,
 )
 from src.api.routers.wave_route_parameters import (
     WaveCorrelationIdHeader,
@@ -44,6 +45,15 @@ from src.core.waves.simulation_repository import DpmWaveSimulationRepository
 
 router = APIRouter()
 
+_NOT_FOUND_RESPONSE = {
+    "model": DpmWaveOperationProblemResponse,
+    "description": "Wave or tenant-scoped simulation operation was not found.",
+}
+_CONFLICT_RESPONSE = {
+    "model": DpmWaveOperationProblemResponse,
+    "description": "Idempotency, correlation, or immutable admission input conflicts.",
+}
+
 OperationIdPath = Annotated[
     str,
     Path(description="Durable asynchronous wave-simulation operation identifier."),
@@ -62,6 +72,7 @@ ResultsOffsetQuery = Annotated[int, Query(ge=0)]
         "return the existing operation; conflicting reuse fails. Financial work is performed only "
         "by separately fenced worker calls and remains bounded by the persisted concurrency limit."
     ),
+    responses={404: _NOT_FOUND_RESPONSE, 409: _CONFLICT_RESPONSE},
 )
 def admit_simulation_operation(
     wave_id: WaveIdPath,
@@ -107,6 +118,7 @@ def admit_simulation_operation(
     "/simulation-operations/{operation_id}",
     response_model=DpmWaveSimulationOperationResponse,
     summary="Read durable wave-simulation progress",
+    responses={404: _NOT_FOUND_RESPONSE},
 )
 def get_simulation_operation(
     operation_id: OperationIdPath,
@@ -128,6 +140,7 @@ def get_simulation_operation(
     "/simulation-operations/{operation_id}/results",
     response_model=DpmWaveSimulationOperationResultsResponse,
     summary="Page stable wave-simulation item results",
+    responses={404: _NOT_FOUND_RESPONSE},
 )
 def get_simulation_results(
     operation_id: OperationIdPath,
@@ -161,6 +174,7 @@ def get_simulation_results(
     "/simulation-operations/{operation_id}/work",
     response_model=DpmWaveSimulationWorkResponse,
     summary="Execute a bounded fenced wave-simulation worker claim",
+    responses={404: _NOT_FOUND_RESPONSE},
 )
 def execute_simulation_work(
     operation_id: OperationIdPath,
@@ -204,6 +218,7 @@ def execute_simulation_work(
     "/simulation-operations/{operation_id}/retry",
     response_model=DpmWaveSimulationOperationResponse,
     summary="Retry eligible failed wave-simulation items",
+    responses={404: _NOT_FOUND_RESPONSE},
 )
 def retry_simulation_operation(
     operation_id: OperationIdPath,
@@ -231,6 +246,7 @@ def retry_simulation_operation(
         "Pending work is cancelled immediately. Already claimed work retains its fence and may "
         "publish before lease expiry; completed financial artifacts are never deleted or relabelled."
     ),
+    responses={404: _NOT_FOUND_RESPONSE},
 )
 def cancel_simulation_operation(
     operation_id: OperationIdPath,

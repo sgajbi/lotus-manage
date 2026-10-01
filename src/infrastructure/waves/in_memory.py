@@ -423,7 +423,11 @@ class InMemoryDpmWaveRepository(DpmWaveSimulationPublicationMixin, DpmWaveReposi
             operation = self._simulation_operations.get(operation_id)
             if operation is None or operation.tenant_id != tenant_id:
                 return None
-            if operation.status in {"SUCCEEDED", "FAILED", "CANCELLED"}:
+            if operation.cancel_reason_code is not None or operation.status in {
+                "SUCCEEDED",
+                "FAILED",
+                "CANCELLED",
+            }:
                 return deepcopy(operation)
             operation = operation.model_copy(
                 update={"cancel_reason_code": reason_code, "updated_at": cancelled_at}

@@ -103,6 +103,15 @@ class DpmWaveSimulationOperationItemResponse(BaseModel):
     alternative_set_id: str | None = None
 
 
+class DpmWaveOperationProblemDetail(BaseModel):
+    code: str = Field(description="Stable machine-readable wave-operation failure code.")
+    message: str = Field(description="Product-safe explanation of the failed operation.")
+
+
+class DpmWaveOperationProblemResponse(BaseModel):
+    detail: DpmWaveOperationProblemDetail
+
+
 class DpmWaveSimulationOperationResponse(BaseModel):
     operation_id: str
     wave_id: str

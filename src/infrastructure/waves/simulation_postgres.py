@@ -343,7 +343,11 @@ class PostgresDpmWaveSimulationMixin(DpmWaveSimulationPublicationMixin):
             if operation_row is None:
                 return None
             operation = _operation_from_row(operation_row)
-            if operation.status in {"SUCCEEDED", "FAILED", "CANCELLED"}:
+            if operation.cancel_reason_code is not None or operation.status in {
+                "SUCCEEDED",
+                "FAILED",
+                "CANCELLED",
+            }:
                 connection.rollback()
                 return operation
             connection.execute(

@@ -11,6 +11,10 @@ booking.
   one local PostgreSQL transaction before returning `202`.
 - Exact idempotent retries return the existing operation. Reusing a key with changed economics,
   methods, limits, or source identity returns an explicit conflict.
+- Every supplied item selector and nested construction `portfolio_snapshot.portfolio_id` must agree
+  with the admitted wave item. Async and bounded synchronous routes refuse contradictory, unknown,
+  or foreign identities before construction. A worker also turns any mismatched returned construction
+  association into a non-retryable failure rather than attaching it to the wave item.
 - Workers claim at most the remaining operation concurrency budget. Claims carry an opaque token,
   monotonic generation, attempt count, and lease. Financial calculation runs outside the claim
   transaction; only the current unexpired fence can publish a terminal result.
@@ -44,7 +48,8 @@ repository/worker instances, reaches 100 explained terminal dispositions, preser
 set per item, and compares financial comparison metrics with a sequential oracle.
 
 API and in-memory repository regression tests additionally prove admission replay/conflict behavior,
-supported status/result/retry/cancel surfaces, persisted wave reconciliation, and foreign-tenant
+selector/nested-portfolio identity binding, returned-association refusal, supported
+status/result/retry/cancel surfaces, persisted wave reconciliation, and foreign-tenant
 non-disclosure.
 
 ## Measured local operating envelope

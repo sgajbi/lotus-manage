@@ -1771,6 +1771,9 @@ incremental terminal checkpoints, explicit retry, and cancellation.
 Functional coverage:
 
 - exact admission replay and changed-input conflict;
+- supplied wave-item/portfolio selectors and nested construction portfolio must agree before any
+  calculation; malformed or foreign identity is refused before persistence or construction, and a
+  mismatched construction result cannot be attached as a successful wave item;
 - atomic operation/item plus `SIMULATING` persistence;
 - operation-wide concurrency and attempt budgets;
 - deterministic construction-artifact recovery after process replacement;

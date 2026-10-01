@@ -11,7 +11,11 @@ from src.api.services.authority_client_service import RiskAuthorityClient
 from src.api.services.wave_aggregate_metrics import aggregate_wave_items, simulation_result_state
 from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
 from src.api.services.wave_event_evidence import build_wave_event
-from src.api.services.wave_simulation_item import DpmWaveSimulationInput, simulate_item
+from src.api.services.wave_simulation_item import (
+    DpmWaveSimulationInput,
+    _PORTFOLIO_IDENTITY_CONFLICT,
+    simulate_item,
+)
 from src.core.common.canonical import hash_canonical_payload
 from src.core.common.derived_identity import derived_identity
 from src.core.construction.models import ConstructionAuthorityContext
@@ -473,6 +477,15 @@ def _execute_claim(
             completed_at=datetime.now(UTC),
         )
         return False
+    if _PORTFOLIO_IDENTITY_CONFLICT in result_item.reason_codes:
+        repository.publish_simulation_item_failure(
+            claim=claim,
+            error_code=_PORTFOLIO_IDENTITY_CONFLICT,
+            error_message="Construction input or result did not match the admitted portfolio.",
+            retryable=False,
+            completed_at=datetime.now(UTC),
+        )
+        return False
     published = repository.publish_simulation_item_result(
         claim=claim,
         result_item=result_item,
@@ -492,15 +505,32 @@ def _resolve_item_payloads(
     for supplied in item_payloads:
         wave_item_id = supplied.get("wave_item_id")
         portfolio_id = supplied.get("portfolio_id")
-        resolved_item = by_id.get(str(wave_item_id)) if wave_item_id else None
-        if resolved_item is None and portfolio_id:
+        if wave_item_id is not None:
+            resolved_item = by_id.get(str(wave_item_id))
+        elif portfolio_id is not None:
             matches = by_portfolio.get(str(portfolio_id), [])
-            if len(matches) == 1:
-                resolved_item = matches[0]
+            resolved_item = matches[0] if len(matches) == 1 else None
+        else:
+            resolved_item = None
         if resolved_item is None:
             raise DpmWaveValidationError(
                 "DPM_WAVE_SIMULATION_INPUT_ITEM_NOT_FOUND",
                 "Each simulation input must resolve to exactly one wave item.",
+            )
+        if portfolio_id is not None and str(portfolio_id) != resolved_item.portfolio_id:
+            raise DpmWaveValidationError(
+                "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT",
+                "The supplied selectors identify different wave items.",
+            )
+        stateless_input = supplied.get("stateless_input")
+        snapshot = (
+            stateless_input.get("portfolio_snapshot") if isinstance(stateless_input, dict) else None
+        )
+        nested_portfolio_id = snapshot.get("portfolio_id") if isinstance(snapshot, dict) else None
+        if nested_portfolio_id != resolved_item.portfolio_id:
+            raise DpmWaveValidationError(
+                "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT",
+                "The construction input portfolio must match the admitted wave item.",
             )
         payload = {
             key: value

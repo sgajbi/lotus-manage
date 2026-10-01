@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-01T06:53:08+00:00`
+- Generated at: `2026-10-01T07:18:38+00:00`
 
 - Baseline source snapshot: `d42263918cc1ee09baf25843916f7cfd727b55f1`
 
-- Report source snapshot: `a0f6e63f+worktree`
+- Report source snapshot: `91196e0c+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -36,14 +36,14 @@
 | --- | --- | --- | --- | --- |
 | 1 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
 | 2 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 16 | 76 |
-| 3 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
-| 4 | derive_wave_simulation_operation_status_from_counts | src/core/waves/simulation_operations.py | 13 | 26 |
-| 5 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
-| 6 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
-| 7 | admit_simulation_operation | src/infrastructure/waves/in_memory.py | 12 | 46 |
-| 8 | claim_simulation_items | src/infrastructure/waves/in_memory.py | 11 | 82 |
-| 9 | retry_simulation_items | src/infrastructure/waves/in_memory.py | 11 | 48 |
-| 10 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
+| 3 | _resolve_item_payloads | src/api/services/wave_simulation_operations.py | 15 | 51 |
+| 4 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
+| 5 | derive_wave_simulation_operation_status_from_counts | src/core/waves/simulation_operations.py | 13 | 26 |
+| 6 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
+| 7 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
+| 8 | admit_simulation_operation | src/infrastructure/waves/in_memory.py | 12 | 46 |
+| 9 | claim_simulation_items | src/infrastructure/waves/in_memory.py | 11 | 82 |
+| 10 | retry_simulation_items | src/infrastructure/waves/in_memory.py | 11 | 48 |
 
 ### Most Complex Current Test Functions
 

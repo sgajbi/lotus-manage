@@ -8,15 +8,22 @@ from src.api.routers.wave_http_errors import (
 from src.api.routers.wave_request_models import DpmWaveSimulationRequest
 from src.api.routers.wave_response_contracts import DpmWaveResponse, wave_response
 from src.api.services import wave_service
+from src.api.services.wave_simulation_operations import _resolve_item_payloads
 from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
-from src.core.waves import DpmWaveRepository
+from src.core.waves import DpmRebalanceWave, DpmWaveRepository
 
 
 def build_wave_simulation_item_inputs(
     request: DpmWaveSimulationRequest,
+    wave: DpmRebalanceWave | None = None,
 ) -> dict[str, RebalanceRequest | wave_service.DpmWaveSimulationInput]:
+    if wave is not None:
+        _resolve_item_payloads(
+            wave=wave,
+            item_payloads=[item.model_dump(mode="json") for item in request.item_inputs],
+        )
     item_inputs: dict[str, RebalanceRequest | wave_service.DpmWaveSimulationInput] = {}
     for item_input in request.item_inputs:
         simulation_input = wave_service.DpmWaveSimulationInput(
@@ -42,11 +49,12 @@ def simulate_wave_response(
     risk_authority_client: RiskAuthorityClient | None,
 ) -> DpmWaveResponse:
     try:
+        wave = wave_repository.get_wave(wave_id=wave_id, tenant_id=tenant_id)
         wave, replayed = wave_service.simulate_wave(
             wave_id=wave_id,
             actor_id=request.actor_id,
             correlation_id=correlation_id,
-            item_inputs=build_wave_simulation_item_inputs(request),
+            item_inputs=build_wave_simulation_item_inputs(request, wave=wave),
             methods=request.methods,
             construction_repository=construction_repository,
             run_service=run_service,

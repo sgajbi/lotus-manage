@@ -14,6 +14,8 @@ from src.core.waves import DpmRebalanceWaveItem
 from src.core.waves.source_analytics import build_source_analytics_from_alternative_set
 from src.core.construction.models import ConstructionAlternativeSet, ConstructionAuthorityContext
 
+_PORTFOLIO_IDENTITY_CONFLICT = "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"
+
 _CONSTRUCTION_SIMULATION_BLOCKING_ERRORS = (
     ConstructionIdempotencyConflictError,
     DpmAsyncOperationConflictError,
@@ -62,6 +64,8 @@ def simulate_item(
     rebalance_request, authority_context = _simulation_request_and_authority_context(
         simulation_input
     )
+    if rebalance_request.portfolio_snapshot.portfolio_id != item.portfolio_id:
+        return _portfolio_identity_conflict_item(item=item)
     try:
         alternative_set = construction_service.generate_construction_alternative_set(
             request=rebalance_request,
@@ -75,6 +79,8 @@ def simulate_item(
         )
     except _CONSTRUCTION_SIMULATION_BLOCKING_ERRORS as exc:
         return _construction_generation_failed_item(item=item, exc=exc)
+    if alternative_set.portfolio_id != item.portfolio_id:
+        return _portfolio_identity_conflict_item(item=item)
     return _simulated_item(item=item, alternative_set=alternative_set)
 
 
@@ -109,6 +115,21 @@ def _construction_generation_failed_item(
                 "source_owner": "lotus-manage-construction",
                 "required_action": "REVIEW_CONSTRUCTION_INPUTS",
                 "construction_error": type(exc).__name__,
+            },
+        },
+        deep=True,
+    )
+
+
+def _portfolio_identity_conflict_item(*, item: DpmRebalanceWaveItem) -> DpmRebalanceWaveItem:
+    return item.model_copy(
+        update={
+            "state": "SIMULATION_BLOCKED",
+            "reason_codes": [_PORTFOLIO_IDENTITY_CONFLICT],
+            "diagnostics": {
+                **item.diagnostics,
+                "source_owner": "wave-simulation-request",
+                "required_action": "SUPPLY_INPUT_FOR_ADMITTED_PORTFOLIO",
             },
         },
         deep=True,

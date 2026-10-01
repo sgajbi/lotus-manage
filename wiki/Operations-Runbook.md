@@ -165,7 +165,7 @@ per-item claims.
 | Worker drain | `POST .../{operation_id}/work` | Run multiple worker instances only within the persisted `max_concurrency`. A zero claim can mean no remaining capacity or no eligible work; re-read operation status before retrying. |
 | Expired lease | A replacement worker increments `claim_generation`/`attempt_count`; stale publication is refused | Allow replacement recovery. Deterministic construction identity reuses an already committed artifact. Do not manually rewrite item rows or delete the construction artifact. |
 | Retry | `POST .../{operation_id}/retry` | Retry only typed retryable failures below `max_attempts`. Attempt history remains monotonic; exhausted work terminates with `DPM_WAVE_SIMULATION_RETRY_EXHAUSTED`. |
-| Cancel | `POST .../{operation_id}/cancel` | Pending/failed work becomes cancelled. In-flight work retains its fence and may publish before expiry; cancellation is not rollback of construction, approval, handoff, order, execution, or booking truth. |
+| Cancel | `POST .../{operation_id}/cancel` | Pending/failed work becomes cancelled. The first accepted cancellation reason is retained; repeated cancellation is safe and cannot replace that audit fact. In-flight work retains its fence and may publish before expiry; cancellation is not rollback of construction, approval, handoff, order, execution, or booking truth. |
 | Source conflict | `DPM_WAVE_SIMULATION_SOURCE_REVISION_CONFLICT` | Re-admit only after the owning workflow establishes a new source-checked wave/revision. Never calculate against a changed model/source snapshot under the old operation. |
 
 The reproducible local envelope probe is

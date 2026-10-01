@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from pytest import MonkeyPatch
 
+from src.api.services import wave_simulation_operations
 from src.core.waves.models import (
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
@@ -287,6 +289,15 @@ def test_retry_preserves_attempt_count_and_cancel_preserves_in_flight_claim(
     assert states[claims[0].wave_item_id] == "CANCELLED"
     assert states["item-2"] == "CANCELLED"
     assert states["item-3"] == "CANCELLED"
+    repeated = repository.cancel_simulation_operation(
+        tenant_id=TENANT,
+        operation_id=OPERATION_ID,
+        reason_code="SECOND_CANCEL_IGNORED",
+        cancelled_at=NOW + timedelta(seconds=8),
+    )
+    assert repeated is not None
+    assert repeated.status == "CANCEL_REQUESTED"
+    assert repeated.cancel_reason_code == "OPERATOR_CANCELLED"
 
 
 def test_results_are_tenant_scoped_and_paged_before_projection(
@@ -317,20 +328,41 @@ def test_results_are_tenant_scoped_and_paged_before_projection(
 
 def test_simulation_input_resolution_and_terminal_policy_fail_closed() -> None:
     wave = _wave()
+    valid_input = {"portfolio_snapshot": {"portfolio_id": "portfolio-0"}}
     assert _resolve_item_payloads(
         wave=wave,
-        item_payloads=[{"portfolio_id": "portfolio-0", "stateless_input": {"x": "y"}}],
-    ) == {"item-0": {"stateless_input": {"x": "y"}}}
+        item_payloads=[{"portfolio_id": "portfolio-0", "stateless_input": valid_input}],
+    ) == {"item-0": {"stateless_input": valid_input}}
     with pytest.raises(DpmWaveValidationError, match="resolve to exactly one wave item"):
         _resolve_item_payloads(wave=wave, item_payloads=[{"portfolio_id": "missing"}])
     with pytest.raises(DpmWaveValidationError, match="Conflicting inputs"):
         _resolve_item_payloads(
             wave=wave,
             item_payloads=[
-                {"wave_item_id": "item-0", "stateless_input": {"x": "one"}},
-                {"wave_item_id": "item-0", "stateless_input": {"x": "two"}},
+                {"wave_item_id": "item-0", "stateless_input": valid_input},
+                {
+                    "wave_item_id": "item-0",
+                    "stateless_input": {
+                        "portfolio_snapshot": {"portfolio_id": "portfolio-0"},
+                        "variant": "two",
+                    },
+                },
             ],
         )
+    for invalid_payload in [
+        {"wave_item_id": "missing", "portfolio_id": "portfolio-0", "stateless_input": valid_input},
+        {"wave_item_id": "item-0", "portfolio_id": "portfolio-1", "stateless_input": valid_input},
+        {
+            "wave_item_id": "item-0",
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "foreign"}},
+        },
+    ]:
+        with pytest.raises(DpmWaveValidationError) as conflict:
+            _resolve_item_payloads(wave=wave, item_payloads=[invalid_payload])
+        assert conflict.value.code in {
+            "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT",
+            "DPM_WAVE_SIMULATION_INPUT_ITEM_NOT_FOUND",
+        }
     records = _items()
     records[0] = records[0].model_copy(update={"status": "FAILED", "retryable": True})
     assert _operation_items_are_terminal(operation=_operation(), items=records) is False
@@ -439,3 +471,53 @@ def test_worker_persists_terminal_failure_for_recovery_and_disappearing_wave() -
         risk_authority_client=None,
         methods=None,
     )
+
+
+def test_worker_refuses_identity_conflict_result_before_publishing_success(
+    repository: InMemoryDpmWaveRepository, monkeypatch: MonkeyPatch
+) -> None:
+    repository.admit_simulation_operation(
+        operation=_operation(), items=_items(), simulating_wave=_simulating_wave()
+    )
+    claim = repository.claim_simulation_items(
+        tenant_id=TENANT,
+        operation_id=OPERATION_ID,
+        worker_id="worker-identity",
+        limit=1,
+        claimed_at=datetime.now(UTC),
+        lease_expires_at=datetime.now(UTC) + timedelta(minutes=1),
+    )[0]
+    identity_blocked_item = (
+        _wave()
+        .items[0]
+        .model_copy(
+            update={
+                "state": "SIMULATION_BLOCKED",
+                "reason_codes": ["DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"],
+            }
+        )
+    )
+    monkeypatch.setattr(
+        wave_simulation_operations, "simulate_item", lambda **_kwargs: identity_blocked_item
+    )
+    monkeypatch.setattr(
+        wave_simulation_operations,
+        "_wave_item_source_identity_hash",
+        lambda **_kwargs: "sha256:source-0",
+    )
+
+    assert not _execute_claim(
+        claim=claim,
+        repository=repository,
+        construction_repository=InMemoryConstructionRepository(),
+        run_service=DpmRunSupportService(repository=InMemoryDpmRunRepository()),
+        risk_authority_client=None,
+        methods=None,
+    )
+    item = repository.list_simulation_items(
+        tenant_id=TENANT, operation_id=OPERATION_ID, limit=1, offset=0
+    ).items[0]
+    assert item.status == "FAILED"
+    assert item.retryable is False
+    assert item.result_item is None
+    assert item.error_code == "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"
