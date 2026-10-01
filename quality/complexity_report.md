@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-01T15:53:52+00:00`
+- Generated at: `2026-10-01T23:38:30+00:00`
 
-- Baseline source snapshot: `6163521fa7a07cdad8a6f87f75f15cbf3b4352df`
+- Baseline source snapshot: `7b03325ffdfa52151fa5148e6a65f0d2a48d9f74`
 
-- Report source snapshot: `2f15bf12+worktree`
+- Report source snapshot: `7b03325f+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -34,16 +34,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
-| 2 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
-| 3 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
-| 4 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
-| 5 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
-| 6 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
-| 7 | monitoring_exceptions_from_health | src/core/mandates.py | 11 | 90 |
-| 8 | build | src/core/rebalance_runs/operation_support_bundle.py | 11 | 37 |
-| 9 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
-| 10 | _campaign_workflow_labels_for_http_exception | src/api/routers/wave_campaign_workflow_telemetry.py | 11 | 21 |
+| 1 | _turnover_budget_assessment | src/core/mandate_health_scoring.py | 20 | 60 |
+| 2 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
+| 3 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
+| 4 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
+| 5 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
+| 6 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
+| 7 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
+| 8 | monitoring_exceptions_from_health | src/core/mandates.py | 11 | 90 |
+| 9 | build | src/core/rebalance_runs/operation_support_bundle.py | 11 | 37 |
+| 10 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
 
 ### Most Complex Current Test Functions
 

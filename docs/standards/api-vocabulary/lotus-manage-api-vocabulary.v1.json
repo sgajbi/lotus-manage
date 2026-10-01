@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-01T15:31:59.508896+00:00",
+  "generatedAt": "2026-10-01T16:22:26.313976+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -17287,8 +17287,50 @@
       "semanticId": "lotus.turnover_budget",
       "canonicalTerm": "turnover_budget",
       "preferredName": "turnover_budget",
-      "description": "dpm mandate constraint set output field: turnover budget.",
+      "description": "Maximum cumulative turnover as a fraction of portfolio value for the declared period.",
       "example": "turnover_budget_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.turnover_budget_applicable",
+      "canonicalTerm": "turnover_budget_applicable",
+      "preferredName": "turnover_budget_applicable",
+      "description": "Source-declared applicability: false explicitly waives this control; null is unknown, not permission. A stated limit is applicable regardless of this optional flag.",
+      "example": "turnover_budget_applicable_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.turnover_budget_period_start",
+      "canonicalTerm": "turnover_budget_period_start",
+      "preferredName": "turnover_budget_period_start",
+      "description": "Optional source-stated start of the turnover-budget measurement period.",
+      "example": "turnover_budget_period_start_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.turnover_budget_usage_source_ref",
+      "canonicalTerm": "turnover_budget_usage_source_ref",
+      "preferredName": "turnover_budget_usage_source_ref",
+      "description": "dpm mandate health input field: turnover budget usage source ref.",
+      "example": "turnover_budget_usage_source_ref_example",
       "type": "object",
       "locations": [
         "body"
@@ -17301,8 +17343,36 @@
       "semanticId": "lotus.turnover_budget_used",
       "canonicalTerm": "turnover_budget_used",
       "preferredName": "turnover_budget_used",
-      "description": "dpm mandate health input field: turnover budget used.",
+      "description": "Caller-supplied cumulative turnover fraction through the twin as-of date; missing is not zero.",
       "example": "turnover_budget_used_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.turnover_budget_used_as_of_date",
+      "canonicalTerm": "turnover_budget_used_as_of_date",
+      "preferredName": "turnover_budget_used_as_of_date",
+      "description": "dpm mandate health input field: turnover budget used as of date.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.turnover_budget_used_period_start",
+      "canonicalTerm": "turnover_budget_used_period_start",
+      "preferredName": "turnover_budget_used_period_start",
+      "description": "dpm mandate health input field: turnover budget used period start.",
+      "example": "turnover_budget_used_period_start_example",
       "type": "object",
       "locations": [
         "body"
@@ -63085,6 +63155,22 @@
             "attributeRef": "#/attributeCatalog/lotus.turnover_budget"
           },
           {
+            "name": "constraints.turnover_budget_applicable",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_applicable",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_applicable"
+          },
+          {
+            "name": "constraints.turnover_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_period_start"
+          },
+          {
             "name": "constraints.tax_budget_base",
             "location": "body",
             "required": false,
@@ -63514,6 +63600,22 @@
             "type": "object",
             "semanticId": "lotus.turnover_budget",
             "attributeRef": "#/attributeCatalog/lotus.turnover_budget"
+          },
+          {
+            "name": "constraints.turnover_budget_applicable",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_applicable",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_applicable"
+          },
+          {
+            "name": "constraints.turnover_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_period_start"
           },
           {
             "name": "constraints.tax_budget_base",
@@ -64198,6 +64300,22 @@
             "type": "object",
             "semanticId": "lotus.turnover_budget",
             "attributeRef": "#/attributeCatalog/lotus.turnover_budget"
+          },
+          {
+            "name": "mandate.constraints.turnover_budget_applicable",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_applicable",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_applicable"
+          },
+          {
+            "name": "mandate.constraints.turnover_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_period_start"
           },
           {
             "name": "mandate.constraints.tax_budget_base",
@@ -65978,6 +66096,22 @@
             "attributeRef": "#/attributeCatalog/lotus.turnover_budget"
           },
           {
+            "name": "twin.constraints.turnover_budget_applicable",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_applicable",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_applicable"
+          },
+          {
+            "name": "twin.constraints.turnover_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_period_start"
+          },
+          {
             "name": "twin.constraints.tax_budget_base",
             "location": "body",
             "required": false,
@@ -66304,6 +66438,30 @@
             "type": "object",
             "semanticId": "lotus.turnover_budget_used",
             "attributeRef": "#/attributeCatalog/lotus.turnover_budget_used"
+          },
+          {
+            "name": "turnover_budget_used_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_used_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_used_period_start"
+          },
+          {
+            "name": "turnover_budget_used_as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_used_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_used_as_of_date"
+          },
+          {
+            "name": "turnover_budget_usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.turnover_budget_usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.turnover_budget_usage_source_ref"
           },
           {
             "name": "tax_budget_used_base",

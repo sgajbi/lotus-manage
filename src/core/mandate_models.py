@@ -114,7 +114,22 @@ class DpmMandateConstraintSet(BaseModel):
     sector_max_weight: Optional[Decimal] = Field(default=None)
     region_max_weight: Optional[Decimal] = Field(default=None)
     currency_max_weight: Optional[Decimal] = Field(default=None)
-    turnover_budget: Optional[Decimal] = Field(default=None)
+    turnover_budget: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        description="Maximum cumulative turnover as a fraction of portfolio value for the declared period.",
+    )
+    turnover_budget_applicable: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Source-declared applicability: false explicitly waives this control; null is unknown, "
+            "not permission. A stated limit is applicable regardless of this optional flag."
+        ),
+    )
+    turnover_budget_period_start: Optional[date] = Field(
+        default=None,
+        description="Optional source-stated start of the turnover-budget measurement period.",
+    )
     tax_budget_base: Optional[Decimal] = Field(
         default=None,
         ge=0,
@@ -142,7 +157,6 @@ class DpmMandateConstraintSet(BaseModel):
         "sector_max_weight",
         "region_max_weight",
         "currency_max_weight",
-        "turnover_budget",
         "max_tracking_error",
         "max_active_share",
     )
@@ -158,6 +172,8 @@ class DpmMandateConstraintSet(BaseModel):
 
     @model_validator(mode="after")
     def validate_cash_band(self) -> "DpmMandateConstraintSet":
+        if self.turnover_budget_applicable is False and self.turnover_budget is not None:
+            raise ValueError("a stated turnover_budget cannot be marked not applicable")
         # Either bound may be absent when the source has not stated it
         # (issue #664); the ordering invariant applies only to a stated pair.
         if (
@@ -331,7 +347,14 @@ class DpmMandateHealthInput(BaseModel):
     projected_net_cashflow: Optional[Decimal] = Field(default=None)
     projected_cashflow_currency: Optional[str] = Field(default=None)
     tax_lot_missing_security_ids: list[str] = Field(default_factory=list)
-    turnover_budget_used: Optional[Decimal] = Field(default=None, ge=0)
+    turnover_budget_used: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        description="Caller-supplied cumulative turnover fraction through the twin as-of date; missing is not zero.",
+    )
+    turnover_budget_used_period_start: Optional[date] = Field(default=None)
+    turnover_budget_used_as_of_date: Optional[date] = Field(default=None)
+    turnover_budget_usage_source_ref: Optional[str] = Field(default=None)
     tax_budget_used_base: Optional[Decimal] = Field(
         default=None,
         ge=0,

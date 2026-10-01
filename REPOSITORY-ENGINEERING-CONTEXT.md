@@ -170,8 +170,16 @@ exhausts the allowance and excess blocks health. The ten-percent `TAX_TURNOVER` 
 once, while `budget_assessments` and distinct monitoring exceptions preserve both tax and turnover
 findings. These caller-declared references and comparisons do not verify Core tax-period authority,
 realized-gain ingestion, tax liability, or execution permission.
-The existing turnover path with a declared limit but omitted usage is unchanged in this focused
-tax slice; it produces no measured turnover assessment and is not compliance certification (#745).
+For turnover health, a declared limit is a cumulative fraction of portfolio value through the
+twin as-of date. Missing usage is `TURNOVER_BUDGET_USAGE_MISSING`/PENDING_REVIEW, not zero or
+READY. Optional declared period starts must match and an explicit usage as-of cut must equal the
+twin cut; contradictory claims remain unassessed. Explicit zero is measured evidence; 80% through
+below the limit is near-limit/review, equality exhausts the allowance, and excess blocks. A null
+limit with unknown applicability is unsourced/PENDING_REVIEW; only an explicit source-declared
+`turnover_budget_applicable=false` is non-applicable. These fields and lineage are caller-supplied
+claims in the recalculation API, not a live Core turnover feed or release authority. Wave source
+readiness inherits missing-usage review posture rather than treating it as a ready mandate.
+An explicit Core unsourced field-gap marker defeats a contradictory caller non-applicability claim.
 
 ## Architecture And Module Map
 

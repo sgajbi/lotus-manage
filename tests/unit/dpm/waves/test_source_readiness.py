@@ -234,6 +234,17 @@ def test_source_readiness_classifies_blocked_degraded_review_and_ready_health() 
                 target_weights={"CASH": Decimal("0.05")},
                 cash_weight=Decimal("0.05"),
             ),
+            "REVIEW_REQUIRED",
+            "MANDATE_HEALTH_PENDING_REVIEW",
+        ),
+        (
+            DpmMandateHealthInput(
+                twin=twin_without_lineage_record,
+                current_weights={"CASH": Decimal("0.05")},
+                target_weights={"CASH": Decimal("0.05")},
+                cash_weight=Decimal("0.05"),
+                turnover_budget_used=Decimal("0"),
+            ),
             "SOURCE_READY",
             "SOURCE_READINESS_READY",
         ),
