@@ -126,6 +126,14 @@ provide source metadata, product/version or methodology version, request fingerp
 supportability, and required numeric measures. Explicit source-supplied zero values are valid;
 omitted values must not be represented as `USD`, `v1`, an empty fingerprint, an empty section, or a
 zero measure.
+`ClientRestrictionProfile:v1` must match the requested portfolio, business date, and supplied
+mandate before Manage accepts its restriction evidence. `client` and `mandate` rules may
+intentionally have no instrument selectors; `instrument`, `issuer`, `country`, and `asset_class`
+rules require at least one usable selector across the supported selector families. A blank
+selector in any family is invalid, including a mixed valid/blank list. Supported selector
+families are matched as a union until the Core owner specifies a narrower scope-family policy.
+Invalid present profiles fail closed (HTTP 424 on stateful APIs); an unavailable optional product
+retains its separate degraded/gap posture.
 
 Full mesh contract validation:
 

@@ -10,9 +10,11 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 import src.api.services.core_resolver_service as core_resolver_service
+from src.api.dependencies import get_construction_repository, get_db_session
 from src.api.main import app
 
 from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
     DpmCoreContextIncompleteError,
     DpmCoreExternalFXForwardCurveResponse,
     DpmCoreInstrumentEligibilityBulkResponse,
@@ -38,6 +40,7 @@ from src.infrastructure.core_sourcing.client import (
     _ready_execution_context_supportability,
     _requested_execution_instrument_ids,
 )
+from src.infrastructure.construction import InMemoryConstructionRepository
 
 
 def _context_payload() -> dict:
@@ -622,6 +625,220 @@ def _client_restriction_profile_payload() -> dict:
     }
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("portfolio_id", "OTHER_PORTFOLIO"),
+        ("portfolio_id", ""),
+        ("mandate_id", "OTHER_MANDATE"),
+        ("as_of_date", "2026-04-09"),
+    ],
+)
+def test_core_restriction_profile_rejects_unrequested_identity(field: str, value: str):
+    payload = _client_restriction_profile_payload()
+    payload[field] = value
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
+        ),
+    )
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError, match="DPM_CORE_CLIENT_RESTRICTIONS_IDENTITY_MISMATCH"
+    ):
+        client.resolve_client_restriction_profile(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            correlation_id="corr-restriction-identity",
+        )
+
+
+@pytest.mark.parametrize(
+    ("scope", "selectors", "accepted"),
+    [
+        ("asset_class", [], False),
+        ("asset_class", ["  "], False),
+        ("asset_class", ["EQUITY", "  "], False),
+        ("asset_class", ["EQUITY"], True),
+        ("client", [], True),
+        ("mandate", [], True),
+    ],
+)
+def test_core_restriction_scope_requires_usable_selectors_except_intentional_global(
+    scope: str, selectors: list[str], accepted: bool
+):
+    payload = _client_restriction_profile_payload()
+    payload["restrictions"][0].update(
+        restriction_scope=scope,
+        instrument_ids=[],
+        asset_classes=selectors,
+    )
+    if not accepted:
+        with pytest.raises(ValidationError):
+            DpmCoreClientRestrictionProfileResponse.model_validate(payload)
+        return
+
+    profile = DpmCoreClientRestrictionProfileResponse.model_validate(payload)
+    assert profile.supportability.state == "READY"
+    assert profile.restrictions[0].restriction_scope == scope
+    assert profile.restrictions[0].asset_classes == selectors
+
+
+@pytest.mark.parametrize("invalid_source", ["scope", "identity"])
+def test_stateful_http_rejects_invalid_client_restriction_source(monkeypatch, invalid_source: str):
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if request.url.path.endswith("/client-restriction-profile"):
+            payload = _client_restriction_profile_payload()
+            payload["as_of_date"] = "2026-03-25"
+            payload["mandate_id"] = "mandate_balanced_discretionary"
+            if invalid_source == "scope":
+                payload["restrictions"][0].update(
+                    restriction_scope="asset_class", instrument_ids=[], asset_classes=[]
+                )
+            else:
+                payload["portfolio_id"] = "OTHER_PORTFOLIO"
+            return httpx.Response(200, json=payload)
+        return _composed_context_response_for(request)
+
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(core_resolver_service, "build_core_resolver_client", lambda: resolver)
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": {
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "as_of": "2026-03-25",
+                    "mandate_id": "mandate_balanced_discretionary",
+                    "model_portfolio_id": "model_balanced_sgd",
+                    "tenant_id": "tenant_001",
+                    "booking_center_code": "SG",
+                },
+            },
+            headers={
+                "Idempotency-Key": f"invalid-restriction-{invalid_source}",
+                "X-Tenant-Id": "tenant_001",
+                "X-Correlation-Id": f"corr-invalid-restriction-{invalid_source}",
+            },
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"] == "DPM_CORE_CONTEXT_INCOMPLETE"
+    assert seen[-1].endswith("/client-restriction-profile")
+
+
+@pytest.mark.parametrize("scope", ["client", "mandate", "asset_class"])
+def test_stateful_http_accepts_valid_global_and_scoped_restriction_sources(monkeypatch, scope):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/client-restriction-profile"):
+            payload = _client_restriction_profile_payload()
+            selectors = json.loads(request.content)
+            payload["as_of_date"] = selectors["as_of_date"]
+            payload["mandate_id"] = selectors["mandate_id"]
+            payload["restrictions"][0].update(
+                restriction_scope=scope,
+                instrument_ids=[],
+                asset_classes=["PRIVATE_CREDIT"] if scope == "asset_class" else [],
+            )
+            return httpx.Response(200, json=payload)
+        return _composed_context_response_for(request)
+
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(core_resolver_service, "build_core_resolver_client", lambda: resolver)
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": {
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "as_of": "2026-03-25",
+                    "mandate_id": "mandate_balanced_discretionary",
+                    "model_portfolio_id": "model_balanced_sgd",
+                    "tenant_id": "tenant_001",
+                    "booking_center_code": "SG",
+                },
+            },
+            headers={"Idempotency-Key": f"valid-restriction-{scope}", "X-Tenant-Id": "tenant_001"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["lineage"]["input_mode"] == "stateful"
+
+
+def test_construction_http_rejects_blank_scoped_core_restriction_before_method_decision(
+    monkeypatch,
+):
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if request.url.path.endswith("/client-restriction-profile"):
+            payload = _client_restriction_profile_payload()
+            selectors = json.loads(request.content)
+            payload["as_of_date"] = selectors["as_of_date"]
+            payload["mandate_id"] = selectors["mandate_id"]
+            payload["restrictions"][0].update(
+                restriction_scope="asset_class", instrument_ids=[], asset_classes=[]
+            )
+            return httpx.Response(200, json=payload)
+        return _composed_context_response_for(request)
+
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(core_resolver_service, "build_core_resolver_client", lambda: resolver)
+    original_overrides = dict(app.dependency_overrides)
+
+    async def override_db_session():
+        yield None
+
+    app.dependency_overrides[get_db_session] = override_db_session
+    app.dependency_overrides[get_construction_repository] = InMemoryConstructionRepository
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json={
+                    "input_mode": "stateful",
+                    "stateful_input": {
+                        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                        "as_of": "2026-03-25",
+                        "mandate_id": "mandate_balanced_discretionary",
+                        "model_portfolio_id": "model_balanced_sgd",
+                        "tenant_id": "tenant_001",
+                        "booking_center_code": "SG",
+                    },
+                },
+                headers={
+                    "Idempotency-Key": "invalid-construction-restriction",
+                    "X-Tenant-Id": "tenant_001",
+                },
+            )
+    finally:
+        app.dependency_overrides = original_overrides
+
+    assert response.status_code == 424
+    assert response.json()["detail"] == "DPM_CORE_CONTEXT_INCOMPLETE"
+    assert seen[-1].endswith("/client-restriction-profile")
+
+
 def _sustainability_preference_profile_payload() -> dict:
     return {
         "product_name": "SustainabilityPreferenceProfile",
@@ -1160,7 +1377,11 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
     if path.endswith("/external-order-execution-acknowledgement"):
         return httpx.Response(200, json=_external_order_execution_acknowledgement_payload())
     if path.endswith("/client-restriction-profile"):
-        return httpx.Response(200, json=_client_restriction_profile_payload())
+        payload = _client_restriction_profile_payload()
+        selectors = json.loads(request.content)
+        payload["as_of_date"] = selectors["as_of_date"]
+        payload["mandate_id"] = selectors["mandate_id"]
+        return httpx.Response(200, json=payload)
     if path.endswith("/sustainability-preference-profile"):
         return httpx.Response(200, json=_sustainability_preference_profile_payload())
     return httpx.Response(404, json={"detail": "unexpected path"})

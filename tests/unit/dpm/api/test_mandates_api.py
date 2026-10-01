@@ -813,6 +813,32 @@ def test_refresh_maps_core_incomplete_to_424() -> None:
     assert response.json()["detail"] == "DPM_MANDATE_SOURCE_INCOMPLETE"
 
 
+def test_refresh_rejects_malformed_present_client_restriction_profile() -> None:
+    class InvalidRestrictionResolver(FakeCoreResolver):
+        def resolve_client_restriction_profile(
+            self, **kwargs: Any
+        ) -> DpmCoreClientRestrictionProfileResponse:
+            payload = _client_restriction_profile_payload()
+            payload["restrictions"][0].update(
+                restriction_scope="asset_class", instrument_ids=[], asset_classes=[]
+            )
+            return DpmCoreClientRestrictionProfileResponse.model_validate(payload)
+
+    with _client(InMemoryDpmMandateRepository(), InvalidRestrictionResolver()) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            headers={"X-Tenant-Id": "tenant-test"},
+            json={
+                "portfolio_id": PORTFOLIO_ID,
+                "tenant_id": "tenant-test",
+                "as_of_date": "2026-05-03",
+            },
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"] == "DPM_MANDATE_SOURCE_INCOMPLETE"
+
+
 def test_missing_mandate_returns_404() -> None:
     with _client(InMemoryDpmMandateRepository()) as client:
         response = client.get(f"/api/v1/mandates/{MANDATE_ID}?tenant_id=tenant-test")

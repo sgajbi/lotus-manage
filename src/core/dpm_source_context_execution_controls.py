@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal, Optional
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
 
 class DpmCoreInstrumentEligibilityRecord(BaseModel):
@@ -195,7 +195,9 @@ class DpmCoreTransactionCostCurveResponse(BaseModel):
 
 
 class DpmCoreClientRestrictionEntry(BaseModel):
-    restriction_scope: str = Field(description="Source-owned restriction scope.")
+    restriction_scope: Literal[
+        "client", "mandate", "instrument", "issuer", "country", "asset_class"
+    ] = Field(description="Source-owned restriction scope.")
     restriction_code: str = Field(description="Bounded restriction code.")
     restriction_status: str = Field(description="Restriction lifecycle status.")
     restriction_source: str = Field(description="Source channel that captured the restriction.")
@@ -211,6 +213,25 @@ class DpmCoreClientRestrictionEntry(BaseModel):
     )
     restriction_version: int = Field(description="Selected restriction version.")
     source_record_id: Optional[str] = Field(default=None, description="Source record identifier.")
+
+    @field_validator("restriction_scope", mode="before")
+    @classmethod
+    def normalize_restriction_scope(cls, value: object) -> object:
+        return value.strip().lower() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def require_usable_scoped_selectors(self) -> "DpmCoreClientRestrictionEntry":
+        selectors = (
+            self.instrument_ids,
+            self.asset_classes,
+            self.issuer_ids,
+            self.country_codes,
+        )
+        if any(not value.strip() for family in selectors for value in family):
+            raise ValueError("DPM_CORE_CLIENT_RESTRICTION_SELECTOR_BLANK")
+        if self.restriction_scope not in {"client", "mandate"} and not any(selectors):
+            raise ValueError("DPM_CORE_CLIENT_RESTRICTION_SCOPE_EMPTY")
+        return self
 
 
 class DpmCoreClientRestrictionSupportability(BaseModel):

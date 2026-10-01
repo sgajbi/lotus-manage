@@ -240,6 +240,11 @@ ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfi
 candidate trades that violate hard client restrictions and can flag sustainability allocation or
 classification evidence gaps for review. It does not infer unsupported ESG classifications or
 convert sustainability preferences into automatic compliance approval.
+For Core client restrictions, a returned profile must match the requested portfolio, date, and
+mandate. Selector-free `client`/`mandate` rules are intentional global restrictions; scoped
+`instrument`/`issuer`/`country`/`asset_class` rules require usable selectors. Invalid present
+profiles refuse stateful execution as an incomplete dependency (HTTP 424), whereas an unavailable
+optional profile retains the documented degraded posture.
 
 Core and Risk source-product adapters are fail-closed at the anti-corruption boundary. Manage
 requires Core portfolio snapshot responses to carry portfolio id, `as_of_date`, valuation currency,

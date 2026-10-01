@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-10-01T11:32:54+00:00`
+- Generated at: `2026-10-01T11:59:23+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `2295647700c6f69a7d1828c636fceb3b92199a45`
+- Baseline source snapshot: `b530d23701da2f0e78f91fb2dd2ab1ffbe40d4dc`
 
-- Report source snapshot: `22956477+worktree`
+- Report source snapshot: `b530d237+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,8 +15,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 976 | 976 | +0 |
-| Total Python LOC | 235024 | 235186 | +162 |
-| Test functions | 3336 | 3340 | +4 |
+| Total Python LOC | 235186 | 235497 | +311 |
+| Test functions | 3340 | 3347 | +7 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -44,7 +44,7 @@
 | 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
 | 7 | tests/unit/test_documentation_current_state.py | 3029 |
-| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2822 |
+| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2975 |
 | 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2711 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
 
@@ -58,8 +58,8 @@
 | 4 | tests/unit/test_ci_workflow_gate_enforcement.py | 3395 |
 | 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
-| 7 | tests/unit/test_documentation_current_state.py | 3029 |
-| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2975 |
+| 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 3196 |
+| 8 | tests/unit/test_documentation_current_state.py | 3029 |
 | 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2711 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
 
