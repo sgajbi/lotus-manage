@@ -52,6 +52,14 @@ selector/nested-portfolio identity binding, returned-association refusal, suppor
 status/result/retry/cancel surfaces, persisted wave reconciliation, and foreign-tenant
 non-disclosure.
 
+The 1 October 2026 local merge-gate-equivalent run passed 3,648 unit tests, 290 integration tests,
+28 end-to-end tests, and the required 290-test PostgreSQL lane. Its combined coverage gate measured
+29,077 statements with 290 misses (99.00% against the enforced 99% floor). The added regression
+cases exercise real PostgreSQL missing-wave, transition, correlation, and unique-constraint race
+fences; they also prove in-memory/PostgreSQL parity for malformed admission batches, bounded retry,
+worker failure persistence, and multi-page reconciliation. This is code and persistence evidence,
+not a claim about production capacity or external core-booking readiness.
+
 ## Measured local operating envelope
 
 The reproducible probe is:
@@ -94,3 +102,7 @@ It is reviewer coordination for a stable canonical checkout, not proposed reposi
 so none of its prose was adopted into product docs. Its exact #722 checkpoint was preserved in the
 review inbox, and #715 remained isolated in its own worktree as requested. No other proposed
 `lotus-manage` draft was present for adoption or supersession at this checkpoint.
+
+No wiki source change is required for this verification-only update: the existing API-surface,
+endpoint-certification, supported-feature, and operations-runbook entries already describe the
+unchanged operator contract. The repository wiki parity check remains required before merge.

@@ -927,3 +927,77 @@ def test_postgres_admission_refuses_ambiguous_or_stale_durable_identity(dsn: str
                 update={"state": "SIMULATING", "version": stale_wave.version + 1}
             ),
         )
+
+
+def test_postgres_admission_rejects_missing_transitioned_and_correlated_waves(dsn: str) -> None:
+    """PostgreSQL admission must fence every durable identity before inserting work."""
+
+    tenant_id, wave_id, operation_id = _ids()
+    repository = PostgresDpmWaveRepository(dsn=dsn)
+    wave = _wave(tenant_id=tenant_id, wave_id=wave_id, item_count=1)
+    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None, tenant_id=tenant_id)
+    now = datetime(2026, 10, 1, tzinfo=UTC)
+    operation = DpmWaveSimulationOperation(
+        operation_id=operation_id,
+        tenant_id=tenant_id,
+        wave_id=wave_id,
+        request_hash="sha256:admission-boundary",
+        idempotency_key_hash="wsi-admission-boundary",
+        correlation_id="corr-admission-boundary",
+        actor_id="integration-test",
+        source_identity_hash="sha256:source-boundary",
+        admitted_wave_version=wave.version,
+        methods=["HEURISTIC_EXPLAINABLE"],
+        max_concurrency=1,
+        max_attempts=2,
+        created_at=now,
+        updated_at=now,
+    )
+    item = DpmWaveSimulationItemRecord(
+        operation_id=operation_id,
+        tenant_id=tenant_id,
+        wave_id=wave_id,
+        wave_item_id=wave.items[0].wave_item_id,
+        ordinal=0,
+        portfolio_id=wave.items[0].portfolio_id,
+        input_payload={"portfolio_id": wave.items[0].portfolio_id},
+        input_hash="sha256:input-boundary",
+        source_identity_hash="sha256:item-source-boundary",
+        updated_at=now,
+    )
+    simulating_wave = wave.model_copy(update={"state": "SIMULATING", "version": wave.version + 1})
+
+    with pytest.raises(DpmWaveSimulationOperationConflictError, match="WAVE_NOT_FOUND"):
+        repository.admit_simulation_operation(
+            operation=operation.model_copy(update={"wave_id": "missing-wave"}),
+            items=[item.model_copy(update={"wave_id": "missing-wave"})],
+            simulating_wave=simulating_wave.model_copy(update={"wave_id": "missing-wave"}),
+        )
+    with pytest.raises(DpmWaveSimulationOperationConflictError, match="TRANSITION_CONFLICT"):
+        repository.admit_simulation_operation(
+            operation=operation,
+            items=[item],
+            simulating_wave=simulating_wave.model_copy(update={"version": wave.version}),
+        )
+
+    stored, replayed = repository.admit_simulation_operation(
+        operation=operation, items=[item], simulating_wave=simulating_wave
+    )
+    assert stored == operation
+    assert replayed is False
+    duplicate_correlation = operation.model_copy(
+        update={
+            "operation_id": f"{operation_id}-second",
+            "request_hash": "sha256:admission-boundary-second",
+            "idempotency_key_hash": "wsi-admission-boundary-second",
+            "admitted_wave_version": simulating_wave.version,
+        }
+    )
+    with pytest.raises(DpmWaveSimulationOperationConflictError, match="CORRELATION_CONFLICT"):
+        repository.admit_simulation_operation(
+            operation=duplicate_correlation,
+            items=[item.model_copy(update={"operation_id": duplicate_correlation.operation_id})],
+            simulating_wave=simulating_wave.model_copy(
+                update={"version": simulating_wave.version + 1}
+            ),
+        )
