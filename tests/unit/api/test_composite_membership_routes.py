@@ -67,6 +67,7 @@ def test_composite_membership_routes_enforce_identity_and_preserve_pinned_histor
             saved_definition = client.put(base, headers=_headers(), json=_definition_payload())
             assert saved_definition.status_code == 200
             assert saved_definition.json()["created_by"] == "pm-ops"
+            assert client.get(base, headers=_headers()).status_code == 200
             definitions = client.get("/api/v1/rebalance/composites/definitions", headers=_headers())
             assert definitions.status_code == 200
             assert definitions.json()["count"] == 1
@@ -125,6 +126,16 @@ def test_composite_membership_route_rejects_immutable_conflict_and_invalid_as_of
             assert (
                 client.put(revision_url, headers=_headers(), json=_revision_payload()).status_code
                 == 200
+            )
+            membership_conflict = client.put(
+                revision_url,
+                headers=_headers(),
+                json=_revision_payload() | {"policy_version": "composite-eligibility.v2"},
+            )
+            assert membership_conflict.status_code == 409
+            assert (
+                membership_conflict.json()["detail"]["code"]
+                == "COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT"
             )
             invalid_date = client.get(
                 f"{revision_url}/as-of?as_of_date=2026-99-99", headers=_headers()

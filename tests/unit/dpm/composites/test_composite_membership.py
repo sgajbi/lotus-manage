@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -15,6 +16,7 @@ from src.core.composite_membership import (
 )
 from src.core.composite_repository import DpmCompositeConflictError
 from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
+from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository, _payload
 
 
 def _authority() -> DpmCompositeSourceAuthority:
@@ -246,3 +248,18 @@ def test_repository_rejects_membership_without_definition_or_known_superseded_re
         DpmCompositeConflictError, match="COMPOSITE_MEMBERSHIP_SUPERSEDED_REVISION_NOT_FOUND"
     ):
         repository.save_membership_revision(revision=missing_parent)
+
+
+def test_postgres_repository_fails_closed_when_its_required_runtime_capability_is_missing() -> None:
+    with pytest.raises(RuntimeError, match="DPM_COMPOSITE_POSTGRES_DSN_REQUIRED"):
+        PostgresDpmCompositeRepository(dsn="")
+
+    with patch("src.infrastructure.composites.postgres.has_psycopg", return_value=False):
+        with pytest.raises(RuntimeError, match="DPM_COMPOSITE_POSTGRES_DRIVER_MISSING"):
+            PostgresDpmCompositeRepository(dsn="postgresql://example")
+
+
+def test_postgres_payload_serializes_non_native_json_values_deterministically() -> None:
+    assert _payload({"payload_json": datetime(2026, 10, 1, tzinfo=timezone.utc)}) == (
+        '"2026-10-01 00:00:00+00:00"'
+    )
