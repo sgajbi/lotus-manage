@@ -484,7 +484,10 @@ Operationally important truths:
    cost, venue, or market-impact methodology. `COST_AWARE` publishes an aggregate only when the
    observed curve covers every candidate `(security_id, transaction_type)` key. Missing BUY/SELL
    evidence degrades the method, identifies the exact missing trade sides, and suppresses partial
-   aggregates; complete zero-bps evidence remains an explicit zero estimate.
+   aggregates; complete zero-bps evidence remains an explicit zero estimate. Each observed
+   `(security_id, transaction_type)` point must be unique: repeated keys, even identical rows or
+   different currencies, are refused in caller-supplied context. Duplicate Core source keys
+   degrade the mapped context with `TRANSACTION_COST_CURVE_DUPLICATE_POINT` and no numeric estimate.
 6. proof packs preserve source-owned `RegimeScenarioPackEvaluation:v1` evidence when scenario
    context is carried by the chosen construction alternative or supplied directly at generation
    time as `regime_stress_context`. Selected-alternative evidence takes precedence. Manage records

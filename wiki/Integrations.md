@@ -139,6 +139,10 @@ Current source-product integration status:
 `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS`, defaulting to 400 days. The longer default reflects
 private-banking portfolio turnover patterns and remains bounded to observed booked fees; it is not a
 market-impact, venue, fill-quality, or best-execution model.
+Manage requires unique `(security_id, transaction_type)` cost points. Repeated keys, even identical
+rows or different currencies, are invalid: caller-supplied context is refused before construction
+write, while duplicate Core source rows degrade to `TRANSACTION_COST_CURVE_DUPLICATE_POINT` and
+cannot publish a READY numeric estimate. BUY and SELL are distinct keys; explicit zero is valid.
 
 Tax-aware construction requires explicit open-lot evidence for each sell candidate. Missing lots,
 partial lot quantity coverage, closed/depleted-only lots, or unavailable lot-cost FX produce

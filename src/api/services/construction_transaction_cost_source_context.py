@@ -3,7 +3,9 @@ from src.api.services.construction_source_identity import source_product_identit
 from src.core.construction.models import (
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
+    duplicate_transaction_cost_point_keys,
 )
+from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.dpm_source_context import (
     DpmCoreTransactionCostCurvePoint,
     DpmCoreTransactionCostCurveResponse,
@@ -47,12 +49,18 @@ def transaction_cost_point(
 def transaction_cost_context_from_curve(
     curve: DpmCoreTransactionCostCurveResponse,
 ) -> AuthoritativeTransactionCostContext:
+    duplicate_keys = duplicate_transaction_cost_point_keys(curve.curve_points)
+    source_status = source_status_to_method_status(curve.supportability.state)
     identity = source_product_identity(
         curve,
         fallback_source_id=curve.page.request_scope_fingerprint,
     )
     return AuthoritativeTransactionCostContext(
-        supportability_status=source_status_to_method_status(curve.supportability.state),
+        supportability_status=(
+            ConstructionMethodStatus.DEGRADED
+            if duplicate_keys and source_status == ConstructionMethodStatus.READY
+            else source_status
+        ),
         source_system=identity.source_system,
         source_product_name=identity.source_product_name,
         source_product_version=identity.source_product_version,
@@ -63,10 +71,15 @@ def transaction_cost_context_from_curve(
         window_end_date=curve.window.end_date,
         returned_curve_point_count=curve.supportability.returned_curve_point_count,
         missing_security_ids=curve.supportability.missing_security_ids,
-        curve_points=[
-            transaction_cost_point(point) for point in transaction_cost_curve_points(curve)
+        curve_points=(
+            []
+            if duplicate_keys
+            else [transaction_cost_point(point) for point in transaction_cost_curve_points(curve)]
+        ),
+        reason_codes=[
+            curve.supportability.reason,
+            *(["TRANSACTION_COST_CURVE_DUPLICATE_POINT"] if duplicate_keys else []),
         ],
-        reason_codes=[curve.supportability.reason],
     )
 
 

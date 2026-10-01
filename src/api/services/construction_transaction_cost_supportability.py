@@ -6,6 +6,7 @@ from src.core.construction.models import (
     ConstructionAlternative,
     ConstructionConstraintTrace,
     ConstructionObjectiveTerm,
+    duplicate_transaction_cost_point_keys,
 )
 from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import (
@@ -146,6 +147,8 @@ def transaction_cost_reason_codes(
     traded_security_ids = traded_transaction_cost_security_ids(result=result)
     covered_security_ids = covered_transaction_cost_security_ids(context=context)
     missing_security_ids = sorted(traded_security_ids - covered_security_ids)
+    if duplicate_transaction_cost_point_keys(context.curve_points):
+        reason_codes.append("TRANSACTION_COST_CURVE_DUPLICATE_POINT")
     if missing_security_ids:
         reason_codes.append("TRANSACTION_COST_CURVE_MISSING_TRADED_SECURITIES")
     if missing_transaction_cost_trade_keys(result=result, context=context):
@@ -208,6 +211,11 @@ def transaction_cost_constraint_description(
             "Observed TransactionCostCurve:v1 evidence is missing required candidate trade "
             f"sides ({formatted_keys}); no partial aggregate is published."
         )
+    if context is not None and duplicate_transaction_cost_point_keys(context.curve_points):
+        return (
+            "Observed TransactionCostCurve:v1 evidence repeats a security and trade side; "
+            "no order-dependent estimate is published."
+        )
     if observed_transaction_cost_estimate(result=result, context=context) is None:
         return (
             "Observed TransactionCostCurve:v1 evidence cannot support a complete candidate "
@@ -223,6 +231,8 @@ def transaction_cost_curve_points_by_key(
     *,
     context: AuthoritativeTransactionCostContext,
 ) -> dict[tuple[str, str], AuthoritativeTransactionCostPoint]:
+    if duplicate_transaction_cost_point_keys(context.curve_points):
+        return {}
     return {(point.security_id, point.transaction_type): point for point in context.curve_points}
 
 

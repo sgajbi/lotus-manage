@@ -351,6 +351,10 @@ Functional behavior:
 - Tax-aware posture uses tax-aware engine behavior where tax lots are available and exposes
   degraded supportability reason codes where authoritative transaction cost, risk, or performance
   enrichment is absent.
+- A `COST_AWARE` caller-supplied curve with repeated `(security_id, transaction_type)` keys
+  returns validation `422` before persistence, regardless of row order or whether values match.
+  Duplicate Core source points are qualified with `TRANSACTION_COST_CURVE_DUPLICATE_POINT`, no
+  numeric estimate, and degraded method supportability; readback retains that qualification.
 - Read returns a persisted alternative set by id without recomputation.
 - Select records an actor-attributed selection decision with reason code, optional comment, and
   optional correlation id. It does not execute trades.
