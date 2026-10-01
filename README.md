@@ -74,6 +74,11 @@ Current posture under RFC-0082:
    concurrent identical submissions publish one authoritative run and changed-payload reuse is
    rejected. Run, artifact, history, workflow, and support-bundle descendants are tenant-fenced;
    unattributed legacy rows are quarantined rather than assigned to a caller.
+7. Currency-bearing request and shelf minimum-trade thresholds are compared in each candidate
+   trade's price currency. The engine uses Decimal direct/inverse quotes from the supplied governed
+   market-data snapshot, records quote and applied-conversion provenance in diagnostics, preserves
+   request-before-shelf precedence, and blocks when a required quote is missing or non-positive.
+   This is deterministic proposal qualification, not live FX pricing or execution authority.
 
 ## Strategic DPM Roadmap
 

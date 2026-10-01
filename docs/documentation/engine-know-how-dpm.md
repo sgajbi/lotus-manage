@@ -491,8 +491,30 @@ Swagger contract quality:
 
 4. Intent Generation
 - Produces `SECURITY_TRADE` intents from drift.
-- Applies dust suppression and optional turnover cap.
+- Applies currency-qualified dust suppression and optional turnover cap. Request
+  `min_trade_notional` precedes shelf `min_notional`; the selected threshold is normalized into the
+  candidate price currency with direct or inverse Decimal FX from the run's market-data snapshot.
+  Missing/non-positive required FX blocks instead of comparing bare amounts. Exact-threshold trades
+  are retained.
 - Applies optional tax-aware lot logic (HIFO + gains budget).
+
+Example diagnostic for a SGD 3,000 threshold applied to a USD-priced candidate with USD/SGD 2:
+
+```json
+{
+  "instrument_id": "EQ_A",
+  "side": "SELL",
+  "comparison_outcome": "KEPT",
+  "intended_notional": {"amount": "2250", "currency": "USD"},
+  "configured_threshold": {"amount": "3000", "currency": "SGD"},
+  "comparison_threshold": {"amount": "1500.0", "currency": "USD"},
+  "fx_quote_pair": "USD/SGD",
+  "fx_quote_rate": "2",
+  "conversion_rate": "0.5",
+  "conversion_direction": "INVERSE",
+  "reason_code": "MIN_TRADE_THRESHOLD_SATISFIED"
+}
+```
 
 5. Simulation + Rules + Reconciliation
 - Generates FX funding/sweep intents.

@@ -433,6 +433,13 @@ Most relevant current governance:
     shared adversarial corpus in `tests/support/mandate_version_corpus.py` is asserted by both the
     unit suite and the database lane so a divergence fails on one side rather than passing quietly
     on both.
+17. Minimum-trade suppression selects the request threshold before the shelf fallback, then
+    normalizes that selected `Money` into the candidate security's price currency through the
+    request/source-resolved `MarketDataSnapshot`. Direct quotes use `threshold/trade`; inverse
+    quotes use `trade/threshold` and an exact Decimal reciprocal. Missing, zero, or negative quotes
+    must add blocking data-quality evidence and must never fall back to comparing unqualified
+    numeric amounts. Diagnostics preserve the configured threshold, normalized threshold, observed
+    quote, applied conversion rate, direction, candidate side, and outcome.
 
 ## Context Maintenance Rule
 

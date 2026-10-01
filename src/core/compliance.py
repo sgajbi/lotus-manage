@@ -104,6 +104,7 @@ def _data_quality_rule_result(
         dq_count += len(diagnostics.data_quality.get("fx_missing", []))
 
     dq_count += len(diagnostics.data_quality.get("shelf_missing", []))
+    dq_count += len(diagnostics.data_quality.get("minimum_trade_threshold_fx_unavailable", []))
 
     if dq_count > 0:
         return RuleResult(
@@ -113,7 +114,7 @@ def _data_quality_rule_result(
             measured=Decimal(dq_count),
             threshold={"max": Decimal("0")},
             reason_code="MISSING_DATA",
-            remediation_hint="Check diagnostics for missing prices/FX.",
+            remediation_hint="Check diagnostics for missing prices, FX, or threshold conversion.",
         )
 
     return RuleResult(

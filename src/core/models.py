@@ -617,6 +617,37 @@ class SuppressedIntent(BaseModel):
     threshold: Money = Field(description="Suppression threshold that was not met.")
 
 
+class MinimumTradeThresholdEvaluation(BaseModel):
+    instrument_id: str = Field(description="Instrument evaluated against a minimum trade amount.")
+    side: Literal["BUY", "SELL"] = Field(description="Candidate trade side.")
+    comparison_outcome: Literal["KEPT", "SUPPRESSED", "BLOCKED"] = Field(
+        description="Result of the currency-normalized minimum-trade comparison."
+    )
+    intended_notional: Money = Field(description="Candidate notional in trade currency.")
+    configured_threshold: Money = Field(description="Selected request or shelf threshold.")
+    comparison_threshold: Optional[Money] = Field(
+        default=None,
+        description="Threshold normalized into trade currency, absent when conversion is blocked.",
+    )
+    fx_quote_pair: Optional[str] = Field(
+        default=None,
+        description="Market-data pair used for threshold conversion.",
+    )
+    fx_quote_rate: Optional[Decimal] = Field(
+        default=None,
+        description="Observed market-data quote for fx_quote_pair, before any inversion.",
+    )
+    conversion_rate: Optional[Decimal] = Field(
+        default=None,
+        description="Applied configured-threshold to trade-currency conversion rate.",
+    )
+    conversion_direction: Optional[Literal["IDENTITY", "DIRECT", "INVERSE"]] = Field(
+        default=None,
+        description="Whether conversion used identity, a direct quote, or an inverse quote.",
+    )
+    reason_code: str = Field(description="Stable comparison or refusal reason code.")
+
+
 class DroppedIntent(BaseModel):
     instrument_id: str = Field(description="Instrument id for dropped trade under turnover cap.")
     reason: str = Field(description="Drop reason code.")
@@ -684,6 +715,10 @@ class DiagnosticsData(BaseModel):
     suppressed_intents: List[SuppressedIntent] = Field(
         default_factory=list,
         description="Intents suppressed during generation (for example dust suppression).",
+    )
+    minimum_trade_threshold_evaluations: List[MinimumTradeThresholdEvaluation] = Field(
+        default_factory=list,
+        description="Currency-normalized minimum-trade comparison and refusal provenance.",
     )
     dropped_intents: List[DroppedIntent] = Field(
         default_factory=list,
