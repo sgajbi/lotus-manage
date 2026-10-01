@@ -730,3 +730,96 @@ def test_deterministic_hundred_item_wave_resumes_with_four_horizontal_workers(
     assert final_wave is not None
     assert final_wave.state == "SIMULATED"
     assert final_wave.aggregate_metrics.state_counts == {"SIMULATED": 100}
+
+
+def test_postgres_operation_controls_are_tenant_fenced_and_retry_cancel_safe(dsn: str) -> None:
+    tenant_id, wave_id, operation_id = _ids()
+    repository = PostgresDpmWaveRepository(dsn=dsn)
+    operation = _admit(
+        repository=repository,
+        tenant_id=tenant_id,
+        wave_id=wave_id,
+        operation_id=operation_id,
+        item_count=2,
+    )
+    now = datetime.now(UTC)
+    assert repository.get_simulation_operation(tenant_id="other", operation_id=operation_id) is None
+    assert (
+        repository.claim_simulation_items(
+            tenant_id=tenant_id,
+            operation_id="missing",
+            worker_id="worker",
+            limit=1,
+            claimed_at=now,
+            lease_expires_at=now + timedelta(minutes=1),
+        )
+        == []
+    )
+    assert (
+        repository.retry_simulation_items(
+            tenant_id=tenant_id,
+            operation_id="missing",
+            wave_item_ids=None,
+            retried_at=now,
+        )
+        == 0
+    )
+    assert (
+        repository.cancel_simulation_operation(
+            tenant_id=tenant_id,
+            operation_id="missing",
+            reason_code="OPERATOR_CANCELLED",
+            cancelled_at=now,
+        )
+        is None
+    )
+    assert repository.simulation_item_counts(tenant_id=tenant_id, operation_id=operation_id) == {
+        "PENDING": 2,
+        "RUNNING": 0,
+        "SUCCEEDED": 0,
+        "FAILED": 0,
+        "CANCELLED": 0,
+    }
+    claim = repository.claim_simulation_items(
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        worker_id="worker",
+        limit=1,
+        claimed_at=now,
+        lease_expires_at=now + timedelta(minutes=1),
+    )[0]
+    assert repository.publish_simulation_item_failure(
+        claim=claim,
+        error_code="DEPENDENCY_TIMEOUT",
+        error_message="retryable",
+        retryable=True,
+        completed_at=now + timedelta(seconds=1),
+    )
+    assert (
+        repository.retry_simulation_items(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+            wave_item_ids=[claim.wave_item_id],
+            retried_at=now + timedelta(seconds=2),
+        )
+        == 1
+    )
+    cancelled = repository.cancel_simulation_operation(
+        tenant_id=tenant_id,
+        operation_id=operation.operation_id,
+        reason_code="OPERATOR_CANCELLED",
+        cancelled_at=now + timedelta(seconds=3),
+    )
+    assert cancelled is not None
+    assert cancelled.cancel_reason_code == "OPERATOR_CANCELLED"
+    assert (
+        repository.claim_simulation_items(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+            worker_id="worker",
+            limit=1,
+            claimed_at=now + timedelta(seconds=4),
+            lease_expires_at=now + timedelta(minutes=1),
+        )
+        == []
+    )
