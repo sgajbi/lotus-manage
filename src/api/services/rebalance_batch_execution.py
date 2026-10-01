@@ -25,6 +25,7 @@ from src.core.models import (
     RebalanceResult,
 )
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
+from src.core.rebalance_runs import DpmAsyncExecutionClaim
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ def execute_batch_scenarios(
     request: BatchRebalanceRequest,
     batch_id: str,
     correlation_id: Optional[str],
+    operation_claim: Optional[DpmAsyncExecutionClaim] = None,
     policy_definition: Optional[DpmPolicyPackDefinition],
     source_context: Optional[DpmResolvedSourceContext],
     run_simulation_fn: RunSimulationFn,
@@ -56,6 +58,7 @@ def execute_batch_scenarios(
             scenario_name=scenario_name,
             batch_id=batch_id,
             correlation_id=correlation_id,
+            operation_claim=operation_claim,
             policy_definition=policy_definition,
             source_context=source_context,
             run_simulation_fn=run_simulation_fn,
@@ -96,6 +99,7 @@ def _execute_batch_scenario(
     scenario_name: str,
     batch_id: str,
     correlation_id: Optional[str],
+    operation_claim: Optional[DpmAsyncExecutionClaim] = None,
     policy_definition: Optional[DpmPolicyPackDefinition],
     source_context: Optional[DpmResolvedSourceContext],
     run_simulation_fn: RunSimulationFn,
@@ -114,6 +118,7 @@ def _execute_batch_scenario(
             options=options,
             batch_id=batch_id,
             correlation_id=correlation_id,
+            operation_claim=operation_claim,
             policy_definition=policy_definition,
             source_context=source_context,
             run_simulation_fn=run_simulation_fn,

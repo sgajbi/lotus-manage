@@ -13,6 +13,7 @@ from src.core.rebalance_runs.models import (
     DpmAsyncOperationListResponse,
     DpmAsyncOperationRecord,
     DpmAsyncOperationStatusResponse,
+    DpmOperationSupportBundleResponse,
     DpmLineageEdgeRecord,
     DpmLineageEdgeType,
     DpmLineageResponse,
@@ -36,6 +37,10 @@ from src.core.rebalance_runs.models import (
     DpmWorkflowStatus,
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
+from src.core.rebalance_runs.operation_support_bundle import (
+    OperationEvidenceInvalidError,
+    OperationSupportBundleBuilder,
+)
 from src.core.rebalance_runs.serializers import (
     to_async_accepted,
     to_async_status,
@@ -149,9 +154,19 @@ class DpmRunSupportService:
         idempotency_key: Optional[str],
         tenant_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
+        operation_claim: Optional[DpmAsyncExecutionClaim] = None,
+        scenario_key: Optional[str] = None,
     ) -> None:
         if idempotency_key is not None and tenant_id is None:
             raise ValueError("DPM_RUN_TENANT_REQUIRED_FOR_IDEMPOTENCY")
+        if operation_claim is not None:
+            if not scenario_key or (
+                tenant_id is not None and tenant_id != operation_claim.tenant_id
+            ):
+                raise ValueError("DPM_RUN_INVALID_OPERATION_MEMBERSHIP")
+            tenant_id = operation_claim.tenant_id
+        elif scenario_key is not None:
+            raise ValueError("DPM_RUN_INVALID_OPERATION_MEMBERSHIP")
         self._cleanup_expired_supportability()
         now = created_at or datetime.now(timezone.utc)
         run = DpmRunRecord(
@@ -164,16 +179,43 @@ class DpmRunSupportService:
             created_at=now,
             result_json=result.model_dump(mode="json"),
         )
-        self._repository.save_run(run)
+        if operation_claim is not None and scenario_key is not None:
+            self._repository.save_run_with_lineage(
+                run=run,
+                lineage_edges=[
+                    DpmLineageEdgeRecord(
+                        tenant_id=tenant_id,
+                        source_entity_id=run.correlation_id,
+                        edge_type="CORRELATION_TO_RUN",
+                        target_entity_id=run.rebalance_run_id,
+                        created_at=now,
+                        metadata_json={"request_hash": run.request_hash},
+                    ),
+                    DpmLineageEdgeRecord(
+                        tenant_id=tenant_id,
+                        source_entity_id=operation_claim.operation_id,
+                        edge_type="OPERATION_TO_RUN",
+                        target_entity_id=run.rebalance_run_id,
+                        created_at=now,
+                        metadata_json={
+                            "scenario_key": scenario_key,
+                            "execution_attempt": operation_claim.execution_attempt,
+                        },
+                    ),
+                ],
+            )
+        else:
+            self._repository.save_run(run)
         self._persist_run_artifact_if_needed(run=run)
-        self._record_lineage_edge(
-            tenant_id=tenant_id,
-            source_entity_id=run.correlation_id,
-            edge_type="CORRELATION_TO_RUN",
-            target_entity_id=run.rebalance_run_id,
-            metadata={"request_hash": run.request_hash},
-            created_at=now,
-        )
+        if operation_claim is None:
+            self._record_lineage_edge(
+                tenant_id=tenant_id,
+                source_entity_id=run.correlation_id,
+                edge_type="CORRELATION_TO_RUN",
+                target_entity_id=run.rebalance_run_id,
+                metadata={"request_hash": run.request_hash},
+                created_at=now,
+            )
         if idempotency_key is not None:
             self._repository.save_idempotency_mapping(
                 DpmRunIdempotencyRecord(
@@ -418,7 +460,7 @@ class DpmRunSupportService:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
         artifact = self._support_bundle_artifact(run=run, include_artifact=include_artifact)
         async_operation = _support_bundle_async_operation(
-            run=run,
+            membership_operation_id=self._operation_membership_id(run=run),
             operation=self._support_bundle_operation_record(
                 run=run,
                 include_async_operation=include_async_operation,
@@ -505,16 +547,17 @@ class DpmRunSupportService:
         include_artifact: bool,
         include_async_operation: bool,
         include_idempotency_history: bool,
-    ) -> DpmRunSupportBundleResponse:
+    ) -> DpmOperationSupportBundleResponse:
+        self._cleanup_expired_operations()
+        self._cleanup_expired_supportability()
         operation = self._repository.get_operation_for_tenant(
             tenant_id=tenant_id,
             operation_id=operation_id,
         )
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        return self.get_run_support_bundle_by_correlation_for_tenant(
-            tenant_id=tenant_id,
-            correlation_id=operation.correlation_id,
+        return self._operation_support_bundle(
+            operation=operation,
             include_artifact=include_artifact,
             include_async_operation=include_async_operation,
             include_idempotency_history=include_idempotency_history,
@@ -886,7 +929,7 @@ class DpmRunSupportService:
 
         artifact = self._support_bundle_artifact(run=run, include_artifact=include_artifact)
         async_operation = _support_bundle_async_operation(
-            run=run,
+            membership_operation_id=self._operation_membership_id(run=run),
             operation=self._support_bundle_operation_record(
                 run=run,
                 include_async_operation=include_async_operation,
@@ -933,12 +976,26 @@ class DpmRunSupportService:
     ) -> Optional[DpmAsyncOperationRecord]:
         if not include_async_operation:
             return None
-        if tenant_id is not None:
-            return self._repository.get_operation_by_correlation_for_tenant(
-                tenant_id=tenant_id,
-                correlation_id=run.correlation_id,
+        membership_operation_id = self._operation_membership_id(run=run)
+        if membership_operation_id is not None:
+            return (
+                self._repository.get_operation_for_tenant(
+                    tenant_id=tenant_id, operation_id=membership_operation_id
+                )
+                if tenant_id is not None
+                else self._repository.get_operation(operation_id=membership_operation_id)
             )
-        return self._repository.get_operation_by_correlation(correlation_id=run.correlation_id)
+        return None
+
+    def _operation_membership_id(self, *, run: DpmRunRecord) -> Optional[str]:
+        edges = [
+            edge
+            for edge in self._repository.list_lineage_edges(entity_id=run.rebalance_run_id)
+            if edge.edge_type == "OPERATION_TO_RUN"
+            and edge.target_entity_id == run.rebalance_run_id
+            and edge.tenant_id == run.tenant_id
+        ]
+        return edges[0].source_entity_id if len(edges) == 1 else None
 
     def _support_bundle_idempotency_records(
         self,
@@ -989,14 +1046,63 @@ class DpmRunSupportService:
         include_artifact: bool,
         include_async_operation: bool,
         include_idempotency_history: bool,
-    ) -> DpmRunSupportBundleResponse:
+    ) -> DpmOperationSupportBundleResponse:
+        self._cleanup_expired_operations()
+        self._cleanup_expired_supportability()
         operation = self._repository.get_operation(operation_id=operation_id)
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
+        return self._operation_support_bundle(
+            operation=operation,
+            include_artifact=include_artifact,
+            include_async_operation=include_async_operation,
+            include_idempotency_history=include_idempotency_history,
+        )
+
+    def _operation_support_bundle(
+        self,
+        *,
+        operation: DpmAsyncOperationRecord,
+        include_artifact: bool,
+        include_async_operation: bool,
+        include_idempotency_history: bool,
+    ) -> DpmOperationSupportBundleResponse:
+        builder = OperationSupportBundleBuilder(
+            repository=self._repository,
+            operation=operation,
+            bundle_for_run=lambda run_id: self._bundle_for_operation_run(
+                operation=operation,
+                run_id=run_id,
+                include_artifact=include_artifact,
+                include_async_operation=include_async_operation,
+                include_idempotency_history=include_idempotency_history,
+            ),
+            include_async_operation=include_async_operation,
+        )
+        try:
+            return builder.build()
+        except OperationEvidenceInvalidError as exc:
+            raise DpmRunNotFoundError(str(exc)) from exc
+
+    def _bundle_for_operation_run(
+        self,
+        *,
+        operation: DpmAsyncOperationRecord,
+        run_id: str,
+        include_artifact: bool,
+        include_async_operation: bool,
+        include_idempotency_history: bool,
+    ) -> DpmRunSupportBundleResponse:
+        if operation.tenant_id is not None:
+            return self.get_run_support_bundle_for_tenant(
+                tenant_id=operation.tenant_id,
+                rebalance_run_id=run_id,
+                include_artifact=include_artifact,
+                include_async_operation=include_async_operation,
+                include_idempotency_history=include_idempotency_history,
+            )
         return self.get_run_support_bundle(
-            rebalance_run_id=self._get_required_run_by_correlation(
-                correlation_id=operation.correlation_id
-            ).rebalance_run_id,
+            rebalance_run_id=run_id,
             include_artifact=include_artifact,
             include_async_operation=include_async_operation,
             include_idempotency_history=include_idempotency_history,

@@ -74,6 +74,7 @@ from src.api.services.rebalance_simulation_execution_context import (
 )
 from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
+    DpmAsyncExecutionClaim,
     DpmAsyncOperationStatusResponse,
     DpmRunSupportService,
 )
@@ -190,6 +191,7 @@ def execute_batch_analysis(
     *,
     request: BatchRebalanceRequest,
     correlation_id: Optional[str],
+    operation_claim: Optional[DpmAsyncExecutionClaim] = None,
     request_policy_pack_id: Optional[str] = None,
     tenant_default_policy_pack_id: Optional[str] = None,
     tenant_id: Optional[str] = None,
@@ -214,6 +216,7 @@ def execute_batch_analysis(
         request=request,
         batch_id=execution_context.batch_id,
         correlation_id=correlation_id,
+        operation_claim=operation_claim,
         policy_definition=execution_context.policy_pack_definition,
         source_context=source_context,
         run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),

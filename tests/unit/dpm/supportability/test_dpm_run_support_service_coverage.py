@@ -393,11 +393,14 @@ def test_support_bundle_helpers_project_optional_sections_and_sort_evidence():
         error_json=None,
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
-    async_operation = _support_bundle_async_operation(run=run, operation=operation)
+    async_operation = _support_bundle_async_operation(
+        operation=operation, membership_operation_id=operation.operation_id
+    )
     assert async_operation is not None
     assert async_operation.operation_id == "dop_support_bundle_1"
     assert async_operation.is_executable is True
-    assert _support_bundle_async_operation(run=run, operation=None) is None
+    assert _support_bundle_async_operation(operation=operation) is None
+    assert _support_bundle_async_operation(operation=None) is None
 
     history = _support_bundle_idempotency_history(
         run=run,
@@ -553,11 +556,11 @@ def test_support_bundle_lookup_variants_project_the_same_persisted_run() -> None
 
     assert direct.run.rebalance_run_id == result.rebalance_run_id
     assert direct.artifact is not None
-    assert direct.async_operation is not None
+    assert direct.async_operation is None
     assert direct.idempotency_history is not None
     assert by_correlation.run == direct.run
     assert by_correlation.artifact is None
     assert by_idempotency.run == direct.run
     assert by_idempotency.idempotency_history is not None
-    assert by_operation.run == direct.run
+    assert by_operation.scenarios == {}
     assert by_operation.async_operation is not None

@@ -260,7 +260,42 @@ class PostgresDpmRunRepository(AsyncOperationTerminalPublisher):
             connection.commit()
 
     def save_run(self, run: DpmRunRecord) -> None:
-        query = """
+        with closing(self._connect()) as connection:
+            self._insert_run(connection=connection, run=run)
+            connection.commit()
+
+    def save_run_with_lineage(
+        self, *, run: DpmRunRecord, lineage_edges: list[DpmLineageEdgeRecord]
+    ) -> None:
+        if any(
+            edge.tenant_id != run.tenant_id or edge.target_entity_id != run.rebalance_run_id
+            for edge in lineage_edges
+        ):
+            raise ValueError("DPM_RUN_LINEAGE_SCOPE_MISMATCH")
+        with closing(self._connect()) as connection:
+            self._insert_run(connection=connection, run=run, allow_replace=False)
+            for edge in lineage_edges:
+                connection.execute(
+                    """
+                    INSERT INTO dpm_lineage_edges (
+                        tenant_id, source_entity_id, edge_type, target_entity_id,
+                        created_at, metadata_json
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        edge.tenant_id,
+                        edge.source_entity_id,
+                        edge.edge_type,
+                        edge.target_entity_id,
+                        edge.created_at.isoformat(),
+                        _json_dump(edge.metadata_json),
+                    ),
+                )
+            connection.commit()
+
+    @staticmethod
+    def _insert_run(*, connection: Any, run: DpmRunRecord, allow_replace: bool = True) -> None:
+        base_query = """
             INSERT INTO dpm_runs (
                 rebalance_run_id,
                 correlation_id,
@@ -271,6 +306,8 @@ class PostgresDpmRunRepository(AsyncOperationTerminalPublisher):
                 result_json,
                 tenant_id
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        replace_clause = """
             ON CONFLICT (rebalance_run_id) DO UPDATE SET
                 correlation_id=excluded.correlation_id,
                 request_hash=excluded.request_hash,
@@ -279,21 +316,26 @@ class PostgresDpmRunRepository(AsyncOperationTerminalPublisher):
                 created_at=excluded.created_at,
                 result_json=excluded.result_json
         """
-        with closing(self._connect()) as connection:
-            connection.execute(
-                query,
-                (
-                    run.rebalance_run_id,
-                    run.correlation_id,
-                    run.request_hash,
-                    run.idempotency_key,
-                    run.portfolio_id,
-                    run.created_at.isoformat(),
-                    _json_dump(run.result_json),
-                    run.tenant_id,
-                ),
-            )
-            connection.commit()
+        query = (
+            base_query
+            + (replace_clause if allow_replace else "ON CONFLICT (rebalance_run_id) DO NOTHING")
+            + " RETURNING rebalance_run_id"
+        )
+        cursor = connection.execute(
+            query,
+            (
+                run.rebalance_run_id,
+                run.correlation_id,
+                run.request_hash,
+                run.idempotency_key,
+                run.portfolio_id,
+                run.created_at.isoformat(),
+                _json_dump(run.result_json),
+                run.tenant_id,
+            ),
+        )
+        if not allow_replace and cursor.fetchone() is None:
+            raise DpmRunRepositoryConflictError("DPM_RUN_ALREADY_EXISTS")
 
     def get_run(self, *, rebalance_run_id: str) -> Optional[DpmRunRecord]:
         query = """

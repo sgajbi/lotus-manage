@@ -18,6 +18,7 @@ from src.core.rebalance.policy_packs import (
     DpmPolicyPackDefinition,
     apply_policy_pack_to_engine_options,
 )
+from src.core.rebalance_runs import DpmAsyncExecutionClaim
 
 RunSimulationFn = Callable[..., RebalanceResult]
 RecordForSupportFn = Callable[..., object]
@@ -34,11 +35,19 @@ def build_batch_scenario_execution_ids(
     batch_id: str,
     scenario_name: str,
     correlation_id: Optional[str],
+    execution_attempt: Optional[int] = None,
 ) -> BatchScenarioExecutionIds:
     scenario_suffix = f"{batch_id}:{scenario_name}"
+    scenario_correlation = (
+        f"{correlation_id}:attempt-{execution_attempt}:{scenario_name}"
+        if correlation_id and execution_attempt is not None
+        else f"{correlation_id}:{scenario_name}"
+        if correlation_id
+        else scenario_suffix
+    )
     return BatchScenarioExecutionIds(
         request_hash=scenario_suffix,
-        correlation_id=(f"{correlation_id}:{scenario_name}" if correlation_id else scenario_suffix),
+        correlation_id=scenario_correlation,
     )
 
 
@@ -53,6 +62,7 @@ def execute_valid_batch_scenario(
     options: EngineOptions,
     batch_id: str,
     correlation_id: Optional[str],
+    operation_claim: Optional[DpmAsyncExecutionClaim] = None,
     policy_definition: Optional[DpmPolicyPackDefinition],
     source_context: Optional[DpmResolvedSourceContext],
     run_simulation_fn: RunSimulationFn,
@@ -66,6 +76,7 @@ def execute_valid_batch_scenario(
         batch_id=batch_id,
         scenario_name=scenario_name,
         correlation_id=correlation_id,
+        execution_attempt=operation_claim.execution_attempt if operation_claim else None,
     )
     scenario_result = run_simulation_fn(
         portfolio=request.portfolio_snapshot,
@@ -80,11 +91,17 @@ def execute_valid_batch_scenario(
         result=scenario_result,
         source_context=source_context,
     )
+    membership = (
+        {"operation_claim": operation_claim, "scenario_key": scenario_name}
+        if operation_claim is not None
+        else {}
+    )
     record_for_support(
         result=scenario_result,
         request_hash=execution_ids.request_hash,
         portfolio_id=request.portfolio_snapshot.portfolio_id,
         idempotency_key=None,
+        **membership,
     )
     return (
         scenario_result,

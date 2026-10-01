@@ -13,25 +13,27 @@ from src.api.routers.rebalance_runs_support_bundle_parameters import (
     IncludeIdempotencyHistoryQuery,
 )
 from src.core.rebalance_runs import (
-    DpmRunSupportBundleResponse,
+    DpmOperationSupportBundleResponse,
     DpmRunSupportService,
 )
 
 
 @shared.router.get(
     "/rebalance/runs/by-operation/{operation_id}/support-bundle",
-    response_model=DpmRunSupportBundleResponse,
+    response_model=DpmOperationSupportBundleResponse,
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Run Support Bundle by Operation Id",
     description=(
-        "Returns aggregated supportability bundle for run resolved by asynchronous operation id, "
-        "including optional artifact, async operation, and idempotency history. Optional sections "
+        "Returns every requested scenario's authoritative run bundle, failed or missing outcomes, "
+        "and identified non-authoritative attempt runs for an asynchronous operation. "
+        "The terminal operation result and explicit attempt-scoped membership determine current "
+        "runs; correlation text is never used to infer membership. Optional sections "
         "are controlled only by `include_artifact`, `include_async_operation`, and "
         "`include_idempotency_history`; unsupported query parameters are rejected."
     ),
     responses={
-        200: {"description": "Aggregated run supportability bundle for investigation."},
-        404: {"description": "Operation or mapped run not found, or support-bundle APIs disabled."},
+        200: {"description": "Operation-scoped scenario and historical run evidence."},
+        404: {"description": "Operation not found or support-bundle APIs disabled."},
         422: {"description": "Unsupported query parameters were supplied."},
     },
 )
@@ -49,7 +51,7 @@ def get_dpm_run_support_bundle_by_operation(
     include_async_operation: IncludeAsyncOperationQuery = True,
     include_idempotency_history: IncludeIdempotencyHistoryQuery = True,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-) -> DpmRunSupportBundleResponse:
+) -> DpmOperationSupportBundleResponse:
     shared._assert_support_apis_enabled()
     shared._assert_support_bundle_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)

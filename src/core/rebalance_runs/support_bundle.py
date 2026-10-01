@@ -25,10 +25,10 @@ from src.core.rebalance_runs.serializers import (
 
 def support_bundle_async_operation(
     *,
-    run: DpmRunRecord,
     operation: Optional[DpmAsyncOperationRecord],
+    membership_operation_id: Optional[str] = None,
 ) -> Optional[DpmAsyncOperationStatusResponse]:
-    if operation is None or operation.correlation_id != run.correlation_id:
+    if operation is None or operation.operation_id != membership_operation_id:
         return None
     return to_async_status(operation)
 

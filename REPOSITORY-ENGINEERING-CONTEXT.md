@@ -93,6 +93,13 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    receive a bounded in-progress response; expired claims may be fenced and retried. Historical
    runs and mappings without verified tenant ownership remain preserved but unreachable through
    normal tenant-scoped APIs.
+7. Async scenario execution persists an `OPERATION_TO_RUN` lineage edge with scenario key and
+   fenced execution attempt in the same repository transaction as its run. The terminal operation
+   result identifies authoritative run IDs;
+   earlier-attempt rows remain historical evidence. The operation support-bundle response is a
+   multi-scenario contract (`scenarios` and `historical_runs`), unlike the singular direct run
+   bundle. Never use root/scenario correlation-prefix guessing for membership. Fresh async retry
+   correlations include the attempt to avoid the PostgreSQL tenant/correlation uniqueness conflict.
 
 ### Supported capability posture
 

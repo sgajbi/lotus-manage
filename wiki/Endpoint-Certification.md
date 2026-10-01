@@ -932,10 +932,11 @@ Routes:
 
 Purpose:
 
-Returns one aggregated supportability bundle for a discretionary mandate rebalance run so operator
-or audit investigations can start from a single payload. Use this endpoint when the caller already
-has the run id. Use the by-correlation, by-idempotency, or by-operation variants when the caller has
-only one of those alternate handles.
+The run-ID, correlation, and idempotency routes return one aggregated bundle for one discretionary
+mandate rebalance run. The by-operation route is different: it returns all requested scenario
+outcomes, their authoritative run bundles, and identified non-authoritative attempt runs. Do not
+read a singular `.run` field from the operation response; migrate to
+`.scenarios[scenario_key].bundle.run` for each `succeeded` outcome.
 
 Request surface:
 
@@ -952,7 +953,12 @@ Functional coverage:
   lineage, and idempotency history when each backing record exists,
 - compact bundle excludes optional artifact, async operation, and idempotency history while
   retaining core workflow and lineage context,
-- by-correlation, by-idempotency, and by-operation variants resolve to the same run bundle,
+- by-correlation and by-idempotency variants resolve to the same singular run bundle,
+- by-operation returns `operation_id`, `status`, optional `async_operation`, per-scenario
+  `succeeded`/`failed`/`missing` outcomes, and `historical_runs` with scenario key and attempt;
+  nested bundles obey the same include flags,
+- explicit `OPERATION_TO_RUN` membership and the terminal result select authoritative runs;
+  correlation-only matches are not operation membership, and retry-attempt correlations differ,
 - missing run, idempotency key, or operation ids return governed `404` details,
 - disabled support-bundle feature gate returns governed `404`,
 - unsupported query parameters are rejected instead of silently ignored.
@@ -1005,7 +1011,7 @@ Request surface:
 - Filters: `edge_type`, `created_from`, `created_to`.
 - Pagination: `limit` and opaque `cursor`.
 - Valid edge types: `CORRELATION_TO_RUN`, `IDEMPOTENCY_TO_RUN`,
-  `OPERATION_TO_CORRELATION`.
+  `OPERATION_TO_CORRELATION`, `OPERATION_TO_RUN`.
 - Response: `DpmLineageResponse`.
 - Unknown entity ids return an empty lineage page rather than `404`.
 
