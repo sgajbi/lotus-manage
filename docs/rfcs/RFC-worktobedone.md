@@ -2352,8 +2352,10 @@ Completed for source-owned observed-cost comparison methods. `lotus-core` owns
 `COST_AWARE` construction method applies source-owned observed average cost bps to candidate
 security-trade notionals. The method adds an `ESTIMATED_COST` objective term, a transaction-cost
 constraint trace, method reason codes, and an `estimated_transaction_cost` comparison metric only
-when the source curve covers the candidate trades. Missing, degraded, or inapplicable cost evidence
-keeps the method `DEGRADED` with explicit reason codes.
+when the source curve covers every candidate `(security_id, transaction_type)` key. Missing,
+degraded, or inapplicable cost evidence keeps the method `DEGRADED` with explicit reason codes and
+suppresses the aggregate instead of publishing a partial estimate. Complete zero-bps evidence is a
+valid observed value and remains distinguishable from missing evidence.
 
 Implemented scope:
 
@@ -2364,10 +2366,16 @@ Implemented scope:
    candidate trade notionals.
 4. Missing source curves produce a degraded method with `TRANSACTION_COST_CURVE_UNAVAILABLE` and
    `AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE`.
-5. Missing traded-security coverage produces degraded posture instead of silently treating uncovered
-   securities as zero-cost.
+5. Missing traded-security or required BUY/SELL-side coverage produces degraded posture, identifies
+   the exact missing candidate trade keys, and suppresses the partial aggregate instead of silently
+   treating uncovered trades as zero-cost.
 6. The method does not claim predictive spread, market impact, venue routing, execution timing, or
    order-placement cost optimization.
+
+Review-draft reconciliation for issue #718: `<workspace-root>/review/lotus-manage` was inspected on
+2026-10-01. Its `agent-context/` and `integration-boundary/` directories contained no draft files,
+so no proposal was adopted or superseded. The implementation, repository context, README, this RFC,
+and wiki source were reconciled directly against the tested API behavior.
 
 Production boundary:
 
