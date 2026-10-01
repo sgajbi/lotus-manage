@@ -37,12 +37,13 @@ def get_dpm_async_operation(
         str,
         Path(description="Asynchronous operation identifier.", examples=["dop_001"]),
     ],
+    tenant_id: shared.DpmRunTenantIdHeader,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmAsyncOperationStatusResponse:
     shared._assert_support_apis_enabled()
     shared._assert_async_operations_enabled()
     return read_run_with_not_found_http_mapping(
-        lambda: service.get_async_operation(operation_id=operation_id)
+        lambda: service.get_async_operation(tenant_id=tenant_id, operation_id=operation_id)
     )
 
 
@@ -77,10 +78,13 @@ def get_dpm_async_operation_by_correlation(
             examples=["corr-dpm-async-001"],
         ),
     ],
+    tenant_id: shared.DpmRunTenantIdHeader,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmAsyncOperationStatusResponse:
     shared._assert_support_apis_enabled()
     shared._assert_async_operations_enabled()
     return read_run_with_not_found_http_mapping(
-        lambda: service.get_async_operation_by_correlation(correlation_id=correlation_id)
+        lambda: service.get_async_operation_by_correlation(
+            tenant_id=tenant_id, correlation_id=correlation_id
+        )
     )

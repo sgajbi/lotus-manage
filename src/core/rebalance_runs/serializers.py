@@ -18,6 +18,7 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
     DpmRunWorkflowDecisionResponse,
 )
+from src.core.rebalance_runs.async_operations import is_operation_executable
 from src.core.models import RebalanceResult
 
 
@@ -73,11 +74,17 @@ def to_async_status(operation: DpmAsyncOperationRecord) -> DpmAsyncOperationStat
         operation_id=operation.operation_id,
         operation_type=operation.operation_type,
         status=operation.status,
-        is_executable=(operation.status == "PENDING" and operation.request_json is not None),
+        is_executable=is_operation_executable(operation),
         correlation_id=operation.correlation_id,
         created_at=operation.created_at.isoformat(),
         started_at=(operation.started_at.isoformat() if operation.started_at else None),
         finished_at=(operation.finished_at.isoformat() if operation.finished_at else None),
+        execution_attempt=operation.execution_attempt,
+        execution_lease_expires_at=(
+            operation.execution_lease_expires_at.isoformat()
+            if operation.execution_lease_expires_at
+            else None
+        ),
         result=operation.result_json,
         error=(
             DpmAsyncError.model_validate(operation.error_json)

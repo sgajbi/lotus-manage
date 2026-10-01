@@ -1,13 +1,11 @@
 import uuid
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.async_operations import (
     build_analyze_operation,
-    complete_operation_failure_record,
-    complete_operation_success_record,
-    mark_operation_running_record,
     to_async_operation_list_response,
 )
 from src.core.rebalance_runs.models import (
@@ -75,6 +73,7 @@ from src.core.rebalance_runs.workflow_projection import (
 from src.core.models import RebalanceResult
 
 __all__ = [
+    "DpmAsyncExecutionClaim",
     "DpmAsyncOperationConflictError",
     "DpmRunNotFoundError",
     "DpmRunSupportService",
@@ -96,6 +95,17 @@ class DpmAsyncOperationConflictError(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class DpmAsyncExecutionClaim:
+    tenant_id: str
+    operation_id: str
+    correlation_id: str
+    request_json: dict[str, Any]
+    execution_token: str
+    execution_attempt: int
+    lease_expires_at: datetime
+
+
 class DpmWorkflowDisabledError(Exception):
     pass
 
@@ -110,6 +120,7 @@ class DpmRunSupportService:
         *,
         repository: DpmRunRepository,
         async_operation_ttl_seconds: int = 86400,
+        async_execution_lease_seconds: int = 300,
         supportability_retention_days: int = 0,
         workflow_enabled: bool = False,
         workflow_requires_review_for_statuses: Optional[set[str]] = None,
@@ -117,6 +128,7 @@ class DpmRunSupportService:
     ) -> None:
         self._repository = repository
         self._async_operation_ttl_seconds = max(1, async_operation_ttl_seconds)
+        self._async_execution_lease_seconds = max(1, async_execution_lease_seconds)
         self._supportability_retention_days = max(0, supportability_retention_days)
         self._workflow_enabled = workflow_enabled
         self._workflow_requires_review_for_statuses = {
@@ -410,6 +422,7 @@ class DpmRunSupportService:
             operation=self._support_bundle_operation_record(
                 run=run,
                 include_async_operation=include_async_operation,
+                tenant_id=tenant_id,
             ),
         )
         history = None
@@ -493,7 +506,10 @@ class DpmRunSupportService:
         include_async_operation: bool,
         include_idempotency_history: bool,
     ) -> DpmRunSupportBundleResponse:
-        operation = self._repository.get_operation(operation_id=operation_id)
+        operation = self._repository.get_operation_for_tenant(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+        )
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
         return self.get_run_support_bundle_by_correlation_for_tenant(
@@ -726,19 +742,23 @@ class DpmRunSupportService:
     def submit_analyze_async(
         self,
         *,
+        tenant_id: str,
         correlation_id: Optional[str],
         request_json: dict[str, Any],
         created_at: Optional[datetime] = None,
     ) -> DpmAsyncAcceptedResponse:
+        tenant_id = _require_async_tenant_id(tenant_id)
         self._cleanup_expired_operations()
         now = created_at or _utc_now()
         resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
-        existing_operation = self._repository.get_operation_by_correlation(
-            correlation_id=resolved_correlation_id
+        existing_operation = self._repository.get_operation_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=resolved_correlation_id,
         )
         if existing_operation is not None:
             raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
         operation = build_analyze_operation(
+            tenant_id=tenant_id,
             operation_id=f"dop_{uuid.uuid4().hex[:12]}",
             correlation_id=resolved_correlation_id,
             request_json=request_json,
@@ -749,6 +769,7 @@ class DpmRunSupportService:
         except DpmRunRepositoryConflictError as exc:
             raise DpmAsyncOperationConflictError(str(exc)) from exc
         self._record_lineage_edge(
+            tenant_id=tenant_id,
             source_entity_id=operation.operation_id,
             edge_type="OPERATION_TO_CORRELATION",
             target_entity_id=operation.correlation_id,
@@ -760,6 +781,7 @@ class DpmRunSupportService:
     def list_async_operations(
         self,
         *,
+        tenant_id: str,
         created_from: Optional[datetime],
         created_to: Optional[datetime],
         operation_type: Optional[str],
@@ -768,8 +790,10 @@ class DpmRunSupportService:
         limit: int,
         cursor: Optional[str],
     ) -> DpmAsyncOperationListResponse:
+        tenant_id = _require_async_tenant_id(tenant_id)
         self._cleanup_expired_operations()
-        operations, next_cursor = self._repository.list_operations(
+        operations, next_cursor = self._repository.list_operations_for_tenant(
+            tenant_id=tenant_id,
             created_from=created_from,
             created_to=created_to,
             operation_type=operation_type,
@@ -891,9 +915,15 @@ class DpmRunSupportService:
         *,
         run: DpmRunRecord,
         include_async_operation: bool,
+        tenant_id: Optional[str] = None,
     ) -> Optional[DpmAsyncOperationRecord]:
         if not include_async_operation:
             return None
+        if tenant_id is not None:
+            return self._repository.get_operation_by_correlation_for_tenant(
+                tenant_id=tenant_id,
+                correlation_id=run.correlation_id,
+            )
         return self._repository.get_operation_by_correlation(correlation_id=run.correlation_id)
 
     def _support_bundle_idempotency_records(
@@ -958,67 +988,114 @@ class DpmRunSupportService:
             include_idempotency_history=include_idempotency_history,
         )
 
-    def mark_operation_running(self, *, operation_id: str) -> None:
-        self._cleanup_expired_operations()
-        operation = self._repository.get_operation(operation_id=operation_id)
-        if operation is None:
-            raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        mark_operation_running_record(operation, started_at=_utc_now())
-        self._repository.update_operation(operation)
-
-    def complete_operation_success(self, *, operation_id: str, result_json: dict[str, Any]) -> None:
-        self._cleanup_expired_operations()
-        operation = self._repository.get_operation(operation_id=operation_id)
-        if operation is None:
-            raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        complete_operation_success_record(
-            operation,
+    def complete_operation_success(
+        self,
+        *,
+        claim: DpmAsyncExecutionClaim,
+        result_json: dict[str, Any],
+    ) -> None:
+        finished_at = _utc_now()
+        if self._repository.publish_operation_success(
+            tenant_id=claim.tenant_id,
+            operation_id=claim.operation_id,
+            execution_token=claim.execution_token,
             result_json=result_json,
-            finished_at=_utc_now(),
-        )
-        self._repository.update_operation(operation)
+            finished_at=finished_at,
+        ):
+            return
+        operation = self._repository.get_operation(operation_id=claim.operation_id)
+        if (
+            operation is not None
+            and operation.tenant_id == claim.tenant_id
+            and operation.execution_token == claim.execution_token
+            and operation.status == "SUCCEEDED"
+            and operation.result_json == result_json
+        ):
+            return
+        raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_STALE_EXECUTION_OWNER")
 
-    def complete_operation_failure(self, *, operation_id: str, code: str, message: str) -> None:
-        self._cleanup_expired_operations()
-        operation = self._repository.get_operation(operation_id=operation_id)
-        if operation is None:
-            raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        complete_operation_failure_record(
-            operation,
-            code=code,
-            message=message,
+    def complete_operation_failure(
+        self,
+        *,
+        claim: DpmAsyncExecutionClaim,
+        code: str,
+        message: str,
+    ) -> None:
+        error_json = {"code": code, "message": message}
+        if self._repository.publish_operation_failure(
+            tenant_id=claim.tenant_id,
+            operation_id=claim.operation_id,
+            execution_token=claim.execution_token,
+            error_json=error_json,
             finished_at=_utc_now(),
-        )
-        self._repository.update_operation(operation)
+        ):
+            return
+        operation = self._repository.get_operation(operation_id=claim.operation_id)
+        if (
+            operation is not None
+            and operation.tenant_id == claim.tenant_id
+            and operation.execution_token == claim.execution_token
+            and operation.status == "FAILED"
+            and operation.error_json == error_json
+        ):
+            return
+        raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_STALE_EXECUTION_OWNER")
 
-    def get_async_operation(self, *, operation_id: str) -> DpmAsyncOperationStatusResponse:
+    def get_async_operation(
+        self, *, tenant_id: str, operation_id: str
+    ) -> DpmAsyncOperationStatusResponse:
+        tenant_id = _require_async_tenant_id(tenant_id)
         self._cleanup_expired_operations()
-        operation = self._repository.get_operation(operation_id=operation_id)
+        operation = self._repository.get_operation_for_tenant(
+            tenant_id=tenant_id, operation_id=operation_id
+        )
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
         return to_async_status(operation)
 
     def get_async_operation_by_correlation(
-        self, *, correlation_id: str
+        self, *, tenant_id: str, correlation_id: str
     ) -> DpmAsyncOperationStatusResponse:
+        tenant_id = _require_async_tenant_id(tenant_id)
         self._cleanup_expired_operations()
-        operation = self._repository.get_operation_by_correlation(correlation_id=correlation_id)
+        operation = self._repository.get_operation_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+        )
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
         return to_async_status(operation)
 
     def prepare_analyze_operation_execution(
-        self, *, operation_id: str
-    ) -> tuple[dict[str, Any], str]:
+        self, *, tenant_id: str, operation_id: str
+    ) -> DpmAsyncExecutionClaim:
+        tenant_id = _require_async_tenant_id(tenant_id)
         self._cleanup_expired_operations()
-        operation = self._repository.get_operation(operation_id=operation_id)
+        claimed_at = _utc_now()
+        execution_token = f"dop_claim_{uuid.uuid4().hex}"
+        operation = self._repository.claim_operation_execution(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+            execution_token=execution_token,
+            claimed_at=claimed_at,
+            lease_expires_at=claimed_at + timedelta(seconds=self._async_execution_lease_seconds),
+        )
         if operation is None:
-            raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        if operation.status != "PENDING" or operation.request_json is None:
+            existing = self._repository.get_operation(operation_id=operation_id)
+            if existing is None or existing.tenant_id != tenant_id:
+                raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_EXECUTABLE")
-        mark_operation_running_record(operation, started_at=_utc_now())
-        self._repository.update_operation(operation)
-        return operation.request_json, operation.correlation_id
+        if operation.request_json is None or operation.execution_lease_expires_at is None:
+            raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CLAIM_INCONSISTENT")
+        return DpmAsyncExecutionClaim(
+            tenant_id=tenant_id,
+            operation_id=operation.operation_id,
+            correlation_id=operation.correlation_id,
+            request_json=operation.request_json,
+            execution_token=execution_token,
+            execution_attempt=operation.execution_attempt,
+            lease_expires_at=operation.execution_lease_expires_at,
+        )
 
     def get_workflow(self, *, rebalance_run_id: str) -> DpmRunWorkflowResponse:
         self._cleanup_expired_supportability()
@@ -1319,3 +1396,10 @@ class DpmRunSupportService:
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _require_async_tenant_id(tenant_id: str) -> str:
+    normalized = tenant_id.strip()
+    if not normalized:
+        raise ValueError("DPM_ASYNC_OPERATION_TENANT_REQUIRED")
+    return normalized

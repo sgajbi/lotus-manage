@@ -126,15 +126,66 @@ class DpmRunRepository(Protocol):
 
     def update_operation(self, operation: DpmAsyncOperationRecord) -> None: ...
 
+    def claim_operation_execution(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        claimed_at: datetime,
+        lease_expires_at: datetime,
+    ) -> Optional[DpmAsyncOperationRecord]: ...
+
+    def publish_operation_success(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        result_json: dict[str, Any],
+        finished_at: datetime,
+    ) -> bool: ...
+
+    def publish_operation_failure(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        error_json: dict[str, str],
+        finished_at: datetime,
+    ) -> bool: ...
+
     def get_operation(self, *, operation_id: str) -> Optional[DpmAsyncOperationRecord]: ...
+
+    def get_operation_for_tenant(
+        self, *, tenant_id: str, operation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]: ...
 
     def get_operation_by_correlation(
         self, *, correlation_id: str
     ) -> Optional[DpmAsyncOperationRecord]: ...
 
+    def get_operation_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]: ...
+
     def list_operations(
         self,
         *,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        operation_type: Optional[str],
+        status: Optional[str],
+        correlation_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmAsyncOperationRecord], Optional[str]]: ...
+
+    def list_operations_for_tenant(
+        self,
+        *,
+        tenant_id: str,
         created_from: Optional[datetime],
         created_to: Optional[datetime],
         operation_type: Optional[str],

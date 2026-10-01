@@ -382,11 +382,11 @@ def test_migration_from_0031_preserves_legacy_rows_and_builds_empty_owned_mappin
         admin.commit()
         admin.execute(f'SET search_path TO "{schema}"')
         all_migrations = postgres_migrations._load_migrations(namespace="dpm")
-        assert all_migrations[-1].version == "0032"
+        assert [migration.version for migration in all_migrations[-2:]] == ["0032", "0033"]
         monkeypatch.setattr(
             postgres_migrations,
             "_load_migrations",
-            lambda *, namespace: all_migrations[:-1],
+            lambda *, namespace: all_migrations[:-2],
         )
         postgres_migrations.apply_postgres_migrations(connection=admin, namespace="dpm")
         legacy_run_id = f"rr_upgrade_{uuid.uuid4().hex}"

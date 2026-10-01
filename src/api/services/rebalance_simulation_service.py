@@ -228,11 +228,13 @@ def execute_batch_analysis(
 def run_analyze_async_operation(
     *,
     operation_id: str,
+    tenant_id: str,
     service: DpmRunSupportService,
     execution_mode: str = "inline",
 ) -> None:
     run_analyze_async_operation_from_store(
         operation_id=operation_id,
+        tenant_id=tenant_id,
         service=service,
         execution_mode=execution_mode,
         execute_batch_fn=resolve_callable_override(
@@ -272,6 +274,7 @@ def submit_and_optionally_execute_async_analysis(
     )
     accepted = submit_analyze_async_request(
         service=submission_context.service,
+        tenant_id=tenant_id or "",
         correlation_id=correlation_id,
         request_json=submission_context.request_json,
         source_context=source_context,
@@ -281,6 +284,7 @@ def submit_and_optionally_execute_async_analysis(
         return accepted
     run_analyze_async_operation(
         operation_id=accepted.operation_id,
+        tenant_id=tenant_id or "",
         service=submission_context.service,
         execution_mode="inline",
     )
@@ -288,7 +292,7 @@ def submit_and_optionally_execute_async_analysis(
 
 
 def execute_dpm_async_operation(
-    *, operation_id: str, service: DpmRunSupportService
+    *, tenant_id: str, operation_id: str, service: DpmRunSupportService
 ) -> DpmAsyncOperationStatusResponse:
     if not rebalance_async_config.async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
@@ -296,6 +300,7 @@ def execute_dpm_async_operation(
         raise DpmRebalanceAsyncManualExecutionDisabledError("DPM_ASYNC_MANUAL_EXECUTION_DISABLED")
     return execute_analyze_async_operation_now(
         operation_id=operation_id,
+        tenant_id=tenant_id,
         service=service,
         runner=run_analyze_async_operation,
     )

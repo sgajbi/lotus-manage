@@ -20,6 +20,9 @@ from src.infrastructure.rebalance_runs.operation_query import (
     build_operation_filter_query,
     operation_page,
 )
+from src.infrastructure.rebalance_runs.terminal_publication import (
+    AsyncOperationTerminalPublisher,
+)
 from src.infrastructure.rebalance_runs.run_query import build_run_filter_query, run_page
 from src.infrastructure.rebalance_runs.workflow_decision_query import (
     build_workflow_decision_filter_query,
@@ -28,7 +31,7 @@ from src.infrastructure.rebalance_runs.workflow_decision_query import (
 )
 
 
-class SqliteDpmRunRepository(DpmRunRepository):
+class SqliteDpmRunRepository(AsyncOperationTerminalPublisher, DpmRunRepository):
     def __init__(self, *, database_path: str) -> None:
         self._lock = Lock()
         self._database_path = database_path
@@ -298,6 +301,79 @@ class SqliteDpmRunRepository(DpmRunRepository):
         except sqlite3.IntegrityError as exc:
             raise DpmRunRepositoryConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT") from exc
 
+    def claim_operation_execution(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        claimed_at: datetime,
+        lease_expires_at: datetime,
+    ) -> Optional[DpmAsyncOperationRecord]:
+        query = """
+            UPDATE dpm_async_operations
+            SET status = 'RUNNING', started_at = ?, finished_at = NULL,
+                result_json = NULL, error_json = NULL, execution_token = ?,
+                execution_attempt = execution_attempt + 1, execution_claimed_at = ?,
+                execution_lease_expires_at = ?
+            WHERE tenant_id = ? AND operation_id = ? AND request_json IS NOT NULL
+              AND (status = 'PENDING' OR (
+                  status = 'RUNNING' AND execution_lease_expires_at IS NOT NULL
+                  AND execution_lease_expires_at <= ?
+              ))
+            RETURNING *
+        """
+        claimed_at_iso = claimed_at.isoformat()
+        with self._lock, closing(self._connect()) as connection:
+            row = connection.execute(
+                query,
+                (
+                    claimed_at_iso,
+                    execution_token,
+                    claimed_at_iso,
+                    lease_expires_at.isoformat(),
+                    tenant_id,
+                    operation_id,
+                    claimed_at_iso,
+                ),
+            ).fetchone()
+            connection.commit()
+        return self._to_operation(row)
+
+    def _publish_operation_terminal(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        status: str,
+        result_json: Optional[str],
+        error_json: Optional[str],
+        finished_at: datetime,
+    ) -> bool:
+        query = """
+            UPDATE dpm_async_operations
+            SET status = ?, result_json = ?, error_json = ?, finished_at = ?,
+                execution_lease_expires_at = NULL
+            WHERE tenant_id = ? AND operation_id = ? AND status = 'RUNNING'
+              AND execution_token = ?
+        """
+        with self._lock, closing(self._connect()) as connection:
+            cursor = connection.execute(
+                query,
+                (
+                    status,
+                    result_json,
+                    error_json,
+                    finished_at.isoformat(),
+                    tenant_id,
+                    operation_id,
+                    execution_token,
+                ),
+            )
+            connection.commit()
+            return cursor.rowcount == 1
+
     def get_operation(self, *, operation_id: str) -> Optional[DpmAsyncOperationRecord]:
         query = """
             SELECT
@@ -310,12 +386,25 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 finished_at,
                 result_json,
                 error_json,
-                request_json
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
             FROM dpm_async_operations
             WHERE operation_id = ?
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (operation_id,)).fetchone()
+        return self._to_operation(row)
+
+    def get_operation_for_tenant(
+        self, *, tenant_id: str, operation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]:
+        query = "SELECT * FROM dpm_async_operations WHERE tenant_id = ? AND operation_id = ?"
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, operation_id)).fetchone()
         return self._to_operation(row)
 
     def get_operation_by_correlation(
@@ -332,12 +421,25 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 finished_at,
                 result_json,
                 error_json,
-                request_json
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
             FROM dpm_async_operations
             WHERE correlation_id = ?
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (correlation_id,)).fetchone()
+        return self._to_operation(row)
+
+    def get_operation_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]:
+        query = "SELECT * FROM dpm_async_operations WHERE tenant_id = ? AND correlation_id = ?"
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, correlation_id)).fetchone()
         return self._to_operation(row)
 
     def list_operations(
@@ -370,7 +472,12 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 finished_at,
                 result_json,
                 error_json,
-                request_json
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
             FROM dpm_async_operations
             {filters.where_sql}
             ORDER BY created_at DESC, operation_id DESC
@@ -384,11 +491,43 @@ class SqliteDpmRunRepository(DpmRunRepository):
         )
         return operation_page(operations, limit=limit, cursor=cursor)
 
+    def list_operations_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        operation_type: Optional[str],
+        status: Optional[str],
+        correlation_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmAsyncOperationRecord], Optional[str]]:
+        filters = build_operation_filter_query(
+            placeholder="?",
+            created_from=created_from,
+            created_to=created_to,
+            operation_type=operation_type,
+            status=status,
+            correlation_id=correlation_id,
+            tenant_id=tenant_id,
+        )
+        query = f"""
+            SELECT * FROM dpm_async_operations
+            {filters.where_sql}
+            ORDER BY created_at DESC, operation_id DESC
+        """
+        with closing(self._connect()) as connection:
+            rows = connection.execute(query, filters.args).fetchall()
+        operations = [operation for row in rows if (operation := self._to_operation(row))]
+        return operation_page(operations, limit=limit, cursor=cursor)
+
     def purge_expired_operations(self, *, ttl_seconds: int, now: datetime) -> int:
         cutoff = now.astimezone(timezone.utc) - timedelta(seconds=ttl_seconds)
         query = """
             DELETE FROM dpm_async_operations
-            WHERE COALESCE(finished_at, created_at) < ?
+            WHERE status <> 'RUNNING'
+              AND COALESCE(finished_at, created_at) < ?
         """
         with self._lock, closing(self._connect()) as connection:
             cursor = connection.execute(query, (cutoff.isoformat(),))
@@ -904,8 +1043,13 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 finished_at,
                 result_json,
                 error_json,
-                request_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(operation_id) DO UPDATE SET
                 operation_type=excluded.operation_type,
                 status=excluded.status,
@@ -915,7 +1059,12 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 finished_at=excluded.finished_at,
                 result_json=excluded.result_json,
                 error_json=excluded.error_json,
-                request_json=excluded.request_json
+                request_json=excluded.request_json,
+                tenant_id=excluded.tenant_id,
+                execution_token=excluded.execution_token,
+                execution_attempt=excluded.execution_attempt,
+                execution_claimed_at=excluded.execution_claimed_at,
+                execution_lease_expires_at=excluded.execution_lease_expires_at
         """
         with self._lock, closing(self._connect()) as connection:
             connection.execute(
@@ -931,6 +1080,11 @@ class SqliteDpmRunRepository(DpmRunRepository):
                     _optional_json(operation.result_json),
                     _optional_json(operation.error_json),
                     _optional_json(operation.request_json),
+                    operation.tenant_id,
+                    operation.execution_token,
+                    operation.execution_attempt,
+                    _optional_iso(operation.execution_claimed_at),
+                    _optional_iso(operation.execution_lease_expires_at),
                 ),
             )
             connection.commit()
@@ -952,6 +1106,7 @@ class SqliteDpmRunRepository(DpmRunRepository):
         if row is None:
             return None
         return DpmAsyncOperationRecord(
+            tenant_id=row["tenant_id"],
             operation_id=row["operation_id"],
             operation_type=row["operation_type"],
             status=row["status"],
@@ -962,6 +1117,10 @@ class SqliteDpmRunRepository(DpmRunRepository):
             result_json=_optional_load_json(row["result_json"]),
             error_json=_optional_load_json(row["error_json"]),
             request_json=_optional_load_json(row["request_json"]),
+            execution_token=row["execution_token"],
+            execution_attempt=int(row["execution_attempt"]),
+            execution_claimed_at=_optional_datetime(row["execution_claimed_at"]),
+            execution_lease_expires_at=_optional_datetime(row["execution_lease_expires_at"]),
         )
 
     def _connect(self) -> sqlite3.Connection:
@@ -1004,19 +1163,6 @@ class SqliteDpmRunRepository(DpmRunRepository):
                     artifact_json TEXT NOT NULL
                 );
 
-                CREATE TABLE IF NOT EXISTS dpm_async_operations (
-                    operation_id TEXT PRIMARY KEY,
-                    operation_type TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    correlation_id TEXT NOT NULL UNIQUE,
-                    created_at TEXT NOT NULL,
-                    started_at TEXT NULL,
-                    finished_at TEXT NULL,
-                    result_json TEXT NULL,
-                    error_json TEXT NULL,
-                    request_json TEXT NULL
-                );
-
                 CREATE TABLE IF NOT EXISTS dpm_workflow_decisions (
                     decision_id TEXT PRIMARY KEY,
                     run_id TEXT NOT NULL,
@@ -1037,11 +1183,112 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 );
                 """
             )
+            self._migrate_async_operations(connection)
             connection.commit()
+
+    @staticmethod
+    def _migrate_async_operations(connection: sqlite3.Connection) -> None:
+        """Create or transactionally upgrade the supported local async store.
+
+        The pre-ownership schema enforced global correlation uniqueness through an
+        implicit SQLite auto-index, which cannot be dropped.  Rebuilding is therefore
+        required: legacy rows are retained with a NULL tenant and remain quarantined.
+        """
+
+        existing = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            ("dpm_async_operations",),
+        ).fetchone()
+        if existing is None:
+            _create_async_operations_table(connection)
+            return
+
+        columns = {
+            str(row["name"])
+            for row in connection.execute("PRAGMA table_info(dpm_async_operations)").fetchall()
+        }
+        required = {
+            "tenant_id",
+            "execution_token",
+            "execution_attempt",
+            "execution_claimed_at",
+            "execution_lease_expires_at",
+        }
+        if required <= columns:
+            _create_async_operation_indexes(connection)
+            return
+
+        connection.execute("ALTER TABLE dpm_async_operations RENAME TO dpm_async_operations_legacy")
+        _create_async_operations_table(connection)
+        connection.execute(
+            """
+            INSERT INTO dpm_async_operations (
+                operation_id, operation_type, status, correlation_id, created_at,
+                started_at, finished_at, result_json, error_json, request_json,
+                tenant_id, execution_token, execution_attempt,
+                execution_claimed_at, execution_lease_expires_at
+            )
+            SELECT
+                operation_id, operation_type, status, correlation_id, created_at,
+                started_at, finished_at, result_json, error_json, request_json,
+                NULL, NULL, 0, NULL, NULL
+            FROM dpm_async_operations_legacy
+            """
+        )
+        connection.execute("DROP TABLE dpm_async_operations_legacy")
 
 
 def _json_dump(value: dict[str, Any]) -> str:
     return json.dumps(value, separators=(",", ":"), sort_keys=True)
+
+
+def _create_async_operations_table(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE dpm_async_operations (
+            operation_id TEXT PRIMARY KEY,
+            operation_type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            correlation_id TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            started_at TEXT NULL,
+            finished_at TEXT NULL,
+            result_json TEXT NULL,
+            error_json TEXT NULL,
+            request_json TEXT NULL,
+            tenant_id TEXT NULL,
+            execution_token TEXT NULL,
+            execution_attempt INTEGER NOT NULL DEFAULT 0 CHECK (execution_attempt >= 0),
+            execution_claimed_at TEXT NULL,
+            execution_lease_expires_at TEXT NULL
+        )
+        """
+    )
+    _create_async_operation_indexes(connection)
+
+
+def _create_async_operation_indexes(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_dpm_async_operations_tenant_correlation
+        ON dpm_async_operations (tenant_id, correlation_id)
+        WHERE tenant_id IS NOT NULL
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_dpm_async_operations_recoverable_lease
+        ON dpm_async_operations (execution_lease_expires_at, operation_id)
+        WHERE status = 'RUNNING'
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_dpm_async_operations_legacy_quarantine
+        ON dpm_async_operations (operation_id)
+        WHERE tenant_id IS NULL
+        """
+    )
 
 
 def _optional_json(value: Optional[dict[str, Any]]) -> Optional[str]:

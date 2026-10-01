@@ -37,6 +37,7 @@ from src.core.rebalance_runs import (
 )
 def list_dpm_async_operations(
     request: Request,
+    tenant_id: shared.DpmRunTenantIdHeader,
     created_from: Annotated[
         Optional[shared.datetime],
         Query(
@@ -105,6 +106,7 @@ def list_dpm_async_operations(
         },
     )
     return service.list_async_operations(
+        tenant_id=tenant_id,
         created_from=created_from,
         created_to=created_to,
         operation_type=operation_type,

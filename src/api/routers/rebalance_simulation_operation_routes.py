@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, Path, status
 
-from src.api.routers.rebalance_runs import get_dpm_run_support_service
+from src.api.routers.rebalance_runs import DpmRunTenantIdHeader, get_dpm_run_support_service
 from src.api.routers.rebalance_simulation import router
 from src.api.routers.rebalance_simulation_http import rebalance_async_operation_http_exception
 from src.api.services import rebalance_simulation_service as service
@@ -45,10 +45,12 @@ def execute_dpm_async_operation(
         str,
         Path(description="Asynchronous operation identifier.", examples=["dop_001"]),
     ],
+    tenant_id: DpmRunTenantIdHeader,
     service_instance: Annotated[DpmRunSupportService, Depends(get_dpm_run_support_service)],
 ) -> DpmAsyncOperationStatusResponse:
     try:
         return service.execute_dpm_async_operation(
+            tenant_id=tenant_id,
             operation_id=operation_id,
             service=service_instance,
         )

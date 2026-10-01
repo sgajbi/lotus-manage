@@ -21,6 +21,9 @@ from src.infrastructure.rebalance_runs.operation_query import (
     build_operation_filter_query,
     operation_page,
 )
+from src.infrastructure.rebalance_runs.terminal_publication import (
+    AsyncOperationTerminalPublisher,
+)
 from src.infrastructure.rebalance_runs.run_query import build_run_filter_query, run_page
 from src.infrastructure.rebalance_runs.workflow_decision_query import (
     build_workflow_decision_filter_query,
@@ -29,7 +32,7 @@ from src.infrastructure.rebalance_runs.workflow_decision_query import (
 )
 
 
-class PostgresDpmRunRepository:
+class PostgresDpmRunRepository(AsyncOperationTerminalPublisher):
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
             raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED")
@@ -667,6 +670,98 @@ class PostgresDpmRunRepository:
     def update_operation(self, operation: DpmAsyncOperationRecord) -> None:
         self._create_or_update_operation(operation)
 
+    def claim_operation_execution(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        claimed_at: datetime,
+        lease_expires_at: datetime,
+    ) -> Optional[DpmAsyncOperationRecord]:
+        query = """
+            UPDATE dpm_async_operations
+            SET status = 'RUNNING',
+                started_at = %s,
+                finished_at = NULL,
+                result_json = NULL,
+                error_json = NULL,
+                execution_token = %s,
+                execution_attempt = execution_attempt + 1,
+                execution_claimed_at = %s,
+                execution_lease_expires_at = %s
+            WHERE tenant_id = %s
+              AND operation_id = %s
+              AND request_json IS NOT NULL
+              AND (
+                  status = 'PENDING'
+                  OR (
+                      status = 'RUNNING'
+                      AND execution_lease_expires_at IS NOT NULL
+                      AND execution_lease_expires_at <= %s
+                  )
+              )
+            RETURNING operation_id, operation_type, status, correlation_id, created_at,
+                      started_at, finished_at, result_json, error_json, request_json,
+                      tenant_id, execution_token, execution_attempt, execution_claimed_at,
+                      execution_lease_expires_at
+        """
+        claimed_at_iso = claimed_at.isoformat()
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                query,
+                (
+                    claimed_at_iso,
+                    execution_token,
+                    claimed_at_iso,
+                    lease_expires_at.isoformat(),
+                    tenant_id,
+                    operation_id,
+                    claimed_at_iso,
+                ),
+            ).fetchone()
+            connection.commit()
+        return self._to_operation(row)
+
+    def _publish_operation_terminal(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        status: str,
+        result_json: Optional[str],
+        error_json: Optional[str],
+        finished_at: datetime,
+    ) -> bool:
+        query = """
+            UPDATE dpm_async_operations
+            SET status = %s,
+                result_json = %s,
+                error_json = %s,
+                finished_at = %s,
+                execution_lease_expires_at = NULL
+            WHERE tenant_id = %s
+              AND operation_id = %s
+              AND status = 'RUNNING'
+              AND execution_token = %s
+        """
+        with closing(self._connect()) as connection:
+            cursor = connection.execute(
+                query,
+                (
+                    status,
+                    result_json,
+                    error_json,
+                    finished_at.isoformat(),
+                    tenant_id,
+                    operation_id,
+                    execution_token,
+                ),
+            )
+            connection.commit()
+            return int(cursor.rowcount) == 1
+
     def _create_or_update_operation(self, operation: DpmAsyncOperationRecord) -> None:
         try:
             self._upsert_operation(operation)
@@ -689,12 +784,25 @@ class PostgresDpmRunRepository:
                 finished_at,
                 result_json,
                 error_json,
-                request_json
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
             FROM dpm_async_operations
             WHERE operation_id = %s
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (operation_id,)).fetchone()
+        return self._to_operation(row)
+
+    def get_operation_for_tenant(
+        self, *, tenant_id: str, operation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]:
+        query = "SELECT * FROM dpm_async_operations WHERE tenant_id = %s AND operation_id = %s"
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, operation_id)).fetchone()
         return self._to_operation(row)
 
     def get_operation_by_correlation(
@@ -711,12 +819,25 @@ class PostgresDpmRunRepository:
                 finished_at,
                 result_json,
                 error_json,
-                request_json
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
             FROM dpm_async_operations
             WHERE correlation_id = %s
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (correlation_id,)).fetchone()
+        return self._to_operation(row)
+
+    def get_operation_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]:
+        query = "SELECT * FROM dpm_async_operations WHERE tenant_id = %s AND correlation_id = %s"
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, correlation_id)).fetchone()
         return self._to_operation(row)
 
     def list_operations(
@@ -749,7 +870,12 @@ class PostgresDpmRunRepository:
                 finished_at,
                 result_json,
                 error_json,
-                request_json
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
             FROM dpm_async_operations
             {filters.where_sql}
             ORDER BY created_at DESC, operation_id DESC
@@ -763,11 +889,47 @@ class PostgresDpmRunRepository:
         )
         return operation_page(operations, limit=limit, cursor=cursor)
 
+    def list_operations_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        operation_type: Optional[str],
+        status: Optional[str],
+        correlation_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmAsyncOperationRecord], Optional[str]]:
+        filters = build_operation_filter_query(
+            placeholder="%s",
+            created_from=created_from,
+            created_to=created_to,
+            operation_type=operation_type,
+            status=status,
+            correlation_id=correlation_id,
+            tenant_id=tenant_id,
+        )
+        query = f"""
+            SELECT operation_id, operation_type, status, correlation_id, created_at,
+                   started_at, finished_at, result_json, error_json, request_json,
+                   tenant_id, execution_token, execution_attempt, execution_claimed_at,
+                   execution_lease_expires_at
+            FROM dpm_async_operations
+            {filters.where_sql}
+            ORDER BY created_at DESC, operation_id DESC
+        """
+        with closing(self._connect()) as connection:
+            rows = connection.execute(query, filters.args).fetchall()
+        operations = [operation for row in rows if (operation := self._to_operation(row))]
+        return operation_page(operations, limit=limit, cursor=cursor)
+
     def purge_expired_operations(self, *, ttl_seconds: int, now: datetime) -> int:
         cutoff = now.astimezone(timezone.utc) - timedelta(seconds=ttl_seconds)
         query = """
             DELETE FROM dpm_async_operations
-            WHERE COALESCE(finished_at, created_at) < %s
+            WHERE status <> 'RUNNING'
+              AND COALESCE(finished_at, created_at) < %s
         """
         with closing(self._connect()) as connection:
             cursor = connection.execute(query, (cutoff.isoformat(),))
@@ -1303,8 +1465,13 @@ class PostgresDpmRunRepository:
                 finished_at,
                 result_json,
                 error_json,
-                request_json
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                request_json,
+                tenant_id,
+                execution_token,
+                execution_attempt,
+                execution_claimed_at,
+                execution_lease_expires_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (operation_id) DO UPDATE SET
                 operation_type=excluded.operation_type,
                 status=excluded.status,
@@ -1314,7 +1481,12 @@ class PostgresDpmRunRepository:
                 finished_at=excluded.finished_at,
                 result_json=excluded.result_json,
                 error_json=excluded.error_json,
-                request_json=excluded.request_json
+                request_json=excluded.request_json,
+                tenant_id=excluded.tenant_id,
+                execution_token=excluded.execution_token,
+                execution_attempt=excluded.execution_attempt,
+                execution_claimed_at=excluded.execution_claimed_at,
+                execution_lease_expires_at=excluded.execution_lease_expires_at
         """
         with closing(self._connect()) as connection:
             connection.execute(
@@ -1330,6 +1502,11 @@ class PostgresDpmRunRepository:
                     _optional_json(operation.result_json),
                     _optional_json(operation.error_json),
                     _optional_json(operation.request_json),
+                    operation.tenant_id,
+                    operation.execution_token,
+                    operation.execution_attempt,
+                    _optional_iso(operation.execution_claimed_at),
+                    _optional_iso(operation.execution_lease_expires_at),
                 ),
             )
             connection.commit()
@@ -1352,6 +1529,7 @@ class PostgresDpmRunRepository:
         if row is None:
             return None
         return DpmAsyncOperationRecord(
+            tenant_id=row.get("tenant_id"),
             operation_id=row["operation_id"],
             operation_type=row["operation_type"],
             status=row["status"],
@@ -1362,6 +1540,10 @@ class PostgresDpmRunRepository:
             result_json=_optional_load_json(row["result_json"]),
             error_json=_optional_load_json(row["error_json"]),
             request_json=_optional_load_json(row["request_json"]),
+            execution_token=row.get("execution_token"),
+            execution_attempt=int(row.get("execution_attempt") or 0),
+            execution_claimed_at=_optional_datetime(row.get("execution_claimed_at")),
+            execution_lease_expires_at=_optional_datetime(row.get("execution_lease_expires_at")),
         )
 
 

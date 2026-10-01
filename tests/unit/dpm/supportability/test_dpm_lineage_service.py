@@ -59,6 +59,7 @@ def test_lineage_edges_are_recorded_for_run_idempotency_and_operation():
         tenant_id="tenant-test",
     )
     accepted = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-op-lineage-1",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )

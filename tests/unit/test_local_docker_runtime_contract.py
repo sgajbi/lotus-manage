@@ -29,6 +29,10 @@ def test_local_docker_runtime_exposes_async_execution_controls() -> None:
 
     assert "DPM_ASYNC_EXECUTION_MODE=${DPM_ASYNC_EXECUTION_MODE:-INLINE}" in compose_text
     assert (
+        "DPM_ASYNC_EXECUTION_LEASE_SECONDS=${DPM_ASYNC_EXECUTION_LEASE_SECONDS:-300}"
+        in compose_text
+    )
+    assert (
         "DPM_ASYNC_MANUAL_EXECUTION_ENABLED=${DPM_ASYNC_MANUAL_EXECUTION_ENABLED:-true}"
         in compose_text
     )

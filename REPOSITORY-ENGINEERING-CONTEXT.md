@@ -53,7 +53,7 @@ repository, while Manage owns only its declared consumption and fail-closed beha
 3. Database migrations are repository-owned under `src/infrastructure/postgres_migrations/` and are
    applied through the repository migration runner. Production readiness fails closed when required
    migrations or durable persistence prerequisites are absent.
-4. `make quarantine-inventory` is the single read-only operator path for the seven governed
+4. `make quarantine-inventory` is the single read-only operator path for the twelve governed
    nullable-tenant datasets. It uses stable row identities and never attributes, defaults, mutates,
    or exposes quarantined data through normal tenant-scoped reads.
 5. Historical mandate reads preserve the resolved source `as_of_date`; Manage supports temporal
@@ -220,12 +220,16 @@ Use these commands as the primary local contract:
    `make test-family-inventory`
 10. NULL-tenant quarantine inventory
     `make quarantine-inventory`
-    This operator-only command is the canonical observation path for the seven datasets retained
-    without verified tenant attribution by migrations `0003` and `0024` through `0028`; migration
-    `0029` supplies the partial monitoring-run index required for bounded census cost. The command
+    This operator-only command is the canonical observation path for the twelve datasets retained
+    without verified tenant attribution by migrations `0003`, `0024` through `0029`, `0032`, and
+    `0033`; partial quarantine indexes keep the census bounded as history grows. The command
     must remain bounded, sanitized, migration-provenanced, and transactionally read-only. A
     successful zero is distinct from failure; nonzero results do not authorize tenant inference or
     mutation.
+11. Async analyze operations require tenant ownership. Durable execution uses an atomic expiring
+    claim and opaque terminal-publication fence; TTL retention must not delete RUNNING recovery
+    state. `DPM_ASYNC_EXECUTION_LEASE_SECONDS` defaults to 300 seconds. Attempt and lease expiry are
+    operator-visible, while the fence token must never cross an API or log boundary.
 
 ## Validation And CI Expectations
 

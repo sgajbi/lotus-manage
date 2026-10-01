@@ -269,6 +269,7 @@ def test_repository_rejects_duplicate_async_operation_correlation(repository):
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
     repository.create_operation(
         DpmAsyncOperationRecord(
+            tenant_id="tenant-test",
             operation_id="dop_repo_conflict_1",
             operation_type="ANALYZE_SCENARIOS",
             status="PENDING",
@@ -288,6 +289,7 @@ def test_repository_rejects_duplicate_async_operation_correlation(repository):
     ):
         repository.create_operation(
             DpmAsyncOperationRecord(
+                tenant_id="tenant-test",
                 operation_id="dop_repo_conflict_2",
                 operation_type="ANALYZE_SCENARIOS",
                 status="PENDING",

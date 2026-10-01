@@ -28,6 +28,7 @@ def build_operation_filter_query(
     operation_type: Optional[str],
     status: Optional[str],
     correlation_id: Optional[str],
+    tenant_id: Optional[str] = None,
 ) -> OperationFilterQuery:
     predicates = _operation_filter_predicates(
         placeholder=placeholder,
@@ -36,6 +37,7 @@ def build_operation_filter_query(
         operation_type=operation_type,
         status=status,
         correlation_id=correlation_id,
+        tenant_id=tenant_id,
     )
     return OperationFilterQuery(
         where_sql=_operation_where_sql(predicates),
@@ -51,6 +53,7 @@ def _operation_filter_predicates(
     operation_type: Optional[str],
     status: Optional[str],
     correlation_id: Optional[str],
+    tenant_id: Optional[str] = None,
 ) -> list[_OperationPredicate]:
     return [
         predicate
@@ -66,6 +69,7 @@ def _operation_filter_predicates(
             _optional_text_predicate(f"operation_type = {placeholder}", operation_type),
             _optional_text_predicate(f"status = {placeholder}", status),
             _optional_text_predicate(f"correlation_id = {placeholder}", correlation_id),
+            _optional_text_predicate(f"tenant_id = {placeholder}", tenant_id),
         ]
         if predicate is not None
     ]

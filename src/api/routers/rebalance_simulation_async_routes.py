@@ -7,6 +7,7 @@ from pydantic import Field
 
 from src.api.dependencies import get_db_session
 from src.api.request_models import BatchExecutionRequestEnvelope
+from src.api.routers.mandate_tenant_query import require_mandate_tenant
 from src.api.routers.rebalance_simulation import router
 from src.api.routers.rebalance_simulation_http import (
     rebalance_async_operation_http_exception,
@@ -76,6 +77,18 @@ def analyze_scenarios_async(
         ),
     ],
     response: Response,
+    x_tenant_id: Annotated[
+        str,
+        Header(
+            description=(
+                "Required durable async-operation ownership scope and, for stateful Core sourcing, "
+                "must match stateful_input.tenant_id. Caller-asserted routing scope, "
+                "not authenticated-principal proof."
+            ),
+            min_length=1,
+            examples=["tenant_001"],
+        ),
+    ],
     x_correlation_id: Annotated[
         Optional[str],
         Header(
@@ -104,24 +117,14 @@ def analyze_scenarios_async(
             examples=["dpm_tenant_default_v1"],
         ),
     ] = None,
-    x_tenant_id: Annotated[
-        Optional[str],
-        Header(
-            description=(
-                "Required for stateful Core sourcing and must match stateful_input.tenant_id; "
-                "optional for stateless tenant policy-pack lookup. Caller-asserted routing scope, "
-                "not authenticated-principal proof."
-            ),
-            examples=["tenant_001"],
-        ),
-    ] = None,
     _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> DpmAsyncAcceptedResponse:
+    admitted_tenant_id = require_mandate_tenant(x_tenant_id)
     try:
         batch_request, source_context = service.resolve_batch_request_envelope(
             envelope=request,
             correlation_id=x_correlation_id,
-            admitted_tenant_id=x_tenant_id,
+            admitted_tenant_id=admitted_tenant_id,
         )
     except service.DpmRebalanceEnvelopeError as exc:
         raise rebalance_envelope_http_exception(exc) from exc
@@ -131,7 +134,7 @@ def analyze_scenarios_async(
             correlation_id=x_correlation_id,
             policy_pack_id=x_policy_pack_id,
             tenant_default_policy_pack_id=x_tenant_policy_pack_id,
-            tenant_id=x_tenant_id,
+            tenant_id=admitted_tenant_id,
             source_context=source_context,
         )
     except service.DpmRebalanceAsyncOperationError as exc:

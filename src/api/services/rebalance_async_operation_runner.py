@@ -20,19 +20,21 @@ ExecuteBatchAnalysisFn = Callable[..., BatchRebalanceResult]
 def run_analyze_async_operation_from_store(
     *,
     operation_id: str,
+    tenant_id: str,
     service: DpmRunSupportService,
     execution_mode: str,
     execute_batch_fn: ExecuteBatchAnalysisFn,
     current_logger: logging.Logger | Any,
 ) -> None:
-    request_json, operation_correlation_id = service.prepare_analyze_operation_execution(
-        operation_id=operation_id
+    claim = service.prepare_analyze_operation_execution(
+        tenant_id=tenant_id,
+        operation_id=operation_id,
     )
     try:
-        payload = resolve_analyze_async_execution_payload(request_json)
+        payload = resolve_analyze_async_execution_payload(claim.request_json)
         result = execute_batch_fn(
             request=payload.request,
-            correlation_id=operation_correlation_id,
+            correlation_id=claim.correlation_id,
             request_policy_pack_id=payload.request_policy_pack_id,
             tenant_default_policy_pack_id=payload.tenant_default_policy_pack_id,
             tenant_id=payload.tenant_id,
@@ -40,14 +42,14 @@ def run_analyze_async_operation_from_store(
         )
         complete_analyze_async_operation(
             service=service,
-            operation_id=operation_id,
+            claim=claim,
             result=result,
             execution_mode=execution_mode,
         )
     except (DpmRunNotFoundError, ValidationError, RuntimeError, ValueError) as exc:
         fail_analyze_async_operation(
             service=service,
-            operation_id=operation_id,
+            claim=claim,
             execution_mode=execution_mode,
             exc=exc,
             current_logger=current_logger,

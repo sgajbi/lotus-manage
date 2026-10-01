@@ -623,6 +623,20 @@ class DpmAsyncOperationStatusResponse(BaseModel):
         description="Operation completion timestamp (UTC ISO8601).",
         examples=["2026-02-20T12:00:02+00:00"],
     )
+    execution_attempt: int = Field(
+        default=0,
+        ge=0,
+        description="Monotonic execution claim generation; zero means never claimed.",
+        examples=[1],
+    )
+    execution_lease_expires_at: Optional[str] = Field(
+        default=None,
+        description=(
+            "Current RUNNING lease expiry in UTC. After this instant the operation may be "
+            "reclaimed by a new fenced execution owner."
+        ),
+        examples=["2026-02-20T12:05:01+00:00"],
+    )
     result: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Successful operation result payload when status is SUCCEEDED.",
@@ -670,6 +684,16 @@ class DpmAsyncOperationListItemResponse(BaseModel):
         description="Operation completion timestamp (UTC ISO8601).",
         examples=["2026-02-20T12:00:02+00:00"],
     )
+    execution_attempt: int = Field(
+        default=0,
+        ge=0,
+        description="Monotonic execution claim generation; zero means never claimed.",
+        examples=[1],
+    )
+    execution_lease_expires_at: Optional[str] = Field(
+        default=None,
+        description="Current RUNNING execution lease expiry in UTC.",
+    )
 
 
 class DpmAsyncOperationListResponse(BaseModel):
@@ -699,6 +723,14 @@ class DpmAsyncOperationListResponse(BaseModel):
 
 
 class DpmAsyncOperationRecord(BaseModel):
+    tenant_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Owning tenant for the async operation. Null identifies a pre-ownership legacy row "
+            "that is quarantined from tenant-scoped runtime access."
+        ),
+        examples=["tenant_001"],
+    )
     operation_id: str = Field(
         description="Internal async operation identifier.",
         examples=["dop_001"],
@@ -743,6 +775,25 @@ class DpmAsyncOperationRecord(BaseModel):
         default=None,
         description="Internal request payload snapshot for deferred execution.",
         examples=[{"scenarios": {"baseline": {"options": {}}}}],
+    )
+    execution_token: Optional[str] = Field(
+        default=None,
+        exclude=True,
+        description="Internal opaque fencing token for the current execution lease.",
+    )
+    execution_attempt: int = Field(
+        default=0,
+        ge=0,
+        description="Monotonic execution claim generation.",
+        examples=[1],
+    )
+    execution_claimed_at: Optional[datetime] = Field(
+        default=None,
+        description="UTC time at which the current execution lease was acquired.",
+    )
+    execution_lease_expires_at: Optional[datetime] = Field(
+        default=None,
+        description="UTC expiry after which a RUNNING operation may be reclaimed.",
     )
 
 

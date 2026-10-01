@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-09-30T23:03:41.008437+00:00",
+  "generatedAt": "2026-10-01T01:09:47.844133+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -4779,11 +4779,39 @@
       ]
     },
     {
+      "semanticId": "lotus.execution_attempt",
+      "canonicalTerm": "execution_attempt",
+      "preferredName": "execution_attempt",
+      "description": "Monotonic execution claim generation; zero means never claimed.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.execution_evidence_ref",
       "canonicalTerm": "execution_evidence_ref",
       "preferredName": "execution_evidence_ref",
       "description": "Execution-owner evidence ref when certified evidence exists.",
       "example": "execution_evidence_ref_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.execution_lease_expires_at",
+      "canonicalTerm": "execution_lease_expires_at",
+      "preferredName": "execution_lease_expires_at",
+      "description": "Current RUNNING lease expiry in UTC. After this instant the operation may be reclaimed by a new fenced execution owner.",
+      "example": "execution_lease_expires_at_example",
       "type": "object",
       "locations": [
         "body"
@@ -17425,6 +17453,18 @@
       "attributeRef": "#/attributeCatalog/lotus.cursor"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "operation_id",
       "kind": "request_option",
       "location": "path",
@@ -17437,6 +17477,18 @@
       "attributeRef": "#/attributeCatalog/lotus.operation_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "correlation_id",
       "kind": "request_option",
       "location": "path",
@@ -17447,6 +17499,18 @@
       "allowedValues": [],
       "semanticId": "lotus.correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "entity_id",
@@ -18589,6 +18653,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required durable async-operation ownership scope and, for stateful Core sourcing, must match stateful_input.tenant_id. Caller-asserted routing scope, not authenticated-principal proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "x_correlation_id",
       "kind": "request_option",
       "location": "header",
@@ -18625,18 +18701,6 @@
       "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
     },
     {
-      "name": "x_tenant_id",
-      "kind": "request_option",
-      "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Required for stateful Core sourcing and must match stateful_input.tenant_id; optional for stateless tenant policy-pack lookup. Caller-asserted routing scope, not authenticated-principal proof.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.x_tenant_id",
-      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
-    },
-    {
       "name": "operation_id",
       "kind": "request_option",
       "location": "path",
@@ -18647,6 +18711,18 @@
       "allowedValues": [],
       "semanticId": "lotus.operation_id",
       "attributeRef": "#/attributeCatalog/lotus.operation_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for durable rebalance-run ownership. This local header is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "consumer_system",
@@ -33832,6 +33908,22 @@
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
           },
           {
+            "name": "async_operation.execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "async_operation.execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
+          },
+          {
             "name": "async_operation.result",
             "location": "body",
             "required": false,
@@ -38517,6 +38609,22 @@
             "type": "object",
             "semanticId": "lotus.finished_at",
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
+          },
+          {
+            "name": "async_operation.execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "async_operation.execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
           },
           {
             "name": "async_operation.result",
@@ -43206,6 +43314,22 @@
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
           },
           {
+            "name": "async_operation.execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "async_operation.execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
+          },
+          {
             "name": "async_operation.result",
             "location": "body",
             "required": false,
@@ -47893,6 +48017,22 @@
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
           },
           {
+            "name": "async_operation.execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "async_operation.execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
+          },
+          {
             "name": "async_operation.result",
             "location": "body",
             "required": false,
@@ -50437,6 +50577,14 @@
             "type": "object",
             "semanticId": "lotus.cursor",
             "attributeRef": "#/attributeCatalog/lotus.cursor"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -50515,6 +50663,22 @@
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
           },
           {
+            "name": "items[].execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "items[].execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
+          },
+          {
             "name": "next_cursor",
             "location": "body",
             "required": false,
@@ -50540,6 +50704,14 @@
             "type": "string",
             "semanticId": "lotus.operation_id",
             "attributeRef": "#/attributeCatalog/lotus.operation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -50608,6 +50780,22 @@
             "type": "object",
             "semanticId": "lotus.finished_at",
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
+          },
+          {
+            "name": "execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
           },
           {
             "name": "result",
@@ -50659,6 +50847,14 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -50727,6 +50923,22 @@
             "type": "object",
             "semanticId": "lotus.finished_at",
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
+          },
+          {
+            "name": "execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
           },
           {
             "name": "result",
@@ -58020,6 +58232,14 @@
       "request": {
         "fields": [
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
@@ -58042,14 +58262,6 @@
             "type": "object",
             "semanticId": "lotus.x_tenant_policy_pack_id",
             "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
-          },
-          {
-            "name": "x-tenant-id",
-            "location": "header",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.x_tenant_id",
-            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "input_mode",
@@ -58625,6 +58837,14 @@
             "type": "string",
             "semanticId": "lotus.operation_id",
             "attributeRef": "#/attributeCatalog/lotus.operation_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -58693,6 +58913,22 @@
             "type": "object",
             "semanticId": "lotus.finished_at",
             "attributeRef": "#/attributeCatalog/lotus.finished_at"
+          },
+          {
+            "name": "execution_attempt",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.execution_attempt",
+            "attributeRef": "#/attributeCatalog/lotus.execution_attempt"
+          },
+          {
+            "name": "execution_lease_expires_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_lease_expires_at",
+            "attributeRef": "#/attributeCatalog/lotus.execution_lease_expires_at"
           },
           {
             "name": "result",

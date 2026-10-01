@@ -405,13 +405,13 @@ python scripts/openapi_quality_gate.py
 
 ## NULL-tenant quarantine inventory
 
-Rows that migrations `0003` and `0024` through `0028` could not truthfully attribute remain NULL
-and therefore match no tenant-scoped application read. Migration `0029` provides the partial index
-that keeps the original monitoring-run quarantine census bounded as history grows. From the
+Rows that migrations `0003`, `0024` through `0029`, `0032`, and `0033` could not truthfully
+attribute remain NULL and therefore match no tenant-scoped application read. Partial quarantine
+indexes keep bounded sampling from scanning unrelated history. From the
 `lotus-manage` repository root, set the bank-managed `DPM_SUPPORTABILITY_POSTGRES_DSN` and run
 `make quarantine-inventory`.
 
-The command inventories all seven governed datasets in a repeatable-read, read-only transaction.
+The command inventories all twelve governed datasets in a repeatable-read, read-only transaction.
 It returns total counts, a stable bounded sample, explicit truncation, and applied migration
 versions/checksums. `QUARANTINE_INVENTORY_LIMIT` defaults to `20` and accepts `1..100`.
 Idempotency keys are hashed; payloads and connection details are not emitted.
@@ -423,6 +423,24 @@ Idempotency keys are hashed; payloads and connection details are not emitted.
   mutate rows, delete evidence, or bypass normal application isolation.
 - Detailed PowerShell and Bash invocation plus interpretation guidance lives in
   [docs/operations-runbook.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations-runbook.md#null-tenant-quarantine-inventory).
+
+## Async operation ownership and recovery
+
+Async submission, lookup, list, and execute routes require normalized `X-Tenant-Id`. PostgreSQL
+atomically claims `PENDING` operations, or an expired `RUNNING` operation, with an opaque fencing
+token and monotonic `execution_attempt`. `execution_lease_expires_at` and the attempt are returned
+for triage; the token is never returned. Only the current token may publish success or failure, so
+an expired or duplicate worker cannot overwrite the authoritative terminal result.
+
+`DPM_ASYNC_EXECUTION_LEASE_SECONDS` defaults to `300`. It must exceed the observed calculation and
+persistence duration because claims do not heartbeat. Before expiry, competing execution returns
+`409 DPM_ASYNC_OPERATION_NOT_EXECUTABLE`; after expiry, a new owner may reclaim and increment the
+attempt. TTL cleanup retains every RUNNING row so a crash cannot turn recovery state into data
+loss. Migration `0033` preserves legacy rows as NULL-tenant quarantine, included in
+`make quarantine-inventory`. See the repository
+[operations runbook](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations-runbook.md#async-operation-ownership-and-crash-recovery)
+for the recovery sequence and evidence boundary. This is not queue, capacity, IAM, or external
+trade-delivery certification.
 
 ## Legacy mandate-limit provenance
 

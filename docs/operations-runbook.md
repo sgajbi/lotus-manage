@@ -34,9 +34,9 @@ For full repo-native evidence in production-oriented work, run:
 
 ## NULL-tenant quarantine inventory
 
-Migrations `0003` and `0024` through `0028` deliberately retain rows that cannot be attributed to
-a verified tenant. Migration `0029` adds the partial index required to inventory the original
-`dpm_monitoring_runs` quarantine without scanning full monitoring history. Those rows match no
+Migrations `0003`, `0024` through `0029`, `0032`, and `0033` deliberately retain rows that cannot
+be attributed to a verified tenant. Partial quarantine indexes keep bounded sampling from scanning
+unrelated history. Those rows match no
 ordinary tenant-scoped repository read and must not be assigned, updated, deleted, or exposed
 through an API merely to make a count disappear.
 
@@ -55,7 +55,7 @@ export QUARANTINE_INVENTORY_LIMIT=20
 make quarantine-inventory
 ```
 
-The JSON result covers all seven governed datasets, reports each total and a stable bounded sample,
+The JSON result covers all twelve governed datasets, reports each total and a stable bounded sample,
 marks truncation explicitly, and includes the applied migration version and checksum. The command
 opens a repeatable-read, read-only transaction and always rolls it back. It hashes idempotency keys
 and never emits payloads or the DSN.
@@ -69,6 +69,41 @@ and never emits payloads or the DSN.
   connection details.
 - Treat nonzero counts as an attribution backlog for an authorized data owner. This command is
   observation only and provides no remediation or tenant-assignment path.
+
+## Async operation ownership and crash recovery
+
+All async submission, status, inventory, and manual-execute routes require normalized
+`X-Tenant-Id`. The PostgreSQL production profile stores tenant ownership and uses one atomic claim
+to move a `PENDING` operation to `RUNNING`. A claim receives an opaque fencing token, increments
+`execution_attempt`, and sets `execution_lease_expires_at`. API responses expose only the attempt
+and expiry. The token is internal and must not appear in responses, logs, metrics, or evidence
+packs.
+
+`DPM_ASYNC_EXECUTION_LEASE_SECONDS` defaults to `300` and is clamped to at least one second. Size it
+above the observed upper bound for one batch calculation plus persistence, then alert on RUNNING
+rows approaching expiry. This implementation does not heartbeat a claim. Expiry deliberately lets
+a new worker recover work after process loss, so an undersized lease can cause duplicate
+calculation; fencing still ensures only the current owner can publish authoritative success or
+failure. General async TTL cleanup never removes RUNNING rows.
+
+Recovery procedure:
+
+1. Read the tenant-scoped operation status. Record `operation_id`, `correlation_id`, `status`,
+   `execution_attempt`, and `execution_lease_expires_at`; do not infer ownership from logs.
+2. If the lease is still active, do not force a second execution. A competing manual execute
+   returns `409 DPM_ASYNC_OPERATION_NOT_EXECUTABLE`.
+3. After confirmed expiry, retry the same operation through the supported execute route or worker
+   path. A successful claim increments the attempt. A prior worker's terminal write is refused as
+   `DPM_ASYNC_OPERATION_STALE_EXECUTION_OWNER` and cannot replace the accepted result.
+4. Re-read status. Identical publication by the current token is idempotent; a different terminal
+   payload is a conflict and requires investigation rather than database repair.
+
+Migration `0033` preserves pre-ownership PENDING, RUNNING, and terminal rows with `tenant_id =
+NULL`. They are quarantined from every tenant route and included in `make quarantine-inventory`;
+operators must not guess an owner or manually add a claim token. SQLite performs the equivalent
+transactional table upgrade for portable local stores. These controls prove durable ownership and
+restart recovery with PostgreSQL; they do not certify a distributed queue, measured horizontal
+capacity, authenticated tenant principals, or external trade delivery.
 
 ## Legacy mandate-limit provenance
 
