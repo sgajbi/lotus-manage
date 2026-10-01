@@ -96,12 +96,12 @@ def _top_mandate_health_reasons(
 ) -> list[DpmMandateHealthReason]:
     reasons = [_reason_from_score(score) for score in dimension_scores if score.score < 100]
     # Severity first, then operational findings ahead of source gaps of the
-    # same severity (issue #664). The two source gaps are unconditional for
-    # every Core-compiled twin, so without this they permanently occupy two of
-    # the five slots and push genuinely new warnings - workflow, cadence,
-    # model freshness - out of top_reasons and therefore out of the persisted
-    # monitoring exceptions. An always-present finding should not crowd out
-    # the ones that are actually news.
+    # same severity (issue #664). The cash-band and turnover source gaps are
+    # unconditional for every Core-compiled twin, so without this they
+    # permanently occupy two of the five slots and push genuinely new warnings
+    # - workflow, cadence, model freshness - out of top_reasons and therefore
+    # out of the persisted monitoring exceptions. An always-present finding
+    # should not crowd out the ones that are actually news.
     reasons.sort(
         key=lambda reason: (
             _severity_rank(reason.severity),
@@ -308,9 +308,19 @@ def _score_risk_drift(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore
     )
     if source_score is not None:
         return source_score
-    if input_.tracking_error is None or input_.twin.constraints.max_tracking_error is None:
+    max_tracking_error = input_.twin.constraints.max_tracking_error
+    if max_tracking_error is None:
         return _ready_score(MandateHealthDimension.RISK_DRIFT)
-    if input_.tracking_error <= input_.twin.constraints.max_tracking_error:
+    if input_.tracking_error is None:
+        return _attention_score(
+            dimension=MandateHealthDimension.RISK_DRIFT,
+            score=60,
+            state=MandateHealthState.PENDING_REVIEW,
+            reason_code="TRACKING_ERROR_EVIDENCE_MISSING",
+            measured_value=None,
+            threshold_value=max_tracking_error,
+        )
+    if input_.tracking_error <= max_tracking_error:
         return _ready_score(MandateHealthDimension.RISK_DRIFT)
     return _attention_score(
         dimension=MandateHealthDimension.RISK_DRIFT,
@@ -318,7 +328,7 @@ def _score_risk_drift(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore
         state=MandateHealthState.PENDING_REVIEW,
         reason_code="TRACKING_ERROR_ABOVE_LIMIT",
         measured_value=input_.tracking_error,
-        threshold_value=input_.twin.constraints.max_tracking_error,
+        threshold_value=max_tracking_error,
     )
 
 
@@ -553,6 +563,7 @@ def _reason_from_score(score: DpmMandateDimensionScore) -> DpmMandateHealthReaso
 _SOURCE_GAP_REASON_CODES = frozenset(
     {
         "CASH_BAND_NOT_SOURCED",
+        "TRACKING_ERROR_EVIDENCE_MISSING",
         "TURNOVER_BUDGET_NOT_SOURCED",
     }
 )

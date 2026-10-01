@@ -462,6 +462,9 @@ def _ready_input(**overrides: object) -> DpmMandateHealthInput:
             "FI_US_TREASURY_10Y": Decimal("0.40"),
         },
         "cash_weight": Decimal("0.05"),
+        # Explicit zero is observed evidence, not a substitute for missing
+        # tracking-error evidence. Keep the shared ready fixture truthful.
+        "tracking_error": Decimal("0"),
     }
     payload.update(overrides)
     return DpmMandateHealthInput.model_validate(payload)
@@ -1150,6 +1153,82 @@ def test_health_source_staleness_risk_ready_and_workflow_blocked_edges() -> None
     assert _dimension(
         workflow_blocked_snapshot, MandateHealthDimension.WORKFLOW_READINESS
     ).state == (MandateHealthState.BLOCKED)
+
+
+def test_tracking_error_applicability_distinguishes_missing_zero_breach_and_no_limit() -> None:
+    missing = calculate_mandate_health(_ready_input(tracking_error=None), tenant_id="tenant-test")
+    zero = calculate_mandate_health(
+        _ready_input(tracking_error=Decimal("0")), tenant_id="tenant-test"
+    )
+    breach = calculate_mandate_health(
+        _ready_input(tracking_error=Decimal("0.10")), tenant_id="tenant-test"
+    )
+    not_applicable = calculate_mandate_health(
+        _ready_input(
+            twin=_twin(
+                constraints=DpmMandateConstraintSet(
+                    cash_band_min_weight=Decimal("0.02"),
+                    cash_band_max_weight=Decimal("0.10"),
+                    turnover_budget=Decimal("0.15"),
+                    max_tracking_error=None,
+                )
+            ),
+            tracking_error=None,
+        ),
+        tenant_id="tenant-test",
+    )
+
+    missing_risk = _dimension(missing, MandateHealthDimension.RISK_DRIFT)
+    assert missing_risk.state == MandateHealthState.PENDING_REVIEW
+    assert missing_risk.score == 60
+    assert missing_risk.reason_code == "TRACKING_ERROR_EVIDENCE_MISSING"
+    assert missing_risk.measured_value is None
+    assert missing_risk.threshold_value == Decimal("0.05")
+    assert missing.health_state == MandateHealthState.PENDING_REVIEW
+    assert missing.health_score == 95
+    assert missing.recommended_action == MandateRecommendedAction.FIX_SOURCE_DATA
+    assert "TRACKING_ERROR_EVIDENCE_MISSING" in {
+        reason.reason_code for reason in missing.top_reasons
+    }
+
+    zero_risk = _dimension(zero, MandateHealthDimension.RISK_DRIFT)
+    assert zero_risk.state == MandateHealthState.READY
+    assert zero_risk.reason_code == "RISK_DRIFT_READY"
+
+    breach_risk = _dimension(breach, MandateHealthDimension.RISK_DRIFT)
+    assert breach_risk.state == MandateHealthState.PENDING_REVIEW
+    assert breach_risk.score == 65
+    assert breach_risk.reason_code == "TRACKING_ERROR_ABOVE_LIMIT"
+    assert breach_risk.measured_value == Decimal("0.10")
+    assert breach_risk.threshold_value == Decimal("0.05")
+
+    not_applicable_risk = _dimension(not_applicable, MandateHealthDimension.RISK_DRIFT)
+    assert not_applicable_risk.state == MandateHealthState.READY
+    assert not_applicable_risk.reason_code == "RISK_DRIFT_READY"
+
+
+def test_unavailable_risk_context_still_explains_missing_tracking_error() -> None:
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            tracking_error=None,
+            risk_health_context={
+                "source_system": "lotus-risk",
+                "source_product_name": "MandateRiskHealthContext",
+                "source_product_version": "v1",
+                "as_of_date": "2026-05-03",
+                "health_state": "unavailable",
+                "threshold_breached": None,
+                "request_fingerprint": "sha256:risk-unavailable",
+            },
+        ),
+        tenant_id="tenant-test",
+    )
+
+    risk = _dimension(snapshot, MandateHealthDimension.RISK_DRIFT)
+    assert risk.state == MandateHealthState.PENDING_REVIEW
+    assert risk.score == 60
+    assert risk.reason_code == "SOURCE_RISK_HEALTH_UNAVAILABLE"
+    assert risk.evidence_refs == ["lotus-risk:MandateRiskHealthContext:v1:sha256:risk-unavailable"]
 
 
 def test_mandate_health_preserves_risk_performance_source_analytics_posture() -> None:

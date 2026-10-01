@@ -1417,15 +1417,21 @@ What was truly completed:
    source context refs in `source_analytics_posture`, and records supplied-context reason codes,
 4. `RISK_DRIFT` and `PERFORMANCE_ATTENTION` can use source product `health_state` and
    `threshold_breached` posture without calculating tracking error, volatility, drawdown,
-   attribution, benchmark-relative performance, FX, or other analytics methodology locally.
+   attribution, benchmark-relative performance, FX, or other analytics methodology locally,
+5. when a mandate has `max_tracking_error`, an absent measurement and absent usable Risk context
+   produce `TRACKING_ERROR_EVIDENCE_MISSING`, score 60, `PENDING_REVIEW`, and `FIX_SOURCE_DATA`
+   rather than a passed control. Explicit zero remains a valid measurement; a mandate without the
+   limit remains non-applicable. The 12% dimension weight makes an otherwise-ready aggregate 95
+   after half-up rounding.
 
 Quality improvements made:
 
 1. the former supplied-boolean-only risk/performance posture now preserves source product identity
    and request-fingerprint lineage,
 2. source health contexts are explicit typed inputs instead of ad hoc payload fragments,
-3. API and domain tests prove context preservation, identity validation, source-health scoring, and
-   persisted recalculate/read behavior.
+3. API and domain tests prove context preservation, identity validation, source-health scoring,
+   applicability-versus-missing-evidence behavior, valid-zero preservation, and persisted
+   recalculate/read behavior.
 
 Debt removed:
 

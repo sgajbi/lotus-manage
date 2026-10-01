@@ -133,6 +133,13 @@ native consumer declarations under `contracts/domain-data-products/`, the served
 and supported-feature/wiki source are the checkable Manage truth; another repository's historical
 delivery receipt is never a substitute.
 
+For mandate health, a configured `max_tracking_error` makes `RISK_DRIFT` applicable. Manage may
+assess it from an explicit tracking-error measurement or a usable source-owned Risk health context,
+but it must not turn absent evidence into a zero or a passed control. Missing evidence is score 60,
+`PENDING_REVIEW`, `TRACKING_ERROR_EVIDENCE_MISSING`, and `FIX_SOURCE_DATA`; explicit zero remains a
+valid pass, and a mandate without the limit remains non-applicable. This is consumer scoring policy,
+not Manage ownership of tracking-error methodology.
+
 ## Architecture And Module Map
 
 Primary areas:
