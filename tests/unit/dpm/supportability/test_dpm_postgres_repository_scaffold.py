@@ -44,6 +44,44 @@ class _FakeConnection:
         self.schema_migrations = {}
         self.commits = 0
 
+    @staticmethod
+    def _operation_portfolio_id(operation):
+        request_json = operation["request_json"]
+        if request_json is None:
+            return None
+        request = (
+            postgres_module.json.loads(request_json)
+            if isinstance(request_json, str)
+            else request_json
+        )
+        batch_snapshot = request.get("batch_request", {}).get("portfolio_snapshot", {})
+        direct_snapshot = request.get("portfolio_snapshot", {})
+        return batch_snapshot.get("portfolio_id") or direct_snapshot.get("portfolio_id")
+
+    def _supportability_operations(self, sql, args):
+        operations = list(self.operations.values())
+        if "WHERE COALESCE(" not in sql:
+            return operations
+
+        portfolio_id = args[0]
+        correlation_ids = {
+            run["correlation_id"]
+            for run in self.runs.values()
+            if run["portfolio_id"] == portfolio_id
+        }
+        return [
+            operation
+            for operation in operations
+            if self._operation_portfolio_id(operation) == portfolio_id
+            or (
+                operation["correlation_id"] in correlation_ids
+                and (
+                    operation["request_json"] is None
+                    or self._operation_portfolio_id(operation) == portfolio_id
+                )
+            )
+        ]
+
     def execute(self, query, args=None):
         sql = " ".join(str(query).split())
         if sql == "SELECT pg_advisory_lock(%s::bigint)":
@@ -350,16 +388,20 @@ class _FakeConnection:
             }
             return _FakeCursor(row=row)
         if "SELECT COUNT(*) AS operation_count" in sql:
-            created = [row["created_at"] for row in self.operations.values()]
+            operations = self._supportability_operations(sql, args)
+            created = [row["created_at"] for row in operations]
             row = {
-                "operation_count": len(self.operations),
+                "operation_count": len(operations),
                 "oldest_operation_created_at": min(created) if created else None,
                 "newest_operation_created_at": max(created) if created else None,
             }
             return _FakeCursor(row=row)
-        if "SELECT status, COUNT(*) AS status_count" in sql:
+        if (
+            "SELECT status, COUNT(*) AS status_count" in sql
+            or "SELECT o.status, COUNT(*) AS status_count" in sql
+        ):
             counts = {}
-            for operation in self.operations.values():
+            for operation in self._supportability_operations(sql, args):
                 counts[operation["status"]] = counts.get(operation["status"], 0) + 1
             rows = [{"status": key, "status_count": value} for key, value in counts.items()]
             return _FakeCursor(rows=rows)
