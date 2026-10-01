@@ -66,6 +66,7 @@ _BLOCKING_DATA_QUALITY_RULES: tuple[_DataQualityBlockingRule, ...] = (
     _DataQualityBlockingRule(bucket="shelf_missing"),
     _DataQualityBlockingRule(bucket="price_missing", option_name="block_on_missing_prices"),
     _DataQualityBlockingRule(bucket="fx_missing", option_name="block_on_missing_fx"),
+    _DataQualityBlockingRule(bucket="minimum_trade_threshold_fx_unavailable"),
     _DataQualityBlockingRule(
         bucket="tax_lot_evidence_incomplete",
         option_name="enable_tax_awareness",

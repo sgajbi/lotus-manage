@@ -28,6 +28,7 @@ from src.core.rebalance.intents import (
     _tax_budget_sale_allowance,
     _tax_budget_constraint_applies,
     _trade_notional_threshold,
+    _trade_threshold_comparison,
     generate_intents,
 )
 from src.core.models import (
@@ -245,6 +246,63 @@ def test_trade_notional_threshold_prefers_option_before_shelf_value() -> None:
         )
         == shelf_threshold
     )
+
+
+def test_trade_threshold_comparison_normalizes_direct_and_inverse_quotes() -> None:
+    threshold = Money(amount=Decimal("3000"), currency="USD")
+
+    direct = _trade_threshold_comparison(
+        threshold=threshold,
+        notional_currency="SGD",
+        market_data=market_data_snapshot(fx_rates=[fx("USD/SGD", "2")]),
+    )
+    inverse = _trade_threshold_comparison(
+        threshold=threshold,
+        notional_currency="SGD",
+        market_data=market_data_snapshot(fx_rates=[fx("SGD/USD", "0.5")]),
+    )
+
+    assert direct.comparison_threshold == Money(amount=Decimal("6000"), currency="SGD")
+    assert direct.fx_pair == "USD/SGD"
+    assert direct.fx_quote_rate == Decimal("2")
+    assert direct.conversion_rate == Decimal("2")
+    assert direct.fx_direction == "DIRECT"
+    assert inverse.comparison_threshold == direct.comparison_threshold
+    assert inverse.fx_pair == "SGD/USD"
+    assert inverse.fx_quote_rate == Decimal("0.5")
+    assert inverse.conversion_rate == Decimal("2")
+    assert inverse.fx_direction == "INVERSE"
+
+
+def test_trade_threshold_comparison_refuses_missing_and_non_positive_quotes() -> None:
+    threshold = Money(amount=Decimal("3000"), currency="USD")
+
+    missing = _trade_threshold_comparison(
+        threshold=threshold,
+        notional_currency="SGD",
+        market_data=market_data_snapshot(),
+    )
+    zero = _trade_threshold_comparison(
+        threshold=threshold,
+        notional_currency="SGD",
+        market_data=market_data_snapshot(fx_rates=[fx("USD/SGD", "0")]),
+    )
+    negative = _trade_threshold_comparison(
+        threshold=threshold,
+        notional_currency="SGD",
+        market_data=market_data_snapshot(fx_rates=[fx("SGD/USD", "-0.5")]),
+    )
+
+    assert missing.comparison_threshold is None
+    assert missing.reason_code == "MIN_TRADE_THRESHOLD_FX_MISSING"
+    assert zero.comparison_threshold is None
+    assert zero.fx_quote_rate == Decimal("0")
+    assert zero.conversion_rate is None
+    assert zero.reason_code == "MIN_TRADE_THRESHOLD_FX_INVALID"
+    assert negative.comparison_threshold is None
+    assert negative.fx_quote_rate == Decimal("-0.5")
+    assert negative.conversion_rate is None
+    assert negative.reason_code == "MIN_TRADE_THRESHOLD_FX_INVALID"
 
 
 def test_security_intent_constraints_include_sell_safety_and_tax_budget_labels() -> None:

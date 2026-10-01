@@ -122,6 +122,15 @@ def _dq_reasons(diagnostics: DiagnosticsData | None) -> list[GateReason]:
                 details={"count": str(len(dq["fx_missing"]))},
             )
         )
+    if dq.get("minimum_trade_threshold_fx_unavailable"):
+        reasons.append(
+            GateReason(
+                reason_code="DATA_QUALITY_MIN_TRADE_THRESHOLD_FX_UNAVAILABLE",
+                severity="HIGH",
+                source="DATA_QUALITY",
+                details={"count": str(len(dq["minimum_trade_threshold_fx_unavailable"]))},
+            )
+        )
     return reasons
 
 

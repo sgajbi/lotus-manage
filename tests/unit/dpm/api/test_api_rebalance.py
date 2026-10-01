@@ -217,12 +217,13 @@ def _core_execution_context() -> DpmCoreExecutionContext:
 
 
 class _FakeCoreResolver:
-    def __init__(self) -> None:
+    def __init__(self, context: DpmCoreExecutionContext | None = None) -> None:
         self.calls: list[tuple[str, str | None, str | None]] = []
+        self.context = context or _core_execution_context()
 
     def resolve_execution_context(self, *, stateful_input, correlation_id):
         self.calls.append((stateful_input.portfolio_id, correlation_id, stateful_input.tenant_id))
-        return _core_execution_context()
+        return self.context
 
 
 def _install_fake_core_resolver(monkeypatch) -> _FakeCoreResolver:
@@ -324,6 +325,68 @@ def test_stateful_simulate_uses_resolved_core_context_and_lineage(monkeypatch):
     assert body["lineage"]["source_lineage_bundle_id"] == "lineage-bundle-001"
     assert body["lineage"]["source_supportability_state"] == "READY"
     assert body["lineage"]["stateful_context_hash"].startswith("sha256:")
+
+
+def test_stateful_simulate_normalizes_request_policy_against_source_resolved_currency(
+    monkeypatch,
+) -> None:
+    source_payload = _core_execution_context().model_dump(mode="python")
+    rebalance_payload = _minimum_trade_payload(
+        price_currency="USD",
+        first_price="50",
+        second_price="25",
+        fx_rates=[{"pair": "USD/SGD", "rate": "2"}],
+    )
+    for field in (
+        "portfolio_snapshot",
+        "market_data_snapshot",
+        "model_portfolio",
+        "shelf_entries",
+    ):
+        source_payload[field] = rebalance_payload[field]
+    source_context = DpmCoreExecutionContext.model_validate(source_payload)
+    fake_resolver = _FakeCoreResolver(source_context)
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        core_resolver_service,
+        "build_core_resolver_client",
+        lambda: fake_resolver,
+    )
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "options_override": {
+                    "min_trade_notional": {"amount": "3000", "currency": "SGD"},
+                    "suppress_dust_trades": True,
+                    "fx_buffer_pct": "0",
+                },
+            },
+            headers={
+                "Idempotency-Key": "min-trade-stateful-source-context",
+                "X-Tenant-Id": "tenant_001",
+            },
+        )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "READY"
+    assert result["lineage"]["input_mode"] == "stateful"
+    assert {
+        intent["instrument_id"]
+        for intent in result["intents"]
+        if intent["intent_type"] == "SECURITY_TRADE"
+    } == {"EQ_A", "EQ_B"}
+    evaluations = result["diagnostics"]["minimum_trade_threshold_evaluations"]
+    assert {row["configured_threshold"]["currency"] for row in evaluations} == {"SGD"}
+    assert {Decimal(row["comparison_threshold"]["amount"]) for row in evaluations} == {
+        Decimal("1500")
+    }
+    assert {row["comparison_threshold"]["currency"] for row in evaluations} == {"USD"}
+    assert {row["conversion_direction"] for row in evaluations} == {"INVERSE"}
 
 
 def test_stateful_analyze_uses_shared_core_context_for_each_scenario(monkeypatch):
@@ -447,6 +510,361 @@ def test_simulate_endpoint_success(client):
     assert "lotus_manage_policy_pack_resolution_total" in metrics.text
     assert 'enabled="false"' in metrics.text
     assert 'surface="simulate"' in metrics.text
+
+
+def _minimum_trade_payload(
+    *,
+    price_currency: str = "SGD",
+    first_price: str = "100",
+    second_price: str = "50",
+    fx_rates: list[dict[str, str]] | None = None,
+) -> dict[str, object]:
+    payload = get_valid_payload()
+    payload["portfolio_snapshot"] = {
+        "portfolio_id": "pf_min_trade_fx",
+        "base_currency": "SGD",
+        "positions": [{"instrument_id": "EQ_A", "quantity": "100"}],
+        "cash_balances": [{"currency": "SGD", "amount": "1000"}],
+    }
+    payload["market_data_snapshot"] = {
+        "prices": [
+            {"instrument_id": "EQ_A", "price": first_price, "currency": price_currency},
+            {"instrument_id": "EQ_B", "price": second_price, "currency": price_currency},
+        ],
+        "fx_rates": fx_rates or [],
+    }
+    payload["model_portfolio"] = {
+        "targets": [
+            {"instrument_id": "EQ_A", "weight": "0.50"},
+            {"instrument_id": "EQ_B", "weight": "0.50"},
+        ]
+    }
+    payload["shelf_entries"] = [
+        {"instrument_id": "EQ_A", "status": "APPROVED"},
+        {"instrument_id": "EQ_B", "status": "APPROVED"},
+    ]
+    payload["options"] = {"suppress_dust_trades": True}
+    return payload
+
+
+@pytest.mark.parametrize(
+    ("threshold_source", "fx_pair", "fx_rate", "expected_direction"),
+    [
+        ("request", "USD/SGD", "2", "DIRECT"),
+        ("request", "SGD/USD", "0.5", "INVERSE"),
+        ("shelf", "USD/SGD", "2", "DIRECT"),
+        ("shelf", "SGD/USD", "0.5", "INVERSE"),
+    ],
+)
+def test_simulate_normalizes_request_and_shelf_minimums_into_trade_currency(
+    client,
+    threshold_source: str,
+    fx_pair: str,
+    fx_rate: str,
+    expected_direction: str,
+) -> None:
+    payload = _minimum_trade_payload(fx_rates=[{"pair": fx_pair, "rate": fx_rate}])
+    threshold = {"amount": "3000", "currency": "USD"}
+    if threshold_source == "request":
+        payload["options"]["min_trade_notional"] = threshold
+    else:
+        for shelf_record in payload["shelf_entries"]:
+            shelf_record["min_notional"] = threshold
+
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=payload,
+        headers={"Idempotency-Key": f"min-trade-{threshold_source}-{expected_direction.lower()}"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "READY"
+    assert result["intents"] == []
+    suppressed = result["diagnostics"]["suppressed_intents"]
+    assert {
+        (
+            row["instrument_id"],
+            row["reason"],
+            row["intended_notional"]["amount"],
+            row["intended_notional"]["currency"],
+            row["threshold"]["amount"],
+            row["threshold"]["currency"],
+        )
+        for row in suppressed
+    } == {
+        ("EQ_A", "BELOW_MIN_NOTIONAL", "4500", "SGD", "3000", "USD"),
+        ("EQ_B", "BELOW_MIN_NOTIONAL", "5500", "SGD", "3000", "USD"),
+    }
+    evaluations = result["diagnostics"]["minimum_trade_threshold_evaluations"]
+    assert {
+        (row["instrument_id"], row["side"], row["comparison_outcome"]) for row in evaluations
+    } == {
+        ("EQ_A", "SELL", "SUPPRESSED"),
+        ("EQ_B", "BUY", "SUPPRESSED"),
+    }
+    assert {row["configured_threshold"]["amount"] for row in evaluations} == {"3000"}
+    assert {row["comparison_threshold"]["amount"] for row in evaluations} == {"6000"}
+    assert {row["comparison_threshold"]["currency"] for row in evaluations} == {"SGD"}
+    expected_quote_rate = "2" if expected_direction == "DIRECT" else "0.5"
+    assert {row["fx_quote_rate"] for row in evaluations} == {expected_quote_rate}
+    assert {row["conversion_rate"] for row in evaluations} == {"2"}
+    assert {row["conversion_direction"] for row in evaluations} == {expected_direction}
+
+
+@pytest.mark.parametrize(
+    ("fx_rates", "expected_pair", "expected_reason", "expected_quote_rate"),
+    [
+        ([], "USD/SGD", "MIN_TRADE_THRESHOLD_FX_MISSING", None),
+        ([{"pair": "USD/SGD", "rate": "0"}], "USD/SGD", "MIN_TRADE_THRESHOLD_FX_INVALID", "0"),
+        (
+            [{"pair": "SGD/USD", "rate": "-0.5"}],
+            "SGD/USD",
+            "MIN_TRADE_THRESHOLD_FX_INVALID",
+            "-0.5",
+        ),
+    ],
+)
+def test_simulate_blocks_when_minimum_trade_fx_is_missing_or_invalid(
+    client,
+    fx_rates: list[dict[str, str]],
+    expected_pair: str,
+    expected_reason: str,
+    expected_quote_rate: str | None,
+) -> None:
+    payload = _minimum_trade_payload(fx_rates=fx_rates)
+    payload["options"]["min_trade_notional"] = {"amount": "3000", "currency": "USD"}
+    payload["options"]["block_on_missing_fx"] = False
+
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=payload,
+        headers={"Idempotency-Key": f"min-trade-refusal-{expected_reason}-{expected_quote_rate}"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "BLOCKED"
+    assert [
+        intent for intent in result["intents"] if intent["intent_type"] == "SECURITY_TRADE"
+    ] == []
+    assert result["diagnostics"]["data_quality"]["fx_missing"] == []
+    assert result["diagnostics"]["data_quality"]["minimum_trade_threshold_fx_unavailable"] == [
+        expected_pair,
+        expected_pair,
+    ]
+    assert result["gate_decision"]["gate"] == "BLOCKED"
+    assert {reason["reason_code"] for reason in result["gate_decision"]["reasons"]} >= {
+        "DATA_QUALITY_MIN_TRADE_THRESHOLD_FX_UNAVAILABLE"
+    }
+    evaluations = result["diagnostics"]["minimum_trade_threshold_evaluations"]
+    assert len(evaluations) == 2
+    assert {row["comparison_outcome"] for row in evaluations} == {"BLOCKED"}
+    assert {row["reason_code"] for row in evaluations} == {expected_reason}
+    assert {row["fx_quote_pair"] for row in evaluations} == {expected_pair}
+    assert {row["fx_quote_rate"] for row in evaluations} == {expected_quote_rate}
+    assert {row["comparison_threshold"] for row in evaluations} == {None}
+
+
+@pytest.mark.parametrize(
+    (
+        "threshold",
+        "expected_instruments",
+        "expected_outcomes",
+        "expected_status",
+        "expected_cash",
+        "expected_gate",
+    ),
+    [
+        (
+            "4499.99",
+            {"EQ_A", "EQ_B"},
+            {"EQ_A": "KEPT", "EQ_B": "KEPT"},
+            "READY",
+            "0",
+            "EXECUTION_READY",
+        ),
+        (
+            "4500",
+            {"EQ_A", "EQ_B"},
+            {"EQ_A": "KEPT", "EQ_B": "KEPT"},
+            "READY",
+            "0",
+            "EXECUTION_READY",
+        ),
+        (
+            "4500.01",
+            {"EQ_B"},
+            {"EQ_A": "SUPPRESSED", "EQ_B": "KEPT"},
+            "BLOCKED",
+            "-4500",
+            "BLOCKED",
+        ),
+        (
+            "5500",
+            {"EQ_B"},
+            {"EQ_A": "SUPPRESSED", "EQ_B": "KEPT"},
+            "BLOCKED",
+            "-4500",
+            "BLOCKED",
+        ),
+        (
+            "5500.01",
+            set(),
+            {"EQ_A": "SUPPRESSED", "EQ_B": "SUPPRESSED"},
+            "READY",
+            "1000",
+            "EXECUTION_READY",
+        ),
+    ],
+)
+def test_simulate_includes_exact_minimum_and_suppresses_only_below_threshold(
+    client,
+    threshold: str,
+    expected_instruments: set[str],
+    expected_outcomes: dict[str, str],
+    expected_status: str,
+    expected_cash: str,
+    expected_gate: str,
+) -> None:
+    payload = _minimum_trade_payload()
+    payload["options"]["min_trade_notional"] = {"amount": threshold, "currency": "SGD"}
+
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=payload,
+        headers={"Idempotency-Key": f"min-trade-boundary-{threshold}"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == expected_status
+    security_intents = [
+        intent for intent in result["intents"] if intent["intent_type"] == "SECURITY_TRADE"
+    ]
+    assert {intent["instrument_id"] for intent in security_intents} == expected_instruments
+    assert {
+        row["instrument_id"]: row["comparison_outcome"]
+        for row in result["diagnostics"]["minimum_trade_threshold_evaluations"]
+    } == expected_outcomes
+    assert Decimal(result["before"]["total_value"]["amount"]) == Decimal("11000")
+    assert Decimal(result["after_simulated"]["total_value"]["amount"]) == Decimal("11000")
+    assert [
+        (row["currency"], Decimal(row["amount"]))
+        for row in result["after_simulated"]["cash_balances"]
+    ] == [("SGD", Decimal(expected_cash))]
+    assert result["gate_decision"]["gate"] == expected_gate
+
+
+@pytest.mark.parametrize(
+    (
+        "threshold",
+        "fx_pair",
+        "fx_rate",
+        "expected_direction",
+        "expected_pair",
+        "expected_conversion_rate",
+    ),
+    [
+        (
+            {"amount": "3000", "currency": "SGD"},
+            "USD/SGD",
+            "2",
+            "INVERSE",
+            "USD/SGD",
+            "0.5",
+        ),
+        (
+            {"amount": "3000", "currency": "SGD"},
+            "SGD/USD",
+            "0.5",
+            "DIRECT",
+            "SGD/USD",
+            "0.5",
+        ),
+        (
+            {"amount": "1500", "currency": "USD"},
+            "USD/SGD",
+            "2",
+            "IDENTITY",
+            "USD/USD",
+            "1",
+        ),
+    ],
+)
+def test_simulate_retains_equivalent_foreign_currency_trades(
+    client,
+    threshold: dict[str, str],
+    fx_pair: str,
+    fx_rate: str,
+    expected_direction: str,
+    expected_pair: str,
+    expected_conversion_rate: str,
+) -> None:
+    payload = _minimum_trade_payload(
+        price_currency="USD",
+        first_price="50",
+        second_price="25",
+        fx_rates=[{"pair": fx_pair, "rate": fx_rate}],
+    )
+    payload["options"]["min_trade_notional"] = threshold
+    payload["options"]["fx_buffer_pct"] = "0"
+
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=payload,
+        headers={"Idempotency-Key": f"min-trade-foreign-{threshold['currency']}"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "READY"
+    security_intents = {
+        intent["instrument_id"]: intent
+        for intent in result["intents"]
+        if intent["intent_type"] == "SECURITY_TRADE"
+    }
+    assert security_intents["EQ_A"]["side"] == "SELL"
+    assert security_intents["EQ_A"]["quantity"] == "45"
+    assert security_intents["EQ_A"]["notional"] == {"amount": "2250", "currency": "USD"}
+    assert security_intents["EQ_B"]["side"] == "BUY"
+    assert security_intents["EQ_B"]["quantity"] == "110"
+    assert security_intents["EQ_B"]["notional"] == {"amount": "2750", "currency": "USD"}
+    evaluations = result["diagnostics"]["minimum_trade_threshold_evaluations"]
+    assert {row["comparison_outcome"] for row in evaluations} == {"KEPT"}
+    assert {Decimal(row["comparison_threshold"]["amount"]) for row in evaluations} == {
+        Decimal("1500")
+    }
+    assert {row["comparison_threshold"]["currency"] for row in evaluations} == {"USD"}
+    assert {row["conversion_direction"] for row in evaluations} == {expected_direction}
+    assert {row["fx_quote_pair"] for row in evaluations} == {expected_pair}
+    assert {Decimal(row["conversion_rate"]) for row in evaluations} == {
+        Decimal(expected_conversion_rate)
+    }
+
+
+def test_simulate_preserves_request_threshold_precedence_over_shelf_threshold(client) -> None:
+    payload = _minimum_trade_payload(fx_rates=[{"pair": "USD/SGD", "rate": "2"}])
+    payload["options"]["min_trade_notional"] = {"amount": "1000", "currency": "USD"}
+    for shelf_record in payload["shelf_entries"]:
+        shelf_record["min_notional"] = {"amount": "3000", "currency": "USD"}
+
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=payload,
+        headers={"Idempotency-Key": "min-trade-request-before-shelf"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert {
+        intent["instrument_id"]
+        for intent in result["intents"]
+        if intent["intent_type"] == "SECURITY_TRADE"
+    } == {"EQ_A", "EQ_B"}
+    evaluations = result["diagnostics"]["minimum_trade_threshold_evaluations"]
+    assert {row["configured_threshold"]["amount"] for row in evaluations} == {"1000"}
+    assert {row["comparison_threshold"]["amount"] for row in evaluations} == {"2000"}
 
 
 def test_simulate_skips_policy_catalog_when_policy_packs_disabled(client, monkeypatch):

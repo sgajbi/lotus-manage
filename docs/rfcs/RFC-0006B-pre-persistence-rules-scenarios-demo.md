@@ -42,6 +42,34 @@ Future work should evaluate whether the heuristic and solver target generation q
 class for mandate portfolio use cases, but that belongs to RFC-0012 and later core-sourcing work,
 not this pre-persistence hardening RFC.
 
+### 0.3 Currency-qualified minimum trades (2026-10-01)
+
+Minimum-trade suppression now treats `Money.currency` as a required part of the rule rather than
+comparing bare numbers. After preserving the documented request-before-shelf precedence, Manage
+normalizes the selected threshold into the candidate trade's price currency from the supplied
+market-data snapshot:
+
+1. `threshold/trade` uses the observed direct quote;
+2. `trade/threshold` uses the Decimal reciprocal of the observed inverse quote;
+3. matching currencies use identity rate `1`; and
+4. missing, zero, or negative required quotes block the run through data-quality controls.
+
+`diagnostics.minimum_trade_threshold_evaluations` records the configured and comparison amounts,
+candidate notional, quote pair and observed rate, applied conversion rate, direction, outcome, and
+stable reason. Exact-threshold notionals are included; only notionals strictly below the normalized
+threshold are suppressed. Cash simulation and workflow gates run after suppression, so retaining a
+buy after its funding sell is suppressed correctly produces a funding block.
+
+The registered API regression matrix independently proves SGD 6,000 equals USD 3,000 at
+USD/SGD 2 for request and shelf thresholds, direct and inverse quotes, BUY and SELL candidates;
+the foreign-instrument case proves SGD 3,000 equals USD 1,500 for USD-priced trades. Stateless and
+Core-resolved stateful request-policy paths share this rule. No release, approval, live pricing,
+order routing, fill, settlement, or authoritative booking claim follows from simulation readiness.
+
+Review-draft reconciliation: `<workspace-root>/review/lotus-manage` contained only the
+empty `agent-context/` and `integration-boundary/` directories during this slice, so no proposed
+draft was adopted or superseded.
+
 ---
 
 ## 1. Problem Statement
@@ -165,3 +193,14 @@ The `docs/demo/` directory will be reorganized:
 2. A scenario that should block must consistently block with expected reason codes.
 3. A scenario that should pass must preserve deterministic intent ordering and diagnostics.
 4. Demo JSON files are aligned to these contracts so business walkthroughs match API behavior.
+
+### 5.4 Minimum-trade comparison contract
+
+1. `options.min_trade_notional` remains the first-level source; shelf `min_notional` is fallback,
+   not a hard maximum over the request value.
+2. Comparison currency is the security candidate's price currency after lot/quantity rounding and
+   sell-safety constraints.
+3. Conversion uses only the governed market-data snapshot supplied to the run and preserves Decimal
+   precision. It does not retrieve or infer a live quote.
+4. The comparison is inclusive: `candidate_notional >= normalized_threshold` is retained.
+5. Unavailable or non-positive conversion data is fail-closed when dust suppression is active.

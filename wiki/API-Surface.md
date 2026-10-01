@@ -18,6 +18,11 @@ and source-owner methodology remain explicit boundaries unless a route section s
 - `POST /api/v1/rebalance/simulate`
   deterministic rebalance execution. It requires `Idempotency-Key` and normalized `X-Tenant-Id`
   in both stateless and stateful modes.
+  Currency-bearing request and shelf minimum-trade thresholds are normalized into each candidate
+  security's price currency using Decimal direct/inverse quotes from the governed input snapshot.
+  Diagnostics expose configured and normalized thresholds plus quote/conversion provenance;
+  missing or non-positive required FX blocks. Request threshold precedence, exact-boundary
+  inclusion, cash simulation, and workflow approval/release controls remain unchanged.
   PostgreSQL atomically owns the tenant/key/request-hash identity before calculation; concurrent
   identical submissions recover one authoritative run, changed payloads conflict, and the same key
   is independent across tenants. Active owners may return bounded

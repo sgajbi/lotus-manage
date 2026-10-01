@@ -7,6 +7,7 @@ from src.core.models import (
     EngineOptions,
     IntentRationale,
     MarketDataSnapshot,
+    MinimumTradeThresholdEvaluation,
     Money,
     PortfolioSnapshot,
     Position,
@@ -65,6 +66,7 @@ __all__ = [
     "_tax_budget_sale_allowance",
     "_tax_impact_from_budget",
     "_trade_notional_threshold",
+    "_trade_threshold_comparison",
 ]
 
 
@@ -78,6 +80,102 @@ def _trade_notional_threshold(
     if shelf_entry and shelf_entry.min_notional:
         return shelf_entry.min_notional
     return None
+
+
+@dataclass(frozen=True)
+class _TradeThresholdComparison:
+    comparison_threshold: Money | None
+    fx_pair: str | None
+    fx_quote_rate: Decimal | None
+    conversion_rate: Decimal | None
+    fx_direction: Literal["IDENTITY", "DIRECT", "INVERSE"] | None
+    reason_code: str
+
+
+@dataclass(frozen=True)
+class _ThresholdFxQuote:
+    pair: str
+    quote_rate: Decimal | None
+    conversion_rate: Decimal | None
+    direction: Literal["DIRECT", "INVERSE"] | None
+
+
+def _threshold_fx_quote(
+    *,
+    threshold_currency: str,
+    notional_currency: str,
+    market_data: MarketDataSnapshot,
+) -> _ThresholdFxQuote:
+    direct_pair = f"{threshold_currency}/{notional_currency}"
+    direct_rate = next(
+        (rate.rate for rate in market_data.fx_rates if rate.pair == direct_pair),
+        None,
+    )
+    if direct_rate is not None:
+        return _ThresholdFxQuote(direct_pair, direct_rate, direct_rate, "DIRECT")
+
+    inverse_pair = f"{notional_currency}/{threshold_currency}"
+    inverse_rate = next(
+        (rate.rate for rate in market_data.fx_rates if rate.pair == inverse_pair),
+        None,
+    )
+    if inverse_rate is not None:
+        conversion_rate = Decimal("1") / inverse_rate if inverse_rate > 0 else None
+        return _ThresholdFxQuote(inverse_pair, inverse_rate, conversion_rate, "INVERSE")
+    return _ThresholdFxQuote(direct_pair, None, None, None)
+
+
+def _trade_threshold_comparison(
+    *,
+    threshold: Money,
+    notional_currency: str,
+    market_data: MarketDataSnapshot,
+) -> _TradeThresholdComparison:
+    if threshold.currency == notional_currency:
+        return _TradeThresholdComparison(
+            comparison_threshold=threshold,
+            fx_pair=f"{threshold.currency}/{notional_currency}",
+            fx_quote_rate=Decimal("1"),
+            conversion_rate=Decimal("1"),
+            fx_direction="IDENTITY",
+            reason_code="MIN_TRADE_THRESHOLD_READY",
+        )
+
+    quote = _threshold_fx_quote(
+        threshold_currency=threshold.currency,
+        notional_currency=notional_currency,
+        market_data=market_data,
+    )
+    if quote.quote_rate is None:
+        return _TradeThresholdComparison(
+            comparison_threshold=None,
+            fx_pair=quote.pair,
+            fx_quote_rate=None,
+            conversion_rate=None,
+            fx_direction=None,
+            reason_code="MIN_TRADE_THRESHOLD_FX_MISSING",
+        )
+
+    if quote.quote_rate <= 0 or quote.conversion_rate is None:
+        return _TradeThresholdComparison(
+            comparison_threshold=None,
+            fx_pair=quote.pair,
+            fx_quote_rate=quote.quote_rate,
+            conversion_rate=None,
+            fx_direction=quote.direction,
+            reason_code="MIN_TRADE_THRESHOLD_FX_INVALID",
+        )
+    return _TradeThresholdComparison(
+        comparison_threshold=Money(
+            amount=threshold.amount * quote.conversion_rate,
+            currency=notional_currency,
+        ),
+        fx_pair=quote.pair,
+        fx_quote_rate=quote.quote_rate,
+        conversion_rate=quote.conversion_rate,
+        fx_direction=quote.direction,
+        reason_code="MIN_TRADE_THRESHOLD_READY",
+    )
 
 
 def _security_intent_constraints(
@@ -123,8 +221,15 @@ def _suppress_dust_trade(
     threshold: Money | None,
     options: EngineOptions,
     suppressed: list[SuppressedIntent],
+    comparison_threshold: Money | None = None,
 ) -> bool:
-    if not options.suppress_dust_trades or threshold is None or notional >= threshold.amount:
+    effective_threshold = comparison_threshold or threshold
+    if (
+        not options.suppress_dust_trades
+        or threshold is None
+        or effective_threshold is None
+        or notional >= effective_threshold.amount
+    ):
         return False
 
     suppressed.append(
@@ -136,6 +241,77 @@ def _suppress_dust_trade(
         )
     )
     return True
+
+
+def _minimum_trade_threshold_excludes_candidate(
+    *,
+    instrument_id: str,
+    side: Literal["BUY", "SELL"],
+    intended_notional: Money,
+    threshold: Money | None,
+    options: EngineOptions,
+    market_data: MarketDataSnapshot,
+    dq_log: dict[str, list[str]],
+    diagnostics: DiagnosticsData,
+    suppressed: list[SuppressedIntent],
+) -> bool:
+    if threshold is None or not options.suppress_dust_trades:
+        return False
+
+    comparison = _trade_threshold_comparison(
+        threshold=threshold,
+        notional_currency=intended_notional.currency,
+        market_data=market_data,
+    )
+    if comparison.comparison_threshold is None:
+        dq_log.setdefault("minimum_trade_threshold_fx_unavailable", []).append(
+            comparison.fx_pair or f"{threshold.currency}/{intended_notional.currency}"
+        )
+        diagnostics.warnings.append(comparison.reason_code)
+        diagnostics.minimum_trade_threshold_evaluations.append(
+            MinimumTradeThresholdEvaluation(
+                instrument_id=instrument_id,
+                side=side,
+                comparison_outcome="BLOCKED",
+                intended_notional=intended_notional,
+                configured_threshold=threshold,
+                comparison_threshold=None,
+                fx_quote_pair=comparison.fx_pair,
+                fx_quote_rate=comparison.fx_quote_rate,
+                conversion_rate=comparison.conversion_rate,
+                conversion_direction=comparison.fx_direction,
+                reason_code=comparison.reason_code,
+            )
+        )
+        return True
+
+    suppressed_by_threshold = _suppress_dust_trade(
+        instrument_id=instrument_id,
+        notional=intended_notional.amount,
+        notional_currency=intended_notional.currency,
+        threshold=threshold,
+        options=options,
+        suppressed=suppressed,
+        comparison_threshold=comparison.comparison_threshold,
+    )
+    diagnostics.minimum_trade_threshold_evaluations.append(
+        MinimumTradeThresholdEvaluation(
+            instrument_id=instrument_id,
+            side=side,
+            comparison_outcome="SUPPRESSED" if suppressed_by_threshold else "KEPT",
+            intended_notional=intended_notional,
+            configured_threshold=threshold,
+            comparison_threshold=comparison.comparison_threshold,
+            fx_quote_pair=comparison.fx_pair,
+            fx_quote_rate=comparison.fx_quote_rate,
+            conversion_rate=comparison.conversion_rate,
+            conversion_direction=comparison.fx_direction,
+            reason_code=(
+                "BELOW_MIN_NOTIONAL" if suppressed_by_threshold else "MIN_TRADE_THRESHOLD_SATISFIED"
+            ),
+        )
+    )
+    return suppressed_by_threshold
 
 
 @dataclass(frozen=True)
@@ -300,12 +476,15 @@ def _target_intent_context(
     threshold = _trade_notional_threshold(options=options, shelf_entry=shelf_ent)
     notional = sell_quantity.quantity * unit_value
 
-    if _suppress_dust_trade(
+    if _minimum_trade_threshold_excludes_candidate(
         instrument_id=instrument_id,
-        notional=notional,
-        notional_currency=price_ent.currency,
+        side=trade_delta.side,
+        intended_notional=Money(amount=notional, currency=price_ent.currency),
         threshold=threshold,
         options=options,
+        market_data=market_data,
+        dq_log=dq_log,
+        diagnostics=diagnostics,
         suppressed=suppressed,
     ):
         return None

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-01T01:09:47.844133+00:00",
+  "generatedAt": "2026-10-01T04:25:33.272287+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2556,6 +2556,34 @@
       ]
     },
     {
+      "semanticId": "lotus.comparison_outcome",
+      "canonicalTerm": "comparison_outcome",
+      "preferredName": "comparison_outcome",
+      "description": "Result of the currency-normalized minimum-trade comparison.",
+      "example": "KEPT",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.comparison_threshold",
+      "canonicalTerm": "comparison_threshold",
+      "preferredName": "comparison_threshold",
+      "description": "Threshold normalized into trade currency, absent when conversion is blocked.",
+      "example": "comparison_threshold_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.completed_at",
       "canonicalTerm": "completed_at",
       "preferredName": "completed_at",
@@ -2595,6 +2623,22 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.configured_threshold",
+      "canonicalTerm": "configured_threshold",
+      "preferredName": "configured_threshold",
+      "description": "Canonical configured threshold used by lotus-manage APIs.",
+      "example": {
+        "key": "value"
+      },
+      "type": "Money-Output",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "Money-Output"
       ]
     },
     {
@@ -2848,6 +2892,20 @@
       ]
     },
     {
+      "semanticId": "lotus.conversion_direction",
+      "canonicalTerm": "conversion_direction",
+      "preferredName": "conversion_direction",
+      "description": "Whether conversion used identity, a direct quote, or an inverse quote.",
+      "example": "conversion_direction_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.conversion_intent_id",
       "canonicalTerm": "conversion_intent_id",
       "preferredName": "conversion_intent_id",
@@ -2860,6 +2918,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.conversion_rate",
+      "canonicalTerm": "conversion_rate",
+      "preferredName": "conversion_rate",
+      "description": "Applied configured-threshold to trade-currency conversion rate.",
+      "example": "conversion_rate_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -5960,6 +6032,34 @@
       ]
     },
     {
+      "semanticId": "lotus.fx_quote_pair",
+      "canonicalTerm": "fx_quote_pair",
+      "preferredName": "fx_quote_pair",
+      "description": "Market-data pair used for threshold conversion.",
+      "example": "fx_quote_pair_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.fx_quote_rate",
+      "canonicalTerm": "fx_quote_rate",
+      "preferredName": "fx_quote_rate",
+      "description": "Observed market-data quote for fx_quote_pair, before any inversion.",
+      "example": "fx_quote_rate_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.fx_rates",
       "canonicalTerm": "fx_rates",
       "preferredName": "fx_rates",
@@ -8890,6 +8990,22 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.minimum_trade_threshold_evaluations",
+      "canonicalTerm": "minimum_trade_threshold_evaluations",
+      "preferredName": "minimum_trade_threshold_evaluations",
+      "description": "Currency-normalized minimum-trade comparison and refusal provenance.",
+      "example": [
+        "minimum_trade_threshold_evaluations_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -24521,6 +24637,150 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
             "name": "result.diagnostics.dropped_intents",
             "location": "body",
             "required": false,
@@ -26646,6 +26906,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "result.diagnostics.dropped_intents",
@@ -28917,6 +29321,150 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
             "name": "result.diagnostics.dropped_intents",
             "location": "body",
             "required": false,
@@ -31074,6 +31622,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "run.result.diagnostics.dropped_intents",
@@ -33234,6 +33926,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "artifact.result.diagnostics.dropped_intents",
@@ -35779,6 +36615,150 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
             "name": "run.result.diagnostics.dropped_intents",
             "location": "body",
             "required": false,
@@ -37937,6 +38917,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "artifact.result.diagnostics.dropped_intents",
@@ -40482,6 +41606,150 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
             "name": "run.result.diagnostics.dropped_intents",
             "location": "body",
             "required": false,
@@ -42640,6 +43908,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "artifact.result.diagnostics.dropped_intents",
@@ -45185,6 +46597,150 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "run.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
             "name": "run.result.diagnostics.dropped_intents",
             "location": "body",
             "required": false,
@@ -47343,6 +48899,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "artifact.result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "artifact.result.diagnostics.dropped_intents",
@@ -49910,6 +51610,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "result.diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "result.diagnostics.dropped_intents",
@@ -57068,6 +58912,150 @@
             "type": "string",
             "semanticId": "lotus.currency",
             "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.minimum_trade_threshold_evaluations",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_trade_threshold_evaluations"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].instrument_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.instrument_id",
+            "attributeRef": "#/attributeCatalog/lotus.instrument_id"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].side",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.side",
+            "attributeRef": "#/attributeCatalog/lotus.side"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].comparison_outcome",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.comparison_outcome",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_outcome"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].intended_notional",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.intended_notional",
+            "attributeRef": "#/attributeCatalog/lotus.intended_notional"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].intended_notional.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].intended_notional.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].configured_threshold",
+            "location": "body",
+            "required": true,
+            "type": "Money-Output",
+            "semanticId": "lotus.configured_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.configured_threshold"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].configured_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.comparison_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.comparison_threshold"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.amount",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].comparison_threshold.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].fx_quote_pair",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_pair",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_pair"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].fx_quote_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.fx_quote_rate",
+            "attributeRef": "#/attributeCatalog/lotus.fx_quote_rate"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].conversion_rate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_rate",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_rate"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].conversion_direction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.conversion_direction",
+            "attributeRef": "#/attributeCatalog/lotus.conversion_direction"
+          },
+          {
+            "name": "diagnostics.minimum_trade_threshold_evaluations[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
           },
           {
             "name": "diagnostics.dropped_intents",
