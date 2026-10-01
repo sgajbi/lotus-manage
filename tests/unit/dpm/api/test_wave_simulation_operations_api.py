@@ -276,3 +276,50 @@ def test_async_simulation_operation_is_tenant_isolated_and_cancellable() -> None
     persisted_wave = repository.get_wave(wave_id=WAVE_ID, tenant_id=TENANT_ID)
     assert persisted_wave is not None
     assert persisted_wave.state == "SIMULATION_FAILED"
+
+
+def test_async_simulation_rejects_non_executable_wave_before_admission() -> None:
+    repository = InMemoryDpmWaveRepository()
+    wave = _source_checked_wave().model_copy(update={"state": "CREATED"})
+    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None, tenant_id=TENANT_ID)
+    client = _client(repository)
+
+    response = _admit(client)
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "DPM_WAVE_SIMULATION_INVALID_STATE"
+
+
+def test_async_simulation_operation_routes_fail_closed_for_unknown_or_wrong_tenant_operation() -> (
+    None
+):
+    repository = InMemoryDpmWaveRepository()
+    repository.save_wave(
+        wave=_source_checked_wave(),
+        idempotency_key=None,
+        request_hash=None,
+        tenant_id=TENANT_ID,
+    )
+    client = _client(repository)
+    unknown = "wso_missing"
+
+    assert client.get(f"{BASE_PATH}/simulation-operations/{unknown}").status_code == 404
+    assert client.get(f"{BASE_PATH}/simulation-operations/{unknown}/results").status_code == 404
+    assert (
+        client.post(
+            f"{BASE_PATH}/simulation-operations/{unknown}/work",
+            json={"worker_id": "worker-01", "max_items": 1, "lease_seconds": 30},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(f"{BASE_PATH}/simulation-operations/{unknown}/retry", json={}).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            f"{BASE_PATH}/simulation-operations/{unknown}/cancel",
+            json={"reason_code": "OPERATOR_CANCELLED"},
+        ).status_code
+        == 404
+    )
