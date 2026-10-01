@@ -47,9 +47,19 @@ class RiskEventAffectedPortfolio:
 
 
 @dataclass(frozen=True)
+class RiskEventExcludedPortfolio:
+    portfolio_id: str
+    mandate_id: str | None
+    source_ref: str
+    impact_score: Decimal
+    dominant_bucket: str
+
+
+@dataclass(frozen=True)
 class RiskEventAffectedCohort:
     cohort_id: str
     risk_event_id: str
+    as_of_date: date
     display_name: str
     product_name: str
     product_version: str
@@ -58,6 +68,7 @@ class RiskEventAffectedCohort:
     calculation_supportability: str
     reason_codes: tuple[str, ...]
     affected_portfolios: tuple[RiskEventAffectedPortfolio, ...]
+    excluded_portfolios: tuple[RiskEventExcludedPortfolio, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -460,6 +471,7 @@ def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedC
         return RiskEventAffectedCohort(
             cohort_id=_required_text(body=body, key="cohort_id"),
             risk_event_id=_required_text(body=body, key="risk_event_id"),
+            as_of_date=date.fromisoformat(_required_text(body=body, key="as_of_date")),
             display_name=_required_text(body=body, key="display_name"),
             product_name=metadata.product_name,
             product_version=metadata.product_version,
@@ -468,6 +480,7 @@ def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedC
             calculation_supportability=metadata.calculation_supportability,
             reason_codes=_risk_event_reason_codes(body.get("reason_codes")),
             affected_portfolios=_risk_event_affected_portfolios(body.get("affected_portfolios")),
+            excluded_portfolios=_risk_event_excluded_portfolios(body.get("excluded_portfolios")),
         )
     except (KeyError, TypeError, ValueError, InvalidOperation) as exc:
         raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
@@ -475,7 +488,7 @@ def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedC
 
 def _risk_event_cohort_metadata(body: dict[str, Any]) -> _RiskEventCohortMetadata:
     metadata = _dict_section(body, "metadata")
-    return _RiskEventCohortMetadata(
+    cohort_metadata = _RiskEventCohortMetadata(
         product_name=_required_text(body=metadata, key="product_name"),
         product_version=_required_text(body=metadata, key="product_version"),
         source_service=_required_text(body=metadata, key="source_service"),
@@ -485,6 +498,13 @@ def _risk_event_cohort_metadata(body: dict[str, Any]) -> _RiskEventCohortMetadat
             key="calculation_supportability",
         ),
     )
+    if (
+        cohort_metadata.product_name != "RiskEventAffectedCohort"
+        or cohort_metadata.product_version != "v1"
+        or cohort_metadata.source_service != "lotus-risk"
+    ):
+        raise ValueError("Unexpected risk-event cohort source product identity")
+    return cohort_metadata
 
 
 def _required_text(*, body: dict[str, Any], key: str) -> str:
@@ -517,16 +537,39 @@ def _risk_event_affected_portfolios(value: Any) -> tuple[RiskEventAffectedPortfo
     return tuple(_risk_event_affected_portfolio(portfolio) for portfolio in value)
 
 
+def _risk_event_excluded_portfolios(value: Any) -> tuple[RiskEventExcludedPortfolio, ...]:
+    if not isinstance(value, list):
+        raise ValueError("excluded_portfolios must be a list")
+    if not all(isinstance(portfolio, dict) for portfolio in value):
+        raise ValueError("excluded_portfolios entries must be objects")
+    return tuple(_risk_event_excluded_portfolio(portfolio) for portfolio in value)
+
+
+def _risk_event_excluded_portfolio(portfolio: dict[str, Any]) -> RiskEventExcludedPortfolio:
+    return RiskEventExcludedPortfolio(
+        portfolio_id=_required_text(body=portfolio, key="portfolio_id"),
+        mandate_id=_optional_text(portfolio.get("mandate_id")),
+        source_ref=_required_text(body=portfolio, key="source_ref"),
+        impact_score=_risk_event_impact_score(portfolio),
+        dominant_bucket=_required_text(body=portfolio, key="dominant_bucket"),
+    )
+
+
+def _risk_event_impact_score(portfolio: dict[str, Any]) -> Decimal:
+    score = _required_decimal(body=portfolio, key="impact_score")
+    if not score.is_finite() or score < 0:
+        raise ValueError("impact_score must be finite and non-negative")
+    return score
+
+
 def _risk_event_affected_portfolio(portfolio: dict[str, Any]) -> RiskEventAffectedPortfolio:
     return RiskEventAffectedPortfolio(
-        portfolio_id=str(portfolio["portfolio_id"]),
-        mandate_id=str(portfolio["mandate_id"])
-        if portfolio.get("mandate_id") is not None
-        else None,
-        source_ref=str(portfolio["source_ref"]),
+        portfolio_id=_required_text(body=portfolio, key="portfolio_id"),
+        mandate_id=_optional_text(portfolio.get("mandate_id")),
+        source_ref=_required_text(body=portfolio, key="source_ref"),
         reason_codes=tuple(str(code) for code in portfolio.get("reason_codes", [])),
-        impact_score=Decimal(str(portfolio["impact_score"])),
-        dominant_bucket=str(portfolio["dominant_bucket"]),
+        impact_score=_risk_event_impact_score(portfolio),
+        dominant_bucket=_required_text(body=portfolio, key="dominant_bucket"),
     )
 
 

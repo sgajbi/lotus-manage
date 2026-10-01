@@ -274,6 +274,10 @@ Risk-event rebalance waves consume `lotus-risk` `RiskEventAffectedCohort:v1` thr
 risk-authority client when `DPM_RISK_BASE_URL` is configured. Manage requires caller-supplied
 candidate portfolios and source-supplied exposure weights, preserves lotus-risk cohort/event/member
 lineage, and fails closed instead of calculating risk-event impact or full-book membership locally.
+Candidate portfolio IDs must be unique before the Risk call. A ready cohort with repeated,
+contradictory affected/excluded, unknown, wrong-event/date, or wrong-mandate membership is refused
+with 424 before wave preview/create can publish it; excluded members are validated but not
+turned into wave items.
 Tactical house-view rebalance waves consume `lotus-advise` `TacticalHouseViewAffectedCohort:v1`
 through the bounded advise-authority client when `DPM_ADVISE_BASE_URL` is configured. Manage
 requires bank-authored tactical-view refs plus source-backed candidate portfolios, preserves Advise

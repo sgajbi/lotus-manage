@@ -506,6 +506,9 @@ Operationally important truths:
    Core client-restriction profiles must also match the requested portfolio, date, and mandate.
    Scoped rules with blank or absent selectors are rejected before they can become apparent
    client-wide restrictions; intentional `client`/`mandate` rules without selectors remain valid.
+   Risk-event waves reject duplicate candidate IDs before Risk evaluation and reject ready Risk
+   cohorts with duplicate, contradictory affected/excluded, unknown, wrong-date, or wrong-mandate
+   membership before preview or durable wave creation. Manage does not recompute Risk impact scores.
 8. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.
