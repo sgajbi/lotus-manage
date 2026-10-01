@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from src.core.rebalance_runs.models import (
@@ -12,12 +12,14 @@ from src.core.rebalance_runs.models import (
 
 def build_analyze_operation(
     *,
+    tenant_id: str,
     operation_id: str,
     correlation_id: str,
     request_json: dict[str, Any],
     created_at: datetime,
 ) -> DpmAsyncOperationRecord:
     return DpmAsyncOperationRecord(
+        tenant_id=tenant_id,
         operation_id=operation_id,
         operation_type="ANALYZE_SCENARIOS",
         status="PENDING",
@@ -56,53 +58,35 @@ def to_async_operation_list_item(
         finished_at=(
             operation.finished_at.isoformat() if operation.finished_at is not None else None
         ),
+        execution_attempt=operation.execution_attempt,
+        execution_lease_expires_at=(
+            operation.execution_lease_expires_at.isoformat()
+            if operation.execution_lease_expires_at is not None
+            else None
+        ),
     )
 
 
-def is_operation_executable(operation: DpmAsyncOperationRecord) -> bool:
-    return operation.status == "PENDING" and operation.request_json is not None
-
-
-def mark_operation_running_record(
+def is_operation_executable(
     operation: DpmAsyncOperationRecord,
     *,
-    started_at: datetime,
-) -> None:
-    operation.status = "RUNNING"
-    operation.started_at = started_at
-
-
-def complete_operation_success_record(
-    operation: DpmAsyncOperationRecord,
-    *,
-    result_json: dict[str, Any],
-    finished_at: datetime,
-) -> None:
-    operation.status = "SUCCEEDED"
-    operation.result_json = result_json
-    operation.error_json = None
-    operation.finished_at = finished_at
-
-
-def complete_operation_failure_record(
-    operation: DpmAsyncOperationRecord,
-    *,
-    code: str,
-    message: str,
-    finished_at: datetime,
-) -> None:
-    operation.status = "FAILED"
-    operation.result_json = None
-    operation.error_json = {"code": code, "message": message}
-    operation.finished_at = finished_at
+    now: datetime | None = None,
+) -> bool:
+    if operation.request_json is None:
+        return False
+    if operation.status == "PENDING":
+        return True
+    current = now or datetime.now(timezone.utc)
+    return (
+        operation.status == "RUNNING"
+        and operation.execution_lease_expires_at is not None
+        and operation.execution_lease_expires_at <= current
+    )
 
 
 __all__ = [
     "build_analyze_operation",
-    "complete_operation_failure_record",
-    "complete_operation_success_record",
     "is_operation_executable",
-    "mark_operation_running_record",
     "to_async_operation_list_item",
     "to_async_operation_list_response",
 ]

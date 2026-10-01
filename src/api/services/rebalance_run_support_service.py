@@ -44,6 +44,10 @@ def get_dpm_run_support_service() -> DpmRunSupportService:
                 "DPM_ASYNC_OPERATIONS_TTL_SECONDS",
                 86400,
             ),
+            async_execution_lease_seconds=rebalance_run_support_config.env_int(
+                "DPM_ASYNC_EXECUTION_LEASE_SECONDS",
+                300,
+            ),
             supportability_retention_days=rebalance_run_support_config.env_non_negative_int(
                 "DPM_SUPPORTABILITY_RETENTION_DAYS",
                 0,

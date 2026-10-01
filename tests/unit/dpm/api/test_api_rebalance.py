@@ -372,7 +372,8 @@ def test_stateful_analyze_async_persists_resolved_core_lineage(monkeypatch):
             headers={"X-Correlation-Id": "corr-stateful-async", "X-Tenant-Id": "tenant_001"},
         )
         operation = raw_client.get(
-            f"/api/v1/rebalance/operations/{accepted.json()['operation_id']}"
+            f"/api/v1/rebalance/operations/{accepted.json()['operation_id']}",
+            headers={"X-Tenant-Id": "tenant_001"},
         )
 
     assert accepted.status_code == 202
@@ -1011,6 +1012,7 @@ def test_dpm_async_operation_lookup_not_found_and_disabled(client, monkeypatch):
 def test_dpm_async_operation_lookup_by_id_and_correlation(client):
     service = get_dpm_run_support_service()
     accepted = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-dpm-async-support-1",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
@@ -1031,6 +1033,40 @@ def test_dpm_async_operation_lookup_by_id_and_correlation(client):
     )
     assert by_correlation.status_code == 200
     assert by_correlation.json()["operation_id"] == accepted.operation_id
+
+
+def test_dpm_async_operations_are_non_disclosing_and_correlation_is_tenant_scoped(client):
+    service = get_dpm_run_support_service()
+    tenant_a = service.submit_analyze_async(
+        tenant_id="tenant-a",
+        correlation_id="corr-shared-across-tenants",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+    )
+    tenant_b = service.submit_analyze_async(
+        tenant_id="tenant-b",
+        correlation_id="corr-shared-across-tenants",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+    )
+
+    assert (
+        client.get(
+            f"/api/v1/rebalance/operations/{tenant_a.operation_id}",
+            headers={"X-Tenant-Id": "tenant-b"},
+        ).status_code
+        == 404
+    )
+    by_correlation = client.get(
+        "/api/v1/rebalance/operations/by-correlation/corr-shared-across-tenants",
+        headers={"X-Tenant-Id": "tenant-b"},
+    )
+    assert by_correlation.status_code == 200
+    assert by_correlation.json()["operation_id"] == tenant_b.operation_id
+    inventory = client.get(
+        "/api/v1/rebalance/operations",
+        headers={"X-Tenant-Id": "tenant-b"},
+    )
+    assert inventory.status_code == 200
+    assert [item["operation_id"] for item in inventory.json()["items"]] == [tenant_b.operation_id]
 
 
 def test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result(client):
@@ -1106,10 +1142,12 @@ def test_dpm_async_operation_list_rejects_unsupported_query_parameters(client):
 def test_dpm_async_operation_list_filters_and_cursor(client):
     service = get_dpm_run_support_service()
     one = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-dpm-ops-list-1",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
     two = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-dpm-ops-list-2",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
@@ -1151,16 +1189,19 @@ def test_dpm_async_operation_list_filters_by_created_window_and_operation_type(c
     in_window_created_at = now - timedelta(hours=1)
     out_of_window_created_at = now + timedelta(hours=1)
     old = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-dpm-ops-old",
         request_json={"scenarios": {"baseline": {"options": {}}}},
         created_at=old_created_at,
     )
     in_window = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-dpm-ops-window",
         request_json={"scenarios": {"baseline": {"options": {}}}},
         created_at=in_window_created_at,
     )
     future = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-dpm-ops-future",
         request_json={"scenarios": {"baseline": {"options": {}}}},
         created_at=out_of_window_created_at,
@@ -1191,6 +1232,7 @@ def test_dpm_async_operation_ttl_expiry_by_id_and_correlation(client, monkeypatc
     reset_dpm_run_support_service_for_tests()
     service = get_dpm_run_support_service()
     accepted = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-dpm-async-ttl-expired",
         request_json={"scenarios": {"baseline": {"options": {}}}},
         created_at=datetime.now(timezone.utc) - timedelta(seconds=10),
@@ -1221,6 +1263,7 @@ def test_dpm_supportability_summary_endpoint(client):
 
     service = get_dpm_run_support_service()
     service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-support-summary-op-1",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
@@ -1345,6 +1388,7 @@ def test_dpm_run_support_bundle_endpoint(client):
 
     service = get_dpm_run_support_service()
     accepted = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-support-bundle-1",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
@@ -1455,6 +1499,7 @@ def test_dpm_run_support_bundle_endpoint_by_operation(client):
 
     service = get_dpm_run_support_service()
     accepted = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-support-bundle-3",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
@@ -1494,6 +1539,7 @@ def test_dpm_run_support_bundle_endpoint_disabled_and_not_found(client, monkeypa
 
 def test_dpm_run_support_service_env_parsing_defaults(monkeypatch):
     monkeypatch.setenv("DPM_ASYNC_OPERATIONS_TTL_SECONDS", "not-an-int")
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_LEASE_SECONDS", "not-an-int")
     monkeypatch.setenv("DPM_SUPPORTABILITY_RETENTION_DAYS", "not-an-int")
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
     monkeypatch.setenv("DPM_WORKFLOW_REQUIRES_REVIEW_FOR_STATUSES", " , ")
@@ -1502,6 +1548,7 @@ def test_dpm_run_support_service_env_parsing_defaults(monkeypatch):
 
     service = get_dpm_run_support_service()
     assert service._async_operation_ttl_seconds == 86400
+    assert service._async_execution_lease_seconds == 300
     assert service._supportability_retention_days == 0
     assert service._workflow_enabled is True
     assert service._workflow_requires_review_for_statuses == {"PENDING_REVIEW"}
@@ -2508,7 +2555,10 @@ def test_analyze_async_accept_only_manual_execute_captures_failure(client, monke
     operation_id = accepted.json()["operation_id"]
 
     with patch("src.api.main._execute_batch_analysis", side_effect=RuntimeError("boom")):
-        executed = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+        executed = client.post(
+            f"/api/v1/rebalance/operations/{operation_id}/execute",
+            headers={"X-Tenant-Id": "tenant-test"},
+        )
 
     assert executed.status_code == 200
     executed_body = executed.json()
@@ -2573,7 +2623,10 @@ def test_analyze_async_accept_only_manual_execute_preserves_tenant_policy_contex
 
     with patch("src.api.main.run_simulation") as mock_run:
         mock_run.return_value = real_result
-        executed = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+        executed = client.post(
+            f"/api/v1/rebalance/operations/{operation_id}/execute",
+            headers={"X-Tenant-Id": "tenant_001"},
+        )
 
     assert executed.status_code == 200
     assert executed.json()["status"] == "SUCCEEDED"

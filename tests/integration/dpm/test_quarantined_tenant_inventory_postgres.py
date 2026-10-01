@@ -37,6 +37,7 @@ def test_inventory_reports_every_quarantine_without_making_it_tenant_readable() 
         "rebalance_run_id": f"aaa_inventory_rebalance_run_{suffix}",
         "run_idempotency_key": f"aaa-inventory-run-idem-{suffix}",
         "lineage_source_id": f"aaa_inventory_lineage_source_{suffix}",
+        "operation_id": f"aaa_inventory_operation_{suffix}",
         "mandate_id": f"MANDATE_INVENTORY_{suffix}",
         "portfolio_id": f"PF_INVENTORY_{suffix}",
     }
@@ -79,6 +80,7 @@ def test_inventory_reports_every_quarantine_without_making_it_tenant_readable() 
             "dpm_rebalance_waves": ("wave_id", ids["wave_id"]),
             "dpm_pre_trade_proof_packs": ("proof_pack_id", ids["proof_pack_id"]),
             "dpm_monitoring_runs": ("monitoring_run_id", ids["monitoring_run_id"]),
+            "dpm_async_operations": ("operation_id", ids["operation_id"]),
         }
         for dataset, (column, value) in expected_identifiers.items():
             assert any(row[column] == value for row in by_name[dataset]["rows"])
@@ -256,6 +258,15 @@ def _insert_quarantined_rows(*, dsn: str, ids: dict[str, str]) -> None:
             """,
             (ids["lineage_source_id"], ids["rebalance_run_id"]),
         )
+        connection.execute(
+            """
+            INSERT INTO dpm_async_operations (
+                operation_id, operation_type, status, correlation_id, created_at, request_json
+            ) VALUES (%s, 'ANALYZE_SCENARIOS', 'PENDING', %s,
+                      '2026-09-09T00:00:00+00:00', '{}')
+            """,
+            (ids["operation_id"], f"corr-{ids['operation_id']}"),
+        )
         connection.commit()
 
 
@@ -275,6 +286,7 @@ def _row_counts(*, dsn: str, ids: dict[str, str]) -> dict[str, int]:
         ),
         "dpm_run_idempotency_history": ("idempotency_key", ids["run_idempotency_key"]),
         "dpm_lineage_edges": ("source_entity_id", ids["lineage_source_id"]),
+        "dpm_async_operations": ("operation_id", ids["operation_id"]),
     }
     with psycopg.connect(dsn, row_factory=dict_row) as connection:
         return {
@@ -288,6 +300,10 @@ def _row_counts(*, dsn: str, ids: dict[str, str]) -> dict[str, int]:
 
 def _delete_quarantined_rows(*, dsn: str, ids: dict[str, str]) -> None:
     with psycopg.connect(dsn) as connection:
+        connection.execute(
+            "DELETE FROM dpm_async_operations WHERE operation_id = %s",
+            (ids["operation_id"],),
+        )
         connection.execute(
             "DELETE FROM dpm_lineage_edges WHERE source_entity_id = %s",
             (ids["lineage_source_id"],),

@@ -402,7 +402,13 @@ writes persist `CORE_COMPILED` or `CALLER_SUPPLIED` producer provenance.
 
 Async scenario analysis defaults to inline execution in Docker. For accept-now/execute-later live
 proof, start the stack with `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`; manual execution can be disabled
-with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false` when the execute endpoint must be hidden.
+with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false` when the execute endpoint must be hidden. Every
+async route requires normalized `X-Tenant-Id`. PostgreSQL atomically claims execution with an
+opaque, expiring fence (`DPM_ASYNC_EXECUTION_LEASE_SECONDS`, default `300`); only the current owner
+may publish terminal evidence. Status exposes the monotonic attempt and lease expiry, never the
+token. Expired work can be reclaimed after a crash, while stale workers cannot replace the accepted
+result. This is durable ownership and recovery proof, not a queue, capacity claim, or external trade
+execution guarantee.
 Lineage lookup remains feature-gated by default; set `DPM_LINEAGE_APIS_ENABLED=true` when running
 lineage endpoint certification or supportability incident drills.
 Idempotency history remains feature-gated by default; set

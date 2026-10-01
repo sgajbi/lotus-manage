@@ -70,31 +70,67 @@ def _sample_result(
 def test_service_operation_state_mutation_and_missing_operation_errors():
     service = _build_service()
     accepted = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-service-op-1",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
 
-    service.mark_operation_running(operation_id=accepted.operation_id)
-    running = service.get_async_operation(operation_id=accepted.operation_id)
+    claim = service.prepare_analyze_operation_execution(
+        tenant_id="tenant-test", operation_id=accepted.operation_id
+    )
+    running = service.get_async_operation(
+        tenant_id="tenant-test", operation_id=accepted.operation_id
+    )
     assert running.status == "RUNNING"
     assert running.started_at is not None
+    assert running.execution_attempt == 1
+    assert running.execution_lease_expires_at is not None
+    assert "execution_token" not in running.model_dump()
 
-    service.complete_operation_success(operation_id=accepted.operation_id, result_json={"ok": True})
-    succeeded = service.get_async_operation(operation_id=accepted.operation_id)
+    service.complete_operation_success(claim=claim, result_json={"ok": True})
+    service.complete_operation_success(claim=claim, result_json={"ok": True})
+    with pytest.raises(
+        DpmAsyncOperationConflictError,
+        match="DPM_ASYNC_OPERATION_STALE_EXECUTION_OWNER",
+    ):
+        service.complete_operation_success(claim=claim, result_json={"ok": False})
+    succeeded = service.get_async_operation(
+        tenant_id="tenant-test", operation_id=accepted.operation_id
+    )
     assert succeeded.status == "SUCCEEDED"
     assert succeeded.result == {"ok": True}
     assert succeeded.error is None
 
     accepted_failed = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-service-op-2",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
+    failed_claim = service.prepare_analyze_operation_execution(
+        tenant_id="tenant-test", operation_id=accepted_failed.operation_id
+    )
     service.complete_operation_failure(
-        operation_id=accepted_failed.operation_id,
+        claim=failed_claim,
         code="FAILED_TEST",
         message="failed",
     )
-    failed = service.get_async_operation(operation_id=accepted_failed.operation_id)
+    service.complete_operation_failure(
+        claim=failed_claim,
+        code="FAILED_TEST",
+        message="failed",
+    )
+    with pytest.raises(
+        DpmAsyncOperationConflictError,
+        match="DPM_ASYNC_OPERATION_STALE_EXECUTION_OWNER",
+    ):
+        service.complete_operation_failure(
+            claim=failed_claim,
+            code="DIFFERENT_FAILURE",
+            message="must not replace the owner's terminal result",
+        )
+    failed = service.get_async_operation(
+        tenant_id="tenant-test", operation_id=accepted_failed.operation_id
+    )
     assert failed.status == "FAILED"
     assert failed.result is None
     assert failed.error is not None
@@ -102,12 +138,41 @@ def test_service_operation_state_mutation_and_missing_operation_errors():
     assert failed.error.message == "failed"
 
     with pytest.raises(DpmRunNotFoundError, match="DPM_ASYNC_OPERATION_NOT_FOUND"):
-        service.mark_operation_running(operation_id="dop_missing")
+        service.prepare_analyze_operation_execution(
+            tenant_id="tenant-test", operation_id="dop_missing"
+        )
+
+
+def test_service_async_operations_require_tenant_and_tenant_scope_lineage() -> None:
+    repository = InMemoryDpmRunRepository()
+    service = DpmRunSupportService(repository=repository)
+
+    with pytest.raises(ValueError, match="DPM_ASYNC_OPERATION_TENANT_REQUIRED"):
+        service.submit_analyze_async(
+            tenant_id="  ",
+            correlation_id="corr-no-tenant",
+            request_json={"scenarios": {}},
+        )
+
+    accepted = service.submit_analyze_async(
+        tenant_id=" tenant-a ",
+        correlation_id="corr-owned",
+        request_json={"scenarios": {}},
+    )
+    with pytest.raises(DpmRunNotFoundError, match="DPM_ASYNC_OPERATION_NOT_FOUND"):
+        service.get_async_operation(
+            tenant_id="tenant-b",
+            operation_id=accepted.operation_id,
+        )
+    edges = repository.list_lineage_edges(entity_id=accepted.operation_id)
+    assert len(edges) == 1
+    assert edges[0].tenant_id == "tenant-a"
 
 
 def test_service_rejects_duplicate_async_operation_correlation():
     service = _build_service()
     service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-service-duplicate",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
@@ -117,16 +182,9 @@ def test_service_rejects_duplicate_async_operation_correlation():
         match="DPM_ASYNC_OPERATION_CORRELATION_CONFLICT",
     ):
         service.submit_analyze_async(
+            tenant_id="tenant-test",
             correlation_id="corr-service-duplicate",
             request_json={"scenarios": {"baseline": {"options": {}}}},
-        )
-    with pytest.raises(DpmRunNotFoundError, match="DPM_ASYNC_OPERATION_NOT_FOUND"):
-        service.complete_operation_success(operation_id="dop_missing", result_json={"ok": True})
-    with pytest.raises(DpmRunNotFoundError, match="DPM_ASYNC_OPERATION_NOT_FOUND"):
-        service.complete_operation_failure(
-            operation_id="dop_missing",
-            code="ERR",
-            message="missing",
         )
 
 
@@ -224,11 +282,15 @@ def test_supportability_summary_posture_empty_ready_stale_and_degraded():
 
     degraded_service = _build_service()
     accepted = degraded_service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-supportability-degraded",
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
+    claim = degraded_service.prepare_analyze_operation_execution(
+        tenant_id="tenant-test", operation_id=accepted.operation_id
+    )
     degraded_service.complete_operation_failure(
-        operation_id=accepted.operation_id,
+        claim=claim,
         code="FAILED_TEST",
         message="failed",
     )
@@ -267,12 +329,14 @@ def test_supportability_summary_can_be_scoped_to_portfolio() -> None:
         tenant_id="tenant-test",
     )
     operation = service.submit_analyze_async(
+        tenant_id="tenant-test",
         correlation_id="corr-scoped",
         request_json={"portfolio_id": "pf-scoped"},
     )
-    service.complete_operation_success(
-        operation_id=operation.operation_id, result_json={"ok": True}
+    claim = service.prepare_analyze_operation_execution(
+        tenant_id="tenant-test", operation_id=operation.operation_id
     )
+    service.complete_operation_success(claim=claim, result_json={"ok": True})
     service.apply_workflow_action(
         rebalance_run_id=scoped_result.rebalance_run_id,
         action="APPROVE",
@@ -437,6 +501,7 @@ def test_support_bundle_lookup_variants_project_the_same_persisted_run() -> None
         tenant_id="tenant-support-bundle-service",
     )
     operation = service.submit_analyze_async(
+        tenant_id="tenant-support-bundle-service",
         correlation_id=result.correlation_id,
         request_json={"portfolio_id": "pf-support-bundle-service"},
     )

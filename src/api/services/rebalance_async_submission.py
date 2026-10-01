@@ -16,6 +16,7 @@ from src.core.rebalance_runs import (
 def submit_analyze_async_request(
     *,
     service: DpmRunSupportService,
+    tenant_id: str,
     correlation_id: Optional[str],
     request_json: dict[str, object],
     source_context: Optional[DpmResolvedSourceContext],
@@ -23,6 +24,7 @@ def submit_analyze_async_request(
 ) -> DpmAsyncAcceptedResponse:
     try:
         accepted = service.submit_analyze_async(
+            tenant_id=tenant_id,
             correlation_id=correlation_id,
             request_json=request_json,
         )

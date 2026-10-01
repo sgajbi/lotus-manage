@@ -28,9 +28,13 @@ and source-owner methodology remain explicit boundaries unless a route section s
 - `POST /api/v1/rebalance/analyze/async`
   async what-if orchestration
 
-Async operation correlation ids are unique operation handles. Reusing an existing async
-correlation id returns `409 DPM_ASYNC_OPERATION_CORRELATION_CONFLICT` instead of leaking a
-storage-layer constraint.
+Async operation routes require normalized `X-Tenant-Id`; operation and correlation lookup are
+non-disclosing across tenants, and the same correlation id is independent between tenants. Reusing
+one within a tenant returns `409 DPM_ASYNC_OPERATION_CORRELATION_CONFLICT`. Execution is atomically
+claimed with a bounded lease and opaque fence. Status exposes `execution_attempt` and
+`execution_lease_expires_at`, never the token. An active competing or already-terminal execute
+returns `409`; expired work can be reclaimed, while a stale worker cannot replace terminal
+evidence.
 
 ## Run supportability surfaces
 

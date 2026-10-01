@@ -1319,9 +1319,9 @@ Request surface:
 - For `input_mode=stateless`: `stateless_input` with shared `portfolio_snapshot`,
   `market_data_snapshot`, `model_portfolio`, `shelf_entries`, plus a named `scenarios` map.
 - For `input_mode=stateful`: `stateful_input` selectors plus a top-level named `scenarios` map.
-- Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
-  `X-Tenant-Id` for stateless mode. Stateful mode requires matching `X-Tenant-Id` and
-  `stateful_input.tenant_id` before Core resolution.
+- Required header: normalized `X-Tenant-Id` in both stateless and stateful modes. Stateful mode
+  also requires it to match `stateful_input.tenant_id` before Core resolution.
+- Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`.
 - Scenario names must match `[a-z0-9_\-]{1,64}`.
 - Maximum scenario count is 20.
 
@@ -1398,7 +1398,8 @@ Functional coverage:
 - inline execution accepts and then persists terminal `SUCCEEDED` operation state,
 - accept-only mode keeps operation `PENDING` and executable,
 - manual execution transitions pending operation to terminal status,
-- duplicate correlation ids return `409` with `DPM_ASYNC_OPERATION_CORRELATION_CONFLICT`,
+- duplicate correlation ids within one tenant return `409` with
+  `DPM_ASYNC_OPERATION_CORRELATION_CONFLICT`; the same value is independent across tenants,
 - generated correlation ids are echoed in the response body and `X-Correlation-Id` response header,
 - operation failures are captured as `FAILED` status with structured error details,
 - async disabled/manual-execution disabled modes return governed `404` responses,
@@ -1411,7 +1412,10 @@ Non-functional posture:
 - The accepted response is deliberately small and stable for low-latency submission.
 - Terminal results are retrieved through operation status endpoints rather than overloading the
   submission response.
-- Correlation ids are unique operation handles to prevent ambiguous supportability lookups.
+- Correlation ids are tenant-scoped operation handles; foreign and NULL-tenant legacy rows are
+  non-disclosing.
+- PostgreSQL execution admission is one atomic expiring claim. Status exposes its monotonic attempt
+  and lease expiry, while the opaque publication fence remains internal.
 - Accept-only mode enables external orchestration without losing policy context.
 
 Upstream integration posture:
@@ -1449,6 +1453,7 @@ external orchestration flows that intentionally separate operation acceptance fr
 Request surface:
 
 - Path: `operation_id`.
+- Required header: normalized `X-Tenant-Id` matching submission ownership.
 - Body: none.
 - Response: `DpmAsyncOperationStatusResponse`.
 - Terminal `SUCCEEDED` responses include the `BatchRebalanceResult` payload in `result`.
@@ -1457,6 +1462,9 @@ Request surface:
 Functional coverage:
 
 - pending accept-only operations execute successfully and become non-executable,
+- competing claims invoke the financial engine at most once while the lease is active and return a
+  governed `409` to the loser,
+- expired claims are recoverable after restart; stale owners cannot rewrite terminal evidence,
 - execution failures are captured as terminal `FAILED` operation status,
 - failed operations cannot be re-executed and return `409`,
 - missing operations return `404`,
@@ -1511,6 +1519,7 @@ Request surface:
 
 - Query filters: `created_from`, `created_to`, `operation_type`, `status_filter`,
   `correlation_id`.
+- Required header: normalized `X-Tenant-Id`; inventory is tenant scoped.
 - Pagination: `limit` and opaque `cursor` from the prior response's `next_cursor`.
 - Unsupported aliases such as `status` are rejected.
 

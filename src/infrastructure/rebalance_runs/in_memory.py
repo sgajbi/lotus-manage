@@ -43,7 +43,7 @@ class InMemoryDpmRunRepository(DpmRunRepository):
         self._submission_claims: dict[tuple[str, str], DpmSimulationSubmissionClaimRecord] = {}
         self._run_artifacts: dict[str, dict[str, Any]] = {}
         self._operations: dict[str, DpmAsyncOperationRecord] = {}
-        self._operation_by_correlation: dict[str, str] = {}
+        self._operation_by_correlation: dict[tuple[Optional[str], str], str] = {}
         self._workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]] = {}
         self._lineage_edges_by_entity: dict[str, list[DpmLineageEdgeRecord]] = {}
 
@@ -323,26 +323,134 @@ class InMemoryDpmRunRepository(DpmRunRepository):
         with self._lock:
             self._save_operation(operation)
 
+    def claim_operation_execution(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        claimed_at: datetime,
+        lease_expires_at: datetime,
+    ) -> Optional[DpmAsyncOperationRecord]:
+        with self._lock:
+            operation = self._operations.get(operation_id)
+            if operation is None or operation.tenant_id != tenant_id:
+                return None
+            lease_expired = (
+                operation.status == "RUNNING"
+                and operation.execution_lease_expires_at is not None
+                and operation.execution_lease_expires_at <= claimed_at
+            )
+            if operation.request_json is None or not (
+                operation.status == "PENDING" or lease_expired
+            ):
+                return None
+            operation.status = "RUNNING"
+            operation.started_at = claimed_at
+            operation.finished_at = None
+            operation.result_json = None
+            operation.error_json = None
+            operation.execution_token = execution_token
+            operation.execution_attempt += 1
+            operation.execution_claimed_at = claimed_at
+            operation.execution_lease_expires_at = lease_expires_at
+            return operation.model_copy(deep=True)
+
+    def publish_operation_success(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        result_json: dict[str, Any],
+        finished_at: datetime,
+    ) -> bool:
+        with self._lock:
+            operation = self._operations.get(operation_id)
+            if (
+                operation is None
+                or operation.tenant_id != tenant_id
+                or operation.status != "RUNNING"
+                or operation.execution_token != execution_token
+            ):
+                return False
+            operation.status = "SUCCEEDED"
+            operation.result_json = deepcopy(result_json)
+            operation.error_json = None
+            operation.finished_at = finished_at
+            operation.execution_lease_expires_at = None
+            return True
+
+    def publish_operation_failure(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        execution_token: str,
+        error_json: dict[str, str],
+        finished_at: datetime,
+    ) -> bool:
+        with self._lock:
+            operation = self._operations.get(operation_id)
+            if (
+                operation is None
+                or operation.tenant_id != tenant_id
+                or operation.status != "RUNNING"
+                or operation.execution_token != execution_token
+            ):
+                return False
+            operation.status = "FAILED"
+            operation.result_json = None
+            operation.error_json = deepcopy(error_json)
+            operation.finished_at = finished_at
+            operation.execution_lease_expires_at = None
+            return True
+
     def _save_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        existing_operation_id = self._operation_by_correlation.get(operation.correlation_id)
+        correlation_key = (operation.tenant_id, operation.correlation_id)
+        existing_operation_id = self._operation_by_correlation.get(correlation_key)
         if existing_operation_id is not None and existing_operation_id != operation.operation_id:
             raise DpmRunRepositoryConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
         self._operations[operation.operation_id] = deepcopy(operation)
-        self._operation_by_correlation[operation.correlation_id] = operation.operation_id
+        self._operation_by_correlation[correlation_key] = operation.operation_id
 
     def get_operation(self, *, operation_id: str) -> Optional[DpmAsyncOperationRecord]:
         with self._lock:
             operation = self._operations.get(operation_id)
             return deepcopy(operation) if operation is not None else None
 
+    def get_operation_for_tenant(
+        self, *, tenant_id: str, operation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]:
+        operation = self.get_operation(operation_id=operation_id)
+        return operation if operation is not None and operation.tenant_id == tenant_id else None
+
     def get_operation_by_correlation(
         self, *, correlation_id: str
     ) -> Optional[DpmAsyncOperationRecord]:
         with self._lock:
-            operation_id = self._operation_by_correlation.get(correlation_id)
+            operation_id = next(
+                (
+                    stored_operation_id
+                    for (
+                        _,
+                        stored_correlation_id,
+                    ), stored_operation_id in self._operation_by_correlation.items()
+                    if stored_correlation_id == correlation_id
+                ),
+                None,
+            )
             if operation_id is None:
                 return None
             operation = self._operations.get(operation_id)
+            return deepcopy(operation) if operation is not None else None
+
+    def get_operation_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> Optional[DpmAsyncOperationRecord]:
+        with self._lock:
+            operation_id = self._operation_by_correlation.get((tenant_id, correlation_id))
+            operation = self._operations.get(operation_id) if operation_id is not None else None
             return deepcopy(operation) if operation is not None else None
 
     def list_operations(
@@ -371,16 +479,52 @@ class InMemoryDpmRunRepository(DpmRunRepository):
             )
             return [deepcopy(row) for row in page], next_cursor
 
+    def list_operations_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        operation_type: Optional[str],
+        status: Optional[str],
+        correlation_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmAsyncOperationRecord], Optional[str]]:
+        with self._lock:
+            page, next_cursor = _list_operations_filtered(
+                operations=[
+                    operation
+                    for operation in self._operations.values()
+                    if operation.tenant_id == tenant_id
+                ],
+                filters=_OperationListFilters(
+                    created_from=created_from,
+                    created_to=created_to,
+                    operation_type=operation_type,
+                    status=status,
+                    correlation_id=correlation_id,
+                ),
+                limit=limit,
+                cursor=cursor,
+            )
+            return [deepcopy(row) for row in page], next_cursor
+
     def purge_expired_operations(self, *, ttl_seconds: int, now: datetime) -> int:
         with self._lock:
             cutoff = now.astimezone(timezone.utc) - timedelta(seconds=ttl_seconds)
             removed = 0
             for operation_id, operation in list(self._operations.items()):
+                if operation.status == "RUNNING":
+                    # A RUNNING row is recovery state.  Its lease, rather than the
+                    # general retention TTL, decides when another worker may claim it.
+                    continue
                 anchor = operation.finished_at or operation.created_at
                 if anchor < cutoff:
                     self._operations.pop(operation_id, None)
-                    if self._operation_by_correlation.get(operation.correlation_id) == operation_id:
-                        self._operation_by_correlation.pop(operation.correlation_id, None)
+                    correlation_key = (operation.tenant_id, operation.correlation_id)
+                    if self._operation_by_correlation.get(correlation_key) == operation_id:
+                        self._operation_by_correlation.pop(correlation_key, None)
                     removed += 1
             return removed
 

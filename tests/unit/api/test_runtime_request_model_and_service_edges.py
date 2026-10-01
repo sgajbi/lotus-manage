@@ -463,7 +463,9 @@ def test_async_manual_execution_disabled_is_reported(monkeypatch) -> None:
     monkeypatch.setenv("DPM_ASYNC_MANUAL_EXECUTION_ENABLED", "false")
 
     with pytest.raises(service.DpmRebalanceAsyncManualExecutionDisabledError) as exc_info:
-        service.execute_dpm_async_operation(operation_id="op_1", service=object())
+        service.execute_dpm_async_operation(
+            tenant_id="tenant-test", operation_id="op_1", service=object()
+        )
 
     assert exc_info.value.detail == "DPM_ASYNC_MANUAL_EXECUTION_DISABLED"
 
@@ -745,7 +747,9 @@ def test_rebalance_async_submission_records_success_and_conflict() -> None:
     class _SubmitService:
         captured: tuple[str | None, dict[str, object]] | None = None
 
-        def submit_analyze_async(self, *, correlation_id: str | None, request_json: dict):
+        def submit_analyze_async(
+            self, *, tenant_id: str, correlation_id: str | None, request_json: dict
+        ):
             self.captured = (correlation_id, request_json)
             return accepted
 
@@ -755,6 +759,7 @@ def test_rebalance_async_submission_records_success_and_conflict() -> None:
     assert (
         async_submission.submit_analyze_async_request(
             service=submit_service,
+            tenant_id="tenant-test",
             correlation_id="corr-submit",
             request_json=request_json,
             source_context=None,
@@ -765,7 +770,9 @@ def test_rebalance_async_submission_records_success_and_conflict() -> None:
     assert submit_service.captured == ("corr-submit", request_json)
 
     class _ConflictService:
-        def submit_analyze_async(self, *, correlation_id: str | None, request_json: dict):
+        def submit_analyze_async(
+            self, *, tenant_id: str, correlation_id: str | None, request_json: dict
+        ):
             raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
 
     with pytest.raises(
@@ -774,6 +781,7 @@ def test_rebalance_async_submission_records_success_and_conflict() -> None:
     ):
         async_submission.submit_analyze_async_request(
             service=_ConflictService(),
+            tenant_id="tenant-test",
             correlation_id="corr-submit",
             request_json=request_json,
             source_context=None,
@@ -783,7 +791,8 @@ def test_rebalance_async_submission_records_success_and_conflict() -> None:
 
 def test_rebalance_async_manual_execution_maps_missing_and_not_executable() -> None:
     class _StatusService:
-        def get_async_operation(self, *, operation_id: str):
+        def get_async_operation(self, *, tenant_id: str, operation_id: str):
+            assert tenant_id == "tenant-test"
             return SimpleNamespace(operation_id=operation_id, status="SUCCEEDED")
 
     calls: list[tuple[str, str]] = []
@@ -793,6 +802,7 @@ def test_rebalance_async_manual_execution_maps_missing_and_not_executable() -> N
 
     status = async_manual_execution.execute_analyze_async_operation_now(
         operation_id="op_manual",
+        tenant_id="tenant-test",
         service=_StatusService(),
         runner=_runner,
     )
@@ -806,6 +816,7 @@ def test_rebalance_async_manual_execution_maps_missing_and_not_executable() -> N
     with pytest.raises(service.DpmRebalanceAsyncOperationNotFoundError):
         async_manual_execution.execute_analyze_async_operation_now(
             operation_id="op_missing",
+            tenant_id="tenant-test",
             service=_StatusService(),
             runner=_missing_runner,
         )
@@ -816,6 +827,7 @@ def test_rebalance_async_manual_execution_maps_missing_and_not_executable() -> N
     with pytest.raises(service.DpmRebalanceAsyncOperationNotExecutableError):
         async_manual_execution.execute_analyze_async_operation_now(
             operation_id="op_done",
+            tenant_id="tenant-test",
             service=_StatusService(),
             runner=_not_executable_runner,
         )
@@ -826,24 +838,25 @@ def test_rebalance_async_operation_completion_records_success_and_failure() -> N
         success: tuple[str, dict] | None = None
         failure: tuple[str, str, str] | None = None
 
-        def complete_operation_success(self, *, operation_id: str, result_json: dict) -> None:
-            self.success = (operation_id, result_json)
+        def complete_operation_success(self, *, claim, result_json: dict) -> None:
+            self.success = (claim.operation_id, result_json)
 
         def complete_operation_failure(
             self,
             *,
-            operation_id: str,
+            claim,
             code: str,
             message: str,
         ) -> None:
-            self.failure = (operation_id, code, message)
+            self.failure = (claim.operation_id, code, message)
 
     service_double = _SupportService()
+    claim = SimpleNamespace(operation_id="op_001")
     result = SimpleNamespace(model_dump=lambda mode: {"batch_run_id": "batch_001"})
 
     async_completion.complete_analyze_async_operation(
         service=service_double,
-        operation_id="op_001",
+        claim=claim,
         result=result,
         execution_mode="inline",
     )
@@ -853,7 +866,7 @@ def test_rebalance_async_operation_completion_records_success_and_failure() -> N
     logged_messages: list[str] = []
     async_completion.fail_analyze_async_operation(
         service=service_double,
-        operation_id="op_001",
+        claim=claim,
         execution_mode="manual",
         exc=ValueError("bad payload"),
         current_logger=SimpleNamespace(exception=lambda message: logged_messages.append(message)),
@@ -880,11 +893,16 @@ def test_rebalance_async_operation_runner_executes_current_payload_context() -> 
     class _SupportService:
         completed: tuple[str, dict] | None = None
 
-        def prepare_analyze_operation_execution(self, *, operation_id: str):
-            return request_json, "corr-runner"
+        def prepare_analyze_operation_execution(self, *, tenant_id: str, operation_id: str):
+            assert tenant_id == "tenant-test"
+            return SimpleNamespace(
+                operation_id=operation_id,
+                correlation_id="corr-runner",
+                request_json=request_json,
+            )
 
-        def complete_operation_success(self, *, operation_id: str, result_json: dict):
-            self.completed = (operation_id, result_json)
+        def complete_operation_success(self, *, claim, result_json: dict):
+            self.completed = (claim.operation_id, result_json)
 
         def complete_operation_failure(self, **_kwargs):
             raise AssertionError("current async payload should execute successfully")
@@ -898,6 +916,7 @@ def test_rebalance_async_operation_runner_executes_current_payload_context() -> 
     support_service = _SupportService()
     async_runner.run_analyze_async_operation_from_store(
         operation_id="op_runner",
+        tenant_id="tenant-test",
         service=support_service,
         execution_mode="manual",
         execute_batch_fn=_execute_batch,
@@ -1417,7 +1436,9 @@ def test_async_operation_disabled_is_reported_before_manual_gate(monkeypatch) ->
     monkeypatch.setenv("DPM_ASYNC_OPERATIONS_ENABLED", "false")
 
     with pytest.raises(service.DpmRebalanceAsyncOperationsDisabledError) as exc_info:
-        service.execute_dpm_async_operation(operation_id="op_1", service=object())
+        service.execute_dpm_async_operation(
+            tenant_id="tenant-test", operation_id="op_1", service=object()
+        )
 
     assert exc_info.value.detail == "DPM_ASYNC_OPERATIONS_DISABLED"
 
@@ -1430,11 +1451,16 @@ def test_run_analyze_async_operation_accepts_legacy_request_payload(monkeypatch)
     class _SupportService:
         completed: tuple[str, dict] | None = None
 
-        def prepare_analyze_operation_execution(self, *, operation_id: str):
-            return batch_payload, "corr-legacy"
+        def prepare_analyze_operation_execution(self, *, tenant_id: str, operation_id: str):
+            assert tenant_id == "tenant-test"
+            return SimpleNamespace(
+                operation_id=operation_id,
+                correlation_id="corr-legacy",
+                request_json=batch_payload,
+            )
 
-        def complete_operation_success(self, *, operation_id: str, result_json: dict):
-            self.completed = (operation_id, result_json)
+        def complete_operation_success(self, *, claim, result_json: dict):
+            self.completed = (claim.operation_id, result_json)
 
         def complete_operation_failure(self, **_kwargs):
             raise AssertionError("legacy payload should execute successfully")
@@ -1449,7 +1475,9 @@ def test_run_analyze_async_operation_accepts_legacy_request_payload(monkeypatch)
     )
     monkeypatch.setattr(service, "execute_batch_analysis", lambda **_kwargs: expected)
 
-    service.run_analyze_async_operation(operation_id="op_legacy", service=fake_service)
+    service.run_analyze_async_operation(
+        tenant_id="tenant-test", operation_id="op_legacy", service=fake_service
+    )
 
     assert fake_service.completed is not None
     assert fake_service.completed[0] == "op_legacy"

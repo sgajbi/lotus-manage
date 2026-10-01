@@ -161,6 +161,21 @@ QUARANTINED_TENANT_DATASETS = (
         identifying_columns=("source_entity_id", "edge_type", "target_entity_id", "created_at"),
         hashed_columns=frozenset({"source_entity_id", "target_entity_id"}),
     ),
+    QuarantinedTenantDataset(
+        name="dpm_async_operations",
+        migration_version="0033",
+        migration_path=(
+            "src/infrastructure/postgres_migrations/dpm/0033_async_operation_ownership.sql"
+        ),
+        identifying_columns=(
+            "operation_id",
+            "operation_type",
+            "status",
+            "correlation_id",
+            "created_at",
+        ),
+        hashed_columns=frozenset({"correlation_id"}),
+    ),
 )
 
 

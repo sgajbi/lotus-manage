@@ -31,6 +31,7 @@ from src.core.rebalance_runs.idea_action_intake import (
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 from src.core.rebalance_runs.service import (
+    DpmAsyncExecutionClaim,
     DpmAsyncOperationConflictError,
     DpmRunNotFoundError,
     DpmRunSupportService,
@@ -39,6 +40,7 @@ from src.core.rebalance_runs.service import (
 )
 
 __all__ = [
+    "DpmAsyncExecutionClaim",
     "DpmActionRegisterSupportability",
     "DpmAsyncAcceptedResponse",
     "DpmAsyncOperationListResponse",

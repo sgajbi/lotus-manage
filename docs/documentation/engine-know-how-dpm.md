@@ -117,15 +117,20 @@ Implementation scope:
   - polling-based orchestration
   - accept-now/execute-later flows
   - `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`
+- Required header:
+  - `X-Tenant-Id`
 - Optional headers:
   - `X-Correlation-Id`
   - `X-Policy-Pack-Id`
   - `X-Tenant-Policy-Pack-Id`
-  - `X-Tenant-Id`
 - The accepted response reports the initial operation status. In inline mode, retrieve the operation
   status URL to inspect terminal `SUCCEEDED` or `FAILED` state and result payload.
 - In accept-only mode, submitted policy context is persisted with the operation and applied during
   manual execution.
+- Correlation identity is tenant scoped. Atomic execution claims carry a bounded lease configured
+  by `DPM_ASYNC_EXECUTION_LEASE_SECONDS` (default `300`); only the current opaque fence may publish
+  terminal evidence. Status returns `execution_attempt` and `execution_lease_expires_at`, never the
+  token.
 - Retrieval:
   - `GET /api/v1/rebalance/operations/{operation_id}`
   - `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}`
@@ -137,11 +142,14 @@ Implementation scope:
   - external orchestration needs to separate operation acceptance from execution
   - the caller has a pending `operation_id` from `POST /api/v1/rebalance/analyze/async`
 - Body: none; execution uses the persisted request and policy context from submission.
+- Required header: `X-Tenant-Id`, matching the owner admitted at submission.
 - Response: `DpmAsyncOperationStatusResponse`.
 - Terminal behavior:
   - `SUCCEEDED` includes the batch analysis result payload in `result`
   - `FAILED` includes structured error details in `error`
   - already terminal operations are not replayed and return `409`
+  - active competing execution returns `409`; an expired RUNNING lease can be reclaimed with an
+    incremented attempt, and stale publication is refused
 - Manual execution can be disabled with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false`.
 
 ### `GET /api/v1/rebalance/operations`
@@ -151,6 +159,7 @@ Implementation scope:
   - operator triage by status or correlation id
   - recent operation review after async submission
 - Use `GET /api/v1/rebalance/operations/{operation_id}` when a single operation handle is available.
+- Required header: `X-Tenant-Id`; only that tenant's rows are listed.
 - Filters:
   - `created_from` (created-at lower bound)
   - `created_to` (created-at upper bound)
@@ -171,6 +180,7 @@ Implementation scope:
   - verify manual-execution eligibility through `is_executable`
 - Successful terminal operations include a `BatchRebalanceResult` payload in `result`.
 - Failed terminal operations include structured `error.code` and `error.message`.
+- Required header: `X-Tenant-Id`; foreign and legacy NULL-tenant handles return `404`.
 - Use `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}` when only the correlation id is
   available.
 
@@ -182,6 +192,8 @@ Implementation scope:
   - supportability lookup from external logs keyed by correlation id
 - Successful terminal operations include a `BatchRebalanceResult` payload in `result`.
 - Failed terminal operations include structured `error.code` and `error.message`.
+- Required header: `X-Tenant-Id`; the same correlation id may be owned independently by another
+  tenant without disclosure.
 - Use `GET /api/v1/rebalance/operations/{operation_id}` when the generated operation id is available.
 
 ### `GET /api/v1/rebalance/supportability/summary`
