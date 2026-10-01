@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-01T11:59:23+00:00`
+- Generated at: `2026-10-01T12:44:54+00:00`
 
-- Baseline source snapshot: `b530d23701da2f0e78f91fb2dd2ab1ffbe40d4dc`
+- Baseline source snapshot: `5a376323adb8f2291e79d52773889cf9433dfaef`
 
-- Report source snapshot: `b530d237+worktree`
+- Report source snapshot: `5a376323+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 

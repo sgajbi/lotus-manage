@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import date
 from typing import Generic, Protocol, TypeVar
 
 from src.api.routers.wave_source_refs import (
@@ -42,12 +43,23 @@ class RiskEventAffectedPortfolio(Protocol):
     def source_ref(self) -> str: ...
 
 
+class RiskEventExcludedPortfolio(Protocol):
+    @property
+    def portfolio_id(self) -> str: ...
+
+    @property
+    def mandate_id(self) -> str | None: ...
+
+
 class RiskEventAffectedCohort(Protocol):
     @property
     def cohort_id(self) -> str | None: ...
 
     @property
     def risk_event_id(self) -> str: ...
+
+    @property
+    def as_of_date(self) -> date: ...
 
     @property
     def product_name(self) -> str: ...
@@ -69,6 +81,9 @@ class RiskEventAffectedCohort(Protocol):
 
     @property
     def affected_portfolios(self) -> tuple[RiskEventAffectedPortfolio, ...]: ...
+
+    @property
+    def excluded_portfolios(self) -> tuple[RiskEventExcludedPortfolio, ...]: ...
 
 
 T = TypeVar("T", bound=RiskEventCandidate)
@@ -100,6 +115,12 @@ def normalize_risk_event_exposure_weights(values: Mapping[str, float]) -> dict[s
 def build_risk_event_candidate_payloads(
     candidates: list[T],
 ) -> RiskEventCandidatePayloads[T]:
+    portfolio_ids = [candidate.portfolio_id for candidate in candidates]
+    if len(portfolio_ids) != len(set(portfolio_ids)):
+        raise wave_service.DpmWaveValidationError(
+            "RISK_EVENT_CANDIDATE_PORTFOLIO_DUPLICATE",
+            "RISK_EVENT candidate portfolio identities must be unique.",
+        )
     candidate_by_portfolio_id: dict[str, T] = {}
     risk_portfolios: list[dict[str, object]] = []
     for candidate in candidates:
@@ -118,6 +139,30 @@ def build_risk_event_candidate_payloads(
         candidate_by_portfolio_id=candidate_by_portfolio_id,
         risk_portfolios=risk_portfolios,
     )
+
+
+def risk_event_cohort_membership_failure(
+    *,
+    cohort: RiskEventAffectedCohort,
+    candidate_by_portfolio_id: Mapping[str, RiskEventCandidate],
+    risk_event_id: str,
+    as_of_date: date,
+) -> str | None:
+    if cohort.risk_event_id != risk_event_id:
+        return "DPM_RISK_EVENT_COHORT_EVENT_MISMATCH"
+    if cohort.as_of_date != as_of_date:
+        return "DPM_RISK_EVENT_COHORT_DATE_MISMATCH"
+    seen: set[str] = set()
+    for member in (*cohort.affected_portfolios, *cohort.excluded_portfolios):
+        if member.portfolio_id in seen:
+            return "DPM_RISK_EVENT_COHORT_DUPLICATE_MEMBER"
+        seen.add(member.portfolio_id)
+        candidate = candidate_by_portfolio_id.get(member.portfolio_id)
+        if candidate is None:
+            return "DPM_RISK_EVENT_COHORT_UNKNOWN_MEMBER"
+        if member.mandate_id != candidate.mandate_id:
+            return "DPM_RISK_EVENT_COHORT_MANDATE_MISMATCH"
+    return None
 
 
 def build_risk_event_resolved_portfolios(
@@ -145,8 +190,7 @@ def build_risk_event_resolved_portfolios(
     )
     portfolios: list[dict[str, object]] = []
     for affected in cohort.affected_portfolios:
-        matched_candidate = candidate_by_portfolio_id.get(affected.portfolio_id)
-        candidate_refs = matched_candidate.source_refs if matched_candidate is not None else []
+        candidate_refs = candidate_by_portfolio_id[affected.portfolio_id].source_refs
         portfolios.append(
             {
                 "portfolio_id": affected.portfolio_id,

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 from typing import Any, cast
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -59,9 +61,12 @@ from src.infrastructure.waves import (
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.risk_authority import (
+    LotusRiskAuthorityClient,
+    LotusRiskAuthorityConfig,
     LotusRiskAuthorityUnavailableError,
     RiskEventAffectedCohort,
     RiskEventAffectedPortfolio,
+    RiskEventExcludedPortfolio,
 )
 from src.infrastructure.advise_authority import (
     LotusAdviseAuthorityUnavailableError,
@@ -657,10 +662,16 @@ class _RiskEventAuthority:
         *,
         supportability: str = "ready",
         affected_portfolios: tuple[RiskEventAffectedPortfolio, ...] | None = None,
+        excluded_portfolios: tuple[RiskEventExcludedPortfolio, ...] = (),
+        event_id: str = "RISK_EVENT_2026_Q2_RATES_UP",
+        as_of_date: date = date(2026, 5, 10),
         unavailable_error: str | None = None,
     ) -> None:
         self.supportability = supportability
         self.affected_portfolios = affected_portfolios
+        self.excluded_portfolios = excluded_portfolios
+        self.event_id = event_id
+        self.as_of_date = as_of_date
         self.unavailable_error = unavailable_error
         self.calls: list[dict[str, object]] = []
 
@@ -670,7 +681,8 @@ class _RiskEventAuthority:
             raise LotusRiskAuthorityUnavailableError(self.unavailable_error)
         return RiskEventAffectedCohort(
             cohort_id="risk_event_cohort_test",
-            risk_event_id="RISK_EVENT_2026_Q2_RATES_UP",
+            risk_event_id=self.event_id,
+            as_of_date=self.as_of_date,
             display_name="Rates-up inflation persistence",
             product_name="RiskEventAffectedCohort",
             product_version="v1",
@@ -695,6 +707,7 @@ class _RiskEventAuthority:
                     ),
                 )
             ),
+            excluded_portfolios=self.excluded_portfolios,
         )
 
 
@@ -1588,6 +1601,216 @@ def test_risk_event_wave_create_persists_resolved_source_owned_cohort() -> None:
         wave_repository.get_wave(wave_id=payload["wave"]["wave_id"], tenant_id="tenant-sg")
         is not None
     )
+
+
+@pytest.mark.parametrize("route", ["/api/v1/rebalance/waves/preview", "/api/v1/rebalance/waves"])
+def test_risk_event_wave_rejects_duplicate_candidates_before_risk_call(route: str) -> None:
+    request = _risk_event_request()
+    request["portfolios"] = [*request["portfolios"], dict(request["portfolios"][0])]
+    risk_authority = _RiskEventAuthority()
+    wave_repository = InMemoryDpmWaveRepository()
+    with _client(
+        InMemoryDpmMandateRepository(),
+        wave_repository,
+        risk_authority_client=risk_authority,
+    ) as client:
+        response = client.post(route, json=request, headers={"Idempotency-Key": "duplicate-risk"})
+
+    assert response.status_code == 422
+    assert _error_reason_code(response) == "RISK_EVENT_CANDIDATE_PORTFOLIO_DUPLICATE"
+    assert risk_authority.calls == []
+    assert wave_repository.list_waves(tenant_id="tenant-sg") == []
+
+
+@pytest.mark.parametrize("route", ["/api/v1/rebalance/waves/preview", "/api/v1/rebalance/waves"])
+@pytest.mark.parametrize(
+    ("source_case", "expected_code"),
+    [
+        ("duplicate_affected", "DPM_RISK_EVENT_COHORT_DUPLICATE_MEMBER"),
+        ("affected_and_excluded", "DPM_RISK_EVENT_COHORT_DUPLICATE_MEMBER"),
+        ("unknown_affected", "DPM_RISK_EVENT_COHORT_UNKNOWN_MEMBER"),
+        ("unknown_excluded", "DPM_RISK_EVENT_COHORT_UNKNOWN_MEMBER"),
+        ("wrong_mandate", "DPM_RISK_EVENT_COHORT_MANDATE_MISMATCH"),
+        ("wrong_event", "DPM_RISK_EVENT_COHORT_EVENT_MISMATCH"),
+        ("wrong_date", "DPM_RISK_EVENT_COHORT_DATE_MISMATCH"),
+    ],
+)
+def test_risk_event_wave_refuses_ambiguous_source_membership_before_publication(
+    route: str, source_case: str, expected_code: str
+) -> None:
+    affected = RiskEventAffectedPortfolio(
+        portfolio_id=PORTFOLIO_ID,
+        mandate_id=MANDATE_ID,
+        source_ref="risk-event-row-001",
+        reason_codes=("RISK_EVENT_THRESHOLD_BREACHED",),
+        impact_score=Decimal("0.0745"),
+        dominant_bucket="FIXED_INCOME",
+    )
+    affected_rows = (affected, affected) if source_case == "duplicate_affected" else (affected,)
+    if source_case == "unknown_affected":
+        affected_rows = (replace(affected, portfolio_id="UNKNOWN"),)
+    if source_case == "wrong_mandate":
+        affected_rows = (replace(affected, mandate_id="OTHER_MANDATE"),)
+    excluded_rows: tuple[RiskEventExcludedPortfolio, ...] = ()
+    if source_case == "affected_and_excluded":
+        excluded_rows = (
+            RiskEventExcludedPortfolio(
+                portfolio_id=PORTFOLIO_ID,
+                mandate_id=MANDATE_ID,
+                source_ref="risk-excluded-001",
+                impact_score=Decimal("0"),
+                dominant_bucket="CASH",
+            ),
+        )
+    if source_case == "unknown_excluded":
+        excluded_rows = (
+            RiskEventExcludedPortfolio(
+                portfolio_id="UNKNOWN",
+                mandate_id=MANDATE_ID,
+                source_ref="risk-excluded-unknown",
+                impact_score=Decimal("0"),
+                dominant_bucket="CASH",
+            ),
+        )
+    risk_authority = _RiskEventAuthority(
+        affected_portfolios=affected_rows,
+        excluded_portfolios=excluded_rows,
+        event_id="OTHER_EVENT" if source_case == "wrong_event" else "RISK_EVENT_2026_Q2_RATES_UP",
+        as_of_date=date(2026, 5, 9) if source_case == "wrong_date" else date(2026, 5, 10),
+    )
+    wave_repository = InMemoryDpmWaveRepository()
+    with _client(
+        InMemoryDpmMandateRepository(),
+        wave_repository,
+        risk_authority_client=risk_authority,
+    ) as client:
+        response = client.post(
+            route, json=_risk_event_request(), headers={"Idempotency-Key": "invalid-risk-source"}
+        )
+
+    assert response.status_code == 424
+    assert _error_reason_code(response) == expected_code
+    assert len(risk_authority.calls) == 1
+    assert wave_repository.list_waves(tenant_id="tenant-sg") == []
+
+
+@pytest.mark.parametrize(
+    ("route", "expected_status"),
+    [("/api/v1/rebalance/waves/preview", 200), ("/api/v1/rebalance/waves", 201)],
+)
+def test_risk_event_wave_accepts_unique_affected_and_excluded_membership(
+    route: str, expected_status: int
+) -> None:
+    request = _risk_event_request()
+    request["portfolios"] = [
+        *request["portfolios"],
+        {
+            **request["portfolios"][0],
+            "portfolio_id": "PB_SG_EXCLUDED_002",
+            "mandate_id": "MANDATE_EXCLUDED_002",
+        },
+    ]
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-sg")
+    risk_authority = _RiskEventAuthority(
+        excluded_portfolios=(
+            RiskEventExcludedPortfolio(
+                portfolio_id="PB_SG_EXCLUDED_002",
+                mandate_id="MANDATE_EXCLUDED_002",
+                source_ref="risk-excluded-002",
+                impact_score=Decimal("0"),
+                dominant_bucket="CASH",
+            ),
+        )
+    )
+    with _client(
+        mandate_repository,
+        InMemoryDpmWaveRepository(),
+        risk_authority_client=risk_authority,
+    ) as client:
+        response = client.post(
+            route, json=request, headers={"Idempotency-Key": "valid-risk-membership"}
+        )
+
+    assert response.status_code == expected_status
+    assert [item["portfolio_id"] for item in response.json()["wave"]["items"]] == [PORTFOLIO_ID]
+    assert len(risk_authority.calls) == 1
+
+
+@pytest.mark.parametrize("route", ["/api/v1/rebalance/waves/preview", "/api/v1/rebalance/waves"])
+@pytest.mark.parametrize(
+    ("invalid_response", "expected_reason"),
+    [
+        ("duplicate_member", "DPM_RISK_EVENT_COHORT_DUPLICATE_MEMBER"),
+        ("wrong_version", "LOTUS_RISK_INVALID_RESPONSE"),
+        ("nonfinite_score", "LOTUS_RISK_INVALID_RESPONSE"),
+    ],
+)
+def test_risk_event_wave_http_adapter_rejects_invalid_cohort_before_publication(
+    route: str,
+    invalid_response: str,
+    expected_reason: str,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(json.loads(request.content))
+        affected = {
+            "portfolio_id": PORTFOLIO_ID,
+            "mandate_id": MANDATE_ID,
+            "portfolio_manager_id": "PM_SG_DPM_001",
+            "impact_score": "0.0745",
+            "dominant_bucket": "FIXED_INCOME",
+            "bucket_impacts": {"FIXED_INCOME": "-0.0745"},
+            "source_ref": "risk-event-cohort:2026-05-10:PB_SG_GLOBAL_BAL_001",
+            "reason_codes": ["RISK_EVENT_THRESHOLD_BREACHED"],
+        }
+        payload = {
+            "cohort_id": "risk_event_cohort_test",
+            "risk_event_id": "RISK_EVENT_2026_Q2_RATES_UP",
+            "display_name": "Rates-up inflation persistence",
+            "as_of_date": "2026-05-10",
+            "affected_portfolios": [affected],
+            "excluded_portfolios": [
+                {
+                    **affected,
+                    "impact_score": "0",
+                    "reason_codes": ["RISK_EVENT_BELOW_THRESHOLD"],
+                }
+            ],
+            "reason_codes": ["RISK_EVENT_AFFECTED_COHORT_READY"],
+            "metadata": {
+                "product_name": "RiskEventAffectedCohort",
+                "product_version": "v1",
+                "source_service": "lotus-risk",
+                "request_fingerprint": "sha256:risk-event-cohort",
+                "calculation_supportability": "ready",
+            },
+        }
+        if invalid_response == "wrong_version":
+            payload["metadata"]["product_version"] = "v2"
+        elif invalid_response == "nonfinite_score":
+            payload["affected_portfolios"][0]["impact_score"] = "NaN"
+        return httpx.Response(200, json=payload)
+
+    risk_authority = LotusRiskAuthorityClient(
+        config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    wave_repository = InMemoryDpmWaveRepository()
+    with _client(
+        InMemoryDpmMandateRepository(),
+        wave_repository,
+        risk_authority_client=risk_authority,
+    ) as client:
+        response = client.post(
+            route, json=_risk_event_request(), headers={"Idempotency-Key": "risk-duplicate-http"}
+        )
+
+    assert response.status_code == 424
+    assert _error_reason_code(response) == expected_reason
+    assert calls[0]["portfolios"][0]["portfolio_id"] == PORTFOLIO_ID
+    assert wave_repository.list_waves(tenant_id="tenant-sg") == []
 
 
 def test_tactical_house_view_wave_preview_resolves_advise_owned_cohort() -> None:

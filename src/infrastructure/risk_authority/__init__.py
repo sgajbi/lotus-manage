@@ -6,6 +6,7 @@ from src.infrastructure.risk_authority.client import (
     LotusRiskAuthorityUnavailableError,
     RiskEventAffectedCohort,
     RiskEventAffectedPortfolio,
+    RiskEventExcludedPortfolio,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "LotusRiskAuthorityUnavailableError",
     "RiskEventAffectedCohort",
     "RiskEventAffectedPortfolio",
+    "RiskEventExcludedPortfolio",
 ]

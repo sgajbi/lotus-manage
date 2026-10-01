@@ -427,6 +427,10 @@ Most relevant current governance:
     profile with mismatched portfolio/date/mandate or a scoped rule without usable selectors is
     invalid source evidence and must not be swallowed by the optional-source fallback. Preserve
     intentional selector-free `client` and `mandate` restrictions.
+    For Risk-event waves, reject duplicate candidate IDs before the authority call and verify
+    the returned event/date, affected/excluded uniqueness, candidate membership, and mandate echo
+    before constructing wave source refs or writing a wave. Excluded members are validation
+    evidence, not wave items; do not recompute Risk impact scores locally.
 14. Tax-aware construction is evidence-gated. When `enable_tax_awareness=true`, sell candidates
     require complete open-lot coverage from `PortfolioTaxLotWindow:v1` and lot-cost FX where
     needed; missing lots, partial lots, closed/depleted-only lots, or missing lot-cost FX must block

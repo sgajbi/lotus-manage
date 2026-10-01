@@ -32,6 +32,7 @@ from src.api.routers.wave_risk_event_validation import (
     RiskEventCandidatePayloads,
     build_risk_event_candidate_payloads,
     build_risk_event_resolved_portfolios,
+    risk_event_cohort_membership_failure,
 )
 from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
@@ -308,6 +309,17 @@ def _resolve_risk_event_portfolios(
         correlation_id=correlation_id,
     )
     _require_risk_event_cohort_ready(cohort)
+    membership_failure = risk_event_cohort_membership_failure(
+        cohort=cohort,
+        candidate_by_portfolio_id=authority_request.candidate_payloads.candidate_by_portfolio_id,
+        risk_event_id=authority_request.risk_event_id,
+        as_of_date=authority_request.as_of_date,
+    )
+    if membership_failure is not None:
+        raise source_dependency_failed_http_exception(
+            code=membership_failure,
+            message="Risk-event cohort membership does not match the requested candidate identities.",
+        )
 
     return build_risk_event_resolved_portfolios(
         cohort=cohort,
@@ -364,6 +376,11 @@ def _risk_event_affected_cohort(
             correlation_id=correlation_id,
         )
     except RiskAuthorityUnavailableError as exc:
+        if str(exc) == "LOTUS_RISK_INVALID_RESPONSE":
+            raise source_dependency_failed_http_exception(
+                code="LOTUS_RISK_INVALID_RESPONSE",
+                message="Risk-event cohort response failed source contract validation.",
+            ) from exc
         raise source_authority_unavailable_http_exception(
             exc,
             default_code="DPM_RISK_EVENT_COHORT_UNAVAILABLE",

@@ -134,6 +134,15 @@ selector in any family is invalid, including a mixed valid/blank list. Supported
 families are matched as a union until the Core owner specifies a narrower scope-family policy.
 Invalid present profiles fail closed (HTTP 424 on stateful APIs); an unavailable optional product
 retains its separate degraded/gap posture.
+For `RiskEventAffectedCohort:v1`, Manage rejects repeated candidate portfolio IDs before the
+Risk request. The response must declare `RiskEventAffectedCohort:v1` from `lotus-risk`; a ready
+response must echo the requested event and business-date identity and may
+not repeat a portfolio across affected or excluded membership, return an unrequested portfolio, or
+change a candidate's mandate identity. Excluded membership is parsed for this validation even
+though only affected members become wave items; excluded rows require source references and
+explicit finite, non-negative impact scores. Explicit zero is valid, omission is not. Invalid
+source membership refuses preview/create with 424;
+Manage does not re-score the Risk-owned impact or infer missing full-book candidates.
 
 Full mesh contract validation:
 

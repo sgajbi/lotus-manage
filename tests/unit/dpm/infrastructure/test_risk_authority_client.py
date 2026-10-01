@@ -370,8 +370,65 @@ def test_lotus_risk_authority_client_maps_risk_event_affected_cohort() -> None:
     assert cohort.product_name == "RiskEventAffectedCohort"
     assert cohort.calculation_supportability == "ready"
     assert cohort.request_fingerprint == "sha256:risk-event-cohort"
+    assert cohort.as_of_date == date(2026, 5, 10)
     assert cohort.affected_portfolios[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
     assert cohort.affected_portfolios[0].impact_score == Decimal("0.0745")
+    assert cohort.excluded_portfolios == ()
+
+
+def test_risk_cohort_response_preserves_excluded_identity_for_membership_validation() -> None:
+    body = _risk_event_cohort_response()
+    excluded = dict(body["affected_portfolios"][0])
+    excluded.update(portfolio_id="PB_SG_OTHER_002", mandate_id="MANDATE_OTHER_002")
+    body["excluded_portfolios"] = [excluded]
+
+    cohort = _risk_event_cohort_from_response(body)
+
+    assert cohort.excluded_portfolios[0].portfolio_id == "PB_SG_OTHER_002"
+    assert cohort.excluded_portfolios[0].mandate_id == "MANDATE_OTHER_002"
+    assert cohort.excluded_portfolios[0].source_ref == excluded["source_ref"]
+
+
+def test_risk_cohort_preserves_explicit_zero_excluded_impact() -> None:
+    body = _risk_event_cohort_response()
+    excluded = dict(body["affected_portfolios"][0])
+    excluded["impact_score"] = "0"
+    body["excluded_portfolios"] = [excluded]
+
+    cohort = _risk_event_cohort_from_response(body)
+
+    assert cohort.excluded_portfolios[0].impact_score == Decimal("0")
+
+
+@pytest.mark.parametrize("member_family", ["affected_portfolios", "excluded_portfolios"])
+@pytest.mark.parametrize("invalid_score", [None, "NaN", "Infinity", "-0.1"])
+def test_risk_cohort_rejects_missing_nonfinite_or_negative_member_impact(
+    member_family: str, invalid_score: str | None
+) -> None:
+    body = _risk_event_cohort_response()
+    member = dict(body["affected_portfolios"][0])
+    if invalid_score is None:
+        member.pop("impact_score")
+    else:
+        member["impact_score"] = invalid_score
+    body[member_family] = [member]
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _risk_event_cohort_from_response(body)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("product_name", "UnrelatedCohort"),
+        ("product_version", "v2"),
+        ("source_service", "other-service"),
+    ],
+)
+def test_risk_cohort_rejects_unexpected_source_product_identity(field: str, value: str) -> None:
+    body = _risk_event_cohort_response()
+    body["metadata"][field] = value
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _risk_event_cohort_from_response(body)
 
 
 def test_risk_event_cohort_helpers_project_reason_codes_and_affected_portfolios() -> None:
@@ -428,6 +485,16 @@ def test_lotus_risk_authority_client_rejects_invalid_risk_event_response() -> No
 
     invalid_body = _risk_event_cohort_response()
     invalid_body["affected_portfolios"] = ["not-an-object"]
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _risk_event_cohort_from_response(invalid_body)
+
+    invalid_body = _risk_event_cohort_response()
+    invalid_body["excluded_portfolios"] = [{"mandate_id": "MANDATE_UNKNOWN"}]
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _risk_event_cohort_from_response(invalid_body)
+
+    invalid_body = _risk_event_cohort_response()
+    invalid_body["excluded_portfolios"] = [{"portfolio_id": "OTHER", "source_ref": " "}]
     with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
         _risk_event_cohort_from_response(invalid_body)
 
