@@ -197,6 +197,19 @@ Routes:
 - `GET /api/v1/dpm/exceptions`
 - `POST /api/v1/dpm/exceptions/{exception_id}/resolve`
 
+The explicit health recalculation input may declare a tax budget as a cumulative realized-gain
+allowance in the twin base currency, not tax payable. Caller-supplied usage is measured through
+the twin as-of date; omitted currency/date asserts that basis, while contradictory supplied values
+or unmatched declared period starts produce `TAX_BUDGET_BASIS_MISMATCH`/PENDING_REVIEW. Missing
+usage is not zero; exact exhaustion requires review, and a comparable excess blocks health.
+`budget_assessments` persists tax and turnover amounts, thresholds, nominal remaining values,
+comparison basis and declared source references, with distinct monitoring exceptions when both
+controls need attention. Controlled registered HTTP and native PostgreSQL restart tests cover
+readback, replacement, tenant refusal and validation-before-write. No live Core tax ledger,
+production identity, tax-liability calculation or trade-release certification is claimed.
+The pre-existing turnover posture with a declared limit but omitted usage is unchanged; it is
+not evidence of measured turnover compliance (#745).
+
 Purpose:
 
 RFC-0038 mandate digital-twin foundation for discretionary portfolio management. These endpoints

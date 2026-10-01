@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-01T14:20:32.783820+00:00",
+  "generatedAt": "2026-10-01T15:31:59.508896+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1579,6 +1579,20 @@
       ]
     },
     {
+      "semanticId": "lotus.basis",
+      "canonicalTerm": "basis",
+      "preferredName": "basis",
+      "description": "dpm mandate budget assessment field: basis.",
+      "example": "NO_DECLARED_LIMIT",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.batch_run_id",
       "canonicalTerm": "batch_run_id",
       "preferredName": "batch_run_id",
@@ -1935,6 +1949,36 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.budget_assessment",
+      "canonicalTerm": "budget_assessment",
+      "preferredName": "budget_assessment",
+      "description": "dpm monitoring exception field: budget assessment.",
+      "example": "budget_assessment_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.budget_assessments",
+      "canonicalTerm": "budget_assessments",
+      "preferredName": "budget_assessments",
+      "description": "dpm mandate dimension score field: budget assessments.",
+      "example": [
+        "budget_assessments_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -3067,6 +3111,20 @@
       ]
     },
     {
+      "semanticId": "lotus.control",
+      "canonicalTerm": "control",
+      "preferredName": "control",
+      "description": "dpm mandate budget assessment field: control.",
+      "example": "TAX_BUDGET",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.control_action",
       "canonicalTerm": "control_action",
       "preferredName": "control_action",
@@ -3371,7 +3429,8 @@
         "body"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -8408,6 +8467,20 @@
       ]
     },
     {
+      "semanticId": "lotus.limit_source_ref",
+      "canonicalTerm": "limit_source_ref",
+      "preferredName": "limit_source_ref",
+      "description": "dpm mandate budget assessment field: limit source ref.",
+      "example": "limit_source_ref_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.lineage",
       "canonicalTerm": "lineage",
       "preferredName": "lineage",
@@ -10841,6 +10914,20 @@
       ]
     },
     {
+      "semanticId": "lotus.period_start",
+      "canonicalTerm": "period_start",
+      "preferredName": "period_start",
+      "description": "dpm mandate budget assessment field: period start.",
+      "example": "period_start_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.permitted_use",
       "canonicalTerm": "permitted_use",
       "preferredName": "permitted_use",
@@ -12412,6 +12499,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.remaining_value",
+      "canonicalTerm": "remaining_value",
+      "preferredName": "remaining_value",
+      "description": "Monetary value for remaining value.",
+      "example": "remaining_value_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -16333,7 +16434,7 @@
       "semanticId": "lotus.tax_budget_base",
       "canonicalTerm": "tax_budget_base",
       "preferredName": "tax_budget_base",
-      "description": "dpm mandate constraint set output field: tax budget base.",
+      "description": "Maximum cumulative realized-gain allowance in the portfolio base currency for the caller-attested mandate budget period; not tax liability.",
       "example": "tax_budget_base_example",
       "type": "object",
       "locations": [
@@ -16360,11 +16461,81 @@
       ]
     },
     {
+      "semanticId": "lotus.tax_budget_period_start",
+      "canonicalTerm": "tax_budget_period_start",
+      "preferredName": "tax_budget_period_start",
+      "description": "Optional source-stated start of the tax-budget measurement period.",
+      "example": "tax_budget_period_start_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.tax_budget_usage_source_ref",
+      "canonicalTerm": "tax_budget_usage_source_ref",
+      "preferredName": "tax_budget_usage_source_ref",
+      "description": "Caller-provided measurement reference. It is retained as evidence, not verified as a bank/Core source by this endpoint.",
+      "example": "tax_budget_usage_source_ref_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.tax_budget_used_as_of_date",
+      "canonicalTerm": "tax_budget_used_as_of_date",
+      "preferredName": "tax_budget_used_as_of_date",
+      "description": "Optional usage cut; omission asserts the twin as-of date.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.tax_budget_used_base",
       "canonicalTerm": "tax_budget_used_base",
       "preferredName": "tax_budget_used_base",
-      "description": "dpm mandate health input field: tax budget used base.",
+      "description": "Caller-supplied cumulative realized gains consumed against tax_budget_base, in the portfolio base currency and through the twin as-of date. Not tax paid.",
       "example": "tax_budget_used_base_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.tax_budget_used_currency",
+      "canonicalTerm": "tax_budget_used_currency",
+      "preferredName": "tax_budget_used_currency",
+      "description": "Optional asserted usage currency. Omission asserts the twin base currency; a supplied mismatch makes comparison unassessed.",
+      "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.tax_budget_used_period_start",
+      "canonicalTerm": "tax_budget_used_period_start",
+      "preferredName": "tax_budget_used_period_start",
+      "description": "Optional usage-window start. If either side states a period start, both must state the same date for a comparable assessment.",
+      "example": "tax_budget_used_period_start_example",
       "type": "object",
       "locations": [
         "body"
@@ -17289,6 +17460,20 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.usage_source_ref",
+      "canonicalTerm": "usage_source_ref",
+      "preferredName": "usage_source_ref",
+      "description": "dpm mandate budget assessment field: usage source ref.",
+      "example": "usage_source_ref_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -62908,6 +63093,14 @@
             "attributeRef": "#/attributeCatalog/lotus.tax_budget_base"
           },
           {
+            "name": "constraints.tax_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_period_start"
+          },
+          {
             "name": "constraints.max_tracking_error",
             "location": "body",
             "required": false,
@@ -63329,6 +63522,14 @@
             "type": "object",
             "semanticId": "lotus.tax_budget_base",
             "attributeRef": "#/attributeCatalog/lotus.tax_budget_base"
+          },
+          {
+            "name": "constraints.tax_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_period_start"
           },
           {
             "name": "constraints.max_tracking_error",
@@ -64007,6 +64208,14 @@
             "attributeRef": "#/attributeCatalog/lotus.tax_budget_base"
           },
           {
+            "name": "mandate.constraints.tax_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_period_start"
+          },
+          {
             "name": "mandate.constraints.max_tracking_error",
             "location": "body",
             "required": false,
@@ -64341,6 +64550,110 @@
             "type": "array",
             "semanticId": "lotus.evidence_refs",
             "attributeRef": "#/attributeCatalog/lotus.evidence_refs"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.budget_assessments",
+            "attributeRef": "#/attributeCatalog/lotus.budget_assessments"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].control",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.control",
+            "attributeRef": "#/attributeCatalog/lotus.control"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].state",
+            "location": "body",
+            "required": true,
+            "type": "MandateHealthState",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].measured_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.measured_value",
+            "attributeRef": "#/attributeCatalog/lotus.measured_value"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].threshold_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_value",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_value"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].remaining_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.remaining_value",
+            "attributeRef": "#/attributeCatalog/lotus.remaining_value"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.period_start",
+            "attributeRef": "#/attributeCatalog/lotus.period_start"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].basis",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.basis",
+            "attributeRef": "#/attributeCatalog/lotus.basis"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].limit_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.limit_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.limit_source_ref"
+          },
+          {
+            "name": "health_snapshot.dimension_scores[].budget_assessments[].usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.usage_source_ref"
           },
           {
             "name": "health_snapshot.top_reasons",
@@ -64719,6 +65032,110 @@
             "attributeRef": "#/attributeCatalog/lotus.threshold_value"
           },
           {
+            "name": "monitoring_exceptions[].budget_assessment",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.budget_assessment",
+            "attributeRef": "#/attributeCatalog/lotus.budget_assessment"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.control",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.control",
+            "attributeRef": "#/attributeCatalog/lotus.control"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.state",
+            "location": "body",
+            "required": true,
+            "type": "MandateHealthState",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.measured_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.measured_value",
+            "attributeRef": "#/attributeCatalog/lotus.measured_value"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.threshold_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_value",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_value"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.remaining_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.remaining_value",
+            "attributeRef": "#/attributeCatalog/lotus.remaining_value"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.period_start",
+            "attributeRef": "#/attributeCatalog/lotus.period_start"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.basis",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.basis",
+            "attributeRef": "#/attributeCatalog/lotus.basis"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.limit_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.limit_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.limit_source_ref"
+          },
+          {
+            "name": "monitoring_exceptions[].budget_assessment.usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.usage_source_ref"
+          },
+          {
             "name": "monitoring_exceptions[].source_lineage",
             "location": "body",
             "required": false,
@@ -64972,6 +65389,110 @@
             "type": "array",
             "semanticId": "lotus.evidence_refs",
             "attributeRef": "#/attributeCatalog/lotus.evidence_refs"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.budget_assessments",
+            "attributeRef": "#/attributeCatalog/lotus.budget_assessments"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].control",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.control",
+            "attributeRef": "#/attributeCatalog/lotus.control"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].state",
+            "location": "body",
+            "required": true,
+            "type": "MandateHealthState",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].measured_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.measured_value",
+            "attributeRef": "#/attributeCatalog/lotus.measured_value"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].threshold_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_value",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_value"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].remaining_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.remaining_value",
+            "attributeRef": "#/attributeCatalog/lotus.remaining_value"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.period_start",
+            "attributeRef": "#/attributeCatalog/lotus.period_start"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].basis",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.basis",
+            "attributeRef": "#/attributeCatalog/lotus.basis"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].limit_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.limit_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.limit_source_ref"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.usage_source_ref"
           },
           {
             "name": "top_reasons",
@@ -65465,6 +65986,14 @@
             "attributeRef": "#/attributeCatalog/lotus.tax_budget_base"
           },
           {
+            "name": "twin.constraints.tax_budget_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_period_start"
+          },
+          {
             "name": "twin.constraints.max_tracking_error",
             "location": "body",
             "required": false,
@@ -65783,6 +66312,38 @@
             "type": "object",
             "semanticId": "lotus.tax_budget_used_base",
             "attributeRef": "#/attributeCatalog/lotus.tax_budget_used_base"
+          },
+          {
+            "name": "tax_budget_used_currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_used_currency",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_used_currency"
+          },
+          {
+            "name": "tax_budget_used_period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_used_period_start",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_used_period_start"
+          },
+          {
+            "name": "tax_budget_used_as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_used_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_used_as_of_date"
+          },
+          {
+            "name": "tax_budget_usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tax_budget_usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.tax_budget_usage_source_ref"
           },
           {
             "name": "tracking_error",
@@ -66147,6 +66708,110 @@
             "type": "array",
             "semanticId": "lotus.evidence_refs",
             "attributeRef": "#/attributeCatalog/lotus.evidence_refs"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.budget_assessments",
+            "attributeRef": "#/attributeCatalog/lotus.budget_assessments"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].control",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.control",
+            "attributeRef": "#/attributeCatalog/lotus.control"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].state",
+            "location": "body",
+            "required": true,
+            "type": "MandateHealthState",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].measured_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.measured_value",
+            "attributeRef": "#/attributeCatalog/lotus.measured_value"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].threshold_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_value",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_value"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].remaining_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.remaining_value",
+            "attributeRef": "#/attributeCatalog/lotus.remaining_value"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.period_start",
+            "attributeRef": "#/attributeCatalog/lotus.period_start"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].basis",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.basis",
+            "attributeRef": "#/attributeCatalog/lotus.basis"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].limit_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.limit_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.limit_source_ref"
+          },
+          {
+            "name": "dimension_scores[].budget_assessments[].usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.usage_source_ref"
           },
           {
             "name": "top_reasons",
@@ -67472,6 +68137,110 @@
             "attributeRef": "#/attributeCatalog/lotus.threshold_value"
           },
           {
+            "name": "items[].budget_assessment",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.budget_assessment",
+            "attributeRef": "#/attributeCatalog/lotus.budget_assessment"
+          },
+          {
+            "name": "items[].budget_assessment.control",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.control",
+            "attributeRef": "#/attributeCatalog/lotus.control"
+          },
+          {
+            "name": "items[].budget_assessment.state",
+            "location": "body",
+            "required": true,
+            "type": "MandateHealthState",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "items[].budget_assessment.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "items[].budget_assessment.measured_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.measured_value",
+            "attributeRef": "#/attributeCatalog/lotus.measured_value"
+          },
+          {
+            "name": "items[].budget_assessment.threshold_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_value",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_value"
+          },
+          {
+            "name": "items[].budget_assessment.remaining_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.remaining_value",
+            "attributeRef": "#/attributeCatalog/lotus.remaining_value"
+          },
+          {
+            "name": "items[].budget_assessment.currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "items[].budget_assessment.period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.period_start",
+            "attributeRef": "#/attributeCatalog/lotus.period_start"
+          },
+          {
+            "name": "items[].budget_assessment.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "items[].budget_assessment.basis",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.basis",
+            "attributeRef": "#/attributeCatalog/lotus.basis"
+          },
+          {
+            "name": "items[].budget_assessment.limit_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.limit_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.limit_source_ref"
+          },
+          {
+            "name": "items[].budget_assessment.usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.usage_source_ref"
+          },
+          {
             "name": "items[].source_lineage",
             "location": "body",
             "required": false,
@@ -67701,6 +68470,110 @@
             "type": "object",
             "semanticId": "lotus.threshold_value",
             "attributeRef": "#/attributeCatalog/lotus.threshold_value"
+          },
+          {
+            "name": "budget_assessment",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.budget_assessment",
+            "attributeRef": "#/attributeCatalog/lotus.budget_assessment"
+          },
+          {
+            "name": "budget_assessment.control",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.control",
+            "attributeRef": "#/attributeCatalog/lotus.control"
+          },
+          {
+            "name": "budget_assessment.state",
+            "location": "body",
+            "required": true,
+            "type": "MandateHealthState",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "budget_assessment.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "budget_assessment.measured_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.measured_value",
+            "attributeRef": "#/attributeCatalog/lotus.measured_value"
+          },
+          {
+            "name": "budget_assessment.threshold_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_value",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_value"
+          },
+          {
+            "name": "budget_assessment.remaining_value",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.remaining_value",
+            "attributeRef": "#/attributeCatalog/lotus.remaining_value"
+          },
+          {
+            "name": "budget_assessment.currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "budget_assessment.period_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.period_start",
+            "attributeRef": "#/attributeCatalog/lotus.period_start"
+          },
+          {
+            "name": "budget_assessment.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "budget_assessment.basis",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.basis",
+            "attributeRef": "#/attributeCatalog/lotus.basis"
+          },
+          {
+            "name": "budget_assessment.limit_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.limit_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.limit_source_ref"
+          },
+          {
+            "name": "budget_assessment.usage_source_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.usage_source_ref",
+            "attributeRef": "#/attributeCatalog/lotus.usage_source_ref"
           },
           {
             "name": "source_lineage",

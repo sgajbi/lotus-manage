@@ -251,6 +251,15 @@ Key code areas:
   A supplied observation must be finite and non-negative even if a source Risk context is
   present or the mandate has no tracking-error limit; invalid input returns validation 422
   before health or exception persistence.
+  An explicitly declared `tax_budget_base` is a cumulative realized-gain allowance in the
+  portfolio base currency, not tax payable. `/health/recalculate` compares non-negative
+  `tax_budget_used_base` through the twin as-of date: below-limit is a qualified pass, equality
+  is exhausted/review-required, above-limit is blocked, and missing or conflicting evidence is
+  pending review. `budget_assessments` retains the nominal remaining amount, comparison basis,
+  declared source references, and the independent turnover finding in stored health and
+  monitoring exceptions. Caller-supplied evidence is not live bank tax-source certification.
+  This slice does not change the pre-existing turnover scoring when a limit is present but
+  usage is omitted; that posture must not be read as certified turnover compliance (#745).
 - `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
 - `src/api/routers/mandates.py` and `src/api/routers/monitoring.py`

@@ -967,6 +967,79 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
     assert latest.json()["health_snapshot_id"] == recalculated.json()["health_snapshot_id"]
 
 
+def test_health_tax_budget_recalculation_replaces_ready_with_blocked_evidence() -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin().model_copy(
+        update={
+            "constraints": _twin().constraints.model_copy(
+                update={
+                    "tax_budget_base": Decimal("1000"),
+                    "tax_budget_period_start": date(2026, 1, 1),
+                }
+            )
+        }
+    )
+    base_input = DpmMandateHealthInput(
+        twin=twin,
+        current_weights={"EQ_US_AAPL": Decimal("0.60")},
+        target_weights={"EQ_US_AAPL": Decimal("0.60")},
+        cash_weight=Decimal("0.05"),
+        turnover_budget_used=Decimal("0"),
+        tax_budget_used_base=Decimal("999.99"),
+        tax_budget_used_currency="SGD",
+        tax_budget_used_period_start=date(2026, 1, 1),
+        tax_budget_used_as_of_date=AS_OF,
+        tax_budget_usage_source_ref="caller:realized-gain-ledger:2026-05-03",
+    )
+    route = f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=tax-health"
+    read_route = f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id=tax-health"
+    with _client(repository) as client:
+        ready = client.post(route, json=base_input.model_dump(mode="json"))
+        exceeded = client.post(
+            route,
+            json=base_input.model_copy(
+                update={"tax_budget_used_base": Decimal("1000.01")}
+            ).model_dump(mode="json"),
+        )
+        persisted = client.get(read_route)
+        foreign = client.get(f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id=foreign-tax-health")
+        invalid = client.post(
+            route,
+            json={**base_input.model_dump(mode="json"), "tax_budget_used_base": "-0.01"},
+        )
+        after_invalid = client.get(read_route)
+
+    assert ready.status_code == exceeded.status_code == persisted.status_code == 200
+    assert ready.json()["health_state"] == "READY"
+    assert ready.json()["health_score"] == 100
+    assert exceeded.json()["health_state"] == "BLOCKED"
+    assert exceeded.json()["health_score"] == 94
+    assert persisted.json() == exceeded.json() == after_invalid.json()
+    assert foreign.status_code == 404
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"][0]["loc"][-1] == "tax_budget_used_base"
+    assert ready.json()["health_snapshot_id"] == exceeded.json()["health_snapshot_id"]
+    score = next(
+        item for item in persisted.json()["dimension_scores"] if item["dimension"] == "TAX_TURNOVER"
+    )
+    assert score["reason_code"] == "TAX_BUDGET_EXCEEDED"
+    assert score["measured_value"] == "1000.01"
+    assert score["threshold_value"] == "1000"
+    assert score["budget_assessments"][0]["remaining_value"] == "-0.01"
+    assert score["budget_assessments"][0]["basis"] == "DECLARED_PERIOD_MATCHED"
+    page, _ = repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
+        mandate_id=MANDATE_ID,
+        portfolio_id=None,
+        state=None,
+        limit=20,
+        cursor=None,
+        tenant_id="tax-health",
+    )
+    tax_exception = next(item for item in page if item.reason_code == "TAX_BUDGET_EXCEEDED")
+    assert tax_exception.budget_assessment.remaining_value == Decimal("-0.01")
+
+
 @pytest.mark.parametrize(
     (
         "case",

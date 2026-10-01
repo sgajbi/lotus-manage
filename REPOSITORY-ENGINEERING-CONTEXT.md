@@ -161,6 +161,18 @@ non-negative, finite Decimal at the public health-input boundary, independent of
 or source Risk context; a negative/non-finite value must fail validation before recalculation or
 derived exception persistence, while `None` remains missing evidence and explicit zero is valid.
 
+For the explicit mandate-health input, `tax_budget_base` is a non-negative cumulative realized-gain
+allowance in the twin base currency, not an estimate of tax payable. `tax_budget_used_base` is the
+caller-provided cumulative amount through the twin as-of date. Omitted currency and as-of fields
+assert that base/date; supplied contradictions remain `TAX_BUDGET_BASIS_MISMATCH`. If either the
+declared limit or usage states a period start, both must match. Missing usage is not zero; equality
+exhausts the allowance and excess blocks health. The ten-percent `TAX_TURNOVER` weight is applied
+once, while `budget_assessments` and distinct monitoring exceptions preserve both tax and turnover
+findings. These caller-declared references and comparisons do not verify Core tax-period authority,
+realized-gain ingestion, tax liability, or execution permission.
+The existing turnover path with a declared limit but omitted usage is unchanged in this focused
+tax slice; it produces no measured turnover assessment and is not compliance certification (#745).
+
 ## Architecture And Module Map
 
 Primary areas:
