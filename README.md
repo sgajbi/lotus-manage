@@ -19,6 +19,7 @@ RFC-0082 upstream contract-family map:
 - run supportability, lineage, idempotency, and artifact retrieval
 - policy-pack resolution and management-side workflow gating
 - immutable composite-definition and effective-dated membership source records
+- immutable, approval-bound DPM instruction packages for execution-adapter retrieval
 
 It does not own advisor-led proposal workflows. Those belong to `lotus-advise`.
 
@@ -31,6 +32,16 @@ Composite definitions and eligibility revisions are a tenant-scoped Manage sourc
 content conflicts. The API preserves pinned historical revisions and correction impact windows. It
 does not calculate composite returns, infer eligibility from current book membership, or publish
 Performance member-return facts; those remain explicit consumer and source-owner responsibilities.
+
+Approved DPM instruction packages are a separate, tenant-scoped retrieval product at
+`/api/v1/rebalance/instruction-packages/*`. A release pins the reviewed run, READY proof pack,
+current mandate/model, exact economic instructions, account/instrument mapping revisions, funding
+posture, approval-material hash, and correlation lineage. Preview returns **pending approval
+material**, not a releaseable package. The bounded batch route explicitly releases only independent
+eligible candidates and returns typed refusals for blocked candidates. Adapter receipts prove only
+retrieval. Manage neither submits an order nor claims acknowledgement, fills, settlement,
+reconciliation, or authoritative core booking. The product contract is
+[`contracts/approved-instruction-packages/lotus-manage-approved-instruction-package.v1.json`](contracts/approved-instruction-packages/lotus-manage-approved-instruction-package.v1.json).
 
 ## Ownership And Boundaries
 

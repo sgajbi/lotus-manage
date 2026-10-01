@@ -1,0 +1,61 @@
+{
+  "contract_id": "lotus-manage-approved-instruction-package",
+  "contract_version": "v1",
+  "producer_repository": "lotus-manage",
+  "product_name": "ApprovedDpmInstructionPackage",
+  "product_version": "v1",
+  "lifecycle_status": "implemented_not_certified",
+  "routes": {
+    "approval_material_preview": "POST /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}/preview",
+    "immutable_release": "PUT /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}",
+    "retrieval": "GET /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}",
+    "snapshot_listing": "GET /api/v1/rebalance/instruction-packages",
+    "bounded_partial_release": "POST /api/v1/rebalance/instruction-packages/batch-release",
+    "retrieval_receipt": "POST /api/v1/rebalance/instruction-packages/{package_id}/versions/{package_version}/receipts"
+  },
+  "identity": {
+    "package_identity": ["tenant_id", "package_id", "package_version"],
+    "instruction_identity": ["tenant_id", "package_id", "package_version", "original_intent_id"],
+    "receipt_identity": ["tenant_id", "package_id", "package_version", "consumer_id"]
+  },
+  "release_requirements": [
+    "HANDOFF_READY wave item with persisted approval diagnostics",
+    "READY proof pack matching the package portfolio and rebalance run",
+    "current mandate and model versions matching the reviewed request",
+    "READY persisted run with exact security quantities and supported dependencies",
+    "one complete account-scoped instrument mapping per source intent",
+    "approval evidence binding approved_material_hash",
+    "pinned funding evidence and certified reserve validation when applicable"
+  ],
+  "lineage": [
+    "rebalance_run_id",
+    "proof_pack_id",
+    "mandate_id and mandate_version",
+    "model_portfolio_id and model_portfolio_version",
+    "policy_revision",
+    "source_revisions",
+    "approved_intent_hash",
+    "mapping revision and content hash",
+    "funding and approval evidence hashes",
+    "correlation_id"
+  ],
+  "partial_release_policy": "RELEASE_ELIGIBLE_ITEMS_ONLY",
+  "durability": {
+    "persistence": "PostgreSQL migration 0035_approved_instruction_packages.sql",
+    "replay": "exact identity and immutable material replay returns the stored package; changed material conflicts; a later approved set for the same wave item must explicitly supersede an existing package version",
+    "pagination": "tenant-fenced deterministic created-at snapshot; all pages are required for completeness"
+  },
+  "non_claims": [
+    "approval material preview is not a released package",
+    "package retrieval is not order submission or acknowledgement",
+    "retrieval receipt is not a fill, settlement, cancellation, reconciliation, or booking event",
+    "lotus-manage does not route an order, receive execution state, or authoritatively book the core transaction",
+    "caller-supplied identity headers are not production IdP certification",
+    "the synthetic adapter tests are not bank or production integration certification"
+  ],
+  "external_owner_dependencies": [
+    "execution adapter submission and acknowledgement contract",
+    "authoritative core booking and reconciliation contract",
+    "production IdP-backed tenant, actor, and entitlement admission"
+  ]
+}

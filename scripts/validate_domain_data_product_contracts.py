@@ -7,10 +7,15 @@ import sys
 import tempfile
 from pathlib import Path
 
+try:  # Support both ``python scripts/...`` and package imports in tests.
+    from platform_paths import resolve_platform_root
+except ModuleNotFoundError:  # pragma: no cover - exercised by package-import tests
+    from scripts.platform_paths import resolve_platform_root
+
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_DECLARATION_DIR = ROOT / "contracts" / "domain-data-products"
-PLATFORM_ROOT = ROOT.parent / "lotus-platform"
+PLATFORM_ROOT = resolve_platform_root(repository_root=ROOT)
 PLATFORM_DECLARATION_DIR = PLATFORM_ROOT / "platform-contracts" / "domain-data-products"
 PLATFORM_VOCABULARY_DIR = PLATFORM_ROOT / "platform-contracts" / "domain-vocabulary"
 PLATFORM_VALIDATOR_PATH = PLATFORM_DECLARATION_DIR / "validate_domain_data_product_contracts.py"

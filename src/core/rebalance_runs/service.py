@@ -671,6 +671,20 @@ class DpmRunSupportService:
         self._cleanup_expired_supportability()
         return self._get_required_run(rebalance_run_id=rebalance_run_id)
 
+    def get_run_record_for_tenant(self, *, tenant_id: str, rebalance_run_id: str) -> DpmRunRecord:
+        """Return a retained run only inside its admitted tenant boundary.
+
+        Durable downstream products must never use the historical unscoped
+        accessor: a package built from another tenant's run would turn a read
+        leak into an instruction-release leak.
+        """
+
+        self._cleanup_expired_supportability()
+        return self._get_required_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+
     def list_workflow_decision_records(
         self, *, rebalance_run_id: str
     ) -> list[DpmRunWorkflowDecisionRecord]:

@@ -17,6 +17,7 @@ from src.api.services.composite_membership_application import (
 )
 from src.core.composite_repository import DpmCompositeRepository
 from src.core.construction.repository import ConstructionRepository
+from src.core.instruction_packages.repository import DpmInstructionPackageRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
@@ -41,6 +42,10 @@ from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.composites import (
     InMemoryDpmCompositeRepository,
     PostgresDpmCompositeRepository,
+)
+from src.infrastructure.instruction_packages import (
+    InMemoryDpmInstructionPackageRepository,
+    PostgresDpmInstructionPackageRepository,
 )
 from src.infrastructure.construction import PostgresConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository, PostgresDpmMandateRepository
@@ -100,6 +105,7 @@ _PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY = InMemoryDpmPmQualitySummaryInvocatio
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _CAMPAIGN_DEFINITION_REPOSITORY = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 _COMPOSITE_REPOSITORY = InMemoryDpmCompositeRepository()
+_INSTRUCTION_PACKAGE_REPOSITORY = InMemoryDpmInstructionPackageRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
 _POSTGRES_CONSTRUCTION_REPOSITORY: PostgresConstructionRepository | None = None
 _POSTGRES_PROOF_PACK_REPOSITORY: PostgresDpmProofPackRepository | None = None
@@ -121,6 +127,7 @@ _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY: (
     PostgresDpmBulkReviewCampaignDefinitionRepository | None
 ) = None
 _POSTGRES_COMPOSITE_REPOSITORY: PostgresDpmCompositeRepository | None = None
+_POSTGRES_INSTRUCTION_PACKAGE_REPOSITORY: PostgresDpmInstructionPackageRepository | None = None
 
 
 async def get_db_session() -> AsyncIterator[None]:
@@ -476,6 +483,24 @@ def get_composite_repository() -> DpmCompositeRepository:
             _POSTGRES_COMPOSITE_REPOSITORY = PostgresDpmCompositeRepository(dsn=dsn)
         return _POSTGRES_COMPOSITE_REPOSITORY
     return _COMPOSITE_REPOSITORY
+
+
+def get_instruction_package_repository() -> DpmInstructionPackageRepository:
+    """Return durable approved-instruction storage for the active runtime profile.
+
+    The in-memory adapter is development/test only. A configured runtime uses
+    the same managed PostgreSQL posture as other DPM durable products.
+    """
+
+    dsn = _repository_dsn("DPM_INSTRUCTION_PACKAGE_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_INSTRUCTION_PACKAGE_REPOSITORY
+        if _POSTGRES_INSTRUCTION_PACKAGE_REPOSITORY is None:
+            _POSTGRES_INSTRUCTION_PACKAGE_REPOSITORY = PostgresDpmInstructionPackageRepository(
+                dsn=dsn
+            )
+        return _POSTGRES_INSTRUCTION_PACKAGE_REPOSITORY
+    return _INSTRUCTION_PACKAGE_REPOSITORY
 
 
 def get_composite_membership_application_service(
