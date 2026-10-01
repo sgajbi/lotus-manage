@@ -18,12 +18,16 @@ from src.core.waves.simulation_repository import DpmWaveSimulationOperationConfl
 from src.infrastructure.waves.in_memory import InMemoryDpmWaveRepository
 from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_simulation_operations import (
+    _execute_claim,
     _operation_items_are_terminal,
     _reconciled_wave_items,
     _resolve_item_payloads,
     _simulation_inputs_for_claim,
     operation_counts,
 )
+from src.infrastructure.construction import InMemoryConstructionRepository
+from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
+from src.core.rebalance_runs.service import DpmRunSupportService
 
 NOW = datetime(2026, 10, 1, 1, tzinfo=UTC)
 TENANT = "tenant-sg"
@@ -375,3 +379,63 @@ def repository_claim_for_input_test():
         claimed_at=NOW,
         lease_expires_at=NOW + timedelta(minutes=1),
     )[0]
+
+
+def test_worker_persists_terminal_failure_for_recovery_and_disappearing_wave() -> None:
+    repository = InMemoryDpmWaveRepository()
+    repository.save_wave(wave=_wave(), idempotency_key=None, request_hash=None, tenant_id=TENANT)
+    repository.admit_simulation_operation(
+        operation=_operation(), items=_items(), simulating_wave=_simulating_wave()
+    )
+    repository.claim_simulation_items(
+        tenant_id=TENANT,
+        operation_id=OPERATION_ID,
+        worker_id="worker-a",
+        limit=1,
+        claimed_at=NOW,
+        lease_expires_at=NOW + timedelta(seconds=1),
+    )[0]
+    replacement = repository.claim_simulation_items(
+        tenant_id=TENANT,
+        operation_id=OPERATION_ID,
+        worker_id="worker-b",
+        limit=1,
+        claimed_at=NOW + timedelta(seconds=2),
+        lease_expires_at=NOW + timedelta(seconds=3),
+    )[0]
+    exhausted = repository.claim_simulation_items(
+        tenant_id=TENANT,
+        operation_id=OPERATION_ID,
+        worker_id="worker-c",
+        limit=1,
+        claimed_at=NOW + timedelta(seconds=4),
+        lease_expires_at=NOW + timedelta(seconds=5),
+    )[0]
+    assert replacement.recovery_exhausted is False
+    assert exhausted.recovery_exhausted is True
+    run_service = DpmRunSupportService(repository=InMemoryDpmRunRepository())
+    assert not _execute_claim(
+        claim=exhausted,
+        repository=repository,
+        construction_repository=InMemoryConstructionRepository(),
+        run_service=run_service,
+        risk_authority_client=None,
+        methods=None,
+    )
+    next_claim = repository.claim_simulation_items(
+        tenant_id=TENANT,
+        operation_id=OPERATION_ID,
+        worker_id="worker-d",
+        limit=1,
+        claimed_at=NOW + timedelta(seconds=6),
+        lease_expires_at=NOW + timedelta(minutes=1),
+    )[0]
+    repository._waves.pop(WAVE_ID)
+    assert not _execute_claim(
+        claim=next_claim,
+        repository=repository,
+        construction_repository=InMemoryConstructionRepository(),
+        run_service=run_service,
+        risk_authority_client=None,
+        methods=None,
+    )
