@@ -9,6 +9,7 @@ from src.core.rebalance_runs.models import (
     DpmRunIdempotencyHistoryRecord,
     DpmRunIdempotencyRecord,
     DpmRunRecord,
+    DpmSimulationSubmissionClaimRecord,
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
@@ -35,13 +36,113 @@ class InMemoryDpmRunRepository(DpmRunRepository):
         self._lock = Lock()
         self._runs: dict[str, DpmRunRecord] = {}
         self._run_id_by_correlation: dict[str, str] = {}
-        self._idempotency: dict[str, DpmRunIdempotencyRecord] = {}
-        self._idempotency_history: dict[str, list[DpmRunIdempotencyHistoryRecord]] = {}
+        self._idempotency: dict[tuple[Optional[str], str], DpmRunIdempotencyRecord] = {}
+        self._idempotency_history: dict[
+            tuple[Optional[str], str], list[DpmRunIdempotencyHistoryRecord]
+        ] = {}
+        self._submission_claims: dict[tuple[str, str], DpmSimulationSubmissionClaimRecord] = {}
         self._run_artifacts: dict[str, dict[str, Any]] = {}
         self._operations: dict[str, DpmAsyncOperationRecord] = {}
         self._operation_by_correlation: dict[str, str] = {}
         self._workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]] = {}
         self._lineage_edges_by_entity: dict[str, list[DpmLineageEdgeRecord]] = {}
+
+    def claim_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        claimed_at: datetime,
+        claim_expires_at: datetime,
+    ) -> DpmSimulationSubmissionClaimRecord:
+        key = (tenant_id, idempotency_key)
+        with self._lock:
+            existing = self._submission_claims.get(key)
+            if existing is None or (
+                existing.status == "IN_PROGRESS"
+                and existing.request_hash == request_hash
+                and existing.claim_expires_at <= claimed_at
+            ):
+                existing = DpmSimulationSubmissionClaimRecord(
+                    tenant_id=tenant_id,
+                    idempotency_key=idempotency_key,
+                    request_hash=request_hash,
+                    status="IN_PROGRESS",
+                    claim_token=claim_token,
+                    claimed_at=claimed_at,
+                    claim_expires_at=claim_expires_at,
+                )
+                self._submission_claims[key] = existing
+            return deepcopy(existing)
+
+    def get_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> Optional[DpmSimulationSubmissionClaimRecord]:
+        with self._lock:
+            claim = self._submission_claims.get((tenant_id, idempotency_key))
+            return deepcopy(claim) if claim is not None else None
+
+    def abandon_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str, claim_token: str, abandoned_at: datetime
+    ) -> None:
+        with self._lock:
+            claim = self._submission_claims.get((tenant_id, idempotency_key))
+            if (
+                claim is not None
+                and claim.status == "IN_PROGRESS"
+                and claim.claim_token == claim_token
+            ):
+                claim.claim_expires_at = abandoned_at
+
+    def complete_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        run: DpmRunRecord,
+        artifact_json: Optional[dict[str, Any]],
+        idempotency_history: DpmRunIdempotencyHistoryRecord,
+        lineage_edges: list[DpmLineageEdgeRecord],
+        completed_at: datetime,
+    ) -> None:
+        key = (tenant_id, idempotency_key)
+        with self._lock:
+            claim = self._submission_claims.get(key)
+            if (
+                claim is None
+                or claim.status != "IN_PROGRESS"
+                or claim.claim_token != claim_token
+                or claim.request_hash != request_hash
+            ):
+                raise DpmRunRepositoryConflictError("DPM_SIMULATION_SUBMISSION_CLAIM_LOST")
+            self._runs[run.rebalance_run_id] = deepcopy(run)
+            self._run_id_by_correlation[run.correlation_id] = run.rebalance_run_id
+            if artifact_json is not None:
+                self._run_artifacts[run.rebalance_run_id] = deepcopy(artifact_json)
+            self._idempotency[key] = DpmRunIdempotencyRecord(
+                tenant_id=tenant_id,
+                idempotency_key=idempotency_key,
+                request_hash=request_hash,
+                rebalance_run_id=run.rebalance_run_id,
+                created_at=completed_at,
+            )
+            self._idempotency_history.setdefault(key, []).append(deepcopy(idempotency_history))
+            for edge in lineage_edges:
+                self._lineage_edges_by_entity.setdefault(edge.source_entity_id, []).append(
+                    deepcopy(edge)
+                )
+                if edge.target_entity_id != edge.source_entity_id:
+                    self._lineage_edges_by_entity.setdefault(edge.target_entity_id, []).append(
+                        deepcopy(edge)
+                    )
+            claim.status = "COMPLETED"
+            claim.rebalance_run_id = run.rebalance_run_id
+            claim.completed_at = completed_at
+            claim.claim_expires_at = completed_at
 
     def save_run(self, run: DpmRunRecord) -> None:
         with self._lock:
@@ -53,6 +154,12 @@ class InMemoryDpmRunRepository(DpmRunRepository):
             run = self._runs.get(rebalance_run_id)
             return deepcopy(run) if run is not None else None
 
+    def get_run_for_tenant(
+        self, *, tenant_id: str, rebalance_run_id: str
+    ) -> Optional[DpmRunRecord]:
+        run = self.get_run(rebalance_run_id=rebalance_run_id)
+        return run if run is not None and run.tenant_id == tenant_id else None
+
     def get_run_by_correlation(self, *, correlation_id: str) -> Optional[DpmRunRecord]:
         with self._lock:
             run_id = self._run_id_by_correlation.get(correlation_id)
@@ -61,6 +168,21 @@ class InMemoryDpmRunRepository(DpmRunRepository):
             run = self._runs.get(run_id)
             return deepcopy(run) if run is not None else None
 
+    def get_run_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> Optional[DpmRunRecord]:
+        with self._lock:
+            matching = [
+                run
+                for run in self._runs.values()
+                if run.tenant_id == tenant_id and run.correlation_id == correlation_id
+            ]
+            if not matching:
+                return None
+            return deepcopy(
+                max(matching, key=lambda item: (item.created_at, item.rebalance_run_id))
+            )
+
     def get_run_by_request_hash(self, *, request_hash: str) -> Optional[DpmRunRecord]:
         with self._lock:
             matching = [run for run in self._runs.values() if run.request_hash == request_hash]
@@ -68,6 +190,21 @@ class InMemoryDpmRunRepository(DpmRunRepository):
                 return None
             latest = max(matching, key=lambda item: (item.created_at, item.rebalance_run_id))
             return deepcopy(latest)
+
+    def get_run_by_request_hash_for_tenant(
+        self, *, tenant_id: str, request_hash: str
+    ) -> Optional[DpmRunRecord]:
+        with self._lock:
+            matching = [
+                run
+                for run in self._runs.values()
+                if run.tenant_id == tenant_id and run.request_hash == request_hash
+            ]
+            if not matching:
+                return None
+            return deepcopy(
+                max(matching, key=lambda item: (item.created_at, item.rebalance_run_id))
+            )
 
     def list_runs(
         self,
@@ -95,6 +232,33 @@ class InMemoryDpmRunRepository(DpmRunRepository):
             )
             return [deepcopy(row) for row in page], next_cursor
 
+    def list_runs_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        status: Optional[str],
+        request_hash: Optional[str],
+        portfolio_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmRunRecord], Optional[str]]:
+        with self._lock:
+            page, next_cursor = _list_runs_filtered(
+                runs=[run for run in self._runs.values() if run.tenant_id == tenant_id],
+                filters=_RunListFilters(
+                    created_from=created_from,
+                    created_to=created_to,
+                    status=status,
+                    request_hash=request_hash,
+                    portfolio_id=portfolio_id,
+                ),
+                limit=limit,
+                cursor=cursor,
+            )
+            return [deepcopy(row) for row in page], next_cursor
+
     def save_run_artifact(self, *, rebalance_run_id: str, artifact_json: dict[str, Any]) -> None:
         with self._lock:
             self._run_artifacts[rebalance_run_id] = deepcopy(artifact_json)
@@ -106,23 +270,49 @@ class InMemoryDpmRunRepository(DpmRunRepository):
 
     def save_idempotency_mapping(self, record: DpmRunIdempotencyRecord) -> None:
         with self._lock:
-            self._idempotency[record.idempotency_key] = deepcopy(record)
+            self._idempotency[(record.tenant_id, record.idempotency_key)] = deepcopy(record)
 
     def get_idempotency_mapping(self, *, idempotency_key: str) -> Optional[DpmRunIdempotencyRecord]:
         with self._lock:
-            record = self._idempotency.get(idempotency_key)
+            record = next(
+                (value for (_, key), value in self._idempotency.items() if key == idempotency_key),
+                None,
+            )
+            return deepcopy(record) if record is not None else None
+
+    def get_idempotency_mapping_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> Optional[DpmRunIdempotencyRecord]:
+        with self._lock:
+            record = self._idempotency.get((tenant_id, idempotency_key))
             return deepcopy(record) if record is not None else None
 
     def append_idempotency_history(self, record: DpmRunIdempotencyHistoryRecord) -> None:
         with self._lock:
-            history = self._idempotency_history.setdefault(record.idempotency_key, [])
+            history = self._idempotency_history.setdefault(
+                (record.tenant_id, record.idempotency_key), []
+            )
             history.append(deepcopy(record))
 
     def list_idempotency_history(
         self, *, idempotency_key: str
     ) -> list[DpmRunIdempotencyHistoryRecord]:
         with self._lock:
-            history = self._idempotency_history.get(idempotency_key, [])
+            history = next(
+                (
+                    value
+                    for (_, key), value in self._idempotency_history.items()
+                    if key == idempotency_key
+                ),
+                [],
+            )
+            return [deepcopy(item) for item in history]
+
+    def list_idempotency_history_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> list[DpmRunIdempotencyHistoryRecord]:
+        with self._lock:
+            history = self._idempotency_history.get((tenant_id, idempotency_key), [])
             return [deepcopy(item) for item in history]
 
     def create_operation(self, operation: DpmAsyncOperationRecord) -> None:

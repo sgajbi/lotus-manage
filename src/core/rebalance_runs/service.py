@@ -30,6 +30,7 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
     DpmRunWorkflowHistoryResponse,
     DpmRunWorkflowResponse,
+    DpmSimulationSubmissionClaimRecord,
     DpmSupportabilitySummaryData,
     DpmSupportabilitySummaryResponse,
     DpmWorkflowActionType,
@@ -134,11 +135,15 @@ class DpmRunSupportService:
         request_hash: str,
         portfolio_id: str,
         idempotency_key: Optional[str],
+        tenant_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
     ) -> None:
+        if idempotency_key is not None and tenant_id is None:
+            raise ValueError("DPM_RUN_TENANT_REQUIRED_FOR_IDEMPOTENCY")
         self._cleanup_expired_supportability()
         now = created_at or datetime.now(timezone.utc)
         run = DpmRunRecord(
+            tenant_id=tenant_id,
             rebalance_run_id=result.rebalance_run_id,
             correlation_id=result.correlation_id,
             request_hash=request_hash,
@@ -150,6 +155,7 @@ class DpmRunSupportService:
         self._repository.save_run(run)
         self._persist_run_artifact_if_needed(run=run)
         self._record_lineage_edge(
+            tenant_id=tenant_id,
             source_entity_id=run.correlation_id,
             edge_type="CORRELATION_TO_RUN",
             target_entity_id=run.rebalance_run_id,
@@ -159,6 +165,7 @@ class DpmRunSupportService:
         if idempotency_key is not None:
             self._repository.save_idempotency_mapping(
                 DpmRunIdempotencyRecord(
+                    tenant_id=tenant_id,
                     idempotency_key=idempotency_key,
                     request_hash=request_hash,
                     rebalance_run_id=result.rebalance_run_id,
@@ -167,6 +174,7 @@ class DpmRunSupportService:
             )
             self._repository.append_idempotency_history(
                 DpmRunIdempotencyHistoryRecord(
+                    tenant_id=tenant_id,
                     idempotency_key=idempotency_key,
                     rebalance_run_id=run.rebalance_run_id,
                     correlation_id=run.correlation_id,
@@ -175,12 +183,466 @@ class DpmRunSupportService:
                 )
             )
             self._record_lineage_edge(
+                tenant_id=tenant_id,
                 source_entity_id=idempotency_key,
                 edge_type="IDEMPOTENCY_TO_RUN",
                 target_entity_id=run.rebalance_run_id,
                 metadata={"request_hash": run.request_hash},
                 created_at=now,
             )
+
+    def claim_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        claimed_at: datetime,
+        claim_expires_at: datetime,
+    ) -> DpmSimulationSubmissionClaimRecord:
+        return self._repository.claim_simulation_submission(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            claim_token=claim_token,
+            claimed_at=claimed_at,
+            claim_expires_at=claim_expires_at,
+        )
+
+    def get_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> Optional[DpmSimulationSubmissionClaimRecord]:
+        return self._repository.get_simulation_submission_claim(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
+
+    def abandon_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str, claim_token: str
+    ) -> None:
+        self._repository.abandon_simulation_submission_claim(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+            claim_token=claim_token,
+            abandoned_at=_utc_now(),
+        )
+
+    def complete_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        result: RebalanceResult,
+        portfolio_id: str,
+    ) -> None:
+        now = _utc_now()
+        run = DpmRunRecord(
+            tenant_id=tenant_id,
+            rebalance_run_id=result.rebalance_run_id,
+            correlation_id=result.correlation_id,
+            request_hash=request_hash,
+            idempotency_key=idempotency_key,
+            portfolio_id=portfolio_id,
+            created_at=now,
+            result_json=result.model_dump(mode="json"),
+        )
+        artifact_json = (
+            build_dpm_run_artifact(run=run).model_dump(mode="json")
+            if self._artifact_store_mode == "PERSISTED"
+            else None
+        )
+        history = DpmRunIdempotencyHistoryRecord(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+            rebalance_run_id=run.rebalance_run_id,
+            correlation_id=run.correlation_id,
+            request_hash=request_hash,
+            created_at=now,
+        )
+        lineage = [
+            DpmLineageEdgeRecord(
+                tenant_id=tenant_id,
+                source_entity_id=run.correlation_id,
+                edge_type="CORRELATION_TO_RUN",
+                target_entity_id=run.rebalance_run_id,
+                created_at=now,
+                metadata_json={"request_hash": request_hash},
+            ),
+            DpmLineageEdgeRecord(
+                tenant_id=tenant_id,
+                source_entity_id=idempotency_key,
+                edge_type="IDEMPOTENCY_TO_RUN",
+                target_entity_id=run.rebalance_run_id,
+                created_at=now,
+                metadata_json={"request_hash": request_hash},
+            ),
+        ]
+        self._repository.complete_simulation_submission(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            claim_token=claim_token,
+            run=run,
+            artifact_json=artifact_json,
+            idempotency_history=history,
+            lineage_edges=lineage,
+            completed_at=now,
+        )
+
+    def get_run_for_tenant(self, *, tenant_id: str, rebalance_run_id: str) -> DpmRunLookupResponse:
+        self._cleanup_expired_supportability()
+        run = self._repository.get_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        return to_lookup_response(run)
+
+    def get_run_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> DpmRunLookupResponse:
+        self._cleanup_expired_supportability()
+        run = self._repository.get_run_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        return to_lookup_response(run)
+
+    def get_run_by_request_hash_for_tenant(
+        self, *, tenant_id: str, request_hash: str
+    ) -> DpmRunLookupResponse:
+        self._cleanup_expired_supportability()
+        run = self._repository.get_run_by_request_hash_for_tenant(
+            tenant_id=tenant_id,
+            request_hash=request_hash,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        return to_lookup_response(run)
+
+    def list_runs_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        status: Optional[str],
+        request_hash: Optional[str],
+        portfolio_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> DpmRunListResponse:
+        self._cleanup_expired_supportability()
+        rows, next_cursor = self._repository.list_runs_for_tenant(
+            tenant_id=tenant_id,
+            created_from=created_from,
+            created_to=created_to,
+            status=status,
+            request_hash=request_hash,
+            portfolio_id=portfolio_id,
+            limit=limit,
+            cursor=cursor,
+        )
+        return to_run_list_response(runs=rows, next_cursor=next_cursor)
+
+    def get_idempotency_lookup_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> DpmRunIdempotencyLookupResponse:
+        self._cleanup_expired_supportability()
+        record = self._repository.get_idempotency_mapping_for_tenant(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
+        if record is None:
+            raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
+        return to_idempotency_lookup_response(record)
+
+    def get_idempotency_history_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> DpmRunIdempotencyHistoryResponse:
+        self._cleanup_expired_supportability()
+        history = self._repository.list_idempotency_history_for_tenant(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
+        if not history:
+            raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
+        return to_idempotency_history_response(idempotency_key=idempotency_key, history=history)
+
+    def get_run_artifact_for_tenant(
+        self, *, tenant_id: str, rebalance_run_id: str
+    ) -> DpmRunArtifactResponse:
+        self._cleanup_expired_supportability()
+        run = self._repository.get_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        return self._resolve_run_artifact(run=run)
+
+    def get_run_support_bundle_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        rebalance_run_id: str,
+        include_artifact: bool,
+        include_async_operation: bool,
+        include_idempotency_history: bool,
+    ) -> DpmRunSupportBundleResponse:
+        self._cleanup_expired_operations()
+        self._cleanup_expired_supportability()
+        run = self._repository.get_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        artifact = self._support_bundle_artifact(run=run, include_artifact=include_artifact)
+        async_operation = _support_bundle_async_operation(
+            run=run,
+            operation=self._support_bundle_operation_record(
+                run=run,
+                include_async_operation=include_async_operation,
+            ),
+        )
+        history = None
+        if include_idempotency_history and run.idempotency_key is not None:
+            history = self._repository.list_idempotency_history_for_tenant(
+                tenant_id=tenant_id,
+                idempotency_key=run.idempotency_key,
+            )
+        return DpmRunSupportBundleResponse(
+            run=to_lookup_response(run),
+            artifact=artifact,
+            async_operation=async_operation,
+            workflow_history=_support_bundle_workflow_history(
+                rebalance_run_id=rebalance_run_id,
+                decisions=self._repository.list_workflow_decisions(
+                    rebalance_run_id=rebalance_run_id
+                ),
+            ),
+            lineage=_support_bundle_lineage(
+                rebalance_run_id=rebalance_run_id,
+                edges=self._repository.list_lineage_edges(entity_id=rebalance_run_id),
+            ),
+            idempotency_history=_support_bundle_idempotency_history(
+                run=run,
+                history=history,
+            ),
+        )
+
+    def get_run_support_bundle_by_idempotency_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        include_artifact: bool,
+        include_async_operation: bool,
+        include_idempotency_history: bool,
+    ) -> DpmRunSupportBundleResponse:
+        mapping = self._repository.get_idempotency_mapping_for_tenant(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
+        if mapping is None:
+            raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
+        return self.get_run_support_bundle_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=mapping.rebalance_run_id,
+            include_artifact=include_artifact,
+            include_async_operation=include_async_operation,
+            include_idempotency_history=include_idempotency_history,
+        )
+
+    def get_run_support_bundle_by_correlation_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        correlation_id: str,
+        include_artifact: bool,
+        include_async_operation: bool,
+        include_idempotency_history: bool,
+    ) -> DpmRunSupportBundleResponse:
+        run = self._repository.get_run_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        return self.get_run_support_bundle_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=run.rebalance_run_id,
+            include_artifact=include_artifact,
+            include_async_operation=include_async_operation,
+            include_idempotency_history=include_idempotency_history,
+        )
+
+    def get_run_support_bundle_by_operation_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        include_artifact: bool,
+        include_async_operation: bool,
+        include_idempotency_history: bool,
+    ) -> DpmRunSupportBundleResponse:
+        operation = self._repository.get_operation(operation_id=operation_id)
+        if operation is None:
+            raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
+        return self.get_run_support_bundle_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=operation.correlation_id,
+            include_artifact=include_artifact,
+            include_async_operation=include_async_operation,
+            include_idempotency_history=include_idempotency_history,
+        )
+
+    def get_workflow_for_tenant(
+        self, *, tenant_id: str, rebalance_run_id: str
+    ) -> DpmRunWorkflowResponse:
+        run = self._get_required_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+        return self._to_workflow_response(run=run)
+
+    def get_workflow_history_for_tenant(
+        self, *, tenant_id: str, rebalance_run_id: str
+    ) -> DpmRunWorkflowHistoryResponse:
+        self._get_required_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+        return build_workflow_history_response(
+            rebalance_run_id=rebalance_run_id,
+            decisions=self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id),
+        )
+
+    def get_workflow_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> DpmRunWorkflowResponse:
+        run = self._get_required_run_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+        )
+        return self._to_workflow_response(run=run)
+
+    def get_workflow_history_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> DpmRunWorkflowHistoryResponse:
+        run = self._get_required_run_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+        )
+        return self.get_workflow_history_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=run.rebalance_run_id,
+        )
+
+    def get_workflow_by_idempotency_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> DpmRunWorkflowResponse:
+        mapping = self._get_required_idempotency_mapping_for_tenant(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
+        return self.get_workflow_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=mapping.rebalance_run_id,
+        )
+
+    def get_workflow_history_by_idempotency_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> DpmRunWorkflowHistoryResponse:
+        mapping = self._get_required_idempotency_mapping_for_tenant(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
+        return self.get_workflow_history_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=mapping.rebalance_run_id,
+        )
+
+    def apply_workflow_action_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        rebalance_run_id: str,
+        action: DpmWorkflowActionType,
+        reason_code: str,
+        comment: Optional[str],
+        actor_id: str,
+        correlation_id: str,
+    ) -> DpmRunWorkflowResponse:
+        self._get_required_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+        return self.apply_workflow_action(
+            rebalance_run_id=rebalance_run_id,
+            action=action,
+            reason_code=reason_code,
+            comment=comment,
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+        )
+
+    def apply_workflow_action_by_correlation_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        correlation_id: str,
+        action: DpmWorkflowActionType,
+        reason_code: str,
+        comment: Optional[str],
+        actor_id: str,
+        action_correlation_id: str,
+    ) -> DpmRunWorkflowResponse:
+        run = self._get_required_run_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+        )
+        return self.apply_workflow_action_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=run.rebalance_run_id,
+            action=action,
+            reason_code=reason_code,
+            comment=comment,
+            actor_id=actor_id,
+            correlation_id=action_correlation_id,
+        )
+
+    def apply_workflow_action_by_idempotency_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        action: DpmWorkflowActionType,
+        reason_code: str,
+        comment: Optional[str],
+        actor_id: str,
+        action_correlation_id: str,
+    ) -> DpmRunWorkflowResponse:
+        mapping = self._get_required_idempotency_mapping_for_tenant(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
+        return self.apply_workflow_action_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=mapping.rebalance_run_id,
+            action=action,
+            reason_code=reason_code,
+            comment=comment,
+            actor_id=actor_id,
+            correlation_id=action_correlation_id,
+        )
 
     def get_run(self, *, rebalance_run_id: str) -> DpmRunLookupResponse:
         self._cleanup_expired_supportability()
@@ -728,6 +1190,7 @@ class DpmRunSupportService:
     def _record_lineage_edge(
         self,
         *,
+        tenant_id: Optional[str] = None,
         source_entity_id: str,
         edge_type: DpmLineageEdgeType,
         target_entity_id: str,
@@ -736,6 +1199,7 @@ class DpmRunSupportService:
     ) -> None:
         self._repository.append_lineage_edge(
             DpmLineageEdgeRecord(
+                tenant_id=tenant_id,
                 source_entity_id=source_entity_id,
                 edge_type=edge_type,
                 target_entity_id=target_entity_id,
@@ -750,14 +1214,47 @@ class DpmRunSupportService:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
         return run
 
+    def _get_required_run_for_tenant(
+        self, *, tenant_id: str, rebalance_run_id: str
+    ) -> DpmRunRecord:
+        run = self._repository.get_run_for_tenant(
+            tenant_id=tenant_id,
+            rebalance_run_id=rebalance_run_id,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        return run
+
     def _get_required_run_by_correlation(self, *, correlation_id: str) -> DpmRunRecord:
         run = self._repository.get_run_by_correlation(correlation_id=correlation_id)
         if run is None:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
         return run
 
+    def _get_required_run_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> DpmRunRecord:
+        run = self._repository.get_run_by_correlation_for_tenant(
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+        )
+        if run is None:
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+        return run
+
     def _get_required_idempotency_mapping(self, *, idempotency_key: str) -> DpmRunIdempotencyRecord:
         mapping = self._repository.get_idempotency_mapping(idempotency_key=idempotency_key)
+        if mapping is None:
+            raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
+        return mapping
+
+    def _get_required_idempotency_mapping_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> DpmRunIdempotencyRecord:
+        mapping = self._repository.get_idempotency_mapping_for_tenant(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+        )
         if mapping is None:
             raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
         return mapping

@@ -38,6 +38,7 @@ from src.core.rebalance_runs import (
 )
 def get_dpm_run_support_bundle(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     rebalance_run_id: Annotated[
         str,
         Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
@@ -51,7 +52,8 @@ def get_dpm_run_support_bundle(
     shared._assert_support_bundle_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
     return read_support_bundle_with_http_mapping(
-        lambda: service.get_run_support_bundle(
+        lambda: service.get_run_support_bundle_for_tenant(
+            tenant_id=x_tenant_id,
             rebalance_run_id=rebalance_run_id,
             include_artifact=include_artifact,
             include_async_operation=include_async_operation,

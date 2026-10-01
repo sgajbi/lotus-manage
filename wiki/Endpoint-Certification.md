@@ -1221,10 +1221,11 @@ Request surface:
 - For `input_mode=stateful`: `stateful_input.portfolio_id`, `stateful_input.as_of`,
   required `stateful_input.tenant_id`, optional mandate/model/policy/booking-center selectors,
   and optional `options_override`
-- Required header: `Idempotency-Key`
-- Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
-  `X-Tenant-Id` for stateless mode; `X-Tenant-Id` is required and must match the body tenant for
-  stateful mode before any Core sourcing
+- Required headers: `Idempotency-Key`, `X-Tenant-Id`
+- Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`
+- In stateful mode, normalized `X-Tenant-Id` must match the body tenant before any Core sourcing.
+  In both modes it owns the durable run and idempotency identity; it remains caller-asserted scope,
+  not authenticated-principal proof.
 
 Functional coverage:
 
@@ -1234,7 +1235,9 @@ Functional coverage:
 - missing idempotency header validation,
 - invalid payload validation,
 - idempotent replay and hash-conflict behavior,
-- optional replay disablement,
+- durable replay cannot be disabled by policy or legacy environment flags,
+- concurrent same-tenant/same-key submissions resolve to one authoritative run while changed
+  payloads conflict and the same key remains independent across tenants,
 - generated correlation id when caller omits `X-Correlation-Id`,
 - policy-pack request override,
 - explicit tenant policy-pack override,
@@ -1251,9 +1254,12 @@ Functional coverage:
 Non-functional posture:
 
 - Synchronous execution is intended for one bounded simulation request.
-- Idempotency protects client retries and prevents same-key/different-request ambiguity.
-- The endpoint records supportability state when persistence is enabled; replay-enabled persistence
-  failures return service-unavailable responses rather than falsely accepting a run.
+- PostgreSQL claims tenant/key/hash identity before calculation. Active duplicate work either
+  recovers the committed winner or returns bounded `409 DPM_REBALANCE_REQUEST_IN_PROGRESS` retry
+  guidance; expired claims can be fenced and recovered after worker failure.
+- Run persistence is mandatory. Run, artifact, history, workflow, and support-bundle reads are
+  tenant-fenced; legacy unknown-owner rows are preserved but quarantined. Persistence failures
+  return service-unavailable responses rather than falsely accepting a run.
 - For multi-scenario or deferred execution, use `/api/v1/rebalance/analyze` or `/api/v1/rebalance/analyze/async`.
 
 Upstream integration posture:

@@ -17,6 +17,7 @@ scope unless a future source-owning service publishes and certifies that capabil
 | Campaign workflow triage | Campaign workflow telemetry | `lotus_manage_campaign_workflow_total`, `lotus_manage_campaign_read_model_scan_total`, and monitoring contract panels |
 | Campaign recovery and replay | Campaign workflow operations | Campaign definition routes, launch history, workflow board, assignment tasks, and maker-checker pages |
 | Outcome-review supportability | RFC-0042 outcome review supportability | Outcome-review supportability API and bounded metrics |
+| Synchronous rebalance retry recovery | Rebalance submission ownership and recovery | Tenant/key claim, `409` in-progress response, scoped run and support-bundle reads |
 | Container readiness | Docker production readiness | Compose health, migrations, and readiness logs |
 
 ## Important operational checks
@@ -39,6 +40,27 @@ scope unless a future source-owning service publishes and certifies that capabil
   and fails closed (HTTP `500`) when a required DPM migration is absent. Treat
   `CUTOVER_MIGRATION_MISSING:dpm:<version>` as a deployment refusal: apply the governed migration
   and recheck readiness; never bypass the route or insert a synthetic migration marker.
+
+## Synchronous rebalance admission and recovery
+
+`POST /api/v1/rebalance/simulate` requires `X-Tenant-Id` and `Idempotency-Key`. PostgreSQL claims
+the tenant/key/request-hash identity before calculation and publishes the winning run and its
+supportability descendants in one transaction.
+
+| Symptom | Meaning | Safe action |
+| --- | --- | --- |
+| `200` with the original run id | The request completed or recovered a completed winner. | Treat the returned run as authoritative; do not create a replacement key merely because the first response was lost. |
+| `409 DPM_REBALANCE_REQUEST_IN_PROGRESS` with `Retry-After` | Another worker owns an unexpired claim for the same tenant, key, and request hash. | Retry the identical request after the bounded delay. Do not change the payload under the same key. |
+| `409 IDEMPOTENCY_KEY_CONFLICT: request hash mismatch` | The tenant/key is already bound to different economic input. | Stop automatic retry and investigate the caller; use a new key only for a genuinely new logical request. |
+| `503 DPM_IDEMPOTENCY_STORE_WRITE_FAILED` | The run could not be durably published. The active claim is abandoned where safe. | Check PostgreSQL health and migrations, then retry the identical request. Never infer success from calculation logs alone. |
+| `503 DPM_IDEMPOTENCY_STORE_INCONSISTENT` | A completed claim does not resolve to its tenant-owned run. | Escalate as a persistence-integrity incident; do not repair by reassigning an unattributed row. |
+
+Claims have a bounded lease. A worker that dies after claiming or calculating but before atomic
+publication leaves no successful run; after expiry, another worker may take over with a new fencing
+token. A crash after commit is recovered by replaying the completed claim and original run after
+restart. Historical unowned mappings are retained in the legacy quarantine table and are not
+visible to any tenant. These controls establish request correctness, not production IAM or measured
+horizontal capacity.
 
 ## RFC-0108 action register supportability
 

@@ -63,7 +63,11 @@ def _simulate_run(client: TestClient) -> str:
     response = client.post(
         "/api/v1/rebalance/simulate",
         json={"input_mode": "stateless", "stateless_input": valid_api_payload()},
-        headers={"Idempotency-Key": "proof-pack-source-run", "X-Correlation-Id": "corr-proof-api"},
+        headers={
+            "Idempotency-Key": "proof-pack-source-run",
+            "X-Correlation-Id": "corr-proof-api",
+            "X-Tenant-Id": "tenant-test",
+        },
     )
     assert response.status_code == 200
     return str(response.json()["rebalance_run_id"])

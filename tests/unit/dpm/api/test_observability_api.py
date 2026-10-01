@@ -484,7 +484,8 @@ def test_http_access_log_uses_route_template_not_sensitive_path_values():
     try:
         client = TestClient(app)
         response = client.get(
-            "/api/v1/rebalance/runs/by-request-hash/sha256:sensitive-request-hash"
+            "/api/v1/rebalance/runs/by-request-hash/sha256:sensitive-request-hash",
+            headers={"X-Tenant-Id": "tenant-observability"},
         )
     finally:
         logger.removeHandler(handler)

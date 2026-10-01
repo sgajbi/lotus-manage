@@ -7,6 +7,7 @@ from src.core.rebalance_runs.models import (
     DpmRunIdempotencyHistoryRecord,
     DpmRunIdempotencyRecord,
     DpmRunRecord,
+    DpmSimulationSubmissionClaimRecord,
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
@@ -17,17 +18,75 @@ class DpmRunRepositoryConflictError(Exception):
 
 
 class DpmRunRepository(Protocol):
+    def claim_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        claimed_at: datetime,
+        claim_expires_at: datetime,
+    ) -> DpmSimulationSubmissionClaimRecord: ...
+
+    def get_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> Optional[DpmSimulationSubmissionClaimRecord]: ...
+
+    def abandon_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str, claim_token: str, abandoned_at: datetime
+    ) -> None: ...
+
+    def complete_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        run: DpmRunRecord,
+        artifact_json: Optional[dict[str, Any]],
+        idempotency_history: DpmRunIdempotencyHistoryRecord,
+        lineage_edges: list[DpmLineageEdgeRecord],
+        completed_at: datetime,
+    ) -> None: ...
+
     def save_run(self, run: DpmRunRecord) -> None: ...
 
     def get_run(self, *, rebalance_run_id: str) -> Optional[DpmRunRecord]: ...
 
+    def get_run_for_tenant(
+        self, *, tenant_id: str, rebalance_run_id: str
+    ) -> Optional[DpmRunRecord]: ...
+
     def get_run_by_correlation(self, *, correlation_id: str) -> Optional[DpmRunRecord]: ...
 
+    def get_run_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> Optional[DpmRunRecord]: ...
+
     def get_run_by_request_hash(self, *, request_hash: str) -> Optional[DpmRunRecord]: ...
+
+    def get_run_by_request_hash_for_tenant(
+        self, *, tenant_id: str, request_hash: str
+    ) -> Optional[DpmRunRecord]: ...
 
     def list_runs(
         self,
         *,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        status: Optional[str],
+        request_hash: Optional[str],
+        portfolio_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmRunRecord], Optional[str]]: ...
+
+    def list_runs_for_tenant(
+        self,
+        *,
+        tenant_id: str,
         created_from: Optional[datetime],
         created_to: Optional[datetime],
         status: Optional[str],
@@ -49,10 +108,18 @@ class DpmRunRepository(Protocol):
         self, *, idempotency_key: str
     ) -> Optional[DpmRunIdempotencyRecord]: ...
 
+    def get_idempotency_mapping_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> Optional[DpmRunIdempotencyRecord]: ...
+
     def append_idempotency_history(self, record: DpmRunIdempotencyHistoryRecord) -> None: ...
 
     def list_idempotency_history(
         self, *, idempotency_key: str
+    ) -> list[DpmRunIdempotencyHistoryRecord]: ...
+
+    def list_idempotency_history_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
     ) -> list[DpmRunIdempotencyHistoryRecord]: ...
 
     def create_operation(self, operation: DpmAsyncOperationRecord) -> None: ...

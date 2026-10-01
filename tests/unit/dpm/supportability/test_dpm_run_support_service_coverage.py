@@ -155,6 +155,7 @@ def test_service_persisted_artifact_mode_stores_and_reads_artifact():
         request_hash="sha256:req-service-artifact-1",
         portfolio_id="pf_service_artifact_1",
         idempotency_key="idem_service_artifact_1",
+        tenant_id="tenant-test",
     )
 
     stored = repository.get_run_artifact(rebalance_run_id=result.rebalance_run_id)
@@ -256,12 +257,14 @@ def test_supportability_summary_can_be_scoped_to_portfolio() -> None:
         request_hash="sha256:req-scoped",
         portfolio_id="pf-scoped",
         idempotency_key="idem-scoped",
+        tenant_id="tenant-test",
     )
     service.record_run(
         result=other_result,
         request_hash="sha256:req-other",
         portfolio_id="pf-other",
         idempotency_key="idem-other",
+        tenant_id="tenant-test",
     )
     operation = service.submit_analyze_async(
         correlation_id="corr-scoped",
@@ -418,3 +421,78 @@ def test_support_bundle_helpers_project_optional_sections_and_sort_evidence():
         "CORRELATION_TO_RUN",
         "IDEMPOTENCY_TO_RUN",
     ]
+
+
+def test_support_bundle_lookup_variants_project_the_same_persisted_run() -> None:
+    service = _build_service()
+    result = _sample_result(
+        portfolio_id="pf-support-bundle-service",
+        correlation_id="corr-support-bundle-service",
+    )
+    service.record_run(
+        result=result,
+        request_hash="sha256:support-bundle-service",
+        portfolio_id="pf-support-bundle-service",
+        idempotency_key="idem-support-bundle-service",
+        tenant_id="tenant-support-bundle-service",
+    )
+    operation = service.submit_analyze_async(
+        correlation_id=result.correlation_id,
+        request_json={"portfolio_id": "pf-support-bundle-service"},
+    )
+
+    assert service.get_run(rebalance_run_id=result.rebalance_run_id).rebalance_run_id == (
+        result.rebalance_run_id
+    )
+    assert (
+        service.get_run_by_correlation(correlation_id=result.correlation_id).rebalance_run_id
+        == result.rebalance_run_id
+    )
+    assert (
+        service.get_run_by_request_hash(
+            request_hash="sha256:support-bundle-service"
+        ).rebalance_run_id
+        == result.rebalance_run_id
+    )
+    assert (
+        service.get_idempotency_lookup(
+            idempotency_key="idem-support-bundle-service"
+        ).rebalance_run_id
+        == result.rebalance_run_id
+    )
+
+    direct = service.get_run_support_bundle(
+        rebalance_run_id=result.rebalance_run_id,
+        include_artifact=True,
+        include_async_operation=True,
+        include_idempotency_history=True,
+    )
+    by_correlation = service.get_run_support_bundle_by_correlation(
+        correlation_id=result.correlation_id,
+        include_artifact=False,
+        include_async_operation=False,
+        include_idempotency_history=False,
+    )
+    by_idempotency = service.get_run_support_bundle_by_idempotency(
+        idempotency_key="idem-support-bundle-service",
+        include_artifact=False,
+        include_async_operation=False,
+        include_idempotency_history=True,
+    )
+    by_operation = service.get_run_support_bundle_by_operation(
+        operation_id=operation.operation_id,
+        include_artifact=False,
+        include_async_operation=True,
+        include_idempotency_history=False,
+    )
+
+    assert direct.run.rebalance_run_id == result.rebalance_run_id
+    assert direct.artifact is not None
+    assert direct.async_operation is not None
+    assert direct.idempotency_history is not None
+    assert by_correlation.run == direct.run
+    assert by_correlation.artifact is None
+    assert by_idempotency.run == direct.run
+    assert by_idempotency.idempotency_history is not None
+    assert by_operation.run == direct.run
+    assert by_operation.async_operation is not None

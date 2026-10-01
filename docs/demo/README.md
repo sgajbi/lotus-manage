@@ -11,11 +11,12 @@ Canonical local service identity:
 
 ### API Usage
 
-For simulate demos, POST the content of a scenario file to `/api/v1/rebalance/simulate` with `Idempotency-Key`.
+For simulate demos, POST the content of a scenario file to `/api/v1/rebalance/simulate` with
+`Idempotency-Key` and `X-Tenant-Id`.
 
 Example:
 ```bash
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-01" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-01" -H "X-Tenant-Id: tenant_001" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 For batch what-if demos, POST to `/api/v1/rebalance/analyze`:
@@ -49,7 +50,7 @@ curl -X GET "http://manage.dev.lotus/api/v1/rebalance/policies/catalog" -H "X-Po
 
 For lotus-manage supportability summary metrics scenario:
 ```bash
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-32-support-summary" -H "X-Correlation-Id: demo-corr-32-support-summary" --data-binary "@docs/demo/32_dpm_supportability_summary_metrics.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-32-support-summary" -H "X-Tenant-Id: tenant_001" -H "X-Correlation-Id: demo-corr-32-support-summary" --data-binary "@docs/demo/32_dpm_supportability_summary_metrics.json"
 curl -X GET "http://manage.dev.lotus/api/v1/rebalance/supportability/summary"
 ```
 
@@ -58,38 +59,38 @@ For lotus-manage policy-pack turnover override demo (requires `DPM_POLICY_PACKS_
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","turnover_policy":{"max_turnover_pct":"0.01"},"tax_policy":{"enable_tax_awareness":true,"max_realized_capital_gains":"100"}}}'
 export DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED=true
 export DPM_TENANT_POLICY_PACK_MAP_JSON='{"tenant_001":"dpm_standard_v1"}'
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-turnover-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-turnover-1" -H "X-Tenant-Id: tenant_001" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 Settlement-policy override example:
 ```bash
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","settlement_policy":{"enable_settlement_awareness":true,"settlement_horizon_days":3}}}'
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-settlement-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/07_settlement_overdraft_block.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-settlement-1" -H "X-Tenant-Id: tenant_001" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/07_settlement_overdraft_block.json"
 ```
 
 Constraint-policy override example:
 ```bash
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","constraint_policy":{"single_position_max_weight":"0.25","group_constraints":{"sector:TECH":{"max_weight":"0.20"}}}}}'
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-constraints-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-constraints-1" -H "X-Tenant-Id: tenant_001" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 Workflow-policy override example:
 ```bash
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","workflow_policy":{"enable_workflow_gates":false,"workflow_requires_mandate_approval":true,"mandate_approval_already_obtained":true}}}'
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-workflow-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-workflow-1" -H "X-Tenant-Id: tenant_001" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 Idempotency-policy override example:
 ```bash
 export DPM_IDEMPOTENCY_REPLAY_ENABLED=true
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","idempotency_policy":{"replay_enabled":false}}}'
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Tenant-Id: tenant_001" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Tenant-Id: tenant_001" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 For lotus-manage supportability and deterministic artifact retrieval flow:
 ```bash
-curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-27-supportability" -H "X-Correlation-Id: demo-corr-27-supportability" --data-binary "@docs/demo/27_dpm_supportability_artifact_flow.json"
+curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-27-supportability" -H "X-Tenant-Id: tenant_001" -H "X-Correlation-Id: demo-corr-27-supportability" --data-binary "@docs/demo/27_dpm_supportability_artifact_flow.json"
 curl -X GET "http://manage.dev.lotus/api/v1/rebalance/runs?status_filter=READY&portfolio_id=pf_demo_support_27&limit=20"
 curl -X GET "http://manage.dev.lotus/api/v1/rebalance/runs?request_hash=<request_hash>&limit=20"
 curl -X GET "http://manage.dev.lotus/api/v1/rebalance/runs/by-request-hash/<url_encoded_request_hash>"
@@ -196,9 +197,10 @@ python scripts/run_demo_pack_live.py --base-url http://manage.dev.lotus
   - `GET /api/v1/rebalance/runs/{rebalance_run_id}/workflow` returns `DPM_WORKFLOW_DISABLED` when workflow feature is off
   - `GET /api/v1/rebalance/runs/{rebalance_run_id}/workflow/history` returns `DPM_WORKFLOW_DISABLED` when workflow feature is off
 - `30_dpm_idempotency_history_supportability.json`:
-  - `DPM_IDEMPOTENCY_REPLAY_ENABLED=false`
+  - `DPM_IDEMPOTENCY_REPLAY_ENABLED=false` is deliberately unable to disable durable replay
   - `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`
-  - `GET /api/v1/rebalance/idempotency/{idempotency_key}/history` returns append-only mapping history with run id, correlation id, and request hash
+  - changed economic input under the same tenant/key returns `409` and does not append a second run
+  - `GET /api/v1/rebalance/idempotency/{idempotency_key}/history` returns the authoritative mapping history with run id, correlation id, and request hash
 - `31_dpm_policy_pack_supportability_diagnostics.json`:
   - `POST /api/v1/rebalance/simulate` with policy headers (`X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`, `X-Tenant-Id`)
   - `GET /api/v1/rebalance/policies/effective` and `GET /api/v1/rebalance/policies/catalog` for policy selection diagnostics

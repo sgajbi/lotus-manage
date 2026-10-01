@@ -16,6 +16,27 @@ authority into Manage.
 | Cross-service publication | Gateway and idea boundaries | Manage exposes bounded contracts; Gateway, Advise, Idea, Core, Risk, and Performance keep their own authority. |
 | Operational limits | Boundary rules; Current source-product integration status | Unsupported publication, order, treasury, OMS, and client-contact claims are called out before deep details. |
 
+## From rebalance intent to booking
+
+Manage calculates rebalance scenarios, applies management review gates, and records internal
+handoff evidence. A reviewed scenario is an investment decision; its approval does not establish
+that an order was sent, acknowledged, filled, or booked.
+
+| Step | Manage provides | Consumer responsibility |
+| --- | --- | --- |
+| Source the portfolio | Governed Core inputs and source readiness for stateful requests; explicit bundles for stateless requests | Preserve tenant authority, effective dates, and source limitations. |
+| Calculate alternatives | Simulation and analysis results with supported policies and diagnostics | Check deployment capabilities and result supportability before presenting an actionable choice. |
+| Review and stage | Workflow decisions, wave item state, and retained evidence | Keep actor, approval, and selected-result identity attached to the workflow. |
+| Hand off internally | Internal operations evidence with `external_execution_claimed=false` | Preserve the external execution boundary in screens, reports, and downstream messages. |
+| Submit, fill, and book | External execution remains a separately governed integration dependency | Require approved instruction, acknowledgement, fill, and authoritative booking contracts before claiming an end-to-end trade workflow. |
+
+Use capability discovery to determine which features a deployment enables, then inspect the
+individual result's source readiness, validation, and review state. An enabled simulation feature
+does not certify external order delivery, a complete portfolio universe, or production throughput.
+
+See [API Surface](API-Surface) for operations, [Supported Features](Supported-Features) for declared
+support, and [Security and Governance](Security-and-Governance) for authority boundaries.
+
 ## Upstream and downstream posture
 
 - `lotus-core`

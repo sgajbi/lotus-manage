@@ -16,7 +16,13 @@ and source-owner methodology remain explicit boundaries unless a route section s
 ## Core management surfaces
 
 - `POST /api/v1/rebalance/simulate`
-  deterministic rebalance execution
+  deterministic rebalance execution. It requires `Idempotency-Key` and normalized `X-Tenant-Id`
+  in both stateless and stateful modes.
+  PostgreSQL atomically owns the tenant/key/request-hash identity before calculation; concurrent
+  identical submissions recover one authoritative run, changed payloads conflict, and the same key
+  is independent across tenants. Active owners may return bounded
+  `DPM_REBALANCE_REQUEST_IN_PROGRESS` retry guidance. This is caller-asserted persistence scope,
+  not authenticated-principal proof or capacity certification.
 - `POST /api/v1/rebalance/analyze`
   synchronous what-if analysis
 - `POST /api/v1/rebalance/analyze/async`
@@ -317,9 +323,10 @@ per request to Core's mandatory and optional products; a body selector alone doe
 tenant admission. This caller-asserted scope is not authenticated-principal proof.
 
 Stateful rebalance and alternative-set construction require `X-Tenant-Id` equal to
-`stateful_input.tenant_id` before Core resolution. Missing or disagreeing scope returns `422`;
-stateless execution does not gain a mandatory tenant header. The header is caller-asserted routing
-scope, not an IAM grant.
+`stateful_input.tenant_id` before Core resolution. Missing or disagreeing scope returns `422`.
+Synchronous stateless simulation also requires `X-Tenant-Id` because it publishes a tenant-owned
+durable run; stateless analysis and alternative-set construction retain their documented optional
+tenant context. The header is caller-asserted routing scope, not an IAM grant.
 
 The header is the admitted selector for both the wave data `lotus-manage` owns and the Core
 population request it makes for `PM_BOOK_REVIEW`, `CIO_MODEL_CHANGE`, or

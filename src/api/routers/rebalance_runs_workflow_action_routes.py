@@ -40,6 +40,7 @@ _WORKFLOW_ACTION_RESPONSES: _RouteResponses = {
 )
 def apply_dpm_run_workflow_action(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     rebalance_run_id: Annotated[
         str,
         Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
@@ -60,7 +61,8 @@ def apply_dpm_run_workflow_action(
     return apply_workflow_action_with_http_mapping(
         surface="run",
         action=payload.action,
-        apply_action=lambda: service.apply_workflow_action(
+        apply_action=lambda: service.apply_workflow_action_for_tenant(
+            tenant_id=x_tenant_id,
             rebalance_run_id=rebalance_run_id,
             action=payload.action,
             reason_code=payload.reason_code,
@@ -86,6 +88,7 @@ def apply_dpm_run_workflow_action(
 )
 def apply_dpm_run_workflow_action_by_correlation(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     correlation_id: Annotated[
         str,
         Path(
@@ -109,7 +112,8 @@ def apply_dpm_run_workflow_action_by_correlation(
     return apply_workflow_action_with_http_mapping(
         surface="trace",
         action=payload.action,
-        apply_action=lambda: service.apply_workflow_action_by_correlation(
+        apply_action=lambda: service.apply_workflow_action_by_correlation_for_tenant(
+            tenant_id=x_tenant_id,
             correlation_id=correlation_id,
             action=payload.action,
             reason_code=payload.reason_code,
@@ -135,6 +139,7 @@ def apply_dpm_run_workflow_action_by_correlation(
 )
 def apply_dpm_run_workflow_action_by_idempotency(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     idempotency_key: Annotated[
         str,
         Path(
@@ -158,7 +163,8 @@ def apply_dpm_run_workflow_action_by_idempotency(
     return apply_workflow_action_with_http_mapping(
         surface="retry",
         action=payload.action,
-        apply_action=lambda: service.apply_workflow_action_by_idempotency(
+        apply_action=lambda: service.apply_workflow_action_by_idempotency_for_tenant(
+            tenant_id=x_tenant_id,
             idempotency_key=idempotency_key,
             action=payload.action,
             reason_code=payload.reason_code,

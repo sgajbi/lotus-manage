@@ -63,6 +63,7 @@ def test_supportability_retention_purges_expired_run_records(repository):
         request_hash="sha256:retention-old",
         portfolio_id="pf_retention",
         idempotency_key="idem-retention-old",
+        tenant_id="tenant-test",
         created_at=now - timedelta(days=2),
     )
     service.record_run(
@@ -70,6 +71,7 @@ def test_supportability_retention_purges_expired_run_records(repository):
         request_hash="sha256:retention-new",
         portfolio_id="pf_retention",
         idempotency_key="idem-retention-new",
+        tenant_id="tenant-test",
         created_at=now,
     )
 

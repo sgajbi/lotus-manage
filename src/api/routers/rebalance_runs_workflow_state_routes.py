@@ -38,6 +38,7 @@ _WORKFLOW_STATE_RESPONSES: _RouteResponses = {
 )
 def get_dpm_run_workflow(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     rebalance_run_id: Annotated[
         str,
         Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
@@ -48,7 +49,9 @@ def get_dpm_run_workflow(
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
     return read_workflow_with_http_mapping(
-        lambda: service.get_workflow(rebalance_run_id=rebalance_run_id)
+        lambda: service.get_workflow_for_tenant(
+            tenant_id=x_tenant_id, rebalance_run_id=rebalance_run_id
+        )
     )
 
 
@@ -66,6 +69,7 @@ def get_dpm_run_workflow(
 )
 def get_dpm_run_workflow_by_correlation(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     correlation_id: Annotated[
         str,
         Path(
@@ -79,7 +83,9 @@ def get_dpm_run_workflow_by_correlation(
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
     return read_workflow_with_http_mapping(
-        lambda: service.get_workflow_by_correlation(correlation_id=correlation_id)
+        lambda: service.get_workflow_by_correlation_for_tenant(
+            tenant_id=x_tenant_id, correlation_id=correlation_id
+        )
     )
 
 
@@ -97,6 +103,7 @@ def get_dpm_run_workflow_by_correlation(
 )
 def get_dpm_run_workflow_by_idempotency(
     request: Request,
+    x_tenant_id: shared.DpmRunTenantIdHeader,
     idempotency_key: Annotated[
         str,
         Path(
@@ -110,5 +117,7 @@ def get_dpm_run_workflow_by_idempotency(
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
     return read_workflow_with_http_mapping(
-        lambda: service.get_workflow_by_idempotency(idempotency_key=idempotency_key)
+        lambda: service.get_workflow_by_idempotency_for_tenant(
+            tenant_id=x_tenant_id, idempotency_key=idempotency_key
+        )
     )

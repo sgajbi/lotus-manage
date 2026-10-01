@@ -676,7 +676,7 @@ Roadmap boundaries:
 
 | Capability | Primary APIs | Current state | Evidence |
 | --- | --- | --- | --- |
-| Rebalance simulation | `POST /api/v1/rebalance/simulate` | Supported | unit goldens, OpenAPI gate, API vocabulary gate |
+| Rebalance simulation | `POST /api/v1/rebalance/simulate` | Supported with required caller-asserted tenant scope, atomic PostgreSQL `(tenant_id, Idempotency-Key)` admission, immutable request-hash binding, winner recovery, stale-claim fencing, tenant-scoped run/by-key/history/artifact/workflow/support-bundle descendants, and quarantined unattributed legacy history. This is correctness and recovery evidence, not production IAM or throughput certification. | unit financial goldens, real-PostgreSQL separate-process and supported-HTTP concurrency/restart proof, migration-upgrade proof, OpenAPI gate, API vocabulary gate |
 | What-if analysis | `POST /api/v1/rebalance/analyze` | Supported | unit and demo scenarios |
 | Async what-if execution | `POST /api/v1/rebalance/analyze/async`, `/api/v1/rebalance/operations/*` | Supported | async operation tests and demo scenario 26 |
 | Explicit execution envelope | simulate, analyze, async analyze | Supported with `input_mode=stateless`; `input_mode=stateful` is modeled and feature-gated | envelope contract tests and demo payloads |

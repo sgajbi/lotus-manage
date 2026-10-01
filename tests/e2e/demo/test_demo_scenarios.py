@@ -7,7 +7,7 @@ import json
 import os
 
 import pytest
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient as FastApiTestClient
 
 from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
@@ -26,6 +26,13 @@ from tests.shared.solver_prerequisites import require_solver_test_dependencies
 require_solver_test_dependencies()
 
 DEMO_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "docs", "demo")
+
+
+class TestClient(FastApiTestClient):
+    """Demo client with one explicit admitted tenant for run-owned surfaces."""
+
+    def __init__(self, *args, headers=None, **kwargs):
+        super().__init__(*args, headers=headers or {"X-Tenant-Id": "tenant-demo"}, **kwargs)
 
 
 def load_demo_scenario(filename):
@@ -201,8 +208,8 @@ def test_demo_dpm_idempotency_history_supportability_via_api(monkeypatch):
                     "X-Correlation-Id": "demo-corr-30-idem-history-2",
                 },
             )
-            assert second.status_code == 200
-            second_run = second.json()["rebalance_run_id"]
+            assert second.status_code == 409
+            assert second.json()["detail"] == "IDEMPOTENCY_KEY_CONFLICT: request hash mismatch"
 
             history = client.get("/api/v1/rebalance/idempotency/demo-30-idem-history/history")
         finally:
@@ -211,11 +218,9 @@ def test_demo_dpm_idempotency_history_supportability_via_api(monkeypatch):
     assert history.status_code == 200
     body = history.json()
     assert body["idempotency_key"] == "demo-30-idem-history"
-    assert len(body["history"]) == 2
+    assert len(body["history"]) == 1
     assert body["history"][0]["rebalance_run_id"] == first_run
     assert body["history"][0]["correlation_id"] == "demo-corr-30-idem-history-1"
-    assert body["history"][1]["rebalance_run_id"] == second_run
-    assert body["history"][1]["correlation_id"] == "demo-corr-30-idem-history-2"
 
 
 def test_demo_dpm_policy_pack_supportability_diagnostics_via_api():

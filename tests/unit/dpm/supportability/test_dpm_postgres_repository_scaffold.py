@@ -321,20 +321,23 @@ class _FakeConnection:
         if "INSERT INTO dpm_lineage_edges (" in sql:
             self.lineage_edges.append(
                 {
-                    "source_entity_id": args[0],
-                    "edge_type": args[1],
-                    "target_entity_id": args[2],
-                    "created_at": args[3],
-                    "metadata_json": args[4],
+                    "tenant_id": args[0],
+                    "source_entity_id": args[1],
+                    "edge_type": args[2],
+                    "target_entity_id": args[3],
+                    "created_at": args[4],
+                    "metadata_json": args[5],
                 }
             )
             return _FakeCursor()
         if "FROM dpm_lineage_edges" in sql and "ORDER BY created_at ASC" in sql:
-            entity_id = args[0]
+            tenant_id = args[0] if "WHERE tenant_id = %s" in sql else None
+            entity_id = args[1] if tenant_id is not None else args[0]
             rows = [
                 row
                 for row in self.lineage_edges
-                if row["source_entity_id"] == entity_id or row["target_entity_id"] == entity_id
+                if (tenant_id is None or row["tenant_id"] == tenant_id)
+                and (row["source_entity_id"] == entity_id or row["target_entity_id"] == entity_id)
             ]
             rows = sorted(rows, key=lambda row: row["created_at"])
             return _FakeCursor(rows=rows)

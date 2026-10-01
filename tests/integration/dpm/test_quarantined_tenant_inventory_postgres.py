@@ -34,6 +34,9 @@ def test_inventory_reports_every_quarantine_without_making_it_tenant_readable() 
         "wave_id": f"aaa_inventory_wave_{suffix}",
         "proof_pack_id": f"aaa_inventory_pp_{suffix}",
         "monitoring_run_id": f"aaa_inventory_run_{suffix}",
+        "rebalance_run_id": f"aaa_inventory_rebalance_run_{suffix}",
+        "run_idempotency_key": f"aaa-inventory-run-idem-{suffix}",
+        "lineage_source_id": f"aaa_inventory_lineage_source_{suffix}",
         "mandate_id": f"MANDATE_INVENTORY_{suffix}",
         "portfolio_id": f"PF_INVENTORY_{suffix}",
     }
@@ -208,6 +211,51 @@ def _insert_quarantined_rows(*, dsn: str, ids: dict[str, str]) -> None:
             """,
             (ids["proof_pack_id"], ids["portfolio_id"], ids["mandate_id"]),
         )
+        connection.execute(
+            """
+            INSERT INTO dpm_runs (
+                rebalance_run_id, correlation_id, request_hash, idempotency_key,
+                portfolio_id, created_at, result_json
+            ) VALUES (%s, %s, 'sha256:inventory-run', %s, %s,
+                      '2026-09-09T00:00:00+00:00', '{}')
+            """,
+            (
+                ids["rebalance_run_id"],
+                f"corr-{ids['rebalance_run_id']}",
+                ids["run_idempotency_key"],
+                ids["portfolio_id"],
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO dpm_run_idempotency_legacy_unattributed (
+                idempotency_key, request_hash, rebalance_run_id, created_at
+            ) VALUES (%s, 'sha256:inventory-run', %s, '2026-09-09T00:00:00+00:00')
+            """,
+            (ids["run_idempotency_key"], ids["rebalance_run_id"]),
+        )
+        connection.execute(
+            """
+            INSERT INTO dpm_run_idempotency_history (
+                idempotency_key, rebalance_run_id, correlation_id, request_hash, created_at
+            ) VALUES (%s, %s, %s, 'sha256:inventory-run',
+                      '2026-09-09T00:00:00+00:00')
+            """,
+            (
+                ids["run_idempotency_key"],
+                ids["rebalance_run_id"],
+                f"corr-{ids['rebalance_run_id']}",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO dpm_lineage_edges (
+                source_entity_id, edge_type, target_entity_id, created_at, metadata_json
+            ) VALUES (%s, 'CORRELATION_TO_RUN', %s,
+                      '2026-09-09T00:00:00+00:00', '{}')
+            """,
+            (ids["lineage_source_id"], ids["rebalance_run_id"]),
+        )
         connection.commit()
 
 
@@ -220,6 +268,13 @@ def _row_counts(*, dsn: str, ids: dict[str, str]) -> dict[str, int]:
         "dpm_rebalance_waves": ("wave_id", ids["wave_id"]),
         "dpm_pre_trade_proof_packs": ("proof_pack_id", ids["proof_pack_id"]),
         "dpm_monitoring_runs": ("monitoring_run_id", ids["monitoring_run_id"]),
+        "dpm_runs": ("rebalance_run_id", ids["rebalance_run_id"]),
+        "dpm_run_idempotency_legacy_unattributed": (
+            "idempotency_key",
+            ids["run_idempotency_key"],
+        ),
+        "dpm_run_idempotency_history": ("idempotency_key", ids["run_idempotency_key"]),
+        "dpm_lineage_edges": ("source_entity_id", ids["lineage_source_id"]),
     }
     with psycopg.connect(dsn, row_factory=dict_row) as connection:
         return {
@@ -233,6 +288,22 @@ def _row_counts(*, dsn: str, ids: dict[str, str]) -> dict[str, int]:
 
 def _delete_quarantined_rows(*, dsn: str, ids: dict[str, str]) -> None:
     with psycopg.connect(dsn) as connection:
+        connection.execute(
+            "DELETE FROM dpm_lineage_edges WHERE source_entity_id = %s",
+            (ids["lineage_source_id"],),
+        )
+        connection.execute(
+            "DELETE FROM dpm_run_idempotency_history WHERE idempotency_key = %s",
+            (ids["run_idempotency_key"],),
+        )
+        connection.execute(
+            "DELETE FROM dpm_run_idempotency_legacy_unattributed WHERE idempotency_key = %s",
+            (ids["run_idempotency_key"],),
+        )
+        connection.execute(
+            "DELETE FROM dpm_runs WHERE rebalance_run_id = %s",
+            (ids["rebalance_run_id"],),
+        )
         connection.execute(
             "DELETE FROM dpm_monitoring_exceptions WHERE exception_id = %s",
             (ids["exception_id"],),

@@ -113,6 +113,54 @@ QUARANTINED_TENANT_DATASETS = (
         ),
         identifying_columns=("monitoring_run_id", "as_of_date", "status", "started_at"),
     ),
+    QuarantinedTenantDataset(
+        name="dpm_runs",
+        migration_version="0032",
+        migration_path=(
+            "src/infrastructure/postgres_migrations/dpm/0032_rebalance_submission_ownership.sql"
+        ),
+        identifying_columns=(
+            "rebalance_run_id",
+            "correlation_id",
+            "request_hash",
+            "portfolio_id",
+            "created_at",
+        ),
+        hashed_columns=frozenset({"correlation_id", "request_hash"}),
+    ),
+    QuarantinedTenantDataset(
+        name="dpm_run_idempotency_legacy_unattributed",
+        migration_version="0032",
+        migration_path=(
+            "src/infrastructure/postgres_migrations/dpm/0032_rebalance_submission_ownership.sql"
+        ),
+        identifying_columns=("idempotency_key", "request_hash", "rebalance_run_id", "created_at"),
+        hashed_columns=frozenset({"idempotency_key", "request_hash"}),
+    ),
+    QuarantinedTenantDataset(
+        name="dpm_run_idempotency_history",
+        migration_version="0032",
+        migration_path=(
+            "src/infrastructure/postgres_migrations/dpm/0032_rebalance_submission_ownership.sql"
+        ),
+        identifying_columns=(
+            "idempotency_key",
+            "rebalance_run_id",
+            "correlation_id",
+            "request_hash",
+            "created_at",
+        ),
+        hashed_columns=frozenset({"idempotency_key", "correlation_id", "request_hash"}),
+    ),
+    QuarantinedTenantDataset(
+        name="dpm_lineage_edges",
+        migration_version="0032",
+        migration_path=(
+            "src/infrastructure/postgres_migrations/dpm/0032_rebalance_submission_ownership.sql"
+        ),
+        identifying_columns=("source_entity_id", "edge_type", "target_entity_id", "created_at"),
+        hashed_columns=frozenset({"source_entity_id", "target_entity_id"}),
+    ),
 )
 
 

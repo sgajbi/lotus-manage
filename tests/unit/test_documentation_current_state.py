@@ -2998,3 +2998,32 @@ def test_the_wiki_tenant_scope_claims_are_derived_from_the_served_contract() -> 
     )
     assert "Migration `0028`" in api_surface
     assert "Legacy NULL-owner rows" in api_surface
+
+
+def test_synchronous_rebalance_ownership_docs_match_the_served_contract() -> None:
+    """Pin the issue-716 tenant and durable-recovery contract across code and operator truth."""
+
+    spec = app.openapi()
+    simulate = spec["paths"]["/api/v1/rebalance/simulate"]["post"]
+    tenant_parameters = [
+        parameter
+        for parameter in simulate["parameters"]
+        if parameter["in"] == "header" and parameter["name"].lower() == "x-tenant-id"
+    ]
+    assert len(tenant_parameters) == 1
+    assert tenant_parameters[0]["required"] is True
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    context = (ROOT / "REPOSITORY-ENGINEERING-CONTEXT.md").read_text(encoding="utf-8")
+    rfc = (ROOT / "docs" / "rfcs" / "RFC-0016-dpm-idempotency-replay-contract.md").read_text(
+        encoding="utf-8"
+    )
+    operations = (ROOT / "wiki" / "Operations-Runbook.md").read_text(encoding="utf-8")
+    endpoint = (ROOT / "wiki" / "Endpoint-Certification.md").read_text(encoding="utf-8")
+
+    assert "(tenant_id, Idempotency-Key)" in readme
+    assert "Synchronous rebalance admission requires normalized `X-Tenant-Id`" in context
+    assert "Durable admission cannot be\ndisabled" in rfc
+    assert "dpm_run_idempotency_legacy_unattributed" in rfc
+    assert "DPM_REBALANCE_REQUEST_IN_PROGRESS" in operations
+    assert "durable replay cannot be disabled" in endpoint

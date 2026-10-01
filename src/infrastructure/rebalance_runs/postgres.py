@@ -10,6 +10,7 @@ from src.core.rebalance_runs.models import (
     DpmRunIdempotencyHistoryRecord,
     DpmRunIdempotencyRecord,
     DpmRunRecord,
+    DpmSimulationSubmissionClaimRecord,
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
@@ -37,6 +38,224 @@ class PostgresDpmRunRepository:
         self._dsn = dsn
         self._init_db()
 
+    def claim_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        claimed_at: datetime,
+        claim_expires_at: datetime,
+    ) -> DpmSimulationSubmissionClaimRecord:
+        insert_query = """
+            INSERT INTO dpm_run_submission_claims (
+                tenant_id, idempotency_key, request_hash, status, claim_token,
+                claimed_at, claim_expires_at, rebalance_run_id, completed_at
+            ) VALUES (%s, %s, %s, 'IN_PROGRESS', %s, %s, %s, NULL, NULL)
+            ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+            RETURNING *
+        """
+        takeover_query = """
+            UPDATE dpm_run_submission_claims
+            SET claim_token = %s,
+                claimed_at = %s,
+                claim_expires_at = %s
+            WHERE tenant_id = %s
+              AND idempotency_key = %s
+              AND request_hash = %s
+              AND status = 'IN_PROGRESS'
+              AND claim_expires_at <= %s
+            RETURNING *
+        """
+        select_query = """
+            SELECT *
+            FROM dpm_run_submission_claims
+            WHERE tenant_id = %s AND idempotency_key = %s
+            FOR UPDATE
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                insert_query,
+                (
+                    tenant_id,
+                    idempotency_key,
+                    request_hash,
+                    claim_token,
+                    claimed_at.isoformat(),
+                    claim_expires_at.isoformat(),
+                ),
+            ).fetchone()
+            if row is None:
+                row = connection.execute(select_query, (tenant_id, idempotency_key)).fetchone()
+                if (
+                    row is not None
+                    and row["request_hash"] == request_hash
+                    and row["status"] == "IN_PROGRESS"
+                    and datetime.fromisoformat(row["claim_expires_at"]) <= claimed_at
+                ):
+                    row = connection.execute(
+                        takeover_query,
+                        (
+                            claim_token,
+                            claimed_at.isoformat(),
+                            claim_expires_at.isoformat(),
+                            tenant_id,
+                            idempotency_key,
+                            request_hash,
+                            claimed_at.isoformat(),
+                        ),
+                    ).fetchone()
+            connection.commit()
+        if row is None:
+            raise DpmRunRepositoryConflictError("DPM_SIMULATION_SUBMISSION_CLAIM_FAILED")
+        return _to_submission_claim(row)
+
+    def get_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> Optional[DpmSimulationSubmissionClaimRecord]:
+        query = """
+            SELECT * FROM dpm_run_submission_claims
+            WHERE tenant_id = %s AND idempotency_key = %s
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, idempotency_key)).fetchone()
+        return _to_submission_claim(row) if row is not None else None
+
+    def abandon_simulation_submission_claim(
+        self, *, tenant_id: str, idempotency_key: str, claim_token: str, abandoned_at: datetime
+    ) -> None:
+        query = """
+            UPDATE dpm_run_submission_claims
+            SET claim_expires_at = %s
+            WHERE tenant_id = %s
+              AND idempotency_key = %s
+              AND claim_token = %s
+              AND status = 'IN_PROGRESS'
+        """
+        with closing(self._connect()) as connection:
+            connection.execute(
+                query,
+                (abandoned_at.isoformat(), tenant_id, idempotency_key, claim_token),
+            )
+            connection.commit()
+
+    def complete_simulation_submission(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        claim_token: str,
+        run: DpmRunRecord,
+        artifact_json: Optional[dict[str, Any]],
+        idempotency_history: DpmRunIdempotencyHistoryRecord,
+        lineage_edges: list[DpmLineageEdgeRecord],
+        completed_at: datetime,
+    ) -> None:
+        with closing(self._connect()) as connection:
+            claim = connection.execute(
+                """
+                UPDATE dpm_run_submission_claims
+                SET status = 'COMPLETED',
+                    rebalance_run_id = %s,
+                    completed_at = %s,
+                    claim_expires_at = %s
+                WHERE tenant_id = %s
+                  AND idempotency_key = %s
+                  AND request_hash = %s
+                  AND claim_token = %s
+                  AND status = 'IN_PROGRESS'
+                RETURNING tenant_id
+                """,
+                (
+                    run.rebalance_run_id,
+                    completed_at.isoformat(),
+                    completed_at.isoformat(),
+                    tenant_id,
+                    idempotency_key,
+                    request_hash,
+                    claim_token,
+                ),
+            ).fetchone()
+            if claim is None:
+                connection.rollback()
+                raise DpmRunRepositoryConflictError("DPM_SIMULATION_SUBMISSION_CLAIM_LOST")
+            connection.execute(
+                """
+                INSERT INTO dpm_runs (
+                    tenant_id, rebalance_run_id, correlation_id, request_hash,
+                    idempotency_key, portfolio_id, created_at, result_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    tenant_id,
+                    run.rebalance_run_id,
+                    run.correlation_id,
+                    run.request_hash,
+                    run.idempotency_key,
+                    run.portfolio_id,
+                    run.created_at.isoformat(),
+                    _json_dump(run.result_json),
+                ),
+            )
+            if artifact_json is not None:
+                connection.execute(
+                    """
+                    INSERT INTO dpm_run_artifacts (rebalance_run_id, artifact_json)
+                    VALUES (%s, %s)
+                    """,
+                    (run.rebalance_run_id, _json_dump(artifact_json)),
+                )
+            connection.execute(
+                """
+                INSERT INTO dpm_run_idempotency (
+                    tenant_id, idempotency_key, request_hash, rebalance_run_id, created_at
+                ) VALUES (%s, %s, %s, %s, %s)
+                """,
+                (
+                    tenant_id,
+                    idempotency_key,
+                    request_hash,
+                    run.rebalance_run_id,
+                    completed_at.isoformat(),
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO dpm_run_idempotency_history (
+                    tenant_id, idempotency_key, rebalance_run_id,
+                    correlation_id, request_hash, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    tenant_id,
+                    idempotency_history.idempotency_key,
+                    idempotency_history.rebalance_run_id,
+                    idempotency_history.correlation_id,
+                    idempotency_history.request_hash,
+                    idempotency_history.created_at.isoformat(),
+                ),
+            )
+            for edge in lineage_edges:
+                connection.execute(
+                    """
+                    INSERT INTO dpm_lineage_edges (
+                        tenant_id, source_entity_id, edge_type,
+                        target_entity_id, created_at, metadata_json
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        tenant_id,
+                        edge.source_entity_id,
+                        edge.edge_type,
+                        edge.target_entity_id,
+                        edge.created_at.isoformat(),
+                        _json_dump(edge.metadata_json),
+                    ),
+                )
+            connection.commit()
+
     def save_run(self, run: DpmRunRecord) -> None:
         query = """
             INSERT INTO dpm_runs (
@@ -46,8 +265,9 @@ class PostgresDpmRunRepository:
                 idempotency_key,
                 portfolio_id,
                 created_at,
-                result_json
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                result_json,
+                tenant_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (rebalance_run_id) DO UPDATE SET
                 correlation_id=excluded.correlation_id,
                 request_hash=excluded.request_hash,
@@ -67,6 +287,7 @@ class PostgresDpmRunRepository:
                     run.portfolio_id,
                     run.created_at.isoformat(),
                     _json_dump(run.result_json),
+                    run.tenant_id,
                 ),
             )
             connection.commit()
@@ -74,6 +295,7 @@ class PostgresDpmRunRepository:
     def get_run(self, *, rebalance_run_id: str) -> Optional[DpmRunRecord]:
         query = """
             SELECT
+                tenant_id,
                 rebalance_run_id,
                 correlation_id,
                 request_hash,
@@ -89,6 +311,7 @@ class PostgresDpmRunRepository:
         if row is None:
             return None
         return DpmRunRecord(
+            tenant_id=row.get("tenant_id"),
             rebalance_run_id=row["rebalance_run_id"],
             correlation_id=row["correlation_id"],
             request_hash=row["request_hash"],
@@ -98,9 +321,23 @@ class PostgresDpmRunRepository:
             result_json=json.loads(row["result_json"]),
         )
 
+    def get_run_for_tenant(
+        self, *, tenant_id: str, rebalance_run_id: str
+    ) -> Optional[DpmRunRecord]:
+        query = """
+            SELECT tenant_id, rebalance_run_id, correlation_id, request_hash,
+                   idempotency_key, portfolio_id, created_at, result_json
+            FROM dpm_runs
+            WHERE tenant_id = %s AND rebalance_run_id = %s
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, rebalance_run_id)).fetchone()
+        return self._to_run(row)
+
     def get_run_by_correlation(self, *, correlation_id: str) -> Optional[DpmRunRecord]:
         query = """
             SELECT
+                tenant_id,
                 rebalance_run_id,
                 correlation_id,
                 request_hash,
@@ -115,9 +352,23 @@ class PostgresDpmRunRepository:
             row = connection.execute(query, (correlation_id,)).fetchone()
         return self._to_run(row)
 
+    def get_run_by_correlation_for_tenant(
+        self, *, tenant_id: str, correlation_id: str
+    ) -> Optional[DpmRunRecord]:
+        query = """
+            SELECT tenant_id, rebalance_run_id, correlation_id, request_hash,
+                   idempotency_key, portfolio_id, created_at, result_json
+            FROM dpm_runs
+            WHERE tenant_id = %s AND correlation_id = %s
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, correlation_id)).fetchone()
+        return self._to_run(row)
+
     def get_run_by_request_hash(self, *, request_hash: str) -> Optional[DpmRunRecord]:
         query = """
             SELECT
+                tenant_id,
                 rebalance_run_id,
                 correlation_id,
                 request_hash,
@@ -132,6 +383,21 @@ class PostgresDpmRunRepository:
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (request_hash,)).fetchone()
+        return self._to_run(row)
+
+    def get_run_by_request_hash_for_tenant(
+        self, *, tenant_id: str, request_hash: str
+    ) -> Optional[DpmRunRecord]:
+        query = """
+            SELECT tenant_id, rebalance_run_id, correlation_id, request_hash,
+                   idempotency_key, portfolio_id, created_at, result_json
+            FROM dpm_runs
+            WHERE tenant_id = %s AND request_hash = %s
+            ORDER BY created_at DESC, rebalance_run_id DESC
+            LIMIT 1
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, request_hash)).fetchone()
         return self._to_run(row)
 
     def list_runs(
@@ -157,6 +423,7 @@ class PostgresDpmRunRepository:
         )
         query = f"""
             SELECT
+                tenant_id,
                 rebalance_run_id,
                 correlation_id,
                 request_hash,
@@ -176,6 +443,49 @@ class PostgresDpmRunRepository:
             list[DpmRunRecord],
             [run for run in run_candidates if run is not None],
         )
+        return run_page(runs, limit=limit)
+
+    def list_runs_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+        status: Optional[str],
+        request_hash: Optional[str],
+        portfolio_id: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmRunRecord], Optional[str]]:
+        if (
+            cursor is not None
+            and self.get_run_for_tenant(tenant_id=tenant_id, rebalance_run_id=cursor) is None
+        ):
+            return [], None
+        filters = build_run_filter_query(
+            placeholder="%s",
+            status_expression="result_json::jsonb ->> 'status'",
+            created_from=created_from,
+            created_to=created_to,
+            status=status,
+            request_hash=request_hash,
+            portfolio_id=portfolio_id,
+            cursor=cursor,
+        )
+        predicate = "tenant_id = %s"
+        if filters.where_sql:
+            predicate = f"{predicate} AND {filters.where_sql.removeprefix('WHERE ')}"
+        query = f"""
+            SELECT tenant_id, rebalance_run_id, correlation_id, request_hash,
+                   idempotency_key, portfolio_id, created_at, result_json
+            FROM dpm_runs
+            WHERE {predicate}
+            ORDER BY created_at DESC, rebalance_run_id DESC
+            LIMIT %s
+        """
+        with closing(self._connect()) as connection:
+            rows = connection.execute(query, (tenant_id, *filters.args, limit + 1)).fetchall()
+        runs = [run for row in rows if (run := self._to_run(row)) is not None]
         return run_page(runs, limit=limit)
 
     def save_run_artifact(self, *, rebalance_run_id: str, artifact_json: dict[str, Any]) -> None:
@@ -209,9 +519,10 @@ class PostgresDpmRunRepository:
                 idempotency_key,
                 request_hash,
                 rebalance_run_id,
-                created_at
-            ) VALUES (%s, %s, %s, %s)
-            ON CONFLICT (idempotency_key) DO UPDATE SET
+                created_at,
+                tenant_id
+            ) VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (tenant_id, idempotency_key) DO UPDATE SET
                 request_hash=excluded.request_hash,
                 rebalance_run_id=excluded.rebalance_run_id,
                 created_at=excluded.created_at
@@ -224,6 +535,7 @@ class PostgresDpmRunRepository:
                     record.request_hash,
                     record.rebalance_run_id,
                     record.created_at.isoformat(),
+                    record.tenant_id,
                 ),
             )
             connection.commit()
@@ -237,12 +549,35 @@ class PostgresDpmRunRepository:
                 created_at
             FROM dpm_run_idempotency
             WHERE idempotency_key = %s
+            ORDER BY created_at DESC
+            LIMIT 1
         """
         with closing(self._connect()) as connection:
             row = connection.execute(query, (idempotency_key,)).fetchone()
         if row is None:
             return None
         return DpmRunIdempotencyRecord(
+            tenant_id=row.get("tenant_id"),
+            idempotency_key=row["idempotency_key"],
+            request_hash=row["request_hash"],
+            rebalance_run_id=row["rebalance_run_id"],
+            created_at=datetime.fromisoformat(row["created_at"]),
+        )
+
+    def get_idempotency_mapping_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> Optional[DpmRunIdempotencyRecord]:
+        query = """
+            SELECT tenant_id, idempotency_key, request_hash, rebalance_run_id, created_at
+            FROM dpm_run_idempotency
+            WHERE tenant_id = %s AND idempotency_key = %s
+        """
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (tenant_id, idempotency_key)).fetchone()
+        if row is None:
+            return None
+        return DpmRunIdempotencyRecord(
+            tenant_id=row["tenant_id"],
             idempotency_key=row["idempotency_key"],
             request_hash=row["request_hash"],
             rebalance_run_id=row["rebalance_run_id"],
@@ -256,8 +591,9 @@ class PostgresDpmRunRepository:
                 rebalance_run_id,
                 correlation_id,
                 request_hash,
-                created_at
-            ) VALUES (%s, %s, %s, %s, %s)
+                created_at,
+                tenant_id
+            ) VALUES (%s, %s, %s, %s, %s, %s)
         """
         with closing(self._connect()) as connection:
             connection.execute(
@@ -268,6 +604,7 @@ class PostgresDpmRunRepository:
                     record.correlation_id,
                     record.request_hash,
                     record.created_at.isoformat(),
+                    record.tenant_id,
                 ),
             )
             connection.commit()
@@ -290,6 +627,31 @@ class PostgresDpmRunRepository:
             rows = connection.execute(query, (idempotency_key,)).fetchall()
         return [
             DpmRunIdempotencyHistoryRecord(
+                tenant_id=row.get("tenant_id"),
+                idempotency_key=row["idempotency_key"],
+                rebalance_run_id=row["rebalance_run_id"],
+                correlation_id=row["correlation_id"],
+                request_hash=row["request_hash"],
+                created_at=datetime.fromisoformat(row["created_at"]),
+            )
+            for row in rows
+        ]
+
+    def list_idempotency_history_for_tenant(
+        self, *, tenant_id: str, idempotency_key: str
+    ) -> list[DpmRunIdempotencyHistoryRecord]:
+        query = """
+            SELECT tenant_id, idempotency_key, rebalance_run_id,
+                   correlation_id, request_hash, created_at
+            FROM dpm_run_idempotency_history
+            WHERE tenant_id = %s AND idempotency_key = %s
+            ORDER BY created_at ASC
+        """
+        with closing(self._connect()) as connection:
+            rows = connection.execute(query, (tenant_id, idempotency_key)).fetchall()
+        return [
+            DpmRunIdempotencyHistoryRecord(
+                tenant_id=row["tenant_id"],
                 idempotency_key=row["idempotency_key"],
                 rebalance_run_id=row["rebalance_run_id"],
                 correlation_id=row["correlation_id"],
@@ -517,17 +879,19 @@ class PostgresDpmRunRepository:
     def append_lineage_edge(self, edge: DpmLineageEdgeRecord) -> None:
         query = """
             INSERT INTO dpm_lineage_edges (
+                tenant_id,
                 source_entity_id,
                 edge_type,
                 target_entity_id,
                 created_at,
                 metadata_json
-            ) VALUES (%s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s)
         """
         with closing(self._connect()) as connection:
             connection.execute(
                 query,
                 (
+                    edge.tenant_id,
                     edge.source_entity_id,
                     edge.edge_type,
                     edge.target_entity_id,
@@ -540,6 +904,7 @@ class PostgresDpmRunRepository:
     def list_lineage_edges(self, *, entity_id: str) -> list[DpmLineageEdgeRecord]:
         query = """
             SELECT
+                tenant_id,
                 source_entity_id,
                 edge_type,
                 target_entity_id,
@@ -553,6 +918,7 @@ class PostgresDpmRunRepository:
             rows = connection.execute(query, (entity_id, entity_id)).fetchall()
         return [
             DpmLineageEdgeRecord(
+                tenant_id=row["tenant_id"],
                 source_entity_id=row["source_entity_id"],
                 edge_type=row["edge_type"],
                 target_entity_id=row["target_entity_id"],
@@ -972,6 +1338,7 @@ class PostgresDpmRunRepository:
         if row is None:
             return None
         return DpmRunRecord(
+            tenant_id=row.get("tenant_id"),
             rebalance_run_id=row["rebalance_run_id"],
             correlation_id=row["correlation_id"],
             request_hash=row["request_hash"],
@@ -996,6 +1363,20 @@ class PostgresDpmRunRepository:
             error_json=_optional_load_json(row["error_json"]),
             request_json=_optional_load_json(row["request_json"]),
         )
+
+
+def _to_submission_claim(row: Any) -> DpmSimulationSubmissionClaimRecord:
+    return DpmSimulationSubmissionClaimRecord(
+        tenant_id=row["tenant_id"],
+        idempotency_key=row["idempotency_key"],
+        request_hash=row["request_hash"],
+        status=row["status"],
+        claim_token=row["claim_token"],
+        claimed_at=datetime.fromisoformat(row["claimed_at"]),
+        claim_expires_at=datetime.fromisoformat(row["claim_expires_at"]),
+        rebalance_run_id=row["rebalance_run_id"],
+        completed_at=_optional_datetime(row["completed_at"]),
+    )
 
 
 def _import_psycopg() -> tuple[Any, Any]:

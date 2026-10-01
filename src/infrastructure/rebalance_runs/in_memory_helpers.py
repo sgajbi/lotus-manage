@@ -1,5 +1,5 @@
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, TypeVar, cast
@@ -15,6 +15,7 @@ from src.core.rebalance_runs.models import (
 )
 
 _T = TypeVar("_T")
+_IdempotencyKey = TypeVar("_IdempotencyKey", bound=Hashable)
 
 
 @dataclass(frozen=True)
@@ -204,19 +205,19 @@ def _purge_expired_run_records(
 
 def _purge_expired_idempotency_mappings(
     *,
-    idempotency: dict[str, DpmRunIdempotencyRecord],
+    idempotency: dict[_IdempotencyKey, DpmRunIdempotencyRecord],
     expired_run_ids: set[str],
     expired_idempotency_keys: set[str],
 ) -> None:
     for idempotency_key, mapping in list(idempotency.items()):
         if mapping.rebalance_run_id in expired_run_ids:
             idempotency.pop(idempotency_key, None)
-            expired_idempotency_keys.add(idempotency_key)
+            expired_idempotency_keys.add(mapping.idempotency_key)
 
 
 def _purge_expired_idempotency_history(
     *,
-    idempotency_history: dict[str, list[DpmRunIdempotencyHistoryRecord]],
+    idempotency_history: dict[_IdempotencyKey, list[DpmRunIdempotencyHistoryRecord]],
     expired_run_ids: set[str],
 ) -> None:
     for idempotency_key, history in list(idempotency_history.items()):

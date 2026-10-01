@@ -163,6 +163,7 @@ def test_workflow_disabled_returns_not_required_and_blocks_actions():
         request_hash="sha256:test",
         portfolio_id="pf_test",
         idempotency_key="idem-workflow-1",
+        tenant_id="tenant-test",
     )
 
     workflow = service.get_workflow(rebalance_run_id=result.rebalance_run_id)
@@ -190,6 +191,7 @@ def test_workflow_transitions_and_history_for_pending_review_run():
         request_hash="sha256:test",
         portfolio_id="pf_test",
         idempotency_key="idem-workflow-1",
+        tenant_id="tenant-test",
     )
 
     initial = service.get_workflow(rebalance_run_id=result.rebalance_run_id)
@@ -283,6 +285,7 @@ def test_workflow_actions_by_correlation_and_idempotency_resolve_same_run():
         request_hash="sha256:test",
         portfolio_id="pf_test",
         idempotency_key="idem-workflow-actions-1",
+        tenant_id="tenant-test",
     )
 
     by_correlation = service.apply_workflow_action_by_correlation(

@@ -7,6 +7,7 @@ from fastapi import Depends, Header, status
 from src.api.dependencies import get_db_session
 from src.api.request_models import RebalanceExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation import router
+from src.api.routers.mandate_tenant_query import require_mandate_tenant
 from src.api.routers.rebalance_simulation_http import (
     rebalance_envelope_http_exception,
     rebalance_simulation_http_exception,
@@ -34,7 +35,8 @@ from src.core.models import RebalanceResult
         "`lotus-advise`. Do not use it as a portfolio source-data read; source snapshots must "
         "remain governed by upstream portfolio-data authority.\\n\\n"
         "Required header: `Idempotency-Key`. Optional headers: `X-Correlation-Id`, "
-        "`X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`, and `X-Tenant-Id`.\\n\\n"
+        "`X-Policy-Pack-Id` and `X-Tenant-Policy-Pack-Id`. `X-Tenant-Id` is required and "
+        "scopes the durable run and idempotency identity.\\n\\n"
         "For valid payloads, domain outcomes are returned in the response body `status` field: "
         "`READY`, `PENDING_REVIEW`, or `BLOCKED`. Reusing an idempotency key with a different "
         "canonical request hash returns `409`."
@@ -56,7 +58,11 @@ from src.core.models import RebalanceResult
             "description": "Validation error (invalid payload or missing required headers).",
         },
         409: {
-            "description": "Idempotency key reused with different canonical request hash.",
+            "description": (
+                "Idempotency key reused with a different canonical request hash, or an identical "
+                "request is still owned by another worker and should be retried after the "
+                "Retry-After interval."
+            ),
             "content": {"application/json": {"examples": {"conflict": SIMULATE_409_EXAMPLE}}},
         },
     },
@@ -67,7 +73,21 @@ def simulate_rebalance(
         str,
         Header(
             description="Required idempotency token for request deduplication at client boundary.",
+            min_length=1,
+            pattern=r".*\S.*",
             examples=["demo-idem-001"],
+        ),
+    ],
+    x_tenant_id: Annotated[
+        str,
+        Header(
+            description=(
+                "Required durable run ownership scope. For stateful Core sourcing it must also "
+                "match stateful_input.tenant_id. Caller-asserted routing scope, not "
+                "authenticated-principal proof."
+            ),
+            min_length=1,
+            examples=["tenant_001"],
         ),
     ],
     x_correlation_id: Annotated[
@@ -98,24 +118,14 @@ def simulate_rebalance(
             examples=["dpm_tenant_default_v1"],
         ),
     ] = None,
-    x_tenant_id: Annotated[
-        Optional[str],
-        Header(
-            description=(
-                "Required for stateful Core sourcing and must match stateful_input.tenant_id; "
-                "optional for stateless tenant policy-pack lookup. Caller-asserted routing scope, "
-                "not authenticated-principal proof."
-            ),
-            examples=["tenant_001"],
-        ),
-    ] = None,
     _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> RebalanceResult:
+    admitted_tenant_id = require_mandate_tenant(x_tenant_id)
     try:
         rebalance_request, source_context = service.resolve_rebalance_request_envelope(
             envelope=request,
             correlation_id=x_correlation_id,
-            admitted_tenant_id=x_tenant_id,
+            admitted_tenant_id=admitted_tenant_id,
         )
     except service.DpmRebalanceEnvelopeError as exc:
         raise rebalance_envelope_http_exception(exc) from exc
@@ -126,7 +136,7 @@ def simulate_rebalance(
             correlation_id=x_correlation_id,
             policy_pack_id=x_policy_pack_id,
             tenant_default_policy_pack_id=x_tenant_policy_pack_id,
-            tenant_id=x_tenant_id,
+            tenant_id=admitted_tenant_id,
             source_context=source_context,
         )
     except service.DpmRebalanceSimulationError as exc:

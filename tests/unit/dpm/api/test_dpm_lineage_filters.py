@@ -26,6 +26,7 @@ def _simulate(client: TestClient, *, correlation_id: str, idempotency_key: str) 
         headers={
             "Idempotency-Key": idempotency_key,
             "X-Correlation-Id": correlation_id,
+            "X-Tenant-Id": "tenant-lineage",
         },
     )
     assert response.status_code == 200
@@ -39,7 +40,8 @@ def test_lineage_api_supports_filters_and_pagination(monkeypatch):
         body = _simulate(client, correlation_id="corr-lineage-1", idempotency_key="idem-lineage-1")
         run_id = body["rebalance_run_id"]
 
-        all_edges = client.get(f"/api/v1/rebalance/lineage/{run_id}")
+        tenant_headers = {"X-Tenant-Id": "tenant-lineage"}
+        all_edges = client.get(f"/api/v1/rebalance/lineage/{run_id}", headers=tenant_headers)
         assert all_edges.status_code == 200
         all_items = all_edges.json()["edges"]
         assert all_edges.json()["entity_id"] == run_id
@@ -59,6 +61,7 @@ def test_lineage_api_supports_filters_and_pagination(monkeypatch):
         filtered = client.get(
             f"/api/v1/rebalance/lineage/{run_id}",
             params={"edge_type": "IDEMPOTENCY_TO_RUN"},
+            headers=tenant_headers,
         )
         assert filtered.status_code == 200
         assert [edge["edge_type"] for edge in filtered.json()["edges"]] == ["IDEMPOTENCY_TO_RUN"]
@@ -66,24 +69,27 @@ def test_lineage_api_supports_filters_and_pagination(monkeypatch):
         future_window = client.get(
             f"/api/v1/rebalance/lineage/{run_id}",
             params={"created_from": "2999-01-01T00:00:00Z"},
+            headers=tenant_headers,
         )
         assert future_window.status_code == 200
         assert future_window.json()["edges"] == []
         assert future_window.json()["next_cursor"] is None
 
-        missing = client.get("/api/v1/rebalance/lineage/missing-entity")
+        missing = client.get("/api/v1/rebalance/lineage/missing-entity", headers=tenant_headers)
         assert missing.status_code == 200
         assert missing.json() == {"entity_id": "missing-entity", "edges": [], "next_cursor": None}
 
         invalid_edge_type = client.get(
             f"/api/v1/rebalance/lineage/{run_id}",
             params={"edge_type": "UNKNOWN_EDGE"},
+            headers=tenant_headers,
         )
         assert invalid_edge_type.status_code == 422
 
         typed = client.get(
             f"/api/v1/rebalance/lineage/{run_id}",
             params={"limit": 1},
+            headers=tenant_headers,
         )
         assert typed.status_code == 200
         typed_body = typed.json()
@@ -96,6 +102,7 @@ def test_lineage_api_supports_filters_and_pagination(monkeypatch):
                 "limit": 1,
                 "cursor": typed_body["next_cursor"],
             },
+            headers=tenant_headers,
         )
         assert second_page.status_code == 200
         assert len(second_page.json()["edges"]) == 1
