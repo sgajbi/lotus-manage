@@ -1,5 +1,6 @@
 import uuid
 
+from src.core.common.derived_identity import derived_identity
 from src.api.services.wave_event_evidence import (
     build_wave_event,
     idempotency_key_hash,
@@ -50,6 +51,17 @@ def create_created_wave_id() -> str:
     return f"dwv_{uuid.uuid4().hex[:12]}"
 
 
+def create_wave_correlation_id(*, tenant_id: str, idempotency_key: str) -> str:
+    """Derive a stable correlation for a create command that omitted one.
+
+    The idempotency key, rather than the business trigger, identifies a
+    durable create attempt. Distinct commands for the same trigger therefore
+    remain independent, while exact retries retain one correlation.
+    """
+
+    return derived_identity("corr_wave_create", tenant_id, idempotency_key)
+
+
 def promote_preview_to_created_wave(
     *,
     preview: DpmRebalanceWave,
@@ -85,6 +97,7 @@ def promote_preview_to_created_wave(
 
 __all__ = [
     "create_created_wave_id",
+    "create_wave_correlation_id",
     "create_wave_request_hash",
     "promote_preview_to_created_wave",
 ]

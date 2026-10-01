@@ -1,5 +1,6 @@
 from src.api.services.wave_creation import (
     create_created_wave_id,
+    create_wave_correlation_id,
     create_wave_request_hash,
     promote_preview_to_created_wave,
 )
@@ -86,6 +87,15 @@ def test_create_created_wave_id_uses_governed_wave_prefix(monkeypatch) -> None:
     assert create_created_wave_id() == "dwv_abcdef123456"
 
 
+def test_default_create_correlation_is_stable_and_command_scoped() -> None:
+    first = create_wave_correlation_id(tenant_id="tenant-a", idempotency_key="create-1")
+
+    assert first == create_wave_correlation_id(tenant_id="tenant-a", idempotency_key="create-1")
+    assert first != create_wave_correlation_id(tenant_id="tenant-a", idempotency_key="create-2")
+    assert first != create_wave_correlation_id(tenant_id="tenant-b", idempotency_key="create-1")
+    assert first.startswith("corr_wave_create_")
+
+
 def test_promote_preview_to_created_wave_rekeys_events_and_records_idempotency_hash() -> None:
     created = promote_preview_to_created_wave(
         preview=_preview_wave(),
@@ -111,6 +121,7 @@ def test_wave_creation_exports_only_creation_helpers() -> None:
 
     assert wave_creation.__all__ == [
         "create_created_wave_id",
+        "create_wave_correlation_id",
         "create_wave_request_hash",
         "promote_preview_to_created_wave",
     ]

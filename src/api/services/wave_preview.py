@@ -54,6 +54,7 @@ def build_preview_wave(
         created_at=datetime.now(timezone.utc),
         created_by=actor_id,
         correlation_id=correlation_id,
+        tenant_id=tenant_id,
         items=items,
         aggregate_metrics=aggregate_wave_items(items),
     )

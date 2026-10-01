@@ -129,7 +129,14 @@ flowchart LR
 - `POST /api/v1/rebalance/waves/preview`
   builds a non-durable RFC-0041 explicit portfolio-list wave preview.
 - `POST /api/v1/rebalance/waves`
-  persists a durable wave with idempotency protection.
+  persists a durable wave with tenant-scoped idempotency and correlation protection. The
+  `Idempotency-Key` claims one canonical create-request fingerprint: exact retries return the
+  original wave, changed requests return `409 WAVE_CREATE_CONFLICT`, and competing exact requests
+  converge on the committed identity. If `X-Correlation-Id` is omitted, Manage derives a stable
+  value from the admitted tenant and idempotency key rather than the business trigger; distinct
+  keys may therefore create distinct waves for the same trigger. A caller-supplied correlation is
+  unique within its tenant, may be reused independently by another tenant, and same-tenant reuse
+  under another command returns a typed conflict without a partial wave or mapping.
 - `GET /api/v1/rebalance/waves`
   searches bounded durable wave pages.
 - `GET /api/v1/rebalance/waves/{wave_id}`

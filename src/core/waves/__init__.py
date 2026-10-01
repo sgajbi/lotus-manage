@@ -145,7 +145,9 @@ from src.core.waves.handoffs import (
 )
 from src.core.waves.repository import (
     DpmWaveAlreadyExistsError,
+    DpmWaveCorrelationConflictError,
     DpmWaveIdempotencyConflictError,
+    DpmWaveIdempotencyRecord,
     DpmWaveNotFoundError,
     DpmWaveRepository,
     DpmWaveVersionConflictError,
@@ -222,7 +224,9 @@ __all__ = [
     "DpmWaveSourceAnalyticsSummary",
     "DpmWaveTrigger",
     "DpmWaveAlreadyExistsError",
+    "DpmWaveCorrelationConflictError",
     "DpmWaveIdempotencyConflictError",
+    "DpmWaveIdempotencyRecord",
     "DpmWaveInvalidTransitionError",
     "DpmWaveReportInputBoundaryError",
     "DpmWaveNotFoundError",

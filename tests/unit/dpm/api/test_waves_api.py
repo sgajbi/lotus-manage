@@ -1042,6 +1042,85 @@ def test_wave_create_persists_and_replays_by_idempotency_key() -> None:
     )
 
 
+def test_wave_create_omitted_correlation_is_scoped_to_the_idempotent_command() -> None:
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
+        first = client.post(
+            "/api/v1/rebalance/waves",
+            json=_request(),
+            headers={"Idempotency-Key": "idem-wave-command-a"},
+        )
+        second = client.post(
+            "/api/v1/rebalance/waves",
+            json=_request(),
+            headers={"Idempotency-Key": "idem-wave-command-b"},
+        )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["wave"]["wave_id"] != second.json()["wave"]["wave_id"]
+    assert first.json()["wave"]["correlation_id"] != second.json()["wave"]["correlation_id"]
+    assert len(wave_repository.list_waves(tenant_id="tenant-sg")) == 2
+
+
+def test_wave_create_rejects_changed_request_for_claimed_idempotency_key() -> None:
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
+        first = client.post(
+            "/api/v1/rebalance/waves",
+            json=_request(),
+            headers={"Idempotency-Key": "idem-wave-changed-request"},
+        )
+        changed = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "rationale": "A materially different create command."},
+            headers={"Idempotency-Key": "idem-wave-changed-request"},
+        )
+
+    assert first.status_code == 201
+    assert changed.status_code == 409
+    assert _error_reason_code(changed) == "WAVE_CREATE_CONFLICT"
+    assert changed.json()["detail"]["message"] == "DPM_WAVE_IDEMPOTENCY_CONFLICT"
+    assert len(wave_repository.list_waves(tenant_id="tenant-sg")) == 1
+
+
+def test_wave_create_rejects_explicit_correlation_reuse_without_partial_state() -> None:
+    wave_repository = InMemoryDpmWaveRepository()
+    correlation = "corr-explicit-wave-create"
+
+    with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
+        first = client.post(
+            "/api/v1/rebalance/waves",
+            json=_request(),
+            headers={
+                "Idempotency-Key": "idem-wave-correlation-a",
+                "X-Correlation-Id": correlation,
+            },
+        )
+        collision = client.post(
+            "/api/v1/rebalance/waves",
+            json=_request(),
+            headers={
+                "Idempotency-Key": "idem-wave-correlation-b",
+                "X-Correlation-Id": correlation,
+            },
+        )
+
+    assert first.status_code == 201
+    assert collision.status_code == 409
+    assert _error_reason_code(collision) == "WAVE_CREATE_CONFLICT"
+    assert collision.json()["detail"]["message"] == "DPM_WAVE_CORRELATION_CONFLICT"
+    assert len(wave_repository.list_waves(tenant_id="tenant-sg")) == 1
+    assert (
+        wave_repository.get_wave_idempotency_record(
+            idempotency_key="idem-wave-correlation-b", tenant_id="tenant-sg"
+        )
+        is None
+    )
+
+
 def test_pm_book_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin(), tenant_id="tenant-sg")

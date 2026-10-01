@@ -9,7 +9,9 @@ from src.core.common.capabilities import has_psycopg
 from src.core.waves.models import DpmRebalanceWave
 from src.core.waves.repository import (
     DpmWaveAlreadyExistsError,
+    DpmWaveCorrelationConflictError,
     DpmWaveIdempotencyConflictError,
+    DpmWaveIdempotencyRecord,
     DpmWaveVersionConflictError,
     wave_idempotency_mapping_key,
 )
@@ -52,9 +54,14 @@ class PostgresDpmWaveRepository:
             )
             # Stamped from the argument so the stored record cannot
             # disagree with the tenant the caller claimed.
-            _insert_wave_row(
-                connection=connection, wave=wave.model_copy(update={"tenant_id": tenant_id})
-            )
+            try:
+                _insert_wave_row(
+                    connection=connection, wave=wave.model_copy(update={"tenant_id": tenant_id})
+                )
+            except Exception as exc:
+                if _constraint_name(exc) == "idx_dpm_rebalance_waves_tenant_correlation":
+                    raise DpmWaveCorrelationConflictError("DPM_WAVE_CORRELATION_CONFLICT") from exc
+                raise
             _insert_idempotency_marker(
                 connection=connection,
                 wave=wave,
@@ -83,10 +90,18 @@ class PostgresDpmWaveRepository:
     def get_wave_by_idempotency(
         self, *, idempotency_key: str, tenant_id: str
     ) -> DpmRebalanceWave | None:
+        record = self.get_wave_idempotency_record(
+            idempotency_key=idempotency_key, tenant_id=tenant_id
+        )
+        return None if record is None else record.wave
+
+    def get_wave_idempotency_record(
+        self, *, idempotency_key: str, tenant_id: str
+    ) -> DpmWaveIdempotencyRecord | None:
         with closing(self._connect()) as connection:
             row = connection.execute(
                 """
-                SELECT w.wave_json
+                SELECT w.wave_json, i.request_hash
                 FROM dpm_rebalance_wave_idempotency i
                 JOIN dpm_rebalance_waves w ON w.wave_id = i.wave_id
                 WHERE i.idempotency_key = %s
@@ -108,7 +123,10 @@ class PostgresDpmWaveRepository:
             ).fetchone()
         if row is None:
             return None
-        return load_model_json(DpmRebalanceWave, _payload(row))
+        return DpmWaveIdempotencyRecord(
+            wave=load_model_json(DpmRebalanceWave, _payload(row)),
+            request_hash=row["request_hash"],
+        )
 
     def list_waves(
         self,
@@ -271,7 +289,7 @@ def _insert_idempotency_marker(
 ) -> None:
     if idempotency_key is None:
         return
-    connection.execute(
+    result = connection.execute(
         """
         INSERT INTO dpm_rebalance_wave_idempotency (
             idempotency_key,
@@ -290,6 +308,8 @@ def _insert_idempotency_marker(
             tenant_id,
         ),
     )
+    if result.rowcount != 1:
+        raise DpmWaveIdempotencyConflictError("DPM_WAVE_IDEMPOTENCY_CONFLICT")
 
 
 def _insert_new_events(*, connection: Any, wave: DpmRebalanceWave) -> None:
@@ -332,6 +352,12 @@ def _payload(row: Any) -> str | dict[str, Any]:
     if not isinstance(payload, str):
         return json.dumps(payload, default=str)
     return payload
+
+
+def _constraint_name(exc: Exception) -> str | None:
+    diag = getattr(exc, "diag", None)
+    value = getattr(diag, "constraint_name", None)
+    return value if isinstance(value, str) else None
 
 
 def _import_psycopg() -> tuple[Any, Any]:

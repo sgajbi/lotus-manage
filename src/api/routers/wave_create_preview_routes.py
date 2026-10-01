@@ -26,6 +26,7 @@ from src.api.services.authority_client_service import (
     RiskAuthorityClient,
 )
 from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
+from src.api.services.wave_creation import create_wave_correlation_id
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import DpmWaveRepository
 
@@ -128,7 +129,13 @@ def register_wave_create_preview_routes(
             "candidate discovery requires `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`, "
             "walks bounded continuation pages to terminal exhaustion, and fails closed on "
             "unavailable, incomplete, degraded, empty, duplicate, non-terminating, or "
-            "still-truncated source pages. Required header: `Idempotency-Key`. Unsupported "
+            "still-truncated source pages. Required header: `Idempotency-Key`. "
+            "When `X-Correlation-Id` is omitted, Manage derives a stable tenant- and "
+            "idempotency-command-scoped correlation; it is not derived from the business trigger. "
+            "An exact retry returns the original wave, a changed request under the same key and "
+            "same-tenant reuse of an explicit correlation return a typed 409, and competing exact "
+            "creates converge on the committed wave without publishing a partial aggregate. "
+            "Unsupported "
             "trigger types are rejected and missing source evidence produces blocked items, not "
             "false readiness; the route does not claim relationship householding, global "
             "portfolio-universe ownership, workflow orchestration, client communication workflow, "
@@ -140,7 +147,7 @@ def register_wave_create_preview_routes(
                 "content": {"application/json": {"example": {**WAVE_EXAMPLE, "durable": True}}},
             },
             409: {
-                "description": "Wave identity or idempotency conflict.",
+                "description": "Wave correlation, identity, or idempotency conflict.",
                 "content": {
                     "application/json": {
                         "example": {
@@ -182,7 +189,10 @@ def register_wave_create_preview_routes(
             get_wave_campaign_application_service
         ),
     ) -> DpmWaveResponse:
-        correlation_id = x_correlation_id or f"corr_wave_create_{request.trigger_id}"
+        correlation_id = x_correlation_id or create_wave_correlation_id(
+            tenant_id=x_tenant_id,
+            idempotency_key=idempotency_key,
+        )
         return create_wave_response(
             request=request,
             tenant_id=x_tenant_id,

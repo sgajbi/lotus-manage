@@ -1,5 +1,6 @@
 """Persistence contracts for RFC-0041 rebalance waves."""
 
+from dataclasses import dataclass
 from typing import Protocol
 
 from src.core.common.derived_identity import derived_identity
@@ -18,8 +19,20 @@ class DpmWaveIdempotencyConflictError(Exception):
     """Raised when an idempotency key is reused for a different wave request."""
 
 
+class DpmWaveCorrelationConflictError(Exception):
+    """Raised when a tenant reuses a durable wave correlation id."""
+
+
 class DpmWaveAlreadyExistsError(Exception):
     """Raised when a new wave save collides with an existing wave id."""
+
+
+@dataclass(frozen=True)
+class DpmWaveIdempotencyRecord:
+    """The wave and immutable request fingerprint claimed by one key."""
+
+    wave: DpmRebalanceWave
+    request_hash: str | None
 
 
 def wave_idempotency_mapping_key(*, tenant_id: str, idempotency_key: str) -> str:
@@ -80,6 +93,14 @@ class DpmWaveRepository(Protocol):
         deliberately not a conflict, because a conflict would disclose that
         some other tenant holds that key.
         """
+
+    def get_wave_idempotency_record(
+        self,
+        *,
+        idempotency_key: str,
+        tenant_id: str,
+    ) -> DpmWaveIdempotencyRecord | None:
+        """Return the tenant-owned wave and the request hash claimed by its key."""
 
     def list_waves(
         self,

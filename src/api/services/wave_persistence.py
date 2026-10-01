@@ -2,6 +2,7 @@ from src.api.services.wave_errors import DpmWaveValidationError
 from src.core.waves import (
     DpmRebalanceWave,
     DpmWaveAlreadyExistsError,
+    DpmWaveCorrelationConflictError,
     DpmWaveIdempotencyConflictError,
     DpmWaveRepository,
     DpmWaveVersionConflictError,
@@ -23,7 +24,11 @@ def save_wave_or_raise(
             request_hash=request_hash,
             tenant_id=tenant_id,
         )
-    except (DpmWaveAlreadyExistsError, DpmWaveIdempotencyConflictError) as exc:
+    except (
+        DpmWaveAlreadyExistsError,
+        DpmWaveCorrelationConflictError,
+        DpmWaveIdempotencyConflictError,
+    ) as exc:
         raise DpmWaveValidationError("WAVE_CREATE_CONFLICT", str(exc)) from exc
 
 

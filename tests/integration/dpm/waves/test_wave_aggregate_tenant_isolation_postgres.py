@@ -30,6 +30,7 @@ from src.core.waves import (
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
+    DpmWaveCorrelationConflictError,
     DpmWaveTrigger,
     DpmWaveVersionConflictError,
 )
@@ -275,7 +276,7 @@ def test_one_tenant_still_cannot_reuse_its_own_correlation_id(
         tenant_id=tenant_a,
     )
 
-    with pytest.raises(Exception) as duplicate:
+    with pytest.raises(DpmWaveCorrelationConflictError) as duplicate:
         repository.save_wave(
             wave=_wave(wave_id=_new_wave_id(), correlation_id=correlation_id),
             idempotency_key=None,
@@ -283,4 +284,4 @@ def test_one_tenant_still_cannot_reuse_its_own_correlation_id(
             tenant_id=tenant_a,
         )
 
-    assert "idx_dpm_rebalance_waves_tenant_correlation" in str(duplicate.value)
+    assert str(duplicate.value) == "DPM_WAVE_CORRELATION_CONFLICT"

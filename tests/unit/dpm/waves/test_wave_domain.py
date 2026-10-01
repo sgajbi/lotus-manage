@@ -241,11 +241,19 @@ def test_in_memory_wave_repository_lists_filtered_sorted_defensive_pages() -> No
     newer = _wave().model_copy(
         update={
             "wave_id": "dwv_newer",
+            "correlation_id": "corr-newer",
             "created_at": datetime(2026, 5, 4, tzinfo=timezone.utc),
         },
         deep=True,
     )
-    other_state = _wave().model_copy(update={"wave_id": "dwv_other", "state": "CREATED"}, deep=True)
+    other_state = _wave().model_copy(
+        update={
+            "wave_id": "dwv_other",
+            "correlation_id": "corr-other",
+            "state": "CREATED",
+        },
+        deep=True,
+    )
 
     for wave in [older, newer, other_state]:
         repository.save_wave(
@@ -408,7 +416,7 @@ class _FakeWaveConnection:
             return _FakeCursor(rowcount=1)
         if "SELECT wave_json FROM dpm_rebalance_waves WHERE wave_id = %s" in sql:
             return _FakeCursor(self.waves.get(str(args[0])))
-        if "SELECT w.wave_json FROM dpm_rebalance_wave_idempotency" in sql:
+        if "SELECT w.wave_json, i.request_hash FROM dpm_rebalance_wave_idempotency" in sql:
             # Asserted, not merely tolerated: a fake that dispatches on a
             # substring silently stops filtering when the clause changes, and
             # its fallback is "no filter" rather than "no result".
@@ -416,7 +424,10 @@ class _FakeWaveConnection:
             indexed = self.idempotency.get(str(args[0]))
             if indexed is None or indexed.get("tenant_id") != args[1]:
                 return _FakeCursor()
-            return _FakeCursor(self.waves.get(str(indexed["wave_id"])))
+            wave = self.waves.get(str(indexed["wave_id"]))
+            if wave is None:
+                return _FakeCursor()
+            return _FakeCursor({**wave, "request_hash": indexed["request_hash"]})
         if "SELECT wave_json FROM dpm_rebalance_waves" in sql and "ORDER BY created_at DESC" in sql:
             rows = list(self.waves.values())
             limit = int(args[-2])
