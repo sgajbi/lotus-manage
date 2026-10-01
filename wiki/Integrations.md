@@ -251,6 +251,12 @@ Manage constructs authority context. Explicit source-supplied zero quantities or
 valid; omitted values are not converted to `USD`, `v1`, empty holdings, empty fingerprints, or zero
 metrics.
 
+For stateful execution, Manage checks mandatory mandate readiness before requesting model
+targets, then checks model readiness and exact requested model/as-of identity before requesting
+dependent portfolio products. A wrong returned model or date is an incomplete Core dependency
+(HTTP 424), not a permitted alternative-model simulation; a caller-selected alternative remains
+valid when Core returns that same model identity.
+
 Mandate-health refresh also consumes `ClientRestrictionProfile:v1`,
 `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` when those optional
 core products are available. Manage preserves their lineage on the mandate twin, keeps gap codes

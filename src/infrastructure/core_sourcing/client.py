@@ -13,6 +13,7 @@ from src.core.dpm_source_context import (
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreClientIncomeNeedsScheduleResponse,
+    DpmCoreContextIncompleteError,
     DpmCoreCioModelChangeAffectedCohortResponse,
     DpmCoreExecutionContext,
     DpmCoreInstrumentEligibilityBulkResponse,
@@ -192,6 +193,10 @@ class DpmCoreResolverClient:
             include_policy_pack=True,
             correlation_id=correlation_id,
         )
+        policy_context = build_policy_context_from_core_mandate(
+            mandate,
+            tenant_id=stateful_input.tenant_id,
+        )
         model_portfolio_id = stateful_input.model_portfolio_id or mandate.model_portfolio_id
         model_targets = self.resolve_model_portfolio_targets(
             model_portfolio_id=model_portfolio_id,
@@ -199,6 +204,7 @@ class DpmCoreResolverClient:
             tenant_id=stateful_input.tenant_id,
             correlation_id=correlation_id,
         )
+        model_portfolio = build_model_portfolio_from_core_targets(model_targets)
         portfolio_snapshot = self.resolve_portfolio_snapshot(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -360,14 +366,10 @@ class DpmCoreResolverClient:
             mandate_id=stateful_input.mandate_id,
             correlation_id=correlation_id,
         )
-        policy_context = build_policy_context_from_core_mandate(
-            mandate,
-            tenant_id=stateful_input.tenant_id,
-        )
         return DpmCoreExecutionContext(
             portfolio_snapshot=portfolio_snapshot,
             market_data_snapshot=build_market_data_snapshot_from_core_coverage(market_data),
-            model_portfolio=build_model_portfolio_from_core_targets(model_targets),
+            model_portfolio=model_portfolio,
             shelf_entries=build_shelf_entries_from_core_eligibility(eligibility),
             policy_context=_execution_context_policy(
                 stateful_input=stateful_input,
@@ -450,7 +452,14 @@ class DpmCoreResolverClient:
             unavailable_code="DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE",
             incomplete_code="DPM_CORE_MODEL_TARGETS_INCOMPLETE",
         )
-        return DpmCoreModelPortfolioTargetResponse.model_validate(response)
+        targets = DpmCoreModelPortfolioTargetResponse.model_validate(response)
+        if (
+            not targets.model_portfolio_id.strip()
+            or targets.model_portfolio_id != model_portfolio_id
+            or targets.as_of_date != as_of_date
+        ):
+            raise DpmCoreContextIncompleteError("DPM_CORE_MODEL_TARGETS_IDENTITY_MISMATCH")
+        return targets
 
     def resolve_mandate_binding(
         self,

@@ -419,6 +419,10 @@ Most relevant current governance:
     Do not reintroduce implicit `USD`, `v1`, empty-fingerprint, empty-section, or zero-metric
     defaults for missing source facts. Valid zero values are allowed only when explicitly supplied
     by the source response and must stay distinguishable from omission.
+    The mandatory Core mandate binding must be accepted before model resolution, and the model
+    target product must be accepted before dependent portfolio-source calls. Model-target identity
+    and as-of date must exactly match the requested selectors; explicit caller-selected models
+    remain valid only when the returned identity matches that selection.
 14. Tax-aware construction is evidence-gated. When `enable_tax_awareness=true`, sell candidates
     require complete open-lot coverage from `PortfolioTaxLotWindow:v1` and lot-cost FX where
     needed; missing lots, partial lots, closed/depleted-only lots, or missing lot-cost FX must block
