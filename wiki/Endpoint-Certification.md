@@ -243,6 +243,9 @@ Functional behavior:
   returns `404` before the first qualifying snapshot. Omitting the query returns the latest
   persisted health snapshot.
 - Health recalculate persists a new snapshot and derived exceptions from explicit monitoring input.
+  Supplied `tracking_error` must be finite and non-negative, whether or not a mandate limit or
+  source Risk context is present. Negative/non-finite observations return validation `422` before
+  any health or exception write; omission remains missing evidence and explicit zero is valid.
 - Monitoring run-once evaluates caller-supplied mandate ids that have already been refreshed.
 - Monitoring run search and detail return persisted run records.
 - Command center aggregates persisted monitoring runs and active exceptions into health

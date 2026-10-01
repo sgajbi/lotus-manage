@@ -1072,6 +1072,127 @@ def test_health_recalculate_persists_tracking_error_applicability(
     assert risk["threshold_value"] == expected_threshold
 
 
+@pytest.mark.parametrize("tracking_error", ["-0.01", "-0.000000000001", "NaN", "Infinity"])
+@pytest.mark.parametrize("has_limit", [False, True])
+@pytest.mark.parametrize("has_risk_context", [False, True])
+@pytest.mark.parametrize("has_prior_health", [False, True])
+def test_health_recalculate_invalid_tracking_error_never_mutates_evidence(
+    tracking_error: str,
+    has_limit: bool,
+    has_risk_context: bool,
+    has_prior_health: bool,
+) -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin()
+    if has_limit:
+        twin = twin.model_copy(
+            update={
+                "constraints": twin.constraints.model_copy(
+                    update={"max_tracking_error": Decimal("0.05")}
+                )
+            }
+        )
+    risk_context = (
+        {
+            "source_system": "lotus-risk",
+            "source_product_name": "MandateRiskHealthContext",
+            "source_product_version": "v1",
+            "as_of_date": "2026-05-03",
+            "health_state": "ready",
+            "threshold_breached": False,
+            "request_fingerprint": "sha256:risk-health-valid",
+        }
+        if has_risk_context
+        else None
+    )
+    valid_input = DpmMandateHealthInput(
+        twin=twin, tracking_error=Decimal("0.04"), risk_health_context=risk_context
+    ).model_dump(mode="json")
+    invalid_input = {**valid_input, "tracking_error": tracking_error}
+    route = f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=invalid-te"
+    read_route = f"/api/v1/mandates/{MANDATE_ID}/health?tenant_id=invalid-te"
+
+    with _client(repository) as client:
+        if has_prior_health:
+            created = client.post(route, json=valid_input)
+            assert created.status_code == 200
+        before = client.get(read_route)
+        prior_runs = repository.list_monitoring_runs(
+            status=None, limit=10, cursor=None, tenant_id="invalid-te"
+        )
+        prior_exceptions = repository.list_monitoring_exceptions(
+            monitoring_run_id=None,
+            mandate_id=None,
+            portfolio_id=None,
+            state=None,
+            limit=10,
+            cursor=None,
+            tenant_id="invalid-te",
+        )
+        response = client.post(route, json=invalid_input)
+        after = client.get(read_route)
+
+    assert response.status_code == 422
+    error = next(item for item in response.json()["detail"] if item["loc"][-1] == "tracking_error")
+    assert error["type"] == (
+        "finite_number" if tracking_error in {"NaN", "Infinity"} else "greater_than_equal"
+    )
+    assert before.status_code == after.status_code == (200 if has_prior_health else 404)
+    assert before.json() == after.json()
+    assert (
+        repository.list_monitoring_runs(status=None, limit=10, cursor=None, tenant_id="invalid-te")
+        == prior_runs
+    )
+    assert (
+        repository.list_monitoring_exceptions(
+            monitoring_run_id=None,
+            mandate_id=None,
+            portfolio_id=None,
+            state=None,
+            limit=10,
+            cursor=None,
+            tenant_id="invalid-te",
+        )
+        == prior_exceptions
+    )
+
+
+@pytest.mark.parametrize(
+    ("tracking_error", "expected_state"),
+    [
+        ("0", "READY"),
+        ("0.049999999999", "READY"),
+        ("0.05", "READY"),
+        ("0.050000000001", "PENDING_REVIEW"),
+    ],
+)
+def test_health_recalculate_nonnegative_tracking_error_threshold_boundaries(
+    tracking_error: str, expected_state: str
+) -> None:
+    twin = _twin()
+    twin = twin.model_copy(
+        update={
+            "constraints": twin.constraints.model_copy(
+                update={"max_tracking_error": Decimal("0.05")}
+            )
+        }
+    )
+    payload = DpmMandateHealthInput(twin=twin).model_dump(mode="json")
+    payload["tracking_error"] = tracking_error
+
+    with _client(InMemoryDpmMandateRepository()) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate?tenant_id=boundary-te",
+            json=payload,
+        )
+
+    assert response.status_code == 200
+    risk = next(
+        item for item in response.json()["dimension_scores"] if item["dimension"] == "RISK_DRIFT"
+    )
+    assert risk["state"] == expected_state
+
+
 def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineage() -> None:
     repository = InMemoryDpmMandateRepository()
     now = datetime(2026, 5, 6, 12, 0, tzinfo=timezone.utc)

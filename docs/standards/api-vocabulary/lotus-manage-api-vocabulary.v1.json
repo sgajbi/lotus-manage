@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-01T09:41:01.242461+00:00",
+  "generatedAt": "2026-10-01T13:05:32.578288+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -16824,7 +16824,7 @@
       "semanticId": "lotus.tracking_error",
       "canonicalTerm": "tracking_error",
       "preferredName": "tracking_error",
-      "description": "dpm mandate health input field: tracking error.",
+      "description": "Optional non-negative observed tracking error; zero is measured evidence, while omission means no measurement was supplied.",
       "example": "tracking_error_example",
       "type": "object",
       "locations": [
