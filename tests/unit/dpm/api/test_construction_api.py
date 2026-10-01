@@ -187,6 +187,59 @@ def _transaction_cost_authority_context_payload() -> dict:
     }
 
 
+def _two_trade_transaction_cost_authority_context_payload(
+    *,
+    a_side: str,
+    b_side: str,
+    average_cost_bps: str,
+) -> dict:
+    context = _transaction_cost_authority_context_payload()["transaction_cost_context"]
+    context["returned_curve_point_count"] = 2
+    context["curve_points"] = [
+        {
+            "security_id": security_id,
+            "transaction_type": transaction_type,
+            "currency": "SGD",
+            "observation_count": 3,
+            "total_notional": "30000.0000",
+            "total_cost": "60.0000",
+            "average_cost_bps": average_cost_bps,
+            "min_cost_bps": average_cost_bps,
+            "max_cost_bps": average_cost_bps,
+            "first_observed_date": "2026-04-01",
+            "last_observed_date": "2026-05-03",
+            "sample_transaction_ids": [f"TXN-{security_id}-1"],
+        }
+        for security_id, transaction_type in (("EQ_A", a_side), ("EQ_B", b_side))
+    ]
+    return {"transaction_cost_context": context}
+
+
+def _two_trade_cost_payload() -> dict:
+    payload = _payload()
+    stateless_input = payload["stateless_input"]
+    stateless_input["portfolio_snapshot"]["positions"] = [
+        {"instrument_id": "EQ_A", "quantity": "100"}
+    ]
+    stateless_input["portfolio_snapshot"]["cash_balances"] = [
+        {"currency": "SGD", "amount": "1000.00"}
+    ]
+    stateless_input["market_data_snapshot"]["prices"] = [
+        {"instrument_id": "EQ_A", "price": "100.00", "currency": "SGD"},
+        {"instrument_id": "EQ_B", "price": "50.00", "currency": "SGD"},
+    ]
+    stateless_input["model_portfolio"]["targets"] = [
+        {"instrument_id": "EQ_A", "weight": "0.50"},
+        {"instrument_id": "EQ_B", "weight": "0.50"},
+    ]
+    stateless_input["shelf_entries"] = [
+        {"instrument_id": "EQ_A", "status": "APPROVED"},
+        {"instrument_id": "EQ_B", "status": "APPROVED"},
+    ]
+    payload["methods"] = ["COST_AWARE"]
+    return payload
+
+
 def _esg_authority_context_payload() -> dict:
     return {
         "client_restriction_context": {
@@ -778,6 +831,86 @@ def test_cost_aware_method_applies_source_owned_cost_curve_to_candidate_notional
         "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE"
         not in alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
     )
+
+
+@pytest.mark.parametrize(
+    (
+        "a_side",
+        "b_side",
+        "average_cost_bps",
+        "expected_status",
+        "expected_amount",
+        "missing_keys",
+    ),
+    [
+        ("SELL", "BUY", "20", "READY", "20.0000", []),
+        ("BUY", "BUY", "20", "DEGRADED", None, ["EQ_A:SELL"]),
+        ("BUY", "SELL", "20", "DEGRADED", None, ["EQ_A:SELL", "EQ_B:BUY"]),
+        ("SELL", "BUY", "0", "READY", "0.0000", []),
+    ],
+)
+def test_cost_aware_method_requires_complete_trade_side_coverage_and_persists_qualification(
+    a_side: str,
+    b_side: str,
+    average_cost_bps: str,
+    expected_status: str,
+    expected_amount: str | None,
+    missing_keys: list[str],
+) -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _two_trade_cost_payload()
+    payload["authority_context"] = _two_trade_transaction_cost_authority_context_payload(
+        a_side=a_side,
+        b_side=b_side,
+        average_cost_bps=average_cost_bps,
+    )
+
+    with _client(repository) as client:
+        created = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={
+                "Idempotency-Key": (
+                    f"idem-cost-side-{a_side.lower()}-{b_side.lower()}-{average_cost_bps}"
+                )
+            },
+        )
+        assert created.status_code == 200
+        created_body = created.json()
+        read_back = client.get(
+            f"/api/v1/construction/alternative-sets/{created_body['alternative_set_id']}"
+        )
+
+    app.dependency_overrides = {}
+
+    assert read_back.status_code == 200
+    assert read_back.json() == created_body
+    alternative = created_body["alternatives"][0]
+    assert alternative["method_status"] == expected_status
+    cost = alternative["comparison_metrics"]["estimated_transaction_cost"]
+    assert cost == (
+        {"amount": expected_amount, "currency": "SGD"} if expected_amount is not None else None
+    )
+    objective_terms = {term["term"] for term in alternative["objective_trace"]}
+    cost_trace = next(
+        trace
+        for trace in alternative["constraint_trace"]
+        if trace["constraint"] == "ESTIMATED_COST"
+    )
+    if missing_keys:
+        assert "ESTIMATED_COST" not in objective_terms
+        assert cost_trace["status"] == "DEGRADED"
+        assert "TRANSACTION_COST_CURVE_MISSING_REQUIRED_TRADE_SIDES" in cost_trace["reason_codes"]
+        assert "TRANSACTION_COST_ESTIMATE_UNAVAILABLE" in cost_trace["reason_codes"]
+        assert "no partial aggregate" in cost_trace["description"]
+        assert all(key in cost_trace["description"] for key in missing_keys)
+    else:
+        assert "ESTIMATED_COST" in objective_terms
+        assert cost_trace["status"] == "READY"
+        assert (
+            "TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS" in (cost_trace["reason_codes"])
+        )
+        assert "not a predictive execution quote" in cost_trace["description"]
 
 
 def test_cost_aware_method_degrades_without_source_owned_cost_curve() -> None:

@@ -25,8 +25,18 @@ def with_observed_transaction_cost_estimate(
     context: AuthoritativeTransactionCostContext | None,
 ) -> ConstructionAlternative:
     estimate = observed_transaction_cost_estimate(result=result, context=context)
+    constraint_trace = [
+        *alternative.constraint_trace,
+        ConstructionConstraintTrace(
+            constraint=ConstructionTraceTerm.ESTIMATED_COST,
+            status=transaction_cost_status(result=result, context=context),
+            source_family=ConstructionSourceFamily.TRANSACTION_COST,
+            reason_codes=transaction_cost_reason_codes(result=result, context=context),
+            description=transaction_cost_constraint_description(result=result, context=context),
+        ),
+    ]
     if estimate is None:
-        return alternative
+        return alternative.model_copy(update={"constraint_trace": constraint_trace})
     metrics = alternative.comparison_metrics.model_copy(
         update={"estimated_transaction_cost": estimate}
     )
@@ -38,20 +48,8 @@ def with_observed_transaction_cost_estimate(
             unit=estimate.currency,
             direction="lower_is_better",
             description=(
-                "Source-observed transaction-cost bps applied to candidate trade notionals; "
-                "not a predictive execution quote."
-            ),
-        ),
-    ]
-    constraint_trace = [
-        *alternative.constraint_trace,
-        ConstructionConstraintTrace(
-            constraint=ConstructionTraceTerm.ESTIMATED_COST,
-            status=transaction_cost_status(result=result, context=context),
-            source_family=ConstructionSourceFamily.TRANSACTION_COST,
-            reason_codes=transaction_cost_reason_codes(result=result, context=context),
-            description=(
-                "Observed TransactionCostCurve:v1 evidence supports cost-aware comparison only."
+                "Source-observed transaction-cost bps applied to every candidate trade "
+                "notional; not a predictive execution quote."
             ),
         ),
     ]
@@ -72,7 +70,13 @@ def observed_transaction_cost_estimate(
     if context is None or context.supportability_status != ConstructionMethodStatus.READY:
         return None
     point_by_key = transaction_cost_curve_points_by_key(context=context)
+    required_keys = traded_transaction_cost_keys(result=result)
+    if not required_keys or not required_keys <= set(point_by_key):
+        return None
     cost_terms = _observed_transaction_cost_terms(result=result, point_by_key=point_by_key)
+    security_trade_count = sum(isinstance(intent, SecurityTradeIntent) for intent in result.intents)
+    if len(cost_terms) != security_trade_count:
+        return None
     return _observed_transaction_cost_money(
         cost_terms=cost_terms,
         currency=result.before.total_value.currency,
@@ -124,9 +128,7 @@ def transaction_cost_status(
     if context is None:
         return ConstructionMethodStatus.DEGRADED
     status = context.supportability_status
-    traded_security_ids = traded_transaction_cost_security_ids(result=result)
-    covered_security_ids = covered_transaction_cost_security_ids(context=context)
-    if traded_security_ids and not traded_security_ids <= covered_security_ids:
+    if missing_transaction_cost_trade_keys(result=result, context=context):
         status = lowest_construction_status([status, ConstructionMethodStatus.DEGRADED])
     if observed_transaction_cost_estimate(result=result, context=context) is None:
         status = lowest_construction_status([status, ConstructionMethodStatus.DEGRADED])
@@ -146,6 +148,8 @@ def transaction_cost_reason_codes(
     missing_security_ids = sorted(traded_security_ids - covered_security_ids)
     if missing_security_ids:
         reason_codes.append("TRANSACTION_COST_CURVE_MISSING_TRADED_SECURITIES")
+    if missing_transaction_cost_trade_keys(result=result, context=context):
+        reason_codes.append("TRANSACTION_COST_CURVE_MISSING_REQUIRED_TRADE_SIDES")
     if observed_transaction_cost_estimate(result=result, context=context) is None:
         reason_codes.append("TRANSACTION_COST_ESTIMATE_UNAVAILABLE")
     else:
@@ -159,11 +163,60 @@ def traded_transaction_cost_security_ids(*, result: RebalanceResult) -> set[str]
     }
 
 
+def traded_transaction_cost_keys(*, result: RebalanceResult) -> set[tuple[str, str]]:
+    return {
+        (intent.instrument_id, intent.side)
+        for intent in result.intents
+        if isinstance(intent, SecurityTradeIntent)
+    }
+
+
 def covered_transaction_cost_security_ids(
     *,
     context: AuthoritativeTransactionCostContext,
 ) -> set[str]:
     return {point.security_id for point in context.curve_points}
+
+
+def covered_transaction_cost_keys(
+    *,
+    context: AuthoritativeTransactionCostContext,
+) -> set[tuple[str, str]]:
+    return {(point.security_id, point.transaction_type) for point in context.curve_points}
+
+
+def missing_transaction_cost_trade_keys(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeTransactionCostContext | None,
+) -> set[tuple[str, str]]:
+    required_keys = traded_transaction_cost_keys(result=result)
+    if context is None:
+        return required_keys
+    return required_keys - covered_transaction_cost_keys(context=context)
+
+
+def transaction_cost_constraint_description(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeTransactionCostContext | None,
+) -> str:
+    missing_keys = sorted(missing_transaction_cost_trade_keys(result=result, context=context))
+    if missing_keys:
+        formatted_keys = ", ".join(f"{security_id}:{side}" for security_id, side in missing_keys)
+        return (
+            "Observed TransactionCostCurve:v1 evidence is missing required candidate trade "
+            f"sides ({formatted_keys}); no partial aggregate is published."
+        )
+    if observed_transaction_cost_estimate(result=result, context=context) is None:
+        return (
+            "Observed TransactionCostCurve:v1 evidence cannot support a complete candidate "
+            "estimate; no partial aggregate is published."
+        )
+    return (
+        "Observed TransactionCostCurve:v1 evidence covers every candidate instrument and trade "
+        "side and supports comparison only; it is not a predictive execution quote."
+    )
 
 
 def transaction_cost_curve_points_by_key(
@@ -174,11 +227,15 @@ def transaction_cost_curve_points_by_key(
 
 
 __all__ = [
+    "covered_transaction_cost_keys",
     "covered_transaction_cost_security_ids",
+    "missing_transaction_cost_trade_keys",
     "observed_transaction_cost_estimate",
+    "transaction_cost_constraint_description",
     "transaction_cost_curve_points_by_key",
     "transaction_cost_reason_codes",
     "transaction_cost_status",
+    "traded_transaction_cost_keys",
     "traded_transaction_cost_security_ids",
     "with_observed_transaction_cost_estimate",
 ]
