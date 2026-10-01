@@ -258,8 +258,13 @@ Key code areas:
   pending review. `budget_assessments` retains the nominal remaining amount, comparison basis,
   declared source references, and the independent turnover finding in stored health and
   monitoring exceptions. Caller-supplied evidence is not live bank tax-source certification.
-  This slice does not change the pre-existing turnover scoring when a limit is present but
-  usage is omitted; that posture must not be read as certified turnover compliance (#745).
+  A declared turnover budget is a cumulative portfolio-value fraction, not a cash amount.
+  Missing `turnover_budget_used` is not zero: it requires review, as do unmatched measurement
+  periods or as-of cuts. Explicit zero passes; 80% through below the limit is near-limit/review,
+  equality is exhausted/review, and excess blocks. Unknown/unsourced limits remain unassessed;
+  only an explicit `turnover_budget_applicable=false` declaration is non-applicable. Health,
+  monitoring exceptions and wave source-readiness retain that distinction. Caller-declared
+  measurements and applicability are not verified Core turnover authority or release approval.
 - `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
 - `src/api/routers/mandates.py` and `src/api/routers/monitoring.py`

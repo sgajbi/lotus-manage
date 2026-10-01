@@ -154,6 +154,7 @@ def _save_ready_health(
                 current_weights={"CASH": Decimal("0.05")},
                 target_weights={"CASH": Decimal("0.05")},
                 cash_weight=Decimal("0.05"),
+                turnover_budget_used=Decimal("0"),
             ),
             tenant_id="default",
         ),

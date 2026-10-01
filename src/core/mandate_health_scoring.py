@@ -393,7 +393,7 @@ def _score_cash_liquidity(input_: DpmMandateHealthInput) -> DpmMandateDimensionS
 def _score_tax_turnover(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
     tax = _tax_budget_assessment(input_)
     turnover = _turnover_budget_assessment(input_)
-    assessments = [tax] + ([turnover] if turnover is not None else [])
+    assessments = [tax, turnover]
     if input_.tax_lot_missing_security_ids:
         return _attention_score(
             dimension=MandateHealthDimension.TAX_TURNOVER,
@@ -404,13 +404,19 @@ def _score_tax_turnover(input_: DpmMandateHealthInput) -> DpmMandateDimensionSco
             threshold_value=0,
             budget_assessments=assessments,
         )
-    for assessment in assessments:
+    for assessment in sorted(
+        assessments,
+        key=lambda item: item.state == MandateHealthState.BLOCKED,
+        reverse=True,
+    ):
         if assessment.state == MandateHealthState.READY:
             continue
         score = 40 if assessment.state == MandateHealthState.BLOCKED else 70
         if assessment.reason_code in {
             "TAX_BUDGET_USAGE_MISSING",
             "TAX_BUDGET_BASIS_MISMATCH",
+            "TURNOVER_BUDGET_USAGE_MISSING",
+            "TURNOVER_BUDGET_BASIS_MISMATCH",
         }:
             score = 60
         return _attention_score(
@@ -488,31 +494,64 @@ def _tax_budget_assessment(input_: DpmMandateHealthInput) -> DpmMandateBudgetAss
 
 def _turnover_budget_assessment(
     input_: DpmMandateHealthInput,
-) -> Optional[DpmMandateBudgetAssessment]:
-    limit = input_.twin.constraints.turnover_budget
+) -> DpmMandateBudgetAssessment:
+    twin = input_.twin
+    limit = twin.constraints.turnover_budget
     used = input_.turnover_budget_used
+    evidence = DpmMandateBudgetAssessment(
+        control="TURNOVER_BUDGET",
+        state=MandateHealthState.PENDING_REVIEW,
+        reason_code="TURNOVER_BUDGET_NOT_SOURCED",
+        measured_value=used,
+        threshold_value=limit,
+        remaining_value=limit - used if limit is not None and used is not None else None,
+        period_start=twin.constraints.turnover_budget_period_start,
+        as_of_date=twin.as_of_date,
+        basis="NO_DECLARED_LIMIT",
+        limit_source_ref=f"{twin.source_system}:mandate:{twin.mandate_id}:{twin.mandate_version}",
+        usage_source_ref=(input_.turnover_budget_usage_source_ref or "caller:explicit-health-input")
+        if used is not None
+        else None,
+    )
     if limit is None:
-        state, reason = MandateHealthState.PENDING_REVIEW, "TURNOVER_BUDGET_NOT_SOURCED"
-    elif used is None:
-        # Preserve the established turnover posture in this tax-budget slice.
-        # No turnover measurement was supplied, so do not invent an assessment.
-        return None
+        if (
+            twin.constraints.turnover_budget_applicable is False
+            and "MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED" not in twin.field_gap_codes
+        ):
+            return evidence.model_copy(
+                update={
+                    "state": MandateHealthState.READY,
+                    "reason_code": "TURNOVER_BUDGET_NOT_APPLICABLE",
+                }
+            )
+        return evidence
+    if used is None:
+        return evidence.model_copy(
+            update={"reason_code": "TURNOVER_BUDGET_USAGE_MISSING", "basis": "USAGE_MISSING"}
+        )
+    period = twin.constraints.turnover_budget_period_start
+    usage_period = input_.turnover_budget_used_period_start
+    if (
+        (
+            input_.turnover_budget_used_as_of_date is not None
+            and input_.turnover_budget_used_as_of_date != twin.as_of_date
+        )
+        or ((period is not None or usage_period is not None) and period != usage_period)
+        or (period is not None and period > twin.as_of_date)
+    ):
+        return evidence.model_copy(
+            update={"reason_code": "TURNOVER_BUDGET_BASIS_MISMATCH", "basis": "INCOMPARABLE"}
+        )
+    basis = "DECLARED_PERIOD_MATCHED" if period is not None else "CALLER_ASSERTED_SAME_PERIOD"
+    if used > limit:
+        state, reason = MandateHealthState.BLOCKED, "TURNOVER_BUDGET_EXCEEDED"
+    elif used == limit:
+        state, reason = MandateHealthState.PENDING_REVIEW, "TURNOVER_BUDGET_EXHAUSTED"
     elif used >= limit * Decimal("0.8"):
         state, reason = MandateHealthState.PENDING_REVIEW, "TURNOVER_BUDGET_NEAR_LIMIT"
     else:
         state, reason = MandateHealthState.READY, "TURNOVER_BUDGET_READY"
-    return DpmMandateBudgetAssessment(
-        control="TURNOVER_BUDGET",
-        state=state,
-        reason_code=reason,
-        measured_value=used,
-        threshold_value=limit,
-        remaining_value=limit - used if limit is not None and used is not None else None,
-        as_of_date=input_.twin.as_of_date,
-        basis="CALLER_ASSERTED_SAME_PERIOD",
-        limit_source_ref=f"{input_.twin.source_system}:mandate:{input_.twin.mandate_id}:{input_.twin.mandate_version}",
-        usage_source_ref="caller:explicit-health-input",
-    )
+    return evidence.model_copy(update={"state": state, "reason_code": reason, "basis": basis})
 
 
 def _score_eligibility_restrictions(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
@@ -664,6 +703,8 @@ _SOURCE_GAP_REASON_CODES = frozenset(
         "TURNOVER_BUDGET_NOT_SOURCED",
         "TAX_BUDGET_USAGE_MISSING",
         "TAX_BUDGET_BASIS_MISMATCH",
+        "TURNOVER_BUDGET_USAGE_MISSING",
+        "TURNOVER_BUDGET_BASIS_MISMATCH",
     }
 )
 
@@ -707,7 +748,10 @@ def _has_unsourced_contractual_limit(constraints: DpmMandateConstraintSet) -> bo
     return (
         constraints.cash_band_min_weight is None
         or constraints.cash_band_max_weight is None
-        or constraints.turnover_budget is None
+        or (
+            constraints.turnover_budget is None
+            and constraints.turnover_budget_applicable is not False
+        )
     )
 
 

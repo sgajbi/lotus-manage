@@ -70,7 +70,10 @@ async def read_mandate_health(
         "cumulative realized-gain allowance, not tax liability. tax_budget_used_base is a "
         "caller-supplied cumulative measurement through the twin as-of date; omitted currency "
         "and date assert that same basis. Missing or contradictory evidence cannot pass as "
-        "tax-compliant. This route does not verify a live bank tax source."
+        "tax-compliant. An applicable turnover_budget is a cumulative portfolio-value ratio: "
+        "missing usage or incomparable period/cut requires review, equality exhausts, and "
+        "excess blocks. Explicit non-applicability differs from an unknown limit. This route "
+        "does not verify a live bank tax or turnover source."
     ),
     responses={
         200: {"description": "Recalculated and persisted mandate health snapshot."},

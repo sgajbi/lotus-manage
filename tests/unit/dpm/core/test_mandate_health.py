@@ -1659,6 +1659,185 @@ def test_tax_budget_no_limit_zero_and_conflicting_basis_are_distinct() -> None:
         assert score.budget_assessments[0].basis == "INCOMPARABLE"
 
 
+@pytest.mark.parametrize(
+    ("used", "expected_reason", "expected_state", "remaining"),
+    [
+        (None, "TURNOVER_BUDGET_USAGE_MISSING", MandateHealthState.PENDING_REVIEW, None),
+        (Decimal("0"), "TAX_TURNOVER_READY", MandateHealthState.READY, Decimal("0.15")),
+        (Decimal("0.1199"), "TAX_TURNOVER_READY", MandateHealthState.READY, Decimal("0.0301")),
+        (
+            Decimal("0.12"),
+            "TURNOVER_BUDGET_NEAR_LIMIT",
+            MandateHealthState.PENDING_REVIEW,
+            Decimal("0.03"),
+        ),
+        (
+            Decimal("0.15"),
+            "TURNOVER_BUDGET_EXHAUSTED",
+            MandateHealthState.PENDING_REVIEW,
+            Decimal("0"),
+        ),
+        (
+            Decimal("0.1501"),
+            "TURNOVER_BUDGET_EXCEEDED",
+            MandateHealthState.BLOCKED,
+            Decimal("-0.0001"),
+        ),
+    ],
+)
+def test_turnover_budget_uses_measured_fraction_and_preserves_remaining(
+    used, expected_reason, expected_state, remaining
+) -> None:
+    twin = _twin(
+        constraints=_twin().constraints.model_copy(
+            update={"turnover_budget_period_start": date(2026, 1, 1)}
+        )
+    )
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            twin=twin,
+            turnover_budget_used=used,
+            turnover_budget_used_period_start=date(2026, 1, 1),
+            turnover_budget_used_as_of_date=AS_OF,
+            turnover_budget_usage_source_ref="caller:turnover-ledger:2026-05-03",
+        ),
+        tenant_id="tenant-turnover-budget",
+    )
+    score = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+    turnover = score.budget_assessments[1]
+    assert snapshot.health_state == expected_state
+    assert score.reason_code == expected_reason
+    assert turnover.measured_value == used
+    assert turnover.threshold_value == Decimal("0.15")
+    assert turnover.remaining_value == remaining
+    assert turnover.period_start == date(2026, 1, 1)
+    assert turnover.as_of_date == AS_OF
+    assert turnover.basis == ("USAGE_MISSING" if used is None else "DECLARED_PERIOD_MATCHED")
+    assert turnover.usage_source_ref == (
+        None if used is None else "caller:turnover-ledger:2026-05-03"
+    )
+    if used is None:
+        finding = next(
+            item
+            for item in monitoring_exceptions_from_health(
+                snapshot, source_lineage=twin.source_lineage, tenant_id="tenant-turnover-budget"
+            )
+            if item.reason_code == "TURNOVER_BUDGET_USAGE_MISSING"
+        )
+        assert finding.budget_assessment.threshold_value == Decimal("0.15")
+        assert finding.budget_assessment.measured_value is None
+
+
+@pytest.mark.parametrize(
+    "basis_overrides",
+    [
+        {"turnover_budget_used_as_of_date": date(2026, 5, 2)},
+        {"turnover_budget_used_period_start": date(2026, 2, 1)},
+        {"turnover_budget_used_period_start": None},
+    ],
+)
+def test_turnover_budget_incomparable_period_or_cut_requires_review(basis_overrides) -> None:
+    twin = _twin(
+        constraints=_twin().constraints.model_copy(
+            update={"turnover_budget_period_start": date(2026, 1, 1)}
+        )
+    )
+    input_values = {
+        "twin": twin,
+        "turnover_budget_used": Decimal("0"),
+        "turnover_budget_used_period_start": date(2026, 1, 1),
+    }
+    input_values.update(basis_overrides)
+    snapshot = calculate_mandate_health(
+        _ready_input(**input_values),
+        tenant_id="tenant-turnover-mismatch",
+    )
+    score = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+    assert score.reason_code == "TURNOVER_BUDGET_BASIS_MISMATCH"
+    assert score.budget_assessments[1].basis == "INCOMPARABLE"
+    assert snapshot.health_state == MandateHealthState.PENDING_REVIEW
+
+
+def test_turnover_budget_unknown_is_not_explicitly_nonapplicable() -> None:
+    unknown = _twin(constraints=_twin().constraints.model_copy(update={"turnover_budget": None}))
+    unassessed = calculate_mandate_health(
+        _ready_input(twin=unknown, turnover_budget_used=None), tenant_id="tenant-turnover-unknown"
+    )
+    assert _dimension(unassessed, MandateHealthDimension.TAX_TURNOVER).reason_code == (
+        "TURNOVER_BUDGET_NOT_SOURCED"
+    )
+    explicit_waiver = _twin(
+        constraints=DpmMandateConstraintSet(
+            cash_band_min_weight=Decimal("0.02"),
+            cash_band_max_weight=Decimal("0.10"),
+            turnover_budget_applicable=False,
+        )
+    )
+    waived = calculate_mandate_health(
+        _ready_input(twin=explicit_waiver, turnover_budget_used=None),
+        tenant_id="tenant-turnover-waived",
+    )
+    score = _dimension(waived, MandateHealthDimension.TAX_TURNOVER)
+    assert score.state == MandateHealthState.READY
+    assert score.budget_assessments[1].reason_code == "TURNOVER_BUDGET_NOT_APPLICABLE"
+    contradictory_gap = explicit_waiver.model_copy(
+        update={"field_gap_codes": ["MANDATE_TURNOVER_BUDGET_NOT_YET_SOURCED"]}
+    )
+    gap_snapshot = calculate_mandate_health(
+        _ready_input(twin=contradictory_gap, turnover_budget_used=None),
+        tenant_id="tenant-turnover-gap",
+    )
+    assert _dimension(gap_snapshot, MandateHealthDimension.TAX_TURNOVER).reason_code == (
+        "TURNOVER_BUDGET_NOT_SOURCED"
+    )
+    with pytest.raises(ValidationError):
+        DpmMandateConstraintSet(turnover_budget=Decimal("0.15"), turnover_budget_applicable=False)
+
+
+def test_turnover_budget_may_exceed_one_for_cumulative_periods() -> None:
+    twin = _twin(
+        constraints=_twin().constraints.model_copy(update={"turnover_budget": Decimal("1.25")})
+    )
+    snapshot = calculate_mandate_health(
+        _ready_input(twin=twin, turnover_budget_used=Decimal("1.20")),
+        tenant_id="tenant-turnover-large",
+    )
+    score = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+    assert score.budget_assessments[1].threshold_value == Decimal("1.25")
+    assert score.budget_assessments[1].remaining_value == Decimal("0.05")
+    assert score.reason_code == "TURNOVER_BUDGET_NEAR_LIMIT"
+    assert DpmMandateConstraintSet(turnover_budget=Decimal("1.25")).turnover_budget == Decimal(
+        "1.25"
+    )
+
+
+def test_turnover_excess_outranks_tax_usage_gap_without_hiding_either_finding() -> None:
+    twin = _twin(
+        constraints=_twin().constraints.model_copy(update={"tax_budget_base": Decimal("1000")})
+    )
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            twin=twin,
+            tax_budget_used_base=None,
+            turnover_budget_used=Decimal("0.1501"),
+        ),
+        tenant_id="tenant-turnover-tax-combined",
+    )
+    score = _dimension(snapshot, MandateHealthDimension.TAX_TURNOVER)
+    assert snapshot.health_state == MandateHealthState.BLOCKED
+    assert score.reason_code == "TURNOVER_BUDGET_EXCEEDED"
+    assert {item.reason_code for item in score.budget_assessments} == {
+        "TAX_BUDGET_USAGE_MISSING",
+        "TURNOVER_BUDGET_EXCEEDED",
+    }
+    assert {
+        item.reason_code
+        for item in monitoring_exceptions_from_health(
+            snapshot, source_lineage=twin.source_lineage, tenant_id="tenant-turnover-tax-combined"
+        )
+    } >= {"TAX_BUDGET_USAGE_MISSING", "TURNOVER_BUDGET_EXCEEDED"}
+
+
 def test_tax_and_turnover_findings_remain_independent_in_monitoring_exceptions() -> None:
     twin = _twin(
         constraints=_twin().constraints.model_copy(update={"tax_budget_base": Decimal("1000")})

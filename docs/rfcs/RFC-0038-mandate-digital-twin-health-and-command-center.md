@@ -311,7 +311,7 @@ Initial default weights:
 | `ALLOCATION_DRIFT` | 18 | Distance from model or permitted mandate bands. |
 | `RISK_DRIFT` | 12 | Risk profile, tracking error, concentration, drawdown/stress posture. |
 | `CASH_LIQUIDITY` | 10 | Cash band, known liquidity needs, overdraft risk, settlement readiness. An unsourced mandate cash band yields `CASH_BAND_NOT_SOURCED` at PENDING_REVIEW rather than a READY score. |
-| `TAX_TURNOVER` | 10 | Tax-budget and turnover-budget usage. Missing applicable tax usage is PENDING_REVIEW, not zero; an unsourced turnover limit remains `TURNOVER_BUDGET_NOT_SOURCED` at PENDING_REVIEW. Existing turnover scoring with a declared limit but no measured usage is unchanged in this tax-budget slice and must not be interpreted as certified turnover compliance (#745). |
+| `TAX_TURNOVER` | 10 | Independent tax and turnover budget findings share one weight. Missing applicable usage is PENDING_REVIEW, not zero; an unknown/unsourced turnover limit remains `TURNOVER_BUDGET_NOT_SOURCED` at PENDING_REVIEW. An explicit non-applicability declaration differs from missing source evidence. |
 | `ELIGIBILITY_RESTRICTIONS` | 10 | Product shelf, restricted instruments, client exclusions, ESG constraints. |
 | `PERFORMANCE_ATTENTION` | 8 | Underperformance, attribution flags, benchmark-relative concerns. |
 | `WORKFLOW_READINESS` | 7 | Approval, stale workflow, pending decision, operation blockage. |
@@ -337,6 +337,23 @@ incompleteness remains a hard blocker. Within the single 10% dimension, the most
 drives its score; separate `budget_assessments` and monitoring exceptions retain simultaneous tax
 and turnover findings without double-weighting. Source identifiers are preserved as declared
 input references; this endpoint does not certify live bank tax ingestion or trade-release policy.
+
+The explicit turnover budget is a cumulative ratio of turnover to portfolio value over a stated
+measurement period; it is not a cash amount or an annualized estimate. Repeated trading can
+produce a cumulative ratio above one, so only a negative/non-finite value is invalid. The caller supplies
+`turnover_budget_used` through the twin as-of date, with optional period start, as-of cut and
+source reference. When either the limit or usage declares a start, both must match. A supplied
+as-of cut must match the twin cut; omission asserts the twin cut. Missing usage is
+`TURNOVER_BUDGET_USAGE_MISSING`/PENDING_REVIEW, and a contradictory period or cut is
+`TURNOVER_BUDGET_BASIS_MISMATCH`/PENDING_REVIEW. Zero is measured evidence. At 80% of the
+limit up to but not including equality, `TURNOVER_BUDGET_NEAR_LIMIT` requires review; equality
+is `TURNOVER_BUDGET_EXHAUSTED`/PENDING_REVIEW and an excess is
+`TURNOVER_BUDGET_EXCEEDED`/BLOCKED. A null limit with unknown applicability is
+`TURNOVER_BUDGET_NOT_SOURCED`/PENDING_REVIEW, not a waiver. Only an explicit
+`turnover_budget_applicable=false` declaration with no limit is non-applicable/READY. The
+recalculation caller's applicability and usage claims are retained, not verified as live Core
+authority; an explicit Core unsourced field-gap marker takes precedence over a contradictory
+caller waiver. Operational release and booking remain separately governed.
 
 ### 6.2 Dimension Score Rules
 

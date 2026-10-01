@@ -207,8 +207,14 @@ comparison basis and declared source references, with distinct monitoring except
 controls need attention. Controlled registered HTTP and native PostgreSQL restart tests cover
 readback, replacement, tenant refusal and validation-before-write. No live Core tax ledger,
 production identity, tax-liability calculation or trade-release certification is claimed.
-The pre-existing turnover posture with a declared limit but omitted usage is unchanged; it is
-not evidence of measured turnover compliance (#745).
+Turnover usage is a cumulative fraction of portfolio value, not a cash amount. A declared limit
+with missing usage produces `TURNOVER_BUDGET_USAGE_MISSING`/PENDING_REVIEW, and contradictory
+period/as-of claims produce `TURNOVER_BUDGET_BASIS_MISMATCH`/PENDING_REVIEW. Explicit zero is
+measured evidence; 80% through below the limit requires review, equality exhausts the allowance,
+and excess blocks health. Unknown/unsourced limits remain unassessed; only an explicit source
+declaration of non-applicability is READY. Registered HTTP, native PostgreSQL restart, persisted
+exceptions and wave source-readiness regression tests cover this distinction. These are bounded
+caller claims, not verified Core turnover authority or trade-release permission.
 
 Purpose:
 
