@@ -1081,7 +1081,15 @@ class DpmCoreResolverClient:
             unavailable_code="DPM_CORE_CLIENT_RESTRICTIONS_UNAVAILABLE",
             incomplete_code="DPM_CORE_CLIENT_RESTRICTIONS_INCOMPLETE",
         )
-        return DpmCoreClientRestrictionProfileResponse.model_validate(response)
+        profile = DpmCoreClientRestrictionProfileResponse.model_validate(response)
+        if (
+            not profile.portfolio_id.strip()
+            or profile.portfolio_id != portfolio_id
+            or profile.as_of_date != as_of_date
+            or (mandate_id is not None and profile.mandate_id != mandate_id)
+        ):
+            raise DpmCoreContextIncompleteError("DPM_CORE_CLIENT_RESTRICTIONS_IDENTITY_MISMATCH")
+        return profile
 
     def resolve_sustainability_preference_profile(
         self,

@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, Optional
 
+from pydantic import ValidationError
+
 from src.api.services.mandate_errors import (
     DpmMandateSourceIncompleteError,
     DpmMandateSourceUnavailableError,
@@ -22,6 +24,7 @@ from src.api.services.mandate_refresh_context import (
     build_digital_twin_source_context,
     build_health_input_source_context,
 )
+from src.core.dpm_source_context import DpmCoreContextIncompleteError
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthSnapshot,
@@ -80,18 +83,21 @@ def build_mandate_refresh_result_from_core(
             )
     except CoreResolverUnavailableError as exc:
         raise DpmMandateSourceUnavailableError("DPM_MANDATE_SOURCE_UNAVAILABLE") from exc
-    except CoreResolverError as exc:
+    except (CoreResolverError, DpmCoreContextIncompleteError, ValidationError) as exc:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_SOURCE_INCOMPLETE") from exc
 
-    optional_sources = resolve_mandate_optional_sources(
-        resolver=core_resolver,
-        portfolio_id=portfolio_id,
-        mandate_id=mandate_id,
-        as_of_date=as_of_date,
-        tenant_id=tenant_id,
-        reference_currency=reference_currency,
-        correlation_id=correlation_id,
-    )
+    try:
+        optional_sources = resolve_mandate_optional_sources(
+            resolver=core_resolver,
+            portfolio_id=portfolio_id,
+            mandate_id=mandate_id,
+            as_of_date=as_of_date,
+            tenant_id=tenant_id,
+            reference_currency=reference_currency,
+            correlation_id=correlation_id,
+        )
+    except (DpmCoreContextIncompleteError, ValidationError) as exc:
+        raise DpmMandateSourceIncompleteError("DPM_MANDATE_SOURCE_INCOMPLETE") from exc
     twin = compile_mandate_digital_twin_from_core(
         mandate=mandate,
         model_targets=model_targets,

@@ -423,6 +423,10 @@ Most relevant current governance:
     target product must be accepted before dependent portfolio-source calls. Model-target identity
     and as-of date must exactly match the requested selectors; explicit caller-selected models
     remain valid only when the returned identity matches that selection.
+    Core `ClientRestrictionProfile:v1` is an optional product only when unavailable. A present
+    profile with mismatched portfolio/date/mandate or a scoped rule without usable selectors is
+    invalid source evidence and must not be swallowed by the optional-source fallback. Preserve
+    intentional selector-free `client` and `mandate` restrictions.
 14. Tax-aware construction is evidence-gated. When `enable_tax_awareness=true`, sell candidates
     require complete open-lot coverage from `PortfolioTaxLotWindow:v1` and lot-cost FX where
     needed; missing lots, partial lots, closed/depleted-only lots, or missing lot-cost FX must block

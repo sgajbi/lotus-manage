@@ -15,6 +15,7 @@ from src.api.services.mandate_refresh import (
     DpmMandateRefreshResult,
     build_mandate_refresh_result_from_core,
 )
+from src.core.dpm_source_context import DpmCoreContextIncompleteError
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthSnapshot,
@@ -224,6 +225,10 @@ def test_build_mandate_refresh_result_from_core_uses_binding_model_when_not_over
             DpmMandateSourceUnavailableError,
         ),
         (DpmCoreResolverError("source incomplete"), DpmMandateSourceIncompleteError),
+        (
+            DpmCoreContextIncompleteError("DPM_CORE_CLIENT_RESTRICTIONS_IDENTITY_MISMATCH"),
+            DpmMandateSourceIncompleteError,
+        ),
     ],
 )
 def test_build_mandate_refresh_result_from_core_maps_core_source_errors(
@@ -250,6 +255,30 @@ def test_mandate_refresh_exports_refresh_result_builder() -> None:
         "DpmMandateRefreshResult",
         "build_mandate_refresh_result_from_core",
     ]
+
+
+def test_mandate_refresh_does_not_degrade_invalid_present_optional_profile(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    def invalid_optional_source(**kwargs: object) -> DpmMandateOptionalSources:
+        raise DpmCoreContextIncompleteError("DPM_CORE_CLIENT_RESTRICTIONS_IDENTITY_MISMATCH")
+
+    monkeypatch.setattr(
+        mandate_refresh, "resolve_mandate_optional_sources", invalid_optional_source
+    )
+    with pytest.raises(DpmMandateSourceIncompleteError, match="DPM_MANDATE_SOURCE_INCOMPLETE"):
+        build_mandate_refresh_result_from_core(
+            core_resolver=_Resolver(),  # type: ignore[arg-type]
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_001",
+            booking_center_code=None,
+            model_portfolio_id=None,
+            reference_currency=None,
+            include_market_data_coverage=False,
+            correlation_id="corr-invalid-optional-profile",
+        )
 
 
 def test_service_preserves_mandate_refresh_import_surface() -> None:

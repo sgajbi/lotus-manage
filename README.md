@@ -503,6 +503,9 @@ Operationally important truths:
    match the requested selectors. An unrelated model response is a 424 incomplete dependency,
    not an alternative model simulation; mandatory mandate and model readiness is checked before
    fetching dependent portfolio products.
+   Core client-restriction profiles must also match the requested portfolio, date, and mandate.
+   Scoped rules with blank or absent selectors are rejected before they can become apparent
+   client-wide restrictions; intentional `client`/`mandate` rules without selectors remain valid.
 8. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.
