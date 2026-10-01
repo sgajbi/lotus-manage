@@ -93,6 +93,7 @@ def test_postgres_preserves_tenant_fence_immutable_replay_and_restart_read() -> 
         )
         is None
     )
+    assert restarted.list_definitions(tenant_id=tenant_id, limit=10, offset=0) == [definition]
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_DEFINITION_IMMUTABLE_CONFLICT"):
         restarted.save_definition(
             definition=_definition(
@@ -105,6 +106,17 @@ def test_postgres_preserves_tenant_fence_immutable_replay_and_restart_read() -> 
     revision = _revision(tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1")
     restarted.save_membership_revision(revision=revision)
     restarted.save_membership_revision(revision=revision)
+    with pytest.raises(
+        DpmCompositeConflictError, match="COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT"
+    ):
+        restarted.save_membership_revision(
+            revision=_revision(
+                tenant_id=tenant_id,
+                composite_id=composite_id,
+                revision=revision.membership_revision,
+                policy_version="composite-eligibility.v2",
+            )
+        )
     assert (
         restarted.get_membership_revision(
             tenant_id=tenant_id,
