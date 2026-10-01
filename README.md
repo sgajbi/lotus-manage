@@ -18,11 +18,19 @@ RFC-0082 upstream contract-family map:
 - async operation execution and polling
 - run supportability, lineage, idempotency, and artifact retrieval
 - policy-pack resolution and management-side workflow gating
+- immutable composite-definition and effective-dated membership source records
 
 It does not own advisor-led proposal workflows. Those belong to `lotus-advise`.
 
 It also does not own canonical portfolio ledger data, market-data truth, risk methodology, or
 performance analytics authority.
+
+Composite definitions and eligibility revisions are a tenant-scoped Manage source product at
+`/api/v1/rebalance/composites/*`. Writes require trusted tenant, actor, and a
+`DPM_COMPOSITE_ADMIN` or `DPM_PORTFOLIO_MANAGER` role; immutable replays are idempotent and changed
+content conflicts. The API preserves pinned historical revisions and correction impact windows. It
+does not calculate composite returns, infer eligibility from current book membership, or publish
+Performance member-return facts; those remain explicit consumer and source-owner responsibilities.
 
 ## Ownership And Boundaries
 
