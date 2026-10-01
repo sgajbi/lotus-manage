@@ -6,8 +6,14 @@ from threading import Barrier
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
+from pydantic import ValidationError
+
+import src.api.services.core_resolver_service as core_resolver_service
+from src.api.main import app
 
 from src.core.dpm_source_context import (
+    DpmCoreContextIncompleteError,
     DpmCoreExternalFXForwardCurveResponse,
     DpmCoreInstrumentEligibilityBulkResponse,
     DpmCoreMandateBindingResponse,
@@ -1117,7 +1123,10 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
     if path.endswith("/mandate-binding"):
         return httpx.Response(200, json=_mandate_binding_payload())
     if path.endswith("/targets"):
-        return httpx.Response(200, json=_model_portfolio_target_payload())
+        payload = _model_portfolio_target_payload()
+        payload["model_portfolio_id"] = path.split("/")[-2]
+        payload["as_of_date"] = json.loads(request.content)["as_of_date"]
+        return httpx.Response(200, json=payload)
     if path.endswith("/core-snapshot"):
         return httpx.Response(200, json=_core_snapshot_payload())
     if path.endswith("/eligibility-bulk"):
@@ -1297,7 +1306,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"include_inactive_restrictions":false' in seen[18][2]
     assert b'"include_inactive_preferences":false' in seen[19][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
-    assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
+    assert context.source_lineage.model_portfolio_id == "model_balanced_sgd"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
     assert context.transaction_cost_curve is not None
     assert context.transaction_cost_curve.supportability.state == "READY"
@@ -1628,6 +1637,150 @@ def test_core_resolver_fetches_model_portfolio_targets_from_dedicated_source_pro
         "EQ_US_AAPL",
         "FI_US_TREASURY_10Y",
     ]
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("model_portfolio_id", "UNREQUESTED_MODEL"),
+        ("model_portfolio_id", ""),
+        ("as_of_date", "2026-04-09"),
+    ],
+)
+def test_core_resolver_rejects_unrequested_model_target_identity(field: str, value: str):
+    payload = _model_portfolio_target_payload()
+    payload[field] = value
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
+        ),
+    )
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError, match="DPM_CORE_MODEL_TARGETS_IDENTITY_MISMATCH"
+    ):
+        client.resolve_model_portfolio_targets(
+            model_portfolio_id="MODEL_PB_SG_GLOBAL_BAL_DPM",
+            as_of_date=date(2026, 4, 10),
+            correlation_id="corr-targets-mismatch",
+        )
+
+
+@pytest.mark.parametrize("invalid_field", ["missing_identity", "changed_version"])
+def test_core_resolver_rejects_missing_identity_or_changed_model_product_version(
+    invalid_field: str,
+):
+    payload = _model_portfolio_target_payload()
+    if invalid_field == "missing_identity":
+        payload.pop("model_portfolio_id")
+    else:
+        payload["product_version"] = "v2"
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
+        ),
+    )
+    with pytest.raises(ValidationError):
+        client.resolve_model_portfolio_targets(
+            model_portfolio_id="MODEL_PB_SG_GLOBAL_BAL_DPM",
+            as_of_date=date(2026, 4, 10),
+            correlation_id="corr-targets-invalid-product",
+        )
+
+
+@pytest.mark.parametrize("invalid_product", ["mandate", "model"])
+def test_core_execution_context_stops_at_invalid_mandatory_product(invalid_product: str):
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if invalid_product == "mandate" and request.url.path.endswith("/mandate-binding"):
+            payload = _mandate_binding_payload()
+            payload["supportability"]["state"] = "INCOMPLETE"
+            payload["supportability"]["reason"] = "MANDATE_BINDING_INCOMPLETE"
+            return httpx.Response(200, json=payload)
+        if invalid_product == "model" and request.url.path.endswith("/targets"):
+            payload = _model_portfolio_target_payload()
+            payload["model_portfolio_id"] = "model_balanced_sgd"
+            payload["as_of_date"] = "2026-03-25"
+            payload["supportability"]["state"] = "INCOMPLETE"
+            payload["supportability"]["reason"] = "MODEL_TARGET_LIMIT_EXCEEDED"
+            return httpx.Response(200, json=payload)
+        return _composed_context_response_for(request)
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    with pytest.raises(DpmCoreContextIncompleteError):
+        client.resolve_execution_context(
+            stateful_input=_stateful_input(), correlation_id="corr-invalid-mandatory"
+        )
+    assert [path.rsplit("/", 1)[-1] for path in seen] == (
+        ["mandate-binding"] if invalid_product == "mandate" else ["mandate-binding", "targets"]
+    )
+
+
+@pytest.mark.parametrize("invalid_product", ["mandate", "model", "identity"])
+def test_stateful_http_rejects_invalid_mandatory_source_before_dependent_calls(
+    monkeypatch, invalid_product: str
+):
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if invalid_product == "mandate" and request.url.path.endswith("/mandate-binding"):
+            payload = _mandate_binding_payload()
+            payload["supportability"]["state"] = "INCOMPLETE"
+            payload["supportability"]["reason"] = "MANDATE_BINDING_INCOMPLETE"
+            return httpx.Response(200, json=payload)
+        if invalid_product in {"model", "identity"} and request.url.path.endswith("/targets"):
+            payload = _model_portfolio_target_payload()
+            payload["model_portfolio_id"] = (
+                "UNREQUESTED_MODEL" if invalid_product == "identity" else "model_balanced_sgd"
+            )
+            payload["as_of_date"] = "2026-03-25"
+            if invalid_product == "model":
+                payload["supportability"]["state"] = "INCOMPLETE"
+                payload["supportability"]["reason"] = "MODEL_TARGET_LIMIT_EXCEEDED"
+            return httpx.Response(200, json=payload)
+        return _composed_context_response_for(request)
+
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(core_resolver_service, "build_core_resolver_client", lambda: resolver)
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": {
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "as_of": "2026-03-25",
+                    "mandate_id": "mandate_balanced_discretionary",
+                    "model_portfolio_id": "model_balanced_sgd",
+                    "tenant_id": "tenant_001",
+                    "booking_center_code": "SG",
+                },
+            },
+            headers={
+                "Idempotency-Key": f"mandatory-source-{invalid_product}",
+                "X-Tenant-Id": "tenant_001",
+                "X-Correlation-Id": f"corr-mandatory-{invalid_product}",
+            },
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"] == "DPM_CORE_CONTEXT_INCOMPLETE"
+    assert response.headers["X-Correlation-Id"] == f"corr-mandatory-{invalid_product}"
+    assert [path.rsplit("/", 1)[-1] for path in seen] == (
+        ["mandate-binding"] if invalid_product == "mandate" else ["mandate-binding", "targets"]
+    )
 
 
 def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():

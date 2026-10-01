@@ -499,6 +499,10 @@ Operationally important truths:
    metadata, product/version or methodology version, request fingerprint, supportability, and
    required numeric measures before constructing authority context. Explicit source-supplied zero
    remains valid; omitted values are not converted to `USD`, `v1`, empty lists, or zero metrics.
+   Stateful Core composition also checks that returned model-target identity and business date
+   match the requested selectors. An unrelated model response is a 424 incomplete dependency,
+   not an alternative model simulation; mandatory mandate and model readiness is checked before
+   fetching dependent portfolio products.
 8. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.
