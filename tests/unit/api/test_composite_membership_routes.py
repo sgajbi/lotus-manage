@@ -67,6 +67,9 @@ def test_composite_membership_routes_enforce_identity_and_preserve_pinned_histor
             saved_definition = client.put(base, headers=_headers(), json=_definition_payload())
             assert saved_definition.status_code == 200
             assert saved_definition.json()["created_by"] == "pm-ops"
+            definition_replay = client.put(base, headers=_headers(), json=_definition_payload())
+            assert definition_replay.status_code == 200
+            assert definition_replay.json() == saved_definition.json()
             assert client.get(base, headers=_headers()).status_code == 200
             definitions = client.get("/api/v1/rebalance/composites/definitions", headers=_headers())
             assert definitions.status_code == 200
@@ -84,6 +87,9 @@ def test_composite_membership_routes_enforce_identity_and_preserve_pinned_histor
                 "PB_SG_GLOBAL_BAL_002",
             ]
             assert as_of.json()["content_hash"] == saved_revision.json()["content_hash"]
+            revision_replay = client.put(revision_url, headers=_headers(), json=_revision_payload())
+            assert revision_replay.status_code == 200
+            assert revision_replay.json() == saved_revision.json()
 
             correction = _revision_payload() | {
                 "correlation_id": "corr-membership-002",
@@ -141,5 +147,123 @@ def test_composite_membership_route_rejects_immutable_conflict_and_invalid_as_of
                 f"{revision_url}/as-of?as_of_date=2026-99-99", headers=_headers()
             )
             assert invalid_date.status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_composite_publication_cursor_and_receipt_are_tenant_fenced_and_fail_closed() -> None:
+    repository = InMemoryDpmCompositeRepository()
+    app.dependency_overrides[get_composite_membership_application_service] = lambda: (
+        DpmCompositeMembershipApplicationService(repository=repository)
+    )
+    base = "/api/v1/rebalance/composites/PB_GLOBAL_BALANCED_USD/definitions/2026.10"
+    publications = "/api/v1/rebalance/composites/publications"
+    try:
+        with TestClient(app) as client:
+            assert (
+                client.put(base, headers=_headers(), json=_definition_payload()).status_code == 200
+            )
+            revision = client.put(
+                f"{base}/membership/2026.10.1",
+                headers=_headers(),
+                json=_revision_payload(),
+            )
+            assert revision.status_code == 200
+            revision_replay = client.put(
+                f"{base}/membership/2026.10.1", headers=_headers(), json=_revision_payload()
+            )
+            assert revision_replay.status_code == 200
+            assert revision_replay.json() == revision.json()
+            first = client.get(f"{publications}?limit=1", headers=_headers())
+            assert first.status_code == 200
+            page = first.json()
+            assert page["high_watermark"] == page["next_sequence"] == 1
+            assert page["has_more"] is False
+            assert page["items"][0]["membership_content_hash"] == revision.json()["content_hash"]
+            assert page["items"][0]["decision_count"] == 2
+            assert page["items"][0]["completeness"] == "UNVERIFIED"
+            assert (
+                client.get(publications, headers=_headers(tenant="other-tenant")).json()["items"]
+                == []
+            )
+            assert (
+                client.get(f"{publications}/1", headers=_headers(tenant="other-tenant")).status_code
+                == 404
+            )
+            assert (
+                client.get(f"{publications}?after_sequence=2", headers=_headers()).status_code
+                == 409
+            )
+
+            correction = _revision_payload() | {
+                "correlation_id": "corr-membership-002",
+                "supersedes_membership_revision": "2026.10.1",
+                "affected_from": "2026-02-01",
+                "affected_to": "2026-02-28",
+            }
+            corrected = client.put(
+                f"{base}/membership/2026.10.2", headers=_headers(), json=correction
+            )
+            assert corrected.status_code == 200
+            page_one = client.get(f"{publications}?limit=1", headers=_headers()).json()
+            assert page_one["high_watermark"] == 2
+            assert page_one["next_sequence"] == 1
+            assert page_one["has_more"] is True
+            page_two = client.get(
+                f"{publications}?after_sequence={page_one['next_sequence']}&limit=1",
+                headers=_headers(),
+            ).json()
+            assert (
+                page_two["items"][0]["membership_content_hash"] == corrected.json()["content_hash"]
+            )
+            assert page_two["items"][0]["supersedes_membership_revision"] == "2026.10.1"
+            assert page_two["has_more"] is False
+
+            receipt_url = f"{publications}/1/receipts/lotus-performance"
+            receipt = {
+                "membership_content_hash": revision.json()["content_hash"],
+                "receipt_evidence_hash": "sha256:performance-retrieval-001",
+                "disposition": "RECEIVED",
+                "correlation_id": "corr-performance-retrieval-001",
+            }
+            consumer_headers = {
+                **_headers(role="DPM_COMPOSITE_CONSUMER"),
+                "X-Service-Identity": "lotus-performance",
+            }
+            assert client.put(receipt_url, headers=_headers(), json=receipt).status_code == 403
+            assert (
+                client.put(
+                    receipt_url,
+                    headers={**consumer_headers, "X-Service-Identity": "other-service"},
+                    json=receipt,
+                ).status_code
+                == 403
+            )
+            assert (
+                client.put(
+                    receipt_url,
+                    headers=consumer_headers,
+                    json=receipt | {"membership_content_hash": "sha256:changed"},
+                ).status_code
+                == 409
+            )
+            accepted = client.put(receipt_url, headers=consumer_headers, json=receipt)
+            replay = client.put(receipt_url, headers=consumer_headers, json=receipt)
+            assert accepted.status_code == replay.status_code == 200
+            assert accepted.json()["created"] is True
+            assert replay.json()["created"] is False
+            assert accepted.json()["receipt"] == replay.json()["receipt"]
+            assert (
+                client.put(
+                    receipt_url,
+                    headers=consumer_headers,
+                    json=receipt | {"receipt_evidence_hash": "sha256:changed-receipt"},
+                ).status_code
+                == 409
+            )
+            reconciliation = client.get(f"{publications}/1/reconciliation", headers=_headers())
+            assert reconciliation.status_code == 200
+            assert reconciliation.json()["consumer_posture"] == "RECEIVED"
+            assert reconciliation.json()["publication"]["completeness"] == "UNVERIFIED"
     finally:
         app.dependency_overrides.clear()

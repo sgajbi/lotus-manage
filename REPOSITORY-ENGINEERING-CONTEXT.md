@@ -28,8 +28,10 @@ This repository owns:
 2. management-side lifecycle, workflow review, and execution support,
 3. operational supportability, deterministic artifacts, lineage, idempotency, and policy-pack
    contracts.
-4. tenant-scoped composite definition and effective-dated eligibility revision source records;
-   `lotus-performance` remains the owner of member-return facts and composite calculation.
+4. tenant-scoped composite definition and effective-dated eligibility revision source records,
+   with atomic durable publication cursors and immutable retrieval receipts. Publication
+   completeness remains `UNVERIFIED`; `lotus-performance` owns member-return facts and composite
+   calculation. The caller-asserted identity headers require trusted ingress before production use.
 
 Advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are intentionally
 owned by `lotus-advise`.

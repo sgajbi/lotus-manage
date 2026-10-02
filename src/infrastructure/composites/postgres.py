@@ -12,6 +12,12 @@ from src.core.composite_membership import (
     DpmCompositeMembershipRevision,
 )
 from src.core.composite_repository import DpmCompositeConflictError, DpmCompositeRepository
+from src.core.composite_publication import (
+    DpmCompositeMembershipPublication,
+    DpmCompositePublicationPage,
+    DpmCompositePublicationReceipt,
+)
+from src.infrastructure.composites import publication as publication_sql
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -90,6 +96,9 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
     def save_membership_revision(self, *, revision: DpmCompositeMembershipRevision) -> None:
         key = (revision.tenant_id, revision.composite_id, revision.definition_version)
         with closing(self._connect()) as connection:
+            publication_sql.lock_tenant_publication_order(
+                connection=connection, tenant_id=revision.tenant_id
+            )
             definition = connection.execute(
                 """
                 SELECT 1 FROM dpm_composite_definitions
@@ -142,6 +151,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
             if persisted is None or persisted["content_hash"] != revision.content_hash:
                 connection.rollback()
                 raise DpmCompositeConflictError("COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT")
+            publication_sql.publish_revision(connection=connection, revision=revision)
             connection.commit()
 
     def get_membership_revision(
@@ -183,6 +193,41 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
                 (tenant_id, composite_id, definition_version, limit, offset),
             ).fetchall()
         return [_load_membership_revision(row) for row in rows]
+
+    def get_publication(
+        self, *, tenant_id: str, sequence: int
+    ) -> DpmCompositeMembershipPublication | None:
+        with closing(self._connect()) as connection:
+            return publication_sql.get_publication(
+                connection=connection, tenant_id=tenant_id, sequence=sequence
+            )
+
+    def list_publications(
+        self, *, tenant_id: str, after_sequence: int, limit: int
+    ) -> DpmCompositePublicationPage:
+        with closing(self._connect()) as connection:
+            return publication_sql.list_publications(
+                connection=connection,
+                tenant_id=tenant_id,
+                after_sequence=after_sequence,
+                limit=limit,
+            )
+
+    def save_receipt(self, *, receipt: DpmCompositePublicationReceipt) -> bool:
+        with closing(self._connect()) as connection:
+            created = publication_sql.save_receipt(connection=connection, receipt=receipt)
+            connection.commit()
+            return created
+
+    def list_receipts(
+        self, *, tenant_id: str, publication_sequence: int
+    ) -> list[DpmCompositePublicationReceipt]:
+        with closing(self._connect()) as connection:
+            return publication_sql.list_receipts(
+                connection=connection,
+                tenant_id=tenant_id,
+                publication_sequence=publication_sequence,
+            )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:

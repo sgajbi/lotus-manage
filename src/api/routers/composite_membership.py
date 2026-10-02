@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.api.dependencies import get_composite_membership_application_service
 from src.api.services.composite_membership_application import (
     DpmCompositeDefinitionCommand,
     DpmCompositeMembershipApplicationService,
     DpmCompositeMembershipRevisionCommand,
+    DpmCompositeReceiptCommand,
     DpmCompositeNotFoundError,
 )
 from src.core.composite_membership import (
@@ -22,6 +23,12 @@ from src.core.composite_membership import (
     DpmCompositeSourceAuthority,
 )
 from src.core.composite_repository import DpmCompositeConflictError
+from src.core.composite_publication import (
+    DpmCompositeMembershipPublication,
+    DpmCompositePublicationPage,
+    DpmCompositePublicationReceipt,
+    DpmCompositePublicationReconciliation,
+)
 
 router = APIRouter(
     prefix="/rebalance/composites",
@@ -81,6 +88,21 @@ class CompositeMembershipAsOfResponse(BaseModel):
     content_hash: str
 
 
+class CompositePublicationReceiptRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    membership_content_hash: str = Field(min_length=1)
+    receipt_evidence_hash: str = Field(min_length=1)
+    disposition: Literal["RECEIVED", "REJECTED"]
+    reason_code: str | None = Field(default=None, pattern=r"^[A-Z][A-Z0-9_]{0,63}$")
+    correlation_id: str = Field(min_length=1)
+
+
+class CompositePublicationReceiptResponse(BaseModel):
+    receipt: DpmCompositePublicationReceipt
+    created: bool
+
+
 def composite_trusted_identity_required(request: Request) -> CompositeTrustedIdentity:
     identity = CompositeTrustedIdentity(
         tenant_id=request.headers.get("X-Tenant-Id", "").strip(),
@@ -97,6 +119,18 @@ def _write_identity_required(
 ) -> CompositeTrustedIdentity:
     if identity.role not in {"DPM_COMPOSITE_ADMIN", "DPM_PORTFOLIO_MANAGER"}:
         raise _problem(status.HTTP_403_FORBIDDEN, "COMPOSITE_WRITE_ROLE_FORBIDDEN")
+    return identity
+
+
+def _publication_consumer_identity_required(
+    request: Request,
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+) -> CompositeTrustedIdentity:
+    if (
+        identity.role != "DPM_COMPOSITE_CONSUMER"
+        or request.headers.get("X-Service-Identity", "").strip() != "lotus-performance"
+    ):
+        raise _problem(status.HTTP_403_FORBIDDEN, "COMPOSITE_CONSUMER_ROLE_FORBIDDEN")
     return identity
 
 
@@ -285,6 +319,90 @@ def get_membership_as_of(
         raise _from_domain_error(exc) from exc
 
 
+@router.get(
+    "/publications",
+    response_model=DpmCompositePublicationPage,
+    summary="List committed composite membership publications by tenant cursor",
+)
+def list_publications(
+    after_sequence: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> DpmCompositePublicationPage:
+    try:
+        return service.list_publications(
+            tenant_id=identity.tenant_id, after_sequence=after_sequence, limit=limit
+        )
+    except DpmCompositeConflictError as exc:
+        raise _from_domain_error(exc) from exc
+
+
+@router.get(
+    "/publications/{sequence}",
+    response_model=DpmCompositeMembershipPublication,
+    summary="Read one pinned composite publication",
+)
+def get_publication(
+    sequence: int,
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> DpmCompositeMembershipPublication:
+    try:
+        return service.get_publication(tenant_id=identity.tenant_id, sequence=sequence)
+    except DpmCompositeNotFoundError as exc:
+        raise _from_domain_error(exc) from exc
+
+
+@router.get(
+    "/publications/{sequence}/reconciliation",
+    response_model=DpmCompositePublicationReconciliation,
+    summary="Inspect publication receipt without claiming fact materialization",
+)
+def get_publication_reconciliation(
+    sequence: int,
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> DpmCompositePublicationReconciliation:
+    try:
+        return service.publication_reconciliation(tenant_id=identity.tenant_id, sequence=sequence)
+    except DpmCompositeNotFoundError as exc:
+        raise _from_domain_error(exc) from exc
+
+
+@router.put(
+    "/publications/{sequence}/receipts/lotus-performance",
+    response_model=CompositePublicationReceiptResponse,
+    summary="Acknowledge retrieval of one immutable composite source publication",
+)
+def acknowledge_publication(
+    sequence: int,
+    request: CompositePublicationReceiptRequest,
+    identity: CompositeTrustedIdentity = Depends(_publication_consumer_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> CompositePublicationReceiptResponse:
+    try:
+        receipt, created = service.acknowledge_receipt(
+            command=DpmCompositeReceiptCommand(
+                tenant_id=identity.tenant_id,
+                publication_sequence=sequence,
+                consumer_id="lotus-performance",
+                **request.model_dump(),
+            )
+        )
+        return CompositePublicationReceiptResponse(receipt=receipt, created=created)
+    except (DpmCompositeConflictError, ValueError) as exc:
+        raise _from_domain_error(exc) from exc
+
+
 def _from_domain_error(exc: ValueError) -> HTTPException:
     code = str(exc)
     status_code = (
@@ -292,7 +410,7 @@ def _from_domain_error(exc: ValueError) -> HTTPException:
         if code.endswith("NOT_FOUND")
         else (
             status.HTTP_409_CONFLICT
-            if "CONFLICT" in code
+            if "CONFLICT" in code or "MISMATCH" in code or "CURSOR_AHEAD" in code
             else status.HTTP_422_UNPROCESSABLE_CONTENT
         )
     )

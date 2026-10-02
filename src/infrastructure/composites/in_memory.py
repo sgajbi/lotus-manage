@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timezone
 from threading import Lock
 from typing import TypeVar
 
@@ -11,6 +12,12 @@ from src.core.composite_membership import (
     DpmCompositeMembershipRevision,
 )
 from src.core.composite_repository import DpmCompositeConflictError, DpmCompositeRepository
+from src.core.composite_publication import (
+    DpmCompositeMembershipPublication,
+    DpmCompositePublicationPage,
+    DpmCompositePublicationReceipt,
+    publication_from_revision,
+)
 
 
 KeyT = TypeVar("KeyT")
@@ -24,6 +31,9 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         self._membership_revisions: dict[
             tuple[str, str, str, str], DpmCompositeMembershipRevision
         ] = {}
+        self._publications: dict[int, DpmCompositeMembershipPublication] = {}
+        self._receipts: dict[tuple[str, int, str], DpmCompositePublicationReceipt] = {}
+        self._last_sequence = 0
 
     def save_definition(self, *, definition: DpmCompositeDefinition) -> None:
         key = (definition.tenant_id, definition.composite_id, definition.definition_version)
@@ -75,12 +85,20 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 raise DpmCompositeConflictError(
                     "COMPOSITE_MEMBERSHIP_SUPERSEDED_REVISION_NOT_FOUND"
                 )
+            newly_created = revision_key not in self._membership_revisions
             _save_immutable(
                 values=self._membership_revisions,
                 key=revision_key,
                 value=revision,
                 conflict_code="COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT",
             )
+            if newly_created:
+                self._last_sequence += 1
+                self._publications[self._last_sequence] = publication_from_revision(
+                    revision=revision,
+                    sequence=self._last_sequence,
+                    published_at=datetime.now(timezone.utc),
+                )
 
     def get_membership_revision(
         self,
@@ -122,6 +140,75 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 reverse=True,
             )
             return deepcopy(revisions[offset : offset + limit])
+
+    def get_publication(
+        self, *, tenant_id: str, sequence: int
+    ) -> DpmCompositeMembershipPublication | None:
+        with self._lock:
+            publication = self._publications.get(sequence)
+            return (
+                deepcopy(publication)
+                if publication is not None and publication.tenant_id == tenant_id
+                else None
+            )
+
+    def list_publications(
+        self, *, tenant_id: str, after_sequence: int, limit: int
+    ) -> DpmCompositePublicationPage:
+        with self._lock:
+            available = [
+                publication
+                for sequence, publication in sorted(self._publications.items())
+                if publication.tenant_id == tenant_id
+            ]
+            high_watermark = available[-1].sequence if available else 0
+            if after_sequence > high_watermark:
+                raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_CURSOR_AHEAD")
+            next_items = [
+                publication for publication in available if publication.sequence > after_sequence
+            ]
+            items = next_items[:limit]
+            return DpmCompositePublicationPage(
+                items=deepcopy(items),
+                high_watermark=high_watermark,
+                next_sequence=items[-1].sequence if items else after_sequence,
+                has_more=len(next_items) > limit,
+            )
+
+    def save_receipt(self, *, receipt: DpmCompositePublicationReceipt) -> bool:
+        key = (receipt.tenant_id, receipt.publication_sequence, receipt.consumer_id)
+        with self._lock:
+            publication = self._publications.get(receipt.publication_sequence)
+            if publication is None or publication.tenant_id != receipt.tenant_id:
+                raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_NOT_FOUND")
+            if publication.membership_content_hash != receipt.membership_content_hash:
+                raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_HASH_MISMATCH")
+            existing = self._receipts.get(key)
+            if existing is not None:
+                if (
+                    existing.disposition != receipt.disposition
+                    or existing.reason_code != receipt.reason_code
+                    or existing.receipt_evidence_hash != receipt.receipt_evidence_hash
+                ):
+                    raise DpmCompositeConflictError("COMPOSITE_RECEIPT_IMMUTABLE_CONFLICT")
+                return False
+            self._receipts[key] = deepcopy(receipt)
+            return True
+
+    def list_receipts(
+        self, *, tenant_id: str, publication_sequence: int
+    ) -> list[DpmCompositePublicationReceipt]:
+        with self._lock:
+            return deepcopy(
+                sorted(
+                    (
+                        receipt
+                        for (stored_tenant, sequence, _), receipt in self._receipts.items()
+                        if stored_tenant == tenant_id and sequence == publication_sequence
+                    ),
+                    key=lambda receipt: receipt.consumer_id,
+                )
+            )
 
 
 def _save_immutable(

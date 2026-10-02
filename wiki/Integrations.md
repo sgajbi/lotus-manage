@@ -54,9 +54,12 @@ support, and [Security and Governance](Security-and-Governance) for authority bo
   durable management-review action and its outcome history
 - `lotus-performance`
   owner of immutable composite member-return facts and composite calculation. Manage supplies only
-  pinned composite definitions and effective-dated eligibility decisions through the authenticated
-  composite source product; it does not calculate returns or infer historical members from the
-  current portfolio book.
+  pinned composite definitions and effective-dated eligibility decisions through the composite
+  source product. Atomic publication cursors and immutable hash-matched retrieval receipts let
+  Performance reconcile consumed revisions, but `UNVERIFIED` completeness and retrieval receipts
+  do not certify a full member universe, member-return materialization, or calculated returns.
+  Identity-header admission requires trusted ingress; Manage does not infer historical members
+  from the current portfolio book.
 
 ## Boundary rules
 

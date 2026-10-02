@@ -36,3 +36,19 @@ def is_migration_ddl(sql: str) -> bool:
     """
 
     return any(keyword in sql for keyword in MIGRATION_DDL_KEYWORDS)
+
+
+def is_composite_publication_backfill(sql: str) -> bool:
+    """Acknowledge only migration 0036's backfill in unrelated table fakes.
+
+    The migration's actual row and replay semantics are covered by a real
+    PostgreSQL upgrade test; a broad INSERT exemption would hide product SQL.
+    """
+
+    normalized = " ".join(sql.split())
+    return (
+        "INSERT INTO dpm_composite_membership_publications (" in normalized
+        and "FROM dpm_composite_membership_revisions" in normalized
+        and "ON CONFLICT (tenant_id, composite_id, definition_version, membership_revision) DO NOTHING"
+        in normalized
+    )
