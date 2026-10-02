@@ -184,7 +184,9 @@ def test_repository_fences_tenants_replays_and_membership_revision_lineage() -> 
         )
         is None
     )
-    assert repository.list_definitions(tenant_id="tenant-sg", limit=1, offset=0) == [definition]
+    definition_page = repository.list_definitions(tenant_id="tenant-sg", limit=1, offset=0)
+    assert definition_page.items == [definition]
+    assert definition_page.count == 1
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_DEFINITION_IMMUTABLE_CONFLICT"):
         repository.save_definition(definition=_definition(display_name="Changed composite"))
 
@@ -200,13 +202,15 @@ def test_repository_fences_tenants_replays_and_membership_revision_lineage() -> 
         )
         is None
     )
-    assert repository.list_membership_revisions(
+    first_page = repository.list_membership_revisions(
         tenant_id="tenant-sg",
         composite_id=revision.composite_id,
         definition_version=revision.definition_version,
         limit=1,
         offset=0,
-    ) == [revision]
+    )
+    assert first_page.items == [revision]
+    assert first_page.count == 1
     with pytest.raises(
         DpmCompositeConflictError, match="COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT"
     ):
@@ -221,13 +225,25 @@ def test_repository_fences_tenants_replays_and_membership_revision_lineage() -> 
         affected_to="2026-02-28",
     )
     repository.save_membership_revision(revision=corrected)
-    assert repository.list_membership_revisions(
+    history_page = repository.list_membership_revisions(
         tenant_id="tenant-sg",
         composite_id=revision.composite_id,
         definition_version=revision.definition_version,
         limit=10,
         offset=0,
-    ) == [corrected, revision]
+    )
+    assert history_page.items == [corrected, revision]
+    assert history_page.count == 2
+    assert (
+        repository.list_membership_revisions(
+            tenant_id="tenant-sg",
+            composite_id=revision.composite_id,
+            definition_version=revision.definition_version,
+            limit=1,
+            offset=2,
+        ).count
+        == 2
+    )
 
 
 def test_repository_rejects_membership_without_definition_or_known_superseded_revision() -> None:

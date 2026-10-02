@@ -10,9 +10,12 @@ import uuid
 
 import pytest
 import psycopg
+from fastapi.testclient import TestClient
 from psycopg.rows import dict_row
 
 import src.infrastructure.postgres_migrations as migrations_module
+from src.api.dependencies import get_composite_membership_application_service
+from src.api.main import app
 from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
     DpmCompositeMembershipRevisionCommand,
@@ -125,7 +128,9 @@ def test_postgres_preserves_tenant_fence_immutable_replay_and_restart_read() -> 
         )
         is None
     )
-    assert restarted.list_definitions(tenant_id=tenant_id, limit=10, offset=0) == [definition]
+    definition_page = restarted.list_definitions(tenant_id=tenant_id, limit=10, offset=0)
+    assert definition_page.items == [definition]
+    assert definition_page.count == 1
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_DEFINITION_IMMUTABLE_CONFLICT"):
         restarted.save_definition(
             definition=_definition(
@@ -198,13 +203,147 @@ def test_postgres_requires_existing_definition_and_correction_parent() -> None:
 
     repository.save_membership_revision(revision=revision)
     repository.save_membership_revision(revision=correction)
-    assert repository.list_membership_revisions(
+    history_page = repository.list_membership_revisions(
         tenant_id=tenant_id,
         composite_id=composite_id,
         definition_version="2026.10",
         limit=10,
         offset=0,
-    ) == [correction, revision]
+    )
+    assert history_page.items == [correction, revision]
+    assert history_page.count == 2
+
+
+def test_postgres_page_counts_include_rows_beyond_offset_without_cross_tenant_leakage() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-count-{suffix}"
+    other_tenant = f"tenant-other-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    repository = PostgresDpmCompositeRepository(dsn=postgres_dsn_or_skip(_PROOF))
+    for index in range(3):
+        repository.save_definition(
+            definition=_definition(tenant_id=tenant_id, composite_id=f"{composite_id}_{index}")
+        )
+    repository.save_definition(
+        definition=_definition(tenant_id=other_tenant, composite_id=composite_id)
+    )
+    definition_page = repository.list_definitions(tenant_id=tenant_id, limit=1, offset=1)
+    assert len(definition_page.items) == 1
+    assert definition_page.count == 3
+    assert repository.list_definitions(tenant_id=tenant_id, limit=1, offset=3).count == 3
+    assert repository.list_definitions(tenant_id=other_tenant, limit=1, offset=0).count == 1
+
+    scoped_composite = f"{composite_id}_0"
+    for index in range(3):
+        repository.save_membership_revision(
+            revision=_revision(
+                tenant_id=tenant_id,
+                composite_id=scoped_composite,
+                revision=f"2026.10.{index + 1}",
+            )
+        )
+    repository.save_membership_revision(
+        revision=_revision(
+            tenant_id=other_tenant,
+            composite_id=composite_id,
+            revision="2026.10.1",
+        )
+    )
+    history_page = repository.list_membership_revisions(
+        tenant_id=tenant_id,
+        composite_id=scoped_composite,
+        definition_version="2026.10",
+        limit=1,
+        offset=1,
+    )
+    assert len(history_page.items) == 1
+    assert history_page.count == 3
+    assert (
+        repository.list_membership_revisions(
+            tenant_id=tenant_id,
+            composite_id=scoped_composite,
+            definition_version="2026.10",
+            limit=1,
+            offset=3,
+        ).count
+        == 3
+    )
+    assert (
+        repository.list_membership_revisions(
+            tenant_id=other_tenant,
+            composite_id=scoped_composite,
+            definition_version="2026.10",
+            limit=1,
+            offset=0,
+        ).count
+        == 0
+    )
+
+
+def test_registered_http_page_reports_real_postgres_total_count() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-http-count-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    repository = PostgresDpmCompositeRepository(dsn=postgres_dsn_or_skip(_PROOF))
+    app.dependency_overrides[get_composite_membership_application_service] = lambda: (
+        DpmCompositeMembershipApplicationService(repository=repository)
+    )
+    base = f"/api/v1/rebalance/composites/{composite_id}/definitions/2026.10"
+    headers = {"X-Tenant-Id": tenant_id, "X-Actor-Id": "pm-ops", "X-Role": "DPM_COMPOSITE_ADMIN"}
+    try:
+        with TestClient(app) as client:
+            definition = _definition(tenant_id=tenant_id, composite_id=composite_id)
+            definition_request = {
+                "display_name": definition.display_name,
+                "strategy_code": definition.strategy_code,
+                "reporting_currency": definition.reporting_currency,
+                "inception_date": definition.inception_date,
+                "eligibility_policy_version": definition.eligibility_policy_version,
+                "source_authority": definition.source_authority.model_dump(mode="json"),
+                "correlation_id": definition.correlation_id,
+            }
+            assert client.put(base, headers=headers, json=definition_request).status_code == 200
+            second_base = f"/api/v1/rebalance/composites/{composite_id}_SECOND/definitions/2026.10"
+            assert (
+                client.put(second_base, headers=headers, json=definition_request).status_code == 200
+            )
+            definitions = client.get(
+                "/api/v1/rebalance/composites/definitions?limit=1&offset=1",
+                headers=headers,
+            )
+            assert definitions.status_code == 200
+            assert len(definitions.json()["items"]) == 1
+            assert definitions.json()["count"] == 2
+            for index in range(2):
+                revision = _revision(
+                    tenant_id=tenant_id,
+                    composite_id=composite_id,
+                    revision=f"2026.10.{index + 1}",
+                )
+                response = client.put(
+                    f"{base}/membership/{revision.membership_revision}",
+                    headers=headers,
+                    json={
+                        "policy_version": revision.policy_version,
+                        "source_cut_id": revision.source_cut_id,
+                        "decisions": [item.model_dump(mode="json") for item in revision.decisions],
+                        "correlation_id": revision.correlation_id,
+                    },
+                )
+                assert response.status_code == 200
+            page = client.get(f"{base}/membership?limit=1&offset=1", headers=headers)
+            assert page.status_code == 200
+            assert len(page.json()["items"]) == 1
+            assert page.json()["count"] == 2
+            empty_page = client.get(f"{base}/membership?limit=1&offset=2", headers=headers)
+            assert empty_page.json()["items"] == []
+            assert empty_page.json()["count"] == 2
+            foreign_page = client.get(
+                f"{base}/membership?limit=1", headers={**headers, "X-Tenant-Id": "foreign"}
+            )
+            assert foreign_page.json()["count"] == 0
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_postgres_publication_cursor_receipt_and_restart() -> None:

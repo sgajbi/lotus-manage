@@ -79,6 +79,10 @@ current portfolio-book membership for historical eligibility.
 - `GET .../membership/{membership_revision}/as-of?as_of_date=YYYY-MM-DD` returns only the decisions
   effective on that date from the explicitly pinned revision, retaining exclusions and terminated
   periods for historical consumers.
+- Definition and membership-revision list `count` values are total records in the admitted scope,
+  evaluated in the same read snapshot as the bounded page. Offset pages are not stable across
+  concurrent writes; use the publication cursor/high watermark for ordered handoff. A count does
+  not assert that every eligible portfolio in the upstream universe has been decided.
 - `GET /api/v1/rebalance/composites/publications?after_sequence=N&limit=K` returns bounded,
   ordered committed-revision metadata with a tenant-scoped high watermark and next cursor.
   `GET .../publications/{sequence}` reads one pinned publication; each provides the immutable

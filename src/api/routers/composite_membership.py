@@ -66,14 +66,16 @@ class CompositeMembershipRevisionRequest(BaseModel):
 
 class CompositeDefinitionPage(BaseModel):
     items: list[DpmCompositeDefinition]
-    count: int
+    count: int = Field(
+        ge=0, description="Total tenant-scoped definitions at this page's read snapshot."
+    )
     limit: int
     offset: int
 
 
 class CompositeMembershipRevisionPage(BaseModel):
     items: list[DpmCompositeMembershipRevision]
-    count: int
+    count: int = Field(ge=0, description="Total scoped revisions at this page's read snapshot.")
     limit: int
     offset: int
 
@@ -173,8 +175,8 @@ def list_definitions(
         get_composite_membership_application_service
     ),
 ) -> CompositeDefinitionPage:
-    items = service.list_definitions(tenant_id=identity.tenant_id, limit=limit, offset=offset)
-    return CompositeDefinitionPage(items=items, count=len(items), limit=limit, offset=offset)
+    page = service.list_definitions(tenant_id=identity.tenant_id, limit=limit, offset=offset)
+    return CompositeDefinitionPage(items=page.items, count=page.count, limit=limit, offset=offset)
 
 
 @router.get(
@@ -242,7 +244,7 @@ def list_membership_revisions(
         get_composite_membership_application_service
     ),
 ) -> CompositeMembershipRevisionPage:
-    items = service.list_membership_revisions(
+    page = service.list_membership_revisions(
         tenant_id=identity.tenant_id,
         composite_id=composite_id,
         definition_version=definition_version,
@@ -250,7 +252,7 @@ def list_membership_revisions(
         offset=offset,
     )
     return CompositeMembershipRevisionPage(
-        items=items, count=len(items), limit=limit, offset=offset
+        items=page.items, count=page.count, limit=limit, offset=offset
     )
 
 

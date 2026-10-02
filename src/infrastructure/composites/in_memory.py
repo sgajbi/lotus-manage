@@ -11,7 +11,11 @@ from src.core.composite_membership import (
     DpmCompositeDefinition,
     DpmCompositeMembershipRevision,
 )
-from src.core.composite_repository import DpmCompositeConflictError, DpmCompositeRepository
+from src.core.composite_repository import (
+    DpmCompositeConflictError,
+    DpmCompositeRepository,
+    DpmCompositeResultPage,
+)
 from src.core.composite_publication import (
     DpmCompositeMembershipPublication,
     DpmCompositePublicationPage,
@@ -54,7 +58,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
 
     def list_definitions(
         self, *, tenant_id: str, limit: int, offset: int
-    ) -> list[DpmCompositeDefinition]:
+    ) -> DpmCompositeResultPage[DpmCompositeDefinition]:
         with self._lock:
             definitions = sorted(
                 (
@@ -69,7 +73,9 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 ),
                 reverse=True,
             )
-            return deepcopy(definitions[offset : offset + limit])
+            return DpmCompositeResultPage(
+                items=deepcopy(definitions[offset : offset + limit]), count=len(definitions)
+            )
 
     def save_membership_revision(self, *, revision: DpmCompositeMembershipRevision) -> None:
         definition_key = (revision.tenant_id, revision.composite_id, revision.definition_version)
@@ -122,7 +128,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         definition_version: str,
         limit: int,
         offset: int,
-    ) -> list[DpmCompositeMembershipRevision]:
+    ) -> DpmCompositeResultPage[DpmCompositeMembershipRevision]:
         with self._lock:
             revisions = sorted(
                 (
@@ -139,7 +145,9 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 key=lambda revision: (revision.decided_at, revision.membership_revision),
                 reverse=True,
             )
-            return deepcopy(revisions[offset : offset + limit])
+            return DpmCompositeResultPage(
+                items=deepcopy(revisions[offset : offset + limit]), count=len(revisions)
+            )
 
     def get_publication(
         self, *, tenant_id: str, sequence: int

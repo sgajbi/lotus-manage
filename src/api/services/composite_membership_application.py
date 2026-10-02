@@ -12,7 +12,11 @@ from src.core.composite_membership import (
     DpmCompositeMembershipRevision,
     DpmCompositeSourceAuthority,
 )
-from src.core.composite_repository import DpmCompositeConflictError, DpmCompositeRepository
+from src.core.composite_repository import (
+    DpmCompositeConflictError,
+    DpmCompositeRepository,
+    DpmCompositeResultPage,
+)
 from src.core.composite_publication import (
     DpmCompositeMembershipPublication,
     DpmCompositePublicationPage,
@@ -119,7 +123,7 @@ class DpmCompositeMembershipApplicationService:
 
     def list_definitions(
         self, *, tenant_id: str, limit: int, offset: int
-    ) -> list[DpmCompositeDefinition]:
+    ) -> DpmCompositeResultPage[DpmCompositeDefinition]:
         return self.repository.list_definitions(tenant_id=tenant_id, limit=limit, offset=offset)
 
     def save_membership_revision(
@@ -184,7 +188,7 @@ class DpmCompositeMembershipApplicationService:
         definition_version: str,
         limit: int,
         offset: int,
-    ) -> list[DpmCompositeMembershipRevision]:
+    ) -> DpmCompositeResultPage[DpmCompositeMembershipRevision]:
         return self.repository.list_membership_revisions(
             tenant_id=tenant_id,
             composite_id=composite_id,

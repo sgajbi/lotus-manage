@@ -11,7 +11,11 @@ from src.core.composite_membership import (
     DpmCompositeDefinition,
     DpmCompositeMembershipRevision,
 )
-from src.core.composite_repository import DpmCompositeConflictError, DpmCompositeRepository
+from src.core.composite_repository import (
+    DpmCompositeConflictError,
+    DpmCompositeRepository,
+    DpmCompositeResultPage,
+)
 from src.core.composite_publication import (
     DpmCompositeMembershipPublication,
     DpmCompositePublicationPage,
@@ -80,8 +84,13 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
 
     def list_definitions(
         self, *, tenant_id: str, limit: int, offset: int
-    ) -> list[DpmCompositeDefinition]:
+    ) -> DpmCompositeResultPage[DpmCompositeDefinition]:
         with closing(self._connect()) as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            count = connection.execute(
+                "SELECT COUNT(*) AS count FROM dpm_composite_definitions WHERE tenant_id = %s",
+                (tenant_id,),
+            ).fetchone()["count"]
             rows = connection.execute(
                 """
                 SELECT payload_json FROM dpm_composite_definitions
@@ -91,7 +100,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
                 """,
                 (tenant_id, limit, offset),
             ).fetchall()
-        return [_load_definition(row) for row in rows]
+        return DpmCompositeResultPage(items=[_load_definition(row) for row in rows], count=count)
 
     def save_membership_revision(self, *, revision: DpmCompositeMembershipRevision) -> None:
         key = (revision.tenant_id, revision.composite_id, revision.definition_version)
@@ -181,8 +190,16 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         definition_version: str,
         limit: int,
         offset: int,
-    ) -> list[DpmCompositeMembershipRevision]:
+    ) -> DpmCompositeResultPage[DpmCompositeMembershipRevision]:
         with closing(self._connect()) as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            count = connection.execute(
+                """
+                SELECT COUNT(*) AS count FROM dpm_composite_membership_revisions
+                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
+                """,
+                (tenant_id, composite_id, definition_version),
+            ).fetchone()["count"]
             rows = connection.execute(
                 """
                 SELECT payload_json FROM dpm_composite_membership_revisions
@@ -192,7 +209,9 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
                 """,
                 (tenant_id, composite_id, definition_version, limit, offset),
             ).fetchall()
-        return [_load_membership_revision(row) for row in rows]
+        return DpmCompositeResultPage(
+            items=[_load_membership_revision(row) for row in rows], count=count
+        )
 
     def get_publication(
         self, *, tenant_id: str, sequence: int

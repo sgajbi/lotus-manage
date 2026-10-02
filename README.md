@@ -39,6 +39,10 @@ a trusted ingress; they are not standalone production authentication. The API pr
 historical revisions and correction impact windows. It does not calculate composite returns, infer
 eligibility from current book membership, or publish Performance member-return facts; those remain
 explicit consumer and source-owner responsibilities.
+Definition and membership-revision list `count` values are total tenant/scoped record counts from
+the same read snapshot as their bounded `items`, not page lengths. Offset pages can shift if new
+revisions arrive between requests; consumers needing an ordered handoff should use the publication
+cursor and its high watermark. Neither count nor watermark certifies source-universe completeness.
 Migration `0036` installs lock-before-insert and publication-after-insert triggers before its
 backfill, so a previous app replica writing during the migrate-before-traffic-switch window
 cannot leave a revision unpublished or invert the lock order against a new replica.
