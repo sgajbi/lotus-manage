@@ -179,6 +179,20 @@ def test_authority_context_preserves_fail_closed_risk_unavailable_posture() -> N
     assert authority_context.risk_context is None
 
 
+def test_authority_context_preserves_client_restriction_requirement() -> None:
+    authority_context = authority_context_for_method(
+        request=_request(),
+        method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
+        result=_trade_result(),
+        authority_context=ConstructionAuthorityContext(client_restriction_required=True),
+        risk_authority_client=None,
+        correlation_id="corr-restriction",
+        as_of_date=date(2026, 6, 1),
+    )
+
+    assert authority_context.client_restriction_required is True
+
+
 def test_risk_context_for_method_preserves_fail_closed_unavailable_posture() -> None:
     context = risk_context_for_method(
         method=ConstructionMethod.RISK_AWARE,

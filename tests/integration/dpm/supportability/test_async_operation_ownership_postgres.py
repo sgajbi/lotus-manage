@@ -347,13 +347,14 @@ def test_migration_from_0032_quarantines_legacy_operations(
         admin.commit()
         admin.execute(f'SET search_path TO "{schema}"')
         all_migrations = postgres_migrations._load_migrations(namespace="dpm")
-        versions = [migration.version for migration in all_migrations]
-        assert versions.index("0033") < versions.index("0034")
-        migration_0033_index = versions.index("0033")
+        assert any(migration.version == "0033" for migration in all_migrations)
+        pre_0033_migrations = [
+            migration for migration in all_migrations if migration.version < "0033"
+        ]
         monkeypatch.setattr(
             postgres_migrations,
             "_load_migrations",
-            lambda *, namespace: all_migrations[:migration_0033_index],
+            lambda *, namespace: pre_0033_migrations,
         )
         postgres_migrations.apply_postgres_migrations(connection=admin, namespace="dpm")
         operation_ids = {

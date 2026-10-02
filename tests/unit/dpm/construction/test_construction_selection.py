@@ -12,7 +12,10 @@ from src.core.construction.models import (
     ConstructionComparisonMetrics,
     ConstructionAlternativeSet,
 )
-from src.core.construction.repository import ConstructionAlternativeNotFoundError
+from src.core.construction.repository import (
+    ConstructionAlternativeBlockedError,
+    ConstructionAlternativeNotFoundError,
+)
 from src.core.construction.vocabulary import ConstructionMethod, ConstructionMethodStatus
 
 
@@ -78,6 +81,27 @@ def test_build_construction_selection_rejects_unknown_alternative() -> None:
             selection_id="casel_test_001",
             alternative_set=_alternative_set(),
             alternative_id="alt_missing",
+            actor_id="pm_1",
+            reason_code="PM_SELECTED_HEURISTIC",
+            comment=None,
+            correlation_id=None,
+        )
+
+
+def test_build_construction_selection_rejects_blocked_alternative() -> None:
+    alternative_set = _alternative_set()
+    alternative_set.alternatives[0] = alternative_set.alternatives[0].model_copy(
+        update={"method_status": ConstructionMethodStatus.BLOCKED}
+    )
+
+    with pytest.raises(
+        ConstructionAlternativeBlockedError,
+        match="CONSTRUCTION_ALTERNATIVE_BLOCKED",
+    ):
+        build_construction_selection(
+            selection_id="casel_test_001",
+            alternative_set=alternative_set,
+            alternative_id="alt_heuristic_explainable",
             actor_id="pm_1",
             reason_code="PM_SELECTED_HEURISTIC",
             comment=None,

@@ -17,6 +17,10 @@ class ConstructionAlternativeNotFoundError(Exception):
     """Raised when a selection references an unknown alternative."""
 
 
+class ConstructionAlternativeBlockedError(Exception):
+    """Raised when a selection references a policy-blocked alternative."""
+
+
 class ConstructionIdempotencyConflictError(Exception):
     """Raised when an idempotency key is reused for a different request hash."""
 

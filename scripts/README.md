@@ -13,11 +13,16 @@ runtime validation, and release evidence.
 | `docker_image_evidence.py` | Writes Docker release manifest, image inspect, SBOM/scan/signature status, and provenance summary evidence. | `make docker-image-evidence` |
 | `postgres_migrate.py` | Migration smoke/apply helper. | `make migration-smoke` or `make migration-apply` |
 | `quarantined_tenant_inventory.py` | Read-only, bounded inventory of every governed NULL-tenant quarantine dataset. | `make quarantine-inventory` |
+| `measure_wave_simulation_workload.py` | Runs the issue #715 real-PostgreSQL synthetic wave workload and emits a declared local operating envelope; it does not certify production capacity. | `python scripts/measure_wave_simulation_workload.py --dsn <postgres-dsn> --items 100 --concurrency 4 --interrupt-count 4` |
 | `Start-CanonicalManage.ps1` | Canonical local Manage service startup helper. | `make run-canonical` |
 
 Prefer the Make target that wraps a script because CI uses those targets as the stable contract.
 When changing a script, update the Make target, README/docs/runbook references, and focused tests
 that prove its expected output or failure mode.
+
+Cross-repository validators resolve `lotus-platform` from `LOTUS_WORKSPACE_ROOT` first, then from
+canonical sibling and `<workspace-root>/_worktrees/<worktree>` layouts. Set the environment variable
+on non-standard layouts; no script requires a machine-specific absolute path.
 
 `make clean` removes untracked generated `output/` evidence and preserves Git-tracked evidence
 files. Preserve any issue, PR, or audit evidence by committing the authored source or copying it to

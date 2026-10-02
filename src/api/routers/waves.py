@@ -46,6 +46,9 @@ from src.api.routers.wave_source_check_routes import (
 from src.api.routers.wave_simulation_routes import (
     router as simulation_router,
 )
+from src.api.routers.wave_simulation_operation_routes import (
+    router as simulation_operation_router,
+)
 from src.api.routers.wave_selection_routes import (
     router as selection_router,
 )
@@ -82,6 +85,7 @@ register_wave_read_routes(router)
 
 router.include_router(source_check_router)
 router.include_router(simulation_router)
+router.include_router(simulation_operation_router)
 router.include_router(selection_router)
 router.include_router(workflow_router)
 router.include_router(wave_read_support_router)

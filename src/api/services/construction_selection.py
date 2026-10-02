@@ -4,7 +4,11 @@ from src.core.construction.models import (
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
 )
-from src.core.construction.repository import ConstructionAlternativeNotFoundError
+from src.core.construction.repository import (
+    ConstructionAlternativeBlockedError,
+    ConstructionAlternativeNotFoundError,
+)
+from src.core.construction.vocabulary import ConstructionMethodStatus
 
 
 def build_construction_selection(
@@ -17,8 +21,18 @@ def build_construction_selection(
     correlation_id: str | None,
     selection_id: str | None = None,
 ) -> ConstructionAlternativeSelection:
-    if alternative_id not in construction_alternative_ids(alternative_set=alternative_set):
+    selected = next(
+        (
+            alternative
+            for alternative in alternative_set.alternatives
+            if alternative.alternative_id == alternative_id
+        ),
+        None,
+    )
+    if selected is None:
         raise ConstructionAlternativeNotFoundError("CONSTRUCTION_ALTERNATIVE_NOT_FOUND")
+    if selected.method_status == ConstructionMethodStatus.BLOCKED:
+        raise ConstructionAlternativeBlockedError("CONSTRUCTION_ALTERNATIVE_BLOCKED")
     return ConstructionAlternativeSelection(
         selection_id=selection_id or f"casel_{uuid.uuid4().hex[:12]}",
         tenant_id=alternative_set.tenant_id,

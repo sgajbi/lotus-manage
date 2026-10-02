@@ -6,8 +6,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from src.api.services import wave_service
-from src.core.waves import DpmRebalanceWave
 from src.core.common.identity_examples import PROOF_PACK_ID_EXAMPLE
+from src.core.waves import DpmRebalanceWave
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
@@ -15,6 +15,7 @@ from src.core.waves.models import (
     DpmWaveExternalExecutionBoundaryEvidence,
     DpmWaveHandoffRef,
 )
+from src.core.waves.simulation_operations import WaveSimulationOperationStatus
 
 
 class DpmWaveSupportabilityIssue(BaseModel):
@@ -88,6 +89,63 @@ class DpmWaveResponse(BaseModel):
     )
 
 
+class DpmWaveSimulationOperationItemResponse(BaseModel):
+    wave_item_id: str
+    portfolio_id: str
+    status: str
+    attempt_count: int
+    input_hash: str
+    source_identity_hash: str
+    retryable: bool
+    error_code: str | None = None
+    error_message: str | None = None
+    item_state: str | None = None
+    alternative_set_id: str | None = None
+
+
+class DpmWaveOperationProblemDetail(BaseModel):
+    code: str = Field(description="Stable machine-readable wave-operation failure code.")
+    message: str = Field(description="Product-safe explanation of the failed operation.")
+
+
+class DpmWaveOperationProblemResponse(BaseModel):
+    detail: DpmWaveOperationProblemDetail
+
+
+class DpmWaveSimulationOperationResponse(BaseModel):
+    operation_id: str
+    wave_id: str
+    correlation_id: str
+    status: WaveSimulationOperationStatus
+    request_hash: str
+    source_identity_hash: str
+    admitted_wave_version: int
+    max_concurrency: int
+    max_attempts: int
+    counts: dict[str, int]
+    cancel_reason_code: str | None = None
+    created_at: datetime
+    updated_at: datetime
+    idempotent_replay: bool = False
+
+
+class DpmWaveSimulationOperationResultsResponse(BaseModel):
+    operation: DpmWaveSimulationOperationResponse
+    items: list[DpmWaveSimulationOperationItemResponse]
+    limit: int
+    offset: int
+    returned_count: int
+    total_count: int
+    next_offset: int | None = None
+
+
+class DpmWaveSimulationWorkResponse(BaseModel):
+    operation: DpmWaveSimulationOperationResponse
+    claimed_count: int
+    completed_count: int
+    failed_count: int
+
+
 class DpmWaveSearchItem(BaseModel):
     wave_id: str = Field(description="Wave identifier.", examples=["dwv_001"])
     wave_state: str = Field(description="Current wave state.", examples=["HANDOFF_READY"])
@@ -140,7 +198,7 @@ class DpmWaveDetailResponse(BaseModel):
     supportability: DpmWaveSupportabilityResponse = Field(
         description="Latest product-safe supportability derived from persisted item states."
     )
-    proof_pack_posture: "DpmWaveProofPackPostureResponse" = Field(
+    proof_pack_posture: DpmWaveProofPackPostureResponse = Field(
         description="Wave proof-pack and internal operations handoff posture."
     )
 

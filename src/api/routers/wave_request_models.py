@@ -320,6 +320,56 @@ class DpmWaveSimulationRequest(BaseModel):
     )
 
 
+class DpmWaveSimulationOperationRequest(DpmWaveSimulationRequest):
+    max_concurrency: int = Field(
+        default=4,
+        ge=1,
+        le=64,
+        description="Maximum active item leases across every worker for this operation.",
+    )
+    max_attempts: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum financial-work claims per item before recovery exhaustion.",
+    )
+
+
+class DpmWaveSimulationWorkRequest(BaseModel):
+    worker_id: str = Field(
+        min_length=1,
+        description="Stable worker-instance identity retained with each fenced claim.",
+        examples=["manage-wave-worker-01"],
+    )
+    max_items: int = Field(
+        default=1,
+        ge=1,
+        le=32,
+        description="Maximum items this worker call may claim within the operation budget.",
+    )
+    lease_seconds: int = Field(
+        default=300,
+        ge=5,
+        le=3600,
+        description="Claim lease duration; expired ownership is recoverable by another worker.",
+    )
+
+
+class DpmWaveSimulationRetryRequest(BaseModel):
+    wave_item_ids: list[str] | None = Field(
+        default=None,
+        description="Optional failed-item subset; null retries every eligible failure.",
+    )
+
+
+class DpmWaveSimulationCancelRequest(BaseModel):
+    reason_code: str = Field(
+        min_length=1,
+        description="Bounded operator reason retained with the cancellation request.",
+        examples=["OPERATOR_CANCELLED"],
+    )
+
+
 class DpmWaveSelectionRequest(BaseModel):
     alternative_id: str = Field(
         description="Construction alternative id selected for the wave item.",

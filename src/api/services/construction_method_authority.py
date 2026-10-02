@@ -101,16 +101,13 @@ def authority_context_for_method(
         as_of_date=as_of_date,
     )
 
-    return ConstructionAuthorityContext(
-        risk_context=risk_context,
-        performance_context=authority_context.performance_context,
-        transaction_cost_context=authority_context.transaction_cost_context,
-        liquidity_context=liquidity_context,
-        currency_overlay_context=currency_context,
-        execution_acknowledgement_context=authority_context.execution_acknowledgement_context,
-        regime_stress_context=regime_context,
-        client_restriction_context=authority_context.client_restriction_context,
-        sustainability_preference_context=authority_context.sustainability_preference_context,
+    return authority_context.model_copy(
+        update={
+            "risk_context": risk_context,
+            "liquidity_context": liquidity_context,
+            "currency_overlay_context": currency_context,
+            "regime_stress_context": regime_context,
+        }
     )
 
 

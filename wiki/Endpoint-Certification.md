@@ -1950,6 +1950,12 @@ Routes:
 - `GET /api/v1/rebalance/waves/{wave_id}/items`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
 - `POST /api/v1/rebalance/waves/{wave_id}/simulate`
+- `POST /api/v1/rebalance/waves/{wave_id}/simulation-operations`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}`
+- `GET /api/v1/rebalance/waves/simulation-operations/{operation_id}/results`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/work`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/retry`
+- `POST /api/v1/rebalance/waves/simulation-operations/{operation_id}/cancel`
 - `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
 - `POST /api/v1/rebalance/waves/{wave_id}/approve`
 - `POST /api/v1/rebalance/waves/{wave_id}/stage`
@@ -1970,6 +1976,8 @@ governed wave contract with an idempotency key. Slice 5 adds durable source-chec
 for persisted waves, using manage-owned mandate twins, mandate health snapshots, source-readiness
 state, and available upstream `lotus-core` lineage refs. Slice 6 adds ready-item construction
 simulation through RFC-0039 and item-level alternative selection with RFC-0040 proof-pack linkage.
+Durable simulation operations add immutable admission, bounded leased work, resumable checkpoints,
+retry, cancellation, and stable result paging without changing approval or execution authority.
 Slice 7 adds manage-owned approval, staging, internal operations handoff, and cancellation evidence
 without external execution claims. Slice 8 adds product-safe operator supportability diagnostics and
 bounded wave supportability telemetry. Slice 10 closes the read-side proof surface with
@@ -2075,6 +2083,13 @@ Functional coverage:
   attached to each item where present,
 - source-check idempotent replay for already source-checked waves without duplicate events,
 - simulation calls RFC-0039 construction alternatives only for `SOURCE_READY` items,
+- durable operations atomically persist tenant-owned work before calculation, enforce operation-wide
+  concurrency and attempt budgets, and fence stale workers,
+- supplied item, portfolio, and nested construction identities must agree before calculation;
+  mismatches are refused and cannot publish a successful wave result,
+- committed construction artifacts can be recovered after process replacement without duplicate
+  successful item effects; changed source identity is refused,
+- progress and result pages are tenant-scoped and omit input payloads and claim tokens,
 - ready items without real RFC-0039 construction input become `SIMULATION_BLOCKED`,
 - source-blocked, degraded, and review-required item reasons are preserved through simulation,
 - item selection delegates to RFC-0039 selection and persists selected alternative ids,
@@ -2135,6 +2150,8 @@ Non-functional posture:
   evidence.
 - Simulation does not synthesize holdings, market data, model targets, or shelf entries from
   mandate identifiers. It requires caller-supplied RFC-0039 construction input for each ready item.
+- Durable workers calculate outside claim transactions. Local process-replacement, multi-process,
+  and bounded-load evidence is not production capacity or multi-host certification.
 - Selection appends a durable item-selection event without advancing approval or handoff state.
 - Approval, staging, and handoff commands are idempotent after their terminal command states and do
   not append duplicate events or duplicate handoff refs.
@@ -2183,6 +2200,8 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py tests/unit/dpm/waves/test_wave_domain.py tests/unit/test_rfc0041_evidence_script.py -q
+python -m pytest tests/unit/dpm/api/test_wave_simulation_operations_api.py tests/unit/dpm/waves/test_wave_simulation_operation_repository.py -q
+DPM_POSTGRES_INTEGRATION_DSN=<postgres-dsn> python -m pytest tests/integration/dpm/waves/test_wave_simulation_operations_postgres.py -q
 python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py src/api/services/construction_service.py scripts/generate_rfc0041_wave_evidence.py tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_rfc0041_evidence_script.py
 python scripts/openapi_quality_gate.py
 python scripts/api_vocabulary_inventory.py --validate-only

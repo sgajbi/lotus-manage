@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from fastapi import Header, Path, Query
 from pydantic import AfterValidator
 
-from fastapi import Header, Path, Query
-
-from src.core.waves import CampaignDefinitionStatus
 from src.api.routers.mandate_tenant_query import normalise_mandate_tenant
+from src.core.waves import CampaignDefinitionStatus
 
 CampaignDefinitionIdPath = Annotated[
     str,
@@ -84,6 +83,18 @@ WaveCreateIdempotencyKeyHeader = Annotated[
     Header(
         description="Required idempotency token for durable wave create replay protection.",
         examples=["wave-idem-001"],
+    ),
+]
+WaveSimulationIdempotencyKeyHeader = Annotated[
+    str,
+    Header(
+        min_length=1,
+        pattern=r"\S",
+        description=(
+            "Required idempotency token for durable asynchronous wave-simulation admission. "
+            "An exact retry returns the existing operation; changed immutable input conflicts."
+        ),
+        examples=["wave-simulation-idem-001"],
     ),
 ]
 

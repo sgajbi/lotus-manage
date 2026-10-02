@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-10-02T11:14:50+00:00`
+- Generated at: `2026-10-02T17:08:32+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `58656c9ee802dbca11b5aa5d53ef7bb0a09b6243`
+- Baseline source snapshot: `1ebed11d33dd6c3ddbeaf3ad2fd9ef4e7b75cb94`
 
-- Report source snapshot: `26085578+worktree`
+- Report source snapshot: `0cf2a6f8+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -14,9 +14,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 993 | 994 | +1 |
-| Total Python LOC | 245047 | 245784 | +737 |
-| Test functions | 3455 | 3472 | +17 |
+| Python files | 994 | 1006 | +12 |
+| Total Python LOC | 245784 | 252626 | +6842 |
+| Test functions | 3472 | 3525 | +53 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -24,7 +24,7 @@
 
 | Metric | Current |
 | --- | --- |
-| Operations | 160 |
+| Operations | 166 |
 | Missing summary | 0 |
 | Missing description | 0 |
 | Missing tags | 0 |
@@ -38,21 +38,6 @@
 | Rank | File | Lines |
 | --- | --- | --- |
 | 1 | tests/unit/dpm/api/test_waves_api.py | 8169 |
-| 2 | tests/unit/dpm/api/test_api_rebalance.py | 4104 |
-| 3 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3676 |
-| 4 | tests/unit/test_ci_workflow_gate_enforcement.py | 3395 |
-| 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
-| 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
-| 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 3196 |
-| 8 | tests/unit/test_documentation_current_state.py | 3029 |
-| 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2713 |
-| 10 | tests/unit/dpm/api/test_construction_api.py | 2378 |
-
-### current branch
-
-| Rank | File | Lines |
-| --- | --- | --- |
-| 1 | tests/unit/dpm/api/test_waves_api.py | 8169 |
 | 2 | tests/unit/dpm/api/test_api_rebalance.py | 4234 |
 | 3 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3676 |
 | 4 | tests/unit/test_ci_workflow_gate_enforcement.py | 3395 |
@@ -62,6 +47,21 @@
 | 8 | tests/unit/test_documentation_current_state.py | 3029 |
 | 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2713 |
 | 10 | tests/unit/dpm/api/test_construction_api.py | 2410 |
+
+### current branch
+
+| Rank | File | Lines |
+| --- | --- | --- |
+| 1 | tests/unit/dpm/api/test_waves_api.py | 8169 |
+| 2 | tests/unit/dpm/api/test_api_rebalance.py | 4234 |
+| 3 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3685 |
+| 4 | tests/unit/test_ci_workflow_gate_enforcement.py | 3395 |
+| 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3347 |
+| 6 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 3241 |
+| 7 | tests/unit/dpm/waves/test_campaign_discovery.py | 3224 |
+| 8 | tests/unit/test_documentation_current_state.py | 3029 |
+| 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2713 |
+| 10 | tests/unit/dpm/api/test_construction_api.py | 2412 |
 
 ## Largest Functions
 
@@ -107,8 +107,8 @@
 | 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 120 | 426 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
-| 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
-| 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 78 | 140 |
+| 7 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 83 | 145 |
+| 8 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
 | 9 | test_pm_operating_quality_openapi_contract_is_documented | tests/unit/api/test_pm_operating_quality_api.py | 73 | 142 |
 | 10 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 334 |
 

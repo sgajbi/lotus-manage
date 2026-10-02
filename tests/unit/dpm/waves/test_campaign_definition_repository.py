@@ -1868,8 +1868,17 @@ def test_campaign_definition_maker_checker_controls_are_append_only() -> None:
         definition=reviewed,
         expected_content_hash=definition.content_hash,
     )
+    first, latest = reviewed.maker_checker_controls
+    page_definition = reviewed.model_copy(
+        update={
+            "maker_checker_controls": [
+                first,
+                latest.model_copy(update={"recorded_at": first.recorded_at}),
+            ]
+        }
+    )
     page = build_bulk_review_campaign_definition_maker_checker_control_page(
-        definition=reviewed,
+        definition=page_definition,
         limit=50,
         offset=0,
     )

@@ -12,12 +12,14 @@ from src.api.routers.mandate_tenant_query import MandateTenantIdHeader
 from src.api.services import construction_service
 from src.core.construction.models import ConstructionAlternativeSelection
 from src.core.construction.repository import (
+    ConstructionAlternativeBlockedError,
     ConstructionAlternativeNotFoundError,
     ConstructionAlternativeSetNotFoundError,
     ConstructionRepository,
 )
 
 _CONSTRUCTION_SELECTION_ROUTE_ERRORS = (
+    ConstructionAlternativeBlockedError,
     ConstructionAlternativeNotFoundError,
     ConstructionAlternativeSetNotFoundError,
 )
@@ -36,6 +38,7 @@ _CONSTRUCTION_SELECTION_ROUTE_ERRORS = (
     responses={
         200: {"description": "Selection recorded."},
         404: {"description": "Alternative set or alternative id was not found."},
+        422: {"description": "The selected alternative is policy-blocked."},
     },
 )
 def select_alternative(
