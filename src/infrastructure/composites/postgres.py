@@ -202,6 +202,10 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
                 connection=connection, tenant_id=tenant_id, sequence=sequence
             )
 
+    def assert_membership_published(self, *, revision: DpmCompositeMembershipRevision) -> None:
+        with closing(self._connect()) as connection:
+            publication_sql.assert_membership_published(connection=connection, revision=revision)
+
     def list_publications(
         self, *, tenant_id: str, after_sequence: int, limit: int
     ) -> DpmCompositePublicationPage:

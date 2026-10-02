@@ -42,6 +42,8 @@ explicit consumer and source-owner responsibilities.
 Migration `0036` installs lock-before-insert and publication-after-insert triggers before its
 backfill, so a previous app replica writing during the migrate-before-traffic-switch window
 cannot leave a revision unpublished or invert the lock order against a new replica.
+An exact HTTP retry succeeds only when the original revision's publication is still present with
+the matching content hash; missing or divergent publication evidence fails closed with a conflict.
 
 Approved DPM instruction packages are a separate, tenant-scoped retrieval product at
 `/api/v1/rebalance/instruction-packages/*`. A release pins the reviewed run, READY proof pack,

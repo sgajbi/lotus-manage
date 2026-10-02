@@ -267,3 +267,37 @@ def test_composite_publication_cursor_and_receipt_are_tenant_fenced_and_fail_clo
             assert reconciliation.json()["publication"]["completeness"] == "UNVERIFIED"
     finally:
         app.dependency_overrides.clear()
+
+
+def test_composite_http_replay_refuses_missing_or_divergent_publication() -> None:
+    base = "/api/v1/rebalance/composites/PB_GLOBAL_BALANCED_USD/definitions/2026.10"
+    for failure in ("missing", "divergent"):
+        repository = InMemoryDpmCompositeRepository()
+        app.dependency_overrides[get_composite_membership_application_service] = lambda: (
+            DpmCompositeMembershipApplicationService(repository=repository)
+        )
+        try:
+            with TestClient(app) as client:
+                assert (
+                    client.put(base, headers=_headers(), json=_definition_payload()).status_code
+                    == 200
+                )
+                revision_url = f"{base}/membership/2026.10.1"
+                assert (
+                    client.put(
+                        revision_url, headers=_headers(), json=_revision_payload()
+                    ).status_code
+                    == 200
+                )
+                if failure == "missing":
+                    repository._publications.clear()  # noqa: SLF001 - inject persisted corruption
+                else:
+                    original = repository._publications[1]  # noqa: SLF001
+                    repository._publications[1] = original.model_copy(  # noqa: SLF001
+                        update={"membership_content_hash": "sha256:diverged"}
+                    )
+                retry = client.put(revision_url, headers=_headers(), json=_revision_payload())
+                assert retry.status_code == 409
+                assert retry.json()["detail"]["code"] == "COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"
+        finally:
+            app.dependency_overrides.clear()

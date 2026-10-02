@@ -78,6 +78,27 @@ def _revision(
     return DpmCompositeMembershipRevision(**values)
 
 
+def _retry_revision_command(
+    repository: PostgresDpmCompositeRepository, revision: DpmCompositeMembershipRevision
+) -> DpmCompositeMembershipRevision:
+    return DpmCompositeMembershipApplicationService(repository=repository).save_membership_revision(
+        command=DpmCompositeMembershipRevisionCommand(
+            tenant_id=revision.tenant_id,
+            composite_id=revision.composite_id,
+            definition_version=revision.definition_version,
+            membership_revision=revision.membership_revision,
+            policy_version=revision.policy_version,
+            source_cut_id=revision.source_cut_id,
+            decisions=revision.decisions,
+            actor_id=revision.decided_by,
+            correlation_id=revision.correlation_id,
+            supersedes_membership_revision=revision.supersedes_membership_revision,
+            affected_from=revision.affected_from,
+            affected_to=revision.affected_to,
+        )
+    )
+
+
 def test_postgres_preserves_tenant_fence_immutable_replay_and_restart_read() -> None:
     suffix = uuid.uuid4().hex[:12]
     tenant_id = f"tenant-composite-{suffix}"
@@ -206,24 +227,7 @@ def test_postgres_publication_cursor_receipt_and_restart() -> None:
     )
     repository.save_membership_revision(revision=first)
     repository.save_membership_revision(revision=first)
-    after_response_loss = DpmCompositeMembershipApplicationService(
-        repository=repository
-    ).save_membership_revision(
-        command=DpmCompositeMembershipRevisionCommand(
-            tenant_id=tenant_id,
-            composite_id=composite_id,
-            definition_version=first.definition_version,
-            membership_revision=first.membership_revision,
-            policy_version=first.policy_version,
-            source_cut_id=first.source_cut_id,
-            decisions=first.decisions,
-            actor_id=first.decided_by,
-            correlation_id=first.correlation_id,
-            supersedes_membership_revision=None,
-            affected_from=None,
-            affected_to=None,
-        )
-    )
+    after_response_loss = _retry_revision_command(repository, first)
     assert after_response_loss == first
     repository.save_membership_revision(revision=second)
 
@@ -460,6 +464,28 @@ def test_postgres_refuses_publication_hash_divergence() -> None:
         )
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_IMMUTABLE_CONFLICT"):
         repository.save_membership_revision(revision=revision)
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"):
+        _retry_revision_command(repository, revision)
+
+
+def test_postgres_api_retry_refuses_missing_publication() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-missing-publication-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    dsn = postgres_dsn_or_skip(_PROOF)
+    repository = PostgresDpmCompositeRepository(dsn=dsn)
+    repository.save_definition(
+        definition=_definition(tenant_id=tenant_id, composite_id=composite_id)
+    )
+    revision = _revision(tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1")
+    repository.save_membership_revision(revision=revision)
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            "DELETE FROM dpm_composite_membership_publications WHERE tenant_id = %s",
+            (tenant_id,),
+        )
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"):
+        _retry_revision_command(repository, revision)
 
 
 def test_postgres_legacy_and_new_writer_share_lock_order_for_same_revision() -> None:

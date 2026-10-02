@@ -1822,6 +1822,7 @@ Functional coverage:
 - atomic publication on committed revision, ordered bounded cursor/correction paging, migration
   backfill of pre-existing revisions, lock-before-insert/atomic-publication-after-insert for
   legacy replicas and concurrent old/new same-revision writes, restart-safe immutable receipt replay,
+  fail-closed exact-revision retries when publication evidence is missing or hash-divergent,
   wrong-hash/conflicting receipt rejection, and
   tenant/role/service-identity refusal.
 
