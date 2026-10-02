@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-10-02T08:23:55+00:00`
+- Generated at: `2026-10-02T09:15:51+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `d1f0200ec116cc39993de20139c6eac4b471de65`
+- Baseline source snapshot: `a31b294c2db33dc12ce47ae161ceaf727bd8c741`
 
-- Report source snapshot: `59d78a5f+worktree`
+- Report source snapshot: `a31b294c+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -14,9 +14,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 989 | 991 | +2 |
-| Total Python LOC | 243011 | 243432 | +421 |
-| Test functions | 3436 | 3439 | +3 |
+| Python files | 991 | 993 | +2 |
+| Total Python LOC | 243432 | 244800 | +1368 |
+| Test functions | 3439 | 3447 | +8 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -24,7 +24,7 @@
 
 | Metric | Current |
 | --- | --- |
-| Operations | 157 |
+| Operations | 160 |
 | Missing summary | 0 |
 | Missing description | 0 |
 | Missing tags | 0 |
@@ -92,7 +92,7 @@
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
 | 7 | test_unknown_legacy_limits_are_preserved_but_never_act_as_contractual_limits | tests/integration/dpm/mandates/test_legacy_mandate_limit_provenance_postgres.py | 335 |
 | 8 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |
-| 9 | test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_state | tests/integration/dpm/supportability/test_construction_tenant_ownership_postgres.py | 305 |
+| 9 | test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_state | tests/integration/dpm/supportability/test_construction_tenant_ownership_postgres.py | 304 |
 | 10 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
 
 ## Most Complex Functions

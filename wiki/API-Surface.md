@@ -83,6 +83,15 @@ current portfolio-book membership for historical eligibility.
   evaluated in the same read snapshot as the bounded page. Offset pages are not stable across
   concurrent writes; use the publication cursor/high watermark for ordered handoff. A count does
   not assert that every eligible portfolio in the upstream universe has been decided.
+- `PUT .../membership/{membership_revision}/universe-attestations/{attestation_version}` records an
+  immutable completeness decision for one inclusive date range. The dedicated
+  `DPM_COMPOSITE_UNIVERSE_ATTESTER` role and `lotus-manage` service identity are required. The
+  request pins policy, source cut, source-product contract versions, authority scopes,
+  source watermarks/hashes and an exact portfolio set. Exactly one source product must own the
+  authoritative universe. `COMPLETE` requires every expected portfolio to have continuous
+  effective-dated decision coverage and refuses missing, unexpected or gap portfolios. `INCOMPLETE` retains those
+  discrepancies; `UNAVAILABLE` requires an explicit reason and cannot masquerade as an empty set.
+  Tenant-fenced detail and bounded same-snapshot list routes expose the immutable evidence.
 - `GET /api/v1/rebalance/composites/publications?after_sequence=N&limit=K` returns bounded,
   ordered committed-revision metadata with a tenant-scoped high watermark and next cursor.
   `GET .../publications/{sequence}` reads one pinned publication; each provides the immutable
@@ -92,11 +101,12 @@ current portfolio-book membership for historical eligibility.
   `GET .../publications/{sequence}/reconciliation` reports `UNACKNOWLEDGED`, `RECEIVED`, or
   `REJECTED`. A receipt proves retrieval only, not ingestion or calculated return completeness.
 
-This is a source-record API, not a composite calculation, automatic eligibility engine, broker,
+This is a source-record and bounded universe-attestation API, not a composite calculation,
+automatic eligibility engine, broker,
 Performance member-return publication, or OMS interface. Publication completeness stays
-`UNVERIFIED` until authoritative universe and downstream proofs exist; consumer materialization
-remains owned and evidenced separately. Identity headers are caller assertions and require trusted
-ingress for production authorization.
+`UNVERIFIED`; a range-specific `COMPLETE` attestation does not promote the publication or certify
+live producer delivery. Performance materialization remains owned and evidenced separately.
+Identity headers are caller assertions and require trusted ingress for production authorization.
 
 ## Approved instruction-package surfaces
 

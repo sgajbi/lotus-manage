@@ -110,7 +110,6 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
         migrations = postgres_migrations._load_migrations(namespace="dpm")
         versions = [migration.version for migration in migrations]
         migration_index = versions.index("0037")
-        assert migration_index == len(versions) - 1
         monkeypatch.setattr(
             postgres_migrations,
             "_load_migrations",

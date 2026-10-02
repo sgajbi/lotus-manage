@@ -22,6 +22,7 @@ from src.core.composite_publication import (
     DpmCompositePublicationReceipt,
     publication_from_revision,
 )
+from src.core.composite_universe import DpmCompositeUniverseAttestation
 
 
 KeyT = TypeVar("KeyT")
@@ -37,6 +38,9 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         ] = {}
         self._publications: dict[int, DpmCompositeMembershipPublication] = {}
         self._receipts: dict[tuple[str, int, str], DpmCompositePublicationReceipt] = {}
+        self._universe_attestations: dict[
+            tuple[str, str, str, str, str], DpmCompositeUniverseAttestation
+        ] = {}
         self._last_sequence = 0
 
     def save_definition(self, *, definition: DpmCompositeDefinition) -> None:
@@ -252,6 +256,84 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                     ),
                     key=lambda receipt: receipt.consumer_id,
                 )
+            )
+
+    def save_universe_attestation(self, *, attestation: DpmCompositeUniverseAttestation) -> None:
+        revision_key = (
+            attestation.tenant_id,
+            attestation.composite_id,
+            attestation.definition_version,
+            attestation.membership_revision,
+        )
+        key = (*revision_key, attestation.attestation_version)
+        with self._lock:
+            revision = self._membership_revisions.get(revision_key)
+            if revision is None:
+                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_MEMBERSHIP_NOT_FOUND")
+            if revision.content_hash != attestation.membership_content_hash:
+                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_MEMBERSHIP_HASH_MISMATCH")
+            _save_immutable(
+                values=self._universe_attestations,
+                key=key,
+                value=attestation,
+                conflict_code="COMPOSITE_UNIVERSE_ATTESTATION_IMMUTABLE_CONFLICT",
+            )
+
+    def get_universe_attestation(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        membership_revision: str,
+        attestation_version: str,
+    ) -> DpmCompositeUniverseAttestation | None:
+        with self._lock:
+            attestation = self._universe_attestations.get(
+                (
+                    tenant_id,
+                    composite_id,
+                    definition_version,
+                    membership_revision,
+                    attestation_version,
+                )
+            )
+            return deepcopy(attestation) if attestation is not None else None
+
+    def list_universe_attestations(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        membership_revision: str,
+        limit: int,
+        offset: int,
+    ) -> DpmCompositeResultPage[DpmCompositeUniverseAttestation]:
+        with self._lock:
+            attestations = sorted(
+                (
+                    attestation
+                    for (
+                        stored_tenant,
+                        stored_composite,
+                        stored_definition,
+                        stored_revision,
+                        _,
+                    ), attestation in self._universe_attestations.items()
+                    if (
+                        stored_tenant,
+                        stored_composite,
+                        stored_definition,
+                        stored_revision,
+                    )
+                    == (tenant_id, composite_id, definition_version, membership_revision)
+                ),
+                key=lambda item: (item.attested_at, item.attestation_version),
+                reverse=True,
+            )
+            return DpmCompositeResultPage(
+                items=deepcopy(attestations[offset : offset + limit]), count=len(attestations)
             )
 
 

@@ -352,3 +352,88 @@ def test_composite_http_replay_refuses_missing_or_divergent_publication() -> Non
                         )
         finally:
             app.dependency_overrides.clear()
+
+
+def test_composite_universe_attestation_is_authorized_scoped_and_range_complete() -> None:
+    repository = InMemoryDpmCompositeRepository()
+    app.dependency_overrides[get_composite_membership_application_service] = lambda: (
+        DpmCompositeMembershipApplicationService(repository=repository)
+    )
+    base = "/api/v1/rebalance/composites/PB_GLOBAL_BALANCED_USD/definitions/2026.10"
+    revision_url = f"{base}/membership/2026.10.1"
+    attestation_url = f"{revision_url}/universe-attestations/2026.10.1"
+    payload = {
+        "coverage_from": "2026-02-01",
+        "coverage_to": "2026-02-28",
+        "policy_version": "composite-eligibility.v1",
+        "source_cut_id": "core-cut-2026-10-01",
+        "source_products": [
+            {
+                "owner_service": "lotus-manage",
+                "product_name": "CompositeEligibilityUniverse",
+                "contract_version": "v1",
+                "authority_scope": "AUTHORITATIVE_UNIVERSE",
+                "source_cut_id": "core-cut-2026-10-01",
+                "source_watermark": "universe-sequence:1",
+                "content_hash": "sha256:universe-2026-10-01",
+            }
+        ],
+        "posture": "COMPLETE",
+        "expected_portfolio_ids": ["PB_SG_GLOBAL_BAL_002", "PB_SG_GLOBAL_BAL_001"],
+        "correlation_id": "corr-universe-001",
+    }
+    attester_headers = {
+        **_headers(role="DPM_COMPOSITE_UNIVERSE_ATTESTER"),
+        "X-Service-Identity": "lotus-manage",
+    }
+    try:
+        with TestClient(app) as client:
+            assert (
+                client.put(base, headers=_headers(), json=_definition_payload()).status_code == 200
+            )
+            revision = client.put(revision_url, headers=_headers(), json=_revision_payload())
+            assert revision.status_code == 200
+
+            assert client.put(attestation_url, headers=_headers(), json=payload).status_code == 403
+            wrong_service = client.put(
+                attestation_url,
+                headers={**attester_headers, "X-Service-Identity": "lotus-core"},
+                json=payload,
+            )
+            assert wrong_service.status_code == 403
+
+            accepted = client.put(attestation_url, headers=attester_headers, json=payload)
+            replay = client.put(attestation_url, headers=attester_headers, json=payload)
+            assert accepted.status_code == replay.status_code == 200
+            assert accepted.json() == replay.json()
+            assert accepted.json()["posture"] == "COMPLETE"
+            assert accepted.json()["expected_portfolio_ids"] == [
+                "PB_SG_GLOBAL_BAL_001",
+                "PB_SG_GLOBAL_BAL_002",
+            ]
+            assert accepted.json()["membership_content_hash"] == revision.json()["content_hash"]
+
+            listed = client.get(
+                f"{revision_url}/universe-attestations?limit=1&offset=0",
+                headers=_headers(),
+            )
+            assert listed.status_code == 200
+            assert listed.json()["count"] == 1
+            assert listed.json()["items"] == [accepted.json()]
+            assert client.get(attestation_url, headers=_headers()).json() == accepted.json()
+            assert (
+                client.get(attestation_url, headers=_headers(tenant="other-tenant")).status_code
+                == 404
+            )
+
+            mismatched = client.put(
+                f"{revision_url}/universe-attestations/bad-set",
+                headers=attester_headers,
+                json=payload | {"expected_portfolio_ids": ["PB_SG_GLOBAL_BAL_001"]},
+            )
+            assert mismatched.status_code == 409
+            assert mismatched.json()["detail"]["code"] == (
+                "COMPOSITE_UNIVERSE_COMPLETENESS_MISMATCH"
+            )
+    finally:
+        app.dependency_overrides.clear()

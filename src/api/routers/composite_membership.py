@@ -13,6 +13,7 @@ from src.api.services.composite_membership_application import (
     DpmCompositeDefinitionCommand,
     DpmCompositeMembershipApplicationService,
     DpmCompositeMembershipRevisionCommand,
+    DpmCompositeUniverseAttestationCommand,
     DpmCompositeReceiptCommand,
     DpmCompositeNotFoundError,
 )
@@ -28,6 +29,11 @@ from src.core.composite_publication import (
     DpmCompositePublicationPage,
     DpmCompositePublicationReceipt,
     DpmCompositePublicationReconciliation,
+)
+from src.core.composite_universe import (
+    CompositeUniversePosture,
+    DpmCompositeUniverseAttestation,
+    DpmCompositeUniverseSourceProduct,
 )
 
 router = APIRouter(
@@ -105,6 +111,27 @@ class CompositePublicationReceiptResponse(BaseModel):
     created: bool
 
 
+class CompositeUniverseAttestationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    coverage_from: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    coverage_to: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    policy_version: str = Field(min_length=1)
+    source_cut_id: str = Field(min_length=1)
+    source_products: list[DpmCompositeUniverseSourceProduct] = Field(min_length=1)
+    posture: CompositeUniversePosture
+    expected_portfolio_ids: list[str] = Field(default_factory=list)
+    reason_code: str | None = Field(default=None, pattern=r"^[A-Z][A-Z0-9_]{0,63}$")
+    correlation_id: str = Field(min_length=1)
+
+
+class CompositeUniverseAttestationPage(BaseModel):
+    items: list[DpmCompositeUniverseAttestation]
+    count: int = Field(ge=0)
+    limit: int
+    offset: int
+
+
 def composite_trusted_identity_required(request: Request) -> CompositeTrustedIdentity:
     identity = CompositeTrustedIdentity(
         tenant_id=request.headers.get("X-Tenant-Id", "").strip(),
@@ -133,6 +160,18 @@ def _publication_consumer_identity_required(
         or request.headers.get("X-Service-Identity", "").strip() != "lotus-performance"
     ):
         raise _problem(status.HTTP_403_FORBIDDEN, "COMPOSITE_CONSUMER_ROLE_FORBIDDEN")
+    return identity
+
+
+def _universe_attester_identity_required(
+    request: Request,
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+) -> CompositeTrustedIdentity:
+    if (
+        identity.role != "DPM_COMPOSITE_UNIVERSE_ATTESTER"
+        or request.headers.get("X-Service-Identity", "").strip() != "lotus-manage"
+    ):
+        raise _problem(status.HTTP_403_FORBIDDEN, "COMPOSITE_UNIVERSE_ATTESTER_ROLE_FORBIDDEN")
     return identity
 
 
@@ -319,6 +358,98 @@ def get_membership_as_of(
         )
     except (DpmCompositeNotFoundError, ValueError) as exc:
         raise _from_domain_error(exc) from exc
+
+
+@router.put(
+    "/{composite_id}/definitions/{definition_version}/membership/{membership_revision}"
+    "/universe-attestations/{attestation_version}",
+    response_model=DpmCompositeUniverseAttestation,
+    summary="Persist immutable source-universe completeness evidence",
+)
+def put_universe_attestation(
+    composite_id: str,
+    definition_version: str,
+    membership_revision: str,
+    attestation_version: str,
+    request: CompositeUniverseAttestationRequest,
+    identity: CompositeTrustedIdentity = Depends(_universe_attester_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> DpmCompositeUniverseAttestation:
+    try:
+        return service.save_universe_attestation(
+            command=DpmCompositeUniverseAttestationCommand(
+                tenant_id=identity.tenant_id,
+                composite_id=composite_id,
+                definition_version=definition_version,
+                membership_revision=membership_revision,
+                attestation_version=attestation_version,
+                actor_id=identity.actor_id,
+                **request.model_dump(),
+            )
+        )
+    except (DpmCompositeNotFoundError, DpmCompositeConflictError, ValueError) as exc:
+        raise _from_domain_error(exc) from exc
+
+
+@router.get(
+    "/{composite_id}/definitions/{definition_version}/membership/{membership_revision}"
+    "/universe-attestations/{attestation_version}",
+    response_model=DpmCompositeUniverseAttestation,
+)
+def get_universe_attestation(
+    composite_id: str,
+    definition_version: str,
+    membership_revision: str,
+    attestation_version: str,
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> DpmCompositeUniverseAttestation:
+    try:
+        return service.get_universe_attestation(
+            tenant_id=identity.tenant_id,
+            composite_id=composite_id,
+            definition_version=definition_version,
+            membership_revision=membership_revision,
+            attestation_version=attestation_version,
+        )
+    except (DpmCompositeNotFoundError, DpmCompositeConflictError) as exc:
+        raise _from_domain_error(exc) from exc
+
+
+@router.get(
+    "/{composite_id}/definitions/{definition_version}/membership/{membership_revision}"
+    "/universe-attestations",
+    response_model=CompositeUniverseAttestationPage,
+)
+def list_universe_attestations(
+    composite_id: str,
+    definition_version: str,
+    membership_revision: str,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> CompositeUniverseAttestationPage:
+    try:
+        page = service.list_universe_attestations(
+            tenant_id=identity.tenant_id,
+            composite_id=composite_id,
+            definition_version=definition_version,
+            membership_revision=membership_revision,
+            limit=limit,
+            offset=offset,
+        )
+    except DpmCompositeConflictError as exc:
+        raise _from_domain_error(exc) from exc
+    return CompositeUniverseAttestationPage(
+        items=page.items, count=page.count, limit=limit, offset=offset
+    )
 
 
 @router.get(

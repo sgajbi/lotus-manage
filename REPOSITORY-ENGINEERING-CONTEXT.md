@@ -35,6 +35,12 @@ This repository owns:
    snapshot, but cross-request offset pages are not stable under writes; consumers use the
    publication cursor for handoff. The caller-asserted identity headers require trusted ingress
    before production use.
+5. immutable composite-universe attestations scoped to a pinned membership revision, inclusive
+   business-date range, exact portfolio set, policy and named source-product cuts/watermarks, with
+   exactly one source product declared as authoritative for the universe. `COMPLETE`
+   requires continuous decision coverage; `INCOMPLETE` retains missing/unexpected/gap evidence and
+   `UNAVAILABLE` retains source failure. These attestations do not promote the publication envelope
+   beyond `UNVERIFIED` or substitute for live producer and Performance consumer proof.
 
 Advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are intentionally
 owned by `lotus-advise`.

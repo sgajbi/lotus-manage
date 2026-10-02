@@ -19,6 +19,7 @@ from src.api.main import app
 from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
     DpmCompositeMembershipRevisionCommand,
+    DpmCompositeUniverseAttestationCommand,
 )
 from src.core.composite_membership import (
     DpmCompositeDefinition,
@@ -27,6 +28,7 @@ from src.core.composite_membership import (
     DpmCompositeSourceAuthority,
 )
 from src.core.composite_repository import DpmCompositeConflictError
+from src.core.composite_universe import DpmCompositeUniverseSourceProduct
 from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository
 from src.infrastructure.mandates.serialization import dump_model_json
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -99,6 +101,38 @@ def _retry_revision_command(
             affected_from=revision.affected_from,
             affected_to=revision.affected_to,
         )
+    )
+
+
+def _universe_command(
+    revision: DpmCompositeMembershipRevision,
+) -> DpmCompositeUniverseAttestationCommand:
+    return DpmCompositeUniverseAttestationCommand(
+        tenant_id=revision.tenant_id,
+        composite_id=revision.composite_id,
+        definition_version=revision.definition_version,
+        membership_revision=revision.membership_revision,
+        attestation_version="2026.10.1",
+        coverage_from="2026-01-01",
+        coverage_to="2026-12-31",
+        policy_version=revision.policy_version,
+        source_cut_id=revision.source_cut_id,
+        source_products=[
+            DpmCompositeUniverseSourceProduct(
+                owner_service="lotus-manage",
+                product_name="CompositeEligibilityUniverse",
+                contract_version="v1",
+                authority_scope="AUTHORITATIVE_UNIVERSE",
+                source_cut_id=revision.source_cut_id,
+                source_watermark="universe-sequence:1",
+                content_hash="sha256:approved-universe-cut",
+            )
+        ],
+        posture="COMPLETE",
+        expected_portfolio_ids=["PB_SG_GLOBAL_BAL_001"],
+        reason_code=None,
+        actor_id="checker",
+        correlation_id="corr-universe-race",
     )
 
 
@@ -686,3 +720,215 @@ def test_postgres_legacy_and_new_writer_share_lock_order_for_same_revision() -> 
     page = repository.list_publications(tenant_id=tenant_id, after_sequence=0, limit=10)
     assert len(page.items) == 1
     assert page.items[0].membership_content_hash == revision.content_hash
+
+
+def test_registered_api_persists_universe_attestation_with_tenant_fence_and_restart() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-universe-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    dsn = postgres_dsn_or_skip(_PROOF)
+    repository = PostgresDpmCompositeRepository(dsn=dsn)
+    app.dependency_overrides[get_composite_membership_application_service] = lambda: (
+        DpmCompositeMembershipApplicationService(repository=repository)
+    )
+    base = f"/api/v1/rebalance/composites/{composite_id}/definitions/2026.10"
+    revision_url = f"{base}/membership/2026.10.1"
+    attestation_url = f"{revision_url}/universe-attestations/2026.10.1"
+    admin_headers = {
+        "X-Tenant-Id": tenant_id,
+        "X-Actor-Id": "maker",
+        "X-Role": "DPM_COMPOSITE_ADMIN",
+    }
+    attester_headers = {
+        "X-Tenant-Id": tenant_id,
+        "X-Actor-Id": "checker",
+        "X-Role": "DPM_COMPOSITE_UNIVERSE_ATTESTER",
+        "X-Service-Identity": "lotus-manage",
+    }
+    try:
+        with TestClient(app) as client:
+            definition = _definition(tenant_id=tenant_id, composite_id=composite_id)
+            assert (
+                client.put(
+                    base,
+                    headers=admin_headers,
+                    json={
+                        "display_name": definition.display_name,
+                        "strategy_code": definition.strategy_code,
+                        "reporting_currency": definition.reporting_currency,
+                        "inception_date": definition.inception_date,
+                        "eligibility_policy_version": definition.eligibility_policy_version,
+                        "source_authority": definition.source_authority.model_dump(mode="json"),
+                        "correlation_id": definition.correlation_id,
+                    },
+                ).status_code
+                == 200
+            )
+            revision = _revision(
+                tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1"
+            )
+            saved_revision = client.put(
+                revision_url,
+                headers=admin_headers,
+                json={
+                    "policy_version": revision.policy_version,
+                    "source_cut_id": revision.source_cut_id,
+                    "decisions": [item.model_dump(mode="json") for item in revision.decisions],
+                    "correlation_id": revision.correlation_id,
+                },
+            )
+            assert saved_revision.status_code == 200
+            payload = {
+                "coverage_from": "2026-01-01",
+                "coverage_to": "2026-12-31",
+                "policy_version": revision.policy_version,
+                "source_cut_id": revision.source_cut_id,
+                "source_products": [
+                    {
+                        "owner_service": "lotus-manage",
+                        "product_name": "CompositeEligibilityUniverse",
+                        "contract_version": "v1",
+                        "authority_scope": "AUTHORITATIVE_UNIVERSE",
+                        "source_cut_id": revision.source_cut_id,
+                        "source_watermark": "universe-sequence:1",
+                        "content_hash": "sha256:approved-universe-cut",
+                    }
+                ],
+                "posture": "COMPLETE",
+                "expected_portfolio_ids": ["PB_SG_GLOBAL_BAL_001"],
+                "correlation_id": "corr-universe-attestation",
+            }
+            accepted = client.put(attestation_url, headers=attester_headers, json=payload)
+            assert accepted.status_code == 200
+            assert (
+                accepted.json()["membership_content_hash"] == saved_revision.json()["content_hash"]
+            )
+            assert (
+                client.get(
+                    attestation_url,
+                    headers={**admin_headers, "X-Tenant-Id": "foreign-tenant"},
+                ).status_code
+                == 404
+            )
+
+        restarted = PostgresDpmCompositeRepository(dsn=dsn)
+        app.dependency_overrides[get_composite_membership_application_service] = lambda: (
+            DpmCompositeMembershipApplicationService(repository=restarted)
+        )
+        with TestClient(app) as client:
+            persisted = client.get(attestation_url, headers=admin_headers)
+            replay = client.put(attestation_url, headers=attester_headers, json=payload)
+            assert persisted.status_code == replay.status_code == 200
+            assert persisted.json() == replay.json() == accepted.json()
+            page = client.get(
+                f"{revision_url}/universe-attestations?limit=1&offset=1",
+                headers=admin_headers,
+            )
+            assert page.json()["items"] == []
+            assert page.json()["count"] == 1
+            conflict = client.put(
+                attestation_url,
+                headers=attester_headers,
+                json=payload | {"correlation_id": "corr-different"},
+            )
+            assert conflict.status_code == 409
+            assert conflict.json()["detail"]["code"] == (
+                "COMPOSITE_UNIVERSE_ATTESTATION_IMMUTABLE_CONFLICT"
+            )
+        with psycopg.connect(dsn, row_factory=dict_row) as connection:
+            row = connection.execute(
+                """
+                SELECT COUNT(*) AS count, MIN(content_hash) AS content_hash
+                FROM dpm_composite_universe_attestations
+                WHERE tenant_id = %s AND composite_id = %s
+                """,
+                (tenant_id, composite_id),
+            ).fetchone()
+            assert row is not None
+            assert row["count"] == 1
+            assert row["content_hash"] == accepted.json()["content_hash"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_postgres_concurrent_attestation_replay_converges_across_repository_instances() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-universe-race-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    dsn = postgres_dsn_or_skip(_PROOF)
+    repository = PostgresDpmCompositeRepository(dsn=dsn)
+    repository.save_definition(
+        definition=_definition(tenant_id=tenant_id, composite_id=composite_id)
+    )
+    revision = _revision(tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1")
+    repository.save_membership_revision(revision=revision)
+    command = _universe_command(revision)
+    barrier = Barrier(2)
+
+    def attest() -> object:
+        service = DpmCompositeMembershipApplicationService(
+            repository=PostgresDpmCompositeRepository(dsn=dsn)
+        )
+        barrier.wait(timeout=5)
+        return service.save_universe_attestation(command=command)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = [
+            future.result(timeout=10) for future in [executor.submit(attest) for _ in range(2)]
+        ]
+    assert results[0] == results[1]
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        count = connection.execute(
+            """
+            SELECT COUNT(*) AS count FROM dpm_composite_universe_attestations
+            WHERE tenant_id = %s AND composite_id = %s
+            """,
+            (tenant_id, composite_id),
+        ).fetchone()
+        assert count is not None
+        assert count["count"] == 1
+
+
+def test_postgres_universe_attestation_reads_fail_closed_on_stored_hash_divergence() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-universe-integrity-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    dsn = postgres_dsn_or_skip(_PROOF)
+    repository = PostgresDpmCompositeRepository(dsn=dsn)
+    repository.save_definition(
+        definition=_definition(tenant_id=tenant_id, composite_id=composite_id)
+    )
+    revision = _revision(tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1")
+    repository.save_membership_revision(revision=revision)
+    DpmCompositeMembershipApplicationService(repository=repository).save_universe_attestation(
+        command=_universe_command(revision)
+    )
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            """
+            UPDATE dpm_composite_universe_attestations SET content_hash = %s
+            WHERE tenant_id = %s AND composite_id = %s
+            """,
+            ("sha256:diverged", tenant_id, composite_id),
+        )
+    with pytest.raises(
+        DpmCompositeConflictError, match="COMPOSITE_UNIVERSE_ATTESTATION_INTEGRITY_CONFLICT"
+    ):
+        repository.get_universe_attestation(
+            tenant_id=tenant_id,
+            composite_id=composite_id,
+            definition_version=revision.definition_version,
+            membership_revision=revision.membership_revision,
+            attestation_version="2026.10.1",
+        )
+    with pytest.raises(
+        DpmCompositeConflictError, match="COMPOSITE_UNIVERSE_ATTESTATION_INTEGRITY_CONFLICT"
+    ):
+        repository.list_universe_attestations(
+            tenant_id=tenant_id,
+            composite_id=composite_id,
+            definition_version=revision.definition_version,
+            membership_revision=revision.membership_revision,
+            limit=10,
+            offset=0,
+        )
