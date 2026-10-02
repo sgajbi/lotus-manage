@@ -91,9 +91,10 @@ Current posture under RFC-0082:
    Stateful rebalance and construction requests require matching `X-Tenant-Id` and
    `stateful_input.tenant_id` before Core resolution. Synchronous stateless simulation and
    construction generation also require `X-Tenant-Id` for durable run ownership. Construction
-   run reads are tenant-fenced; alternative-set read/selection ownership remains an open gap
-   tracked by [#753](https://github.com/sgajbi/lotus-manage/issues/753). These local headers
-   are caller assertions, not production identity-provider proof.
+   runs, alternative sets, selections, selected-alternative proof-pack sourcing, portfolio-memory
+   projections, and wave simulation/selection are tenant-fenced at their repository boundaries.
+   Legacy construction rows without attributable ownership remain quarantined and unreachable.
+   These local headers are caller assertions, not production identity-provider proof.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 
@@ -236,6 +237,9 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/construction/alternative-sets/generate`,
   `/api/v1/construction/alternative-sets/{alternative_set_id}`,
   `/api/v1/construction/alternative-sets/{alternative_set_id}/selections`
+  require caller-asserted `X-Tenant-Id`. Their PostgreSQL identity is tenant scoped, including
+  idempotency keys; another tenant receives `404` for an owned set or selection and may use the
+  same idempotency key for an independent request.
 - rebalance waves
   `/api/v1/rebalance/waves`, `/api/v1/rebalance/waves/preview`,
   `/api/v1/rebalance/waves/{wave_id}`, `/api/v1/rebalance/waves/{wave_id}/items`,

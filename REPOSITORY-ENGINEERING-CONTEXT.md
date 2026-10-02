@@ -60,7 +60,7 @@ repository, while Manage owns only its declared consumption and fail-closed beha
 3. Database migrations are repository-owned under `src/infrastructure/postgres_migrations/` and are
    applied through the repository migration runner. Production readiness fails closed when required
    migrations or durable persistence prerequisites are absent.
-4. `make quarantine-inventory` is the single read-only operator path for the twelve governed
+4. `make quarantine-inventory` is the single read-only operator path for the fourteen governed
    nullable-tenant datasets. It uses stable row identities and never attributes, defaults, mutates,
    or exposes quarantined data through normal tenant-scoped reads.
 5. Historical mandate reads preserve the resolved source `as_of_date`; Manage supports temporal
@@ -80,13 +80,13 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    Stateful rebalance and construction envelopes likewise require matching `X-Tenant-Id` and
    `stateful_input.tenant_id` before resolver construction. Synchronous stateless simulation and
    stateless construction generation also require `X-Tenant-Id` for durable run ownership.
-   Construction passes the normalized admitted tenant to every direct method run and binds it
-   into the request replay hash; same-key cross-tenant replay conflicts. Alternative-set
-   records generated before this owner-bound hash have no verifiable tenant and therefore conflict
-   on replay instead of being silently adopted. Alternative-set read/selection records are not
-   yet tenant-fenced (#753), so this is not end-to-end construction
-   authorization or production principal proof. Other stateless surfaces retain their own
-   documented admission contract.
+   Construction passes the normalized admitted tenant to every direct method run and persists it
+   on alternative sets and selections. Idempotency is scoped to `(tenant_id, key)`, so exact
+   same-tenant replay converges while different tenants may independently use the same key.
+   Set/selection reads, selected-alternative proof-pack sourcing, portfolio-memory projection, and
+   wave simulation/selection are tenant-fenced. Legacy NULL-owner rows are preserved but match no
+   tenant and are never silently adopted. This remains caller-asserted scope, not production
+   principal proof. Other stateless surfaces retain their own documented admission contract.
 4. Caller-asserted tenant, actor, and role headers are routing and authorization inputs in the
    current runtime; they are not proof of an authenticated principal. Production identity and grant
    resolution remain external security-governance responsibilities.
@@ -283,9 +283,10 @@ Use these commands as the primary local contract:
    `make test-family-inventory`
 10. NULL-tenant quarantine inventory
     `make quarantine-inventory`
-    This operator-only command is the canonical observation path for the twelve datasets retained
+    This operator-only command is the canonical observation path for the fourteen datasets retained
     without verified tenant attribution by migrations `0003`, `0024` through `0029`, `0032`, and
-    `0033`; partial quarantine indexes keep the census bounded as history grows. The command
+    `0033`, plus construction migration `0037`; partial quarantine indexes keep the census bounded
+    as history grows. The command
     must remain bounded, sanitized, migration-provenanced, and transactionally read-only. A
     successful zero is distinct from failure; nonzero results do not authorize tenant inference or
     mutation.

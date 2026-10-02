@@ -405,13 +405,13 @@ python scripts/openapi_quality_gate.py
 
 ## NULL-tenant quarantine inventory
 
-Rows that migrations `0003`, `0024` through `0029`, `0032`, and `0033` could not truthfully
+Rows that migrations `0003`, `0024` through `0029`, `0032`, `0033`, and `0037` could not truthfully
 attribute remain NULL and therefore match no tenant-scoped application read. Partial quarantine
 indexes keep bounded sampling from scanning unrelated history. From the
 `lotus-manage` repository root, set the bank-managed `DPM_SUPPORTABILITY_POSTGRES_DSN` and run
 `make quarantine-inventory`.
 
-The command inventories all twelve governed datasets in a repeatable-read, read-only transaction.
+The command inventories all fourteen governed datasets in a repeatable-read, read-only transaction.
 It returns total counts, a stable bounded sample, explicit truncation, and applied migration
 versions/checksums. `QUARANTINE_INVENTORY_LIMIT` defaults to `20` and accepts `1..100`.
 Idempotency keys are hashed; payloads and connection details are not emitted.
@@ -423,6 +423,13 @@ Idempotency keys are hashed; payloads and connection details are not emitted.
   mutate rows, delete evidence, or bypass normal application isolation.
 - Detailed PowerShell and Bash invocation plus interpretation guidance lives in
   [docs/operations-runbook.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations-runbook.md#null-tenant-quarantine-inventory).
+
+Migration `0037` is a forward-only construction-write boundary. Pause construction generation and
+selection traffic, apply the migration, deploy the tenant-aware writer, verify readiness and this
+inventory, then resume traffic. Older writers must not overlap because they cannot persist owner
+scope and assume obsolete global idempotency. Recover with a forward fix, or restore the complete
+pre-upgrade database and matching application revision together; never partially reverse the
+schema or infer owners for legacy rows.
 
 ## Async operation ownership and recovery
 
