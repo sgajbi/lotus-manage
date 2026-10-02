@@ -22,6 +22,7 @@ class _RunService:
         request_hash: str,
         portfolio_id: str,
         idempotency_key: str | None,
+        tenant_id: str | None,
     ) -> None:
         self.recorded_hashes.append(request_hash)
 

@@ -78,8 +78,14 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    forwards the normalized admitted tenant as a per-request Core header across mandatory and
    optional source products; a selector body is not a substitute for Core tenant admission.
    Stateful rebalance and construction envelopes likewise require matching `X-Tenant-Id` and
-   `stateful_input.tenant_id` before resolver construction. Synchronous stateless simulation also
-   requires `X-Tenant-Id` for durable run ownership; other stateless surfaces retain their own
+   `stateful_input.tenant_id` before resolver construction. Synchronous stateless simulation and
+   stateless construction generation also require `X-Tenant-Id` for durable run ownership.
+   Construction passes the normalized admitted tenant to every direct method run and binds it
+   into the request replay hash; same-key cross-tenant replay conflicts. Alternative-set
+   records generated before this owner-bound hash have no verifiable tenant and therefore conflict
+   on replay instead of being silently adopted. Alternative-set read/selection records are not
+   yet tenant-fenced (#753), so this is not end-to-end construction
+   authorization or production principal proof. Other stateless surfaces retain their own
    documented admission contract.
 4. Caller-asserted tenant, actor, and role headers are routing and authorization inputs in the
    current runtime; they are not proof of an authenticated principal. Production identity and grant

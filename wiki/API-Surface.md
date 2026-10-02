@@ -137,7 +137,8 @@ booking.
 ## Construction alternative surfaces
 
 - `POST /api/v1/construction/alternative-sets/generate`
-  generates and persists a comparable RFC-0039 construction alternative set with do-nothing,
+  requires caller-asserted `X-Tenant-Id` in both stateless and stateful modes, and generates and
+  persists a comparable RFC-0039 construction alternative set with do-nothing,
   explainable heuristic, minimum-turnover, tax-aware, solver-constrained, risk-aware,
   liquidity-aware, currency-overlay, and regime-stress-aware alternatives with explicit
   supportability and source-authority posture. Liquidity-aware alternatives can consume optional
@@ -152,12 +153,24 @@ booking.
   execution-boundary evidence without claiming order generation, venue routing, best execution,
   OMS acknowledgement ingestion, fills, settlement, execution-status certification, or autonomous
   execution.
-  Client income-need planning and ESG/restriction-aware construction are intentionally deferred
-  until source-backed owner products exist.
+  Client income-need planning remains deferred. Source-backed ESG and hard-client-restriction
+  qualification exists for direct construction; wave propagation remains open under
+  [#739](https://github.com/sgajbi/lotus-manage/issues/739).
 - `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
   retrieves a previously generated alternative set without recomputation.
 - `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`
   records the actor-attributed selected alternative for audit and later workflow handoff.
+
+Direct generation now writes each method's run, artifact and lineage under the normalized admitted
+tenant; the same tenant can use the run-support GET and another tenant receives 404. An exact
+same-tenant generation replay retains its original set; a reused key with a different tenant
+conflicts. Previously unowned sets also conflict on replay under the new owner-bound hash; they
+are not retroactively attributed. This does **not** make the alternative set itself tenant-owned:
+its GET and selection storage still lack repository tenant fences
+([#753](https://github.com/sgajbi/lotus-manage/issues/753)).
+Do not expose those set/selection routes as tenant-authorized Gateway capabilities yet. Wave-item
+propagation remains under [#715](https://github.com/sgajbi/lotus-manage/issues/715); the local
+header is not production identity proof.
 
 These routes are manage-owned backend contracts. Gateway and Workbench are not yet integrated with
 this surface; construction-specific realization requirements now live in Gateway RFC-0098,

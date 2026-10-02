@@ -89,9 +89,11 @@ Current posture under RFC-0082:
    retired monolithic core route is not configured. `DPM_CORE_QUERY_BASE_URL` is also required when
     stateful construction consumes query-plane source products such as `PortfolioCashflowProjection:v1`.
    Stateful rebalance and construction requests require matching `X-Tenant-Id` and
-   `stateful_input.tenant_id` before Core resolution. Synchronous stateless simulation requires
-   `X-Tenant-Id` for durable run ownership; other stateless execution surfaces retain their
-   documented contracts.
+   `stateful_input.tenant_id` before Core resolution. Synchronous stateless simulation and
+   construction generation also require `X-Tenant-Id` for durable run ownership. Construction
+   run reads are tenant-fenced; alternative-set read/selection ownership remains an open gap
+   tracked by [#753](https://github.com/sgajbi/lotus-manage/issues/753). These local headers
+   are caller assertions, not production identity-provider proof.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 

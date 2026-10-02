@@ -1428,7 +1428,9 @@ def test_construction_service_uses_method_specific_run_correlation_ids() -> None
         def __init__(self) -> None:
             self.correlation_ids: list[str] = []
 
-        def record_run(self, *, result, request_hash, portfolio_id, idempotency_key) -> None:
+        def record_run(
+            self, *, result, request_hash, portfolio_id, idempotency_key, tenant_id
+        ) -> None:
             self.correlation_ids.append(result.correlation_id)
 
     payload = valid_api_payload()
