@@ -1815,7 +1815,8 @@ Functional coverage:
 - trusted tenant, actor, and role admission, with writes limited to composite administrators and
   portfolio managers,
 - idempotent immutable replay and changed-content conflict refusal,
-- tenant-fenced detail reads and deterministic bounded pages,
+- tenant-fenced detail reads and deterministic bounded pages with a same-snapshot total scoped
+  `count`, including offsets beyond the last page; offset traversal may shift across writes,
 - inclusive effective-date include/exclude decisions, immutable correction lineage, and retained
   original/corrected revisions,
 - PostgreSQL migration, restart, tenant fence, and missing parent-definition/correction fencing.

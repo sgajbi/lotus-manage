@@ -31,7 +31,10 @@ This repository owns:
 4. tenant-scoped composite definition and effective-dated eligibility revision source records,
    with atomic durable publication cursors and immutable retrieval receipts. Publication
    completeness remains `UNVERIFIED`; `lotus-performance` owns member-return facts and composite
-   calculation. The caller-asserted identity headers require trusted ingress before production use.
+   calculation. Definition/revision list counts are total scoped counts from the same page read
+   snapshot, but cross-request offset pages are not stable under writes; consumers use the
+   publication cursor for handoff. The caller-asserted identity headers require trusted ingress
+   before production use.
 
 Advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are intentionally
 owned by `lotus-advise`.

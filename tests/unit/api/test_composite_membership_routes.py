@@ -74,6 +74,24 @@ def test_composite_membership_routes_enforce_identity_and_preserve_pinned_histor
             definitions = client.get("/api/v1/rebalance/composites/definitions", headers=_headers())
             assert definitions.status_code == 200
             assert definitions.json()["count"] == 1
+            second_base = "/api/v1/rebalance/composites/PB_GLOBAL_INCOME_USD/definitions/2026.10"
+            assert (
+                client.put(second_base, headers=_headers(), json=_definition_payload()).status_code
+                == 200
+            )
+            definition_page = client.get(
+                "/api/v1/rebalance/composites/definitions?limit=1&offset=1",
+                headers=_headers(),
+            )
+            assert definition_page.status_code == 200
+            assert len(definition_page.json()["items"]) == 1
+            assert definition_page.json()["count"] == 2
+            definition_beyond_end = client.get(
+                "/api/v1/rebalance/composites/definitions?limit=1&offset=2",
+                headers=_headers(),
+            )
+            assert definition_beyond_end.json()["items"] == []
+            assert definition_beyond_end.json()["count"] == 2
             assert client.get(base, headers=_headers(tenant="other-tenant")).status_code == 404
 
             revision_url = f"{base}/membership/2026.10.1"
@@ -105,6 +123,18 @@ def test_composite_membership_routes_enforce_identity_and_preserve_pinned_histor
                 "2026.10.2",
                 "2026.10.1",
             ]
+            assert history.json()["count"] == 2
+            second_page = client.get(f"{base}/membership?limit=1&offset=1", headers=_headers())
+            assert second_page.status_code == 200
+            assert [item["membership_revision"] for item in second_page.json()["items"]] == [
+                "2026.10.1"
+            ]
+            assert second_page.json()["count"] == 2
+            beyond_end = client.get(f"{base}/membership?limit=1&offset=2", headers=_headers())
+            assert beyond_end.json()["items"] == []
+            assert beyond_end.json()["count"] == 2
+            foreign = client.get(f"{base}/membership?limit=1", headers=_headers(tenant="other"))
+            assert foreign.json() == {"items": [], "count": 0, "limit": 1, "offset": 0}
     finally:
         app.dependency_overrides.clear()
 

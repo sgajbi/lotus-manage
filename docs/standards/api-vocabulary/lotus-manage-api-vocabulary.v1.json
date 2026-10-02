@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-02T01:09:57.017589+00:00",
+  "generatedAt": "2026-10-02T02:45:10.624348+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3345,7 +3345,7 @@
       "semanticId": "lotus.count",
       "canonicalTerm": "count",
       "preferredName": "count",
-      "description": "composite definition page field: count.",
+      "description": "Total tenant-scoped definitions at this page's read snapshot.",
       "example": 10,
       "type": "integer",
       "locations": [
