@@ -57,16 +57,25 @@ def test_inventory_reports_every_quarantine_without_making_it_tenant_readable() 
         assert before == after == {dataset.name: 1 for dataset in QUARANTINED_TENANT_DATASETS}
 
         with psycopg.connect(dsn, row_factory=dict_row) as connection:
-            index_row = connection.execute(
+            index_rows = connection.execute(
                 """
-                SELECT indexdef
+                SELECT indexname, indexdef
                 FROM pg_indexes
                 WHERE schemaname = current_schema()
-                  AND indexname = 'idx_dpm_monitoring_runs_null_tenant_inventory'
+                  AND indexname IN (
+                      'idx_dpm_monitoring_runs_null_tenant_inventory',
+                      'idx_dpm_construction_sets_null_tenant_inventory',
+                      'idx_dpm_construction_selections_null_tenant_inventory'
+                  )
                 """
-            ).fetchone()
-        assert index_row is not None
-        assert "WHERE (tenant_id IS NULL)" in index_row["indexdef"]
+            ).fetchall()
+        indexes = {row["indexname"]: row["indexdef"] for row in index_rows}
+        assert set(indexes) == {
+            "idx_dpm_monitoring_runs_null_tenant_inventory",
+            "idx_dpm_construction_sets_null_tenant_inventory",
+            "idx_dpm_construction_selections_null_tenant_inventory",
+        }
+        assert all("WHERE (tenant_id IS NULL)" in definition for definition in indexes.values())
 
         by_name = {item["dataset"]: item for item in inventory["datasets"]}
         assert set(by_name) == {dataset.name for dataset in QUARANTINED_TENANT_DATASETS}
