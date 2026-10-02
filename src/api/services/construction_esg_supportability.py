@@ -37,24 +37,6 @@ def with_esg_restriction_constraints(
             "constraint_trace": [
                 *alternative.constraint_trace,
                 ConstructionConstraintTrace(
-                    constraint=ConstructionTraceTerm.CLIENT_RESTRICTION,
-                    status=client_restriction_status(
-                        request=request,
-                        result=result,
-                        context=authority_context.client_restriction_context,
-                    ),
-                    source_family=ConstructionSourceFamily.ESG_PROFILE,
-                    reason_codes=client_restriction_reason_codes(
-                        request=request,
-                        result=result,
-                        context=authority_context.client_restriction_context,
-                    ),
-                    description=(
-                        "Source-owned ClientRestrictionProfile:v1 evidence is applied to "
-                        "candidate buy/sell intents when available."
-                    ),
-                ),
-                ConstructionConstraintTrace(
                     constraint=ConstructionTraceTerm.SUSTAINABILITY_PREFERENCE,
                     status=sustainability_preference_status(
                         result=result,

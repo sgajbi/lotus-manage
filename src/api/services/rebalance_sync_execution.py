@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from src.api.observability import record_execution_call
 from src.api.request_models import RebalanceRequest
+from src.api.services.rebalance_client_restriction_policy import apply_client_restriction_policy
 from src.api.services.rebalance_run_support_service import DpmRunSupportServiceUnavailableError
 from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceIdempotencyConflictError,
@@ -96,6 +97,11 @@ def execute_simulation_request(
             correlation_id=correlation_id,
         )
         result = apply_source_lineage(result=result, source_context=source_context)
+        result = apply_client_restriction_policy(
+            request=request,
+            result=result,
+            source_context=source_context,
+        )
         support_service.complete_simulation_submission(
             tenant_id=tenant_id,
             idempotency_key=idempotency_key,

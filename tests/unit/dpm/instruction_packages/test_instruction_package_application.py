@@ -34,7 +34,7 @@ from src.core.instruction_packages import (
     DpmInstructionPackageSourceRevision,
 )
 from src.core.mandates import DpmMandateDigitalTwin
-from src.core.models import EngineOptions, SecurityTradeIntent
+from src.core.models import ClientRestrictionPolicyEvidence, EngineOptions, SecurityTradeIntent
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
     DpmProofPackDecisionSummary,
@@ -70,7 +70,7 @@ _TENANT = "tenant-instruction-test"
 
 
 def _result():
-    return run_simulation(
+    result = run_simulation(
         portfolio=portfolio_snapshot(
             portfolio_id="PF-INSTRUCTION-001",
             base_currency="SGD",
@@ -88,6 +88,21 @@ def _result():
         options=EngineOptions(),
         request_hash="sha256:instruction-package-source-run",
         correlation_id="corr-instruction-source-run",
+    )
+    return result.model_copy(
+        update={
+            "client_restriction_policy": ClientRestrictionPolicyEvidence(
+                decision="READY",
+                source_system="lotus-core",
+                source_product_name="ClientRestrictionProfile",
+                source_product_version="v1",
+                content_hash="sha256:instruction-client-policy",
+                stateful_context_hash="sha256:instruction-source-context",
+                portfolio_id="PF-INSTRUCTION-001",
+                client_id="CLIENT-INSTRUCTION-001",
+                as_of_date="2026-10-01",
+            )
+        }
     )
 
 
@@ -485,10 +500,15 @@ def _add_second_portfolio_candidate(
 ) -> DpmInstructionPackageReleaseCommand:
     """Add a second portfolio/wave candidate to the same durable source stores."""
 
-    result = _result().model_copy(
+    first_result = _result()
+    assert first_result.client_restriction_policy is not None
+    result = first_result.model_copy(
         update={
             "rebalance_run_id": "rr-instruction-002",
             "correlation_id": "corr-instruction-source-run-002",
+            "client_restriction_policy": first_result.client_restriction_policy.model_copy(
+                update={"portfolio_id": "PF-INSTRUCTION-002"}
+            ),
         }
     )
     service.run_service.record_run(
@@ -849,6 +869,19 @@ def test_remaining_domain_refusals_and_immutable_adapter_conflicts() -> None:
     result = _result()
     for result_update, reason in (
         ({"status": "BLOCKED"}, "RUN_NOT_READY"),
+        ({"client_restriction_policy": None}, "CLIENT_POLICY_NOT_READY"),
+        (
+            {"client_restriction_policy": ClientRestrictionPolicyEvidence(decision="NOT_ASSESSED")},
+            "CLIENT_POLICY_NOT_READY",
+        ),
+        (
+            {
+                "client_restriction_policy": ClientRestrictionPolicyEvidence(
+                    decision="PENDING_REVIEW"
+                )
+            },
+            "CLIENT_POLICY_NOT_READY",
+        ),
         (
             {"lineage": result.lineage.model_copy(update={"model_portfolio_id": "OTHER"})},
             "RUN_MODEL_LINEAGE_MISMATCH",

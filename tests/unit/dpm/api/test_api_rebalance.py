@@ -24,7 +24,10 @@ from src.api.routers.rebalance_runs import (
     reset_dpm_run_support_service_for_tests,
 )
 from src.core.common.canonical import hash_canonical_payload, strip_keys
-from src.core.dpm_source_context import DpmCoreExecutionContext
+from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
+    DpmCoreExecutionContext,
+)
 from src.core.rebalance_runs import (
     DpmAsyncOperationStatusResponse,
     DpmRunNotFoundError,
@@ -216,6 +219,110 @@ def _core_execution_context() -> DpmCoreExecutionContext:
     )
 
 
+def _core_restriction_profile(*, restricted: bool) -> DpmCoreClientRestrictionProfileResponse:
+    rules = (
+        [
+            {
+                "restriction_scope": "instrument",
+                "restriction_code": "NO_EQ_1_BUY",
+                "restriction_status": "active",
+                "restriction_source": "client_mandate",
+                "applies_to_buy": True,
+                "applies_to_sell": False,
+                "instrument_ids": ["EQ_1"],
+                "effective_from": "2026-01-01",
+                "restriction_version": 3,
+                "source_record_id": "restriction-eq-1-v3",
+            }
+        ]
+        if restricted
+        else []
+    )
+    return DpmCoreClientRestrictionProfileResponse.model_validate(
+        {
+            "product_name": "ClientRestrictionProfile",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "mandate_balanced_discretionary",
+            "as_of_date": "2026-03-25",
+            "restrictions": rules,
+            "supportability": {
+                "state": "READY",
+                "reason": "CLIENT_RESTRICTION_PROFILE_READY",
+                "restriction_count": len(rules),
+                "missing_data_families": [],
+            },
+            "lineage": {"contract_version": "rfc_040_client_restriction_profile_v1"},
+            "data_quality_status": "COMPLETE",
+            "latest_evidence_timestamp": "2026-03-25T09:00:00Z",
+            "source_batch_fingerprint": (
+                "sha256:client-restrictions-v3"
+                if restricted
+                else "sha256:client-restrictions-empty"
+            ),
+        }
+    )
+
+
+def test_stateful_simulate_blocks_matching_hard_restriction_and_invalidates_old_replay(
+    monkeypatch,
+) -> None:
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+    source_payload = _core_execution_context().model_dump(mode="json")
+    source_payload["shelf_entries"][0]["settlement_days"] = 0
+    source_payload["portfolio_snapshot"]["positions"][0]["market_value"] = {
+        "amount": "10000",
+        "currency": "SGD",
+    }
+    source = DpmCoreExecutionContext.model_validate(source_payload)
+    unrestricted = source.model_copy(
+        update={"client_restriction_profile": _core_restriction_profile(restricted=False)}
+    )
+    restricted = source.model_copy(
+        update={"client_restriction_profile": _core_restriction_profile(restricted=True)}
+    )
+    request = {"input_mode": "stateful", "stateful_input": _stateful_input_payload()}
+    headers = {"Idempotency-Key": "hard-policy-context-revision", "X-Tenant-Id": "tenant_001"}
+    with TestClient(app) as raw_client:
+        fake_resolver.context = unrestricted
+        accepted = raw_client.post("/api/v1/rebalance/simulate", json=request, headers=headers)
+        fake_resolver.context = restricted
+        stale_replay = raw_client.post("/api/v1/rebalance/simulate", json=request, headers=headers)
+        blocked = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json=request,
+            headers={**headers, "Idempotency-Key": "hard-policy-restricted"},
+        )
+    assert accepted.status_code == 200
+    assert accepted.json()["status"] == "READY", accepted.json()["reconciliation"]
+    assert Decimal(accepted.json()["before"]["total_value"]["amount"]) == Decimal("20000")
+    assert Decimal(accepted.json()["after_simulated"]["total_value"]["amount"]) == Decimal("20000")
+    assert Decimal(accepted.json()["after_simulated"]["cash_balances"][0]["amount"]) == 0
+    assert [
+        (intent["side"], Decimal(intent["quantity"]), Decimal(intent["notional"]["amount"]))
+        for intent in accepted.json()["intents"]
+        if intent["intent_type"] == "SECURITY_TRADE"
+    ] == [("BUY", Decimal("100"), Decimal("10000"))]
+    assert accepted.json()["client_restriction_policy"]["decision"] == "READY"
+    assert stale_replay.status_code == 409
+    assert blocked.status_code == 200
+    assert blocked.json()["status"] == "BLOCKED"
+    assert blocked.json()["gate_decision"]["gate"] == "BLOCKED"
+    assert blocked.json()["client_restriction_policy"]["decision"] == "BLOCKED"
+    assert blocked.json()["client_restriction_policy"]["violated_rule_refs"] == [
+        "NO_EQ_1_BUY:3:restriction-eq-1-v3:BUY:EQ_1"
+    ]
+    assert blocked.json()["client_restriction_policy"]["applicable_rule_refs"] == [
+        "NO_EQ_1_BUY:3:restriction-eq-1-v3:BUY:EQ_1"
+    ]
+    assert (
+        blocked.json()["client_restriction_policy"]["content_hash"]
+        != (accepted.json()["client_restriction_policy"]["content_hash"])
+    )
+    assert blocked.json()["intents"] == accepted.json()["intents"]
+
+
 class _FakeCoreResolver:
     def __init__(self, context: DpmCoreExecutionContext | None = None) -> None:
         self.calls: list[tuple[str, str | None, str | None]] = []
@@ -373,7 +480,10 @@ def test_stateful_simulate_normalizes_request_policy_against_source_resolved_cur
 
     assert response.status_code == 200
     result = response.json()
-    assert result["status"] == "READY"
+    assert result["status"] == "PENDING_REVIEW"
+    assert result["client_restriction_policy"]["reason_codes"] == [
+        "CLIENT_RESTRICTION_PROFILE_UNAVAILABLE"
+    ]
     assert result["lineage"]["input_mode"] == "stateful"
     assert {
         intent["instrument_id"]
@@ -682,7 +792,7 @@ def test_simulate_blocks_when_minimum_trade_fx_is_missing_or_invalid(
             {"EQ_A": "KEPT", "EQ_B": "KEPT"},
             "READY",
             "0",
-            "EXECUTION_READY",
+            "COMPLIANCE_REVIEW_REQUIRED",
         ),
         (
             "4500",
@@ -690,7 +800,7 @@ def test_simulate_blocks_when_minimum_trade_fx_is_missing_or_invalid(
             {"EQ_A": "KEPT", "EQ_B": "KEPT"},
             "READY",
             "0",
-            "EXECUTION_READY",
+            "COMPLIANCE_REVIEW_REQUIRED",
         ),
         (
             "4500.01",
@@ -714,7 +824,7 @@ def test_simulate_blocks_when_minimum_trade_fx_is_missing_or_invalid(
             {"EQ_A": "SUPPRESSED", "EQ_B": "SUPPRESSED"},
             "READY",
             "1000",
-            "EXECUTION_READY",
+            "COMPLIANCE_REVIEW_REQUIRED",
         ),
     ],
 )

@@ -415,6 +415,20 @@ class DpmInstructionPackageApplicationService:
         result = RebalanceResult.model_validate(run.result_json)
         if result.status != "READY":
             raise DpmInstructionPackageReleaseRefusedError("INSTRUCTION_PACKAGE_RUN_NOT_READY")
+        policy = result.client_restriction_policy
+        if (
+            policy is None
+            or policy.decision != "READY"
+            or policy.source_product_name != "ClientRestrictionProfile"
+            or not policy.content_hash
+            or not policy.stateful_context_hash
+            or policy.portfolio_id != portfolio_id
+            or not policy.client_id
+            or policy.as_of_date is None
+        ):
+            raise DpmInstructionPackageReleaseRefusedError(
+                "INSTRUCTION_PACKAGE_CLIENT_POLICY_NOT_READY"
+            )
         if result.lineage.model_portfolio_id not in {None, command.model_portfolio_id} or (
             result.lineage.model_portfolio_version not in {None, command.model_portfolio_version}
         ):

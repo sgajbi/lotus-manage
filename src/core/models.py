@@ -3,6 +3,7 @@ FILE: src/core/models.py
 """
 
 import re
+from datetime import date
 from decimal import Decimal
 from enum import Enum
 from typing import Annotated, Any, ClassVar, Dict, List, Literal, Optional, Union
@@ -931,7 +932,7 @@ class GateReason(BaseModel):
         description="Reason severity level used for deterministic ordering.",
         examples=["HIGH"],
     )
-    source: Literal["RULE_ENGINE", "SUITABILITY", "DATA_QUALITY"] = Field(
+    source: Literal["RULE_ENGINE", "SUITABILITY", "DATA_QUALITY", "CLIENT_POLICY"] = Field(
         description="Reason source subsystem.",
         examples=["RULE_ENGINE"],
     )
@@ -984,6 +985,26 @@ class GateDecision(BaseModel):
     summary: GateDecisionSummary = Field(description="Gate summary counters.")
 
 
+class ClientRestrictionPolicyEvidence(BaseModel):
+    """Source-owned hard-policy decision; raw counterfactuals are never approval."""
+
+    decision: Literal["NOT_ASSESSED", "READY", "PENDING_REVIEW", "BLOCKED"]
+    reason_codes: List[str] = Field(default_factory=list)
+    source_system: Optional[str] = None
+    source_product_name: Optional[str] = None
+    source_product_version: Optional[str] = None
+    source_id: Optional[str] = None
+    content_hash: Optional[str] = None
+    stateful_context_hash: Optional[str] = None
+    portfolio_id: Optional[str] = None
+    client_id: Optional[str] = None
+    mandate_id: Optional[str] = None
+    as_of_date: Optional[date] = None
+    override_authority: Literal["NONE"] = "NONE"
+    applicable_rule_refs: List[str] = Field(default_factory=list)
+    violated_rule_refs: List[str] = Field(default_factory=list)
+
+
 class RebalanceResult(BaseModel):
     """The complete, auditable result of a rebalance simulation."""
 
@@ -1027,6 +1048,13 @@ class RebalanceResult(BaseModel):
     gate_decision: Optional[GateDecision] = Field(
         default=None,
         description="Deterministic workflow gate decision for downstream orchestration.",
+    )
+    client_restriction_policy: Optional[ClientRestrictionPolicyEvidence] = Field(
+        default=None,
+        description=(
+            "Source-backed hard client policy qualification. NOT_ASSESSED is a mechanical "
+            "counterfactual, never evidence of mandate-compliant release readiness."
+        ),
     )
     lineage: LineageData = Field(description="Lineage identifiers and request hash.")
 

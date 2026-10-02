@@ -1,6 +1,11 @@
 from typing import Optional
 
 from src.api.request_models import RebalanceRequest
+from src.api.services.construction_client_restriction_supportability import (
+    client_restriction_policy_required,
+    client_restriction_status,
+    with_client_restriction_constraint,
+)
 from src.api.services.construction_method_authority import authority_context_for_request_method
 from src.api.services.construction_method_execution import run_construction_method
 from src.api.services.construction_supportability_application import (
@@ -14,6 +19,7 @@ from src.core.construction.alternative_engine import (
 from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import ConstructionAlternative, ConstructionAuthorityContext
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.models import RebalanceResult
 from src.core.rebalance_runs.service import DpmRunSupportService
@@ -32,7 +38,29 @@ def build_construction_alternative_for_method(
     solver_available: bool | None = None,
 ) -> ConstructionAlternative:
     if method == ConstructionMethod.DO_NOTHING_BASELINE:
-        return build_do_nothing_baseline(result=base_result)
+        baseline = build_do_nothing_baseline(result=base_result)
+        if not client_restriction_policy_required(authority_context):
+            return baseline
+        baseline = with_client_restriction_constraint(
+            request=request,
+            alternative=baseline,
+            result=base_result.model_copy(update={"intents": []}),
+            authority_context=authority_context,
+        )
+        return baseline.model_copy(
+            update={
+                "method_status": lowest_construction_status(
+                    [
+                        baseline.method_status,
+                        client_restriction_status(
+                            request=request,
+                            result=base_result.model_copy(update={"intents": []}),
+                            context=authority_context.client_restriction_context,
+                        ),
+                    ]
+                )
+            }
+        )
 
     resolved_solver_available = (
         has_solver_dependencies() if solver_available is None else solver_available

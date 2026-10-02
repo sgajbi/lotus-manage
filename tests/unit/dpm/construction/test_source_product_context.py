@@ -189,7 +189,9 @@ def test_source_product_authority_context_updates_preserves_all_existing_source_
     )
 
     assert updates == {}
-    assert resolved_context is authority_context
+    assert resolved_context == authority_context.model_copy(
+        update={"client_restriction_required": True}
+    )
 
 
 def test_construction_source_product_context_exports_only_orchestration_surface() -> None:
