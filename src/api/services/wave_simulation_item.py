@@ -46,6 +46,7 @@ def _simulation_request_and_authority_context(
 def simulate_item(
     *,
     item: DpmRebalanceWaveItem,
+    tenant_id: str,
     correlation_id: str,
     item_inputs: dict[str, RebalanceRequest | DpmWaveSimulationInput],
     methods: list[ConstructionMethod] | None,
@@ -71,6 +72,7 @@ def simulate_item(
             authority_context=authority_context,
             risk_authority_client=risk_authority_client,
             run_service=run_service,
+            admitted_tenant_id=tenant_id,
         )
     except _CONSTRUCTION_SIMULATION_BLOCKING_ERRORS as exc:
         return _construction_generation_failed_item(item=item, exc=exc)

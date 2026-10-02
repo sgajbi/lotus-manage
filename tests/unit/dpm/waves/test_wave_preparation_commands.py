@@ -57,6 +57,7 @@ def _wave(*, state: str, item_state: str, version: int = 4) -> DpmRebalanceWave:
     )
     return DpmRebalanceWave.model_construct(
         wave_id=f"dwv_{state.lower()}",
+        tenant_id="tenant-test",
         state=state,
         as_of_date="2026-06-01",
         version=version,

@@ -128,7 +128,10 @@ def _generate_selected_alternative(client: TestClient) -> tuple[str, str]:
             "reason_code": "LOWER_DRIFT_WITH_SOURCE_TRACE",
             "comment": "Selected for proof-pack API coverage.",
         },
-        headers={"X-Correlation-Id": "corr-proof-pack-selection"},
+        headers={
+            "X-Correlation-Id": "corr-proof-pack-selection",
+            "X-Tenant-Id": "tenant-test",
+        },
     )
     assert selection.status_code == 200
     return str(alternative_set["alternative_set_id"]), str(selected_alternative_id)
@@ -331,6 +334,24 @@ def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
         section["section_type"] == "before_state" and section["state"] == "READY"
         for section in proof_pack["sections"]
     )
+
+
+def test_selected_alternative_proof_pack_refuses_foreign_tenant(client: TestClient) -> None:
+    alternative_set_id, selected_alternative_id = _generate_selected_alternative(client)
+
+    response = client.post(
+        "/api/v1/rebalance/proof-packs?tenant_id=tenant-foreign",
+        json={
+            "source_type": "SELECTED_ALTERNATIVE",
+            "alternative_set_id": alternative_set_id,
+            "selected_alternative_id": selected_alternative_id,
+            "actor_id": "pm_foreign",
+        },
+        headers={"Idempotency-Key": "proof-pack-foreign-construction-source"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "DPM_ALTERNATIVE_SET_NOT_FOUND"
 
 
 def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(

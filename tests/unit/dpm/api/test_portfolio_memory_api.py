@@ -362,6 +362,7 @@ def _construction_repository() -> InMemoryConstructionRepository:
         alternatives=[build_do_nothing_baseline(result=result)],
     ).model_copy(
         update={
+            "tenant_id": TENANT_ID,
             "request_hash": "sha256:construction-memory",
             "generated_at": datetime(2026, 5, 3, 9, 30, tzinfo=timezone.utc),
             "source_supportability_state": "READY",
@@ -374,6 +375,7 @@ def _construction_repository() -> InMemoryConstructionRepository:
     repository.save_selection(
         selection=ConstructionAlternativeSelection(
             selection_id="casel_memory_001",
+            tenant_id=TENANT_ID,
             alternative_set_id="cas_memory_001",
             alternative_id="alt_do_nothing_baseline",
             actor_id="pm_001",

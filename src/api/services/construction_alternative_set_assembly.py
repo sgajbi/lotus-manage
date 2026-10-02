@@ -11,6 +11,7 @@ from src.core.dpm_source_context import DpmResolvedSourceContext
 def build_persistable_alternative_set(
     *,
     portfolio_id: str,
+    tenant_id: str,
     alternatives: list[ConstructionAlternative],
     request_hash: str,
     source_context: Optional[DpmResolvedSourceContext],
@@ -23,10 +24,13 @@ def build_persistable_alternative_set(
         as_of=as_of or datetime.now(timezone.utc).date().isoformat(),
         alternatives=alternatives,
     ).model_copy(
-        update=alternative_set_lineage_fields(
-            request_hash=request_hash,
-            source_context=source_context,
-        )
+        update={
+            "tenant_id": tenant_id,
+            **alternative_set_lineage_fields(
+                request_hash=request_hash,
+                source_context=source_context,
+            ),
+        }
     )
 
 

@@ -22,7 +22,7 @@ def test_operator_surfaces_publish_one_safe_quarantine_inventory_command() -> No
     assert "quarantine-inventory:" in (ROOT / "Makefile").read_text(encoding="utf-8")
     runbook = surfaces["docs/operations-runbook.md"]
     for required_truth in (
-        "all twelve governed datasets",
+        "all fourteen governed datasets",
         "repeatable-read, read-only transaction",
         "explicit successful zero",
         "QUARANTINE_INVENTORY_FAILED",

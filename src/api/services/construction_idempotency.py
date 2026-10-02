@@ -52,8 +52,12 @@ def resolve_existing_construction_alternative_set(
     repository: ConstructionRepository,
     idempotency_key: str,
     request_hash: str,
+    tenant_id: str,
 ) -> ConstructionAlternativeSet | None:
-    existing = repository.get_alternative_set_by_idempotency(idempotency_key=idempotency_key)
+    existing = repository.get_alternative_set_by_idempotency(
+        idempotency_key=idempotency_key,
+        tenant_id=tenant_id,
+    )
     if existing is None:
         return None
     if existing.request_hash != request_hash:

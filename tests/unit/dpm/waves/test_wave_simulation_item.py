@@ -54,6 +54,7 @@ def test_simulate_item_returns_non_source_ready_item_unchanged() -> None:
     assert (
         simulate_item(
             item=item,
+            tenant_id="tenant-test",
             correlation_id="corr-simulate",
             item_inputs={},
             methods=None,
@@ -68,6 +69,7 @@ def test_simulate_item_returns_non_source_ready_item_unchanged() -> None:
 def test_simulate_item_blocks_missing_construction_input() -> None:
     updated = simulate_item(
         item=_item(),
+        tenant_id="tenant-test",
         correlation_id="corr-simulate",
         item_inputs={},
         methods=None,
@@ -160,6 +162,7 @@ def test_simulate_item_records_generated_construction_alternative_set(
 
     updated = simulate_item(
         item=_item(),
+        tenant_id="tenant-test",
         correlation_id="corr-simulate",
         item_inputs={
             "dwi_simulate": DpmWaveSimulationInput(stateless_input=_request()),
@@ -172,6 +175,7 @@ def test_simulate_item_records_generated_construction_alternative_set(
 
     assert captured["idempotency_key"] == "wave:dwi_simulate:simulate"
     assert captured["correlation_id"] == "corr-simulate"
+    assert captured["admitted_tenant_id"] == "tenant-test"
     assert updated.state == "SIMULATED"
     assert updated.alternative_set_id == "cas_simulate"
     assert updated.reason_codes == ["CONSTRUCTION_ALTERNATIVES_GENERATED"]
@@ -212,6 +216,7 @@ def test_simulate_item_blocks_construction_generation_failure(
 
     updated = simulate_item(
         item=_item(),
+        tenant_id="tenant-test",
         correlation_id="corr-simulate",
         item_inputs={"PB_SG_SIMULATE": _request()},
         methods=None,
@@ -261,6 +266,7 @@ def test_simulate_item_does_not_hide_unexpected_construction_generation_failure(
     with pytest.raises(RuntimeError, match="construction repository side effect failed"):
         simulate_item(
             item=_item(),
+            tenant_id="tenant-test",
             correlation_id="corr-simulate",
             item_inputs={"PB_SG_SIMULATE": _request()},
             methods=None,

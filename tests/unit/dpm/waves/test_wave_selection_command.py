@@ -83,6 +83,7 @@ def test_select_persisted_wave_item_alternative_records_selection_and_persists(
     assert repository.expected_version == 6
     assert captured["selection"]["alternative_set_id"] == "cas_selection_command"
     assert captured["selection"]["alternative_id"] == "alt_selected"
+    assert captured["selection"]["tenant_id"] == "tenant-test"
     assert captured["build"]["selected_item"] is wave.items[0]
     assert captured["build"]["generate_proof_pack"] is True
 

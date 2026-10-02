@@ -8,6 +8,7 @@ from src.api.dependencies import get_construction_repository
 from src.api.routers.construction import router
 from src.api.routers.construction_http import construction_http_exception
 from src.api.routers.construction_models import CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE
+from src.api.routers.mandate_tenant_query import MandateTenantIdHeader
 from src.api.services import construction_service
 from src.core.construction.models import ConstructionAlternativeSet
 from src.core.construction.repository import (
@@ -38,12 +39,14 @@ def read_alternative_set(
         str,
         Path(description="Construction alternative set identifier.", examples=["cas_001"]),
     ],
+    x_tenant_id: MandateTenantIdHeader,
     repository: ConstructionRepository = Depends(get_construction_repository),
 ) -> ConstructionAlternativeSet:
     try:
         return construction_service.get_construction_alternative_set(
             repository=repository,
             alternative_set_id=alternative_set_id,
+            tenant_id=x_tenant_id,
         )
     except ConstructionAlternativeSetNotFoundError as exc:
         raise construction_http_exception(exc) from exc

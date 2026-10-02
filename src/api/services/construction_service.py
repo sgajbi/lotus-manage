@@ -27,6 +27,8 @@ from src.core.construction.models import (
 from src.core.construction.repository import (
     ConstructionAlternativeSetNotFoundError,
     ConstructionRepository,
+    ConstructionIdempotencyConflictError,
+    require_construction_tenant_id,
 )
 from src.core.construction.vocabulary import (
     ConstructionMethod,
@@ -59,17 +61,19 @@ def generate_construction_alternative_set(
     run_service: DpmRunSupportService | None = None,
     admitted_tenant_id: str | None = None,
 ) -> ConstructionAlternativeSet:
+    tenant_id = require_construction_tenant_id(admitted_tenant_id)
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
     request_hash = construction_request_hash(
         request=request,
         methods=method_set,
         source_context=source_context,
-        admitted_tenant_id=admitted_tenant_id,
+        admitted_tenant_id=tenant_id,
     )
     existing = resolve_existing_construction_alternative_set(
         repository=repository,
         idempotency_key=idempotency_key,
         request_hash=request_hash,
+        tenant_id=tenant_id,
     )
     if existing is not None:
         return existing
@@ -80,7 +84,7 @@ def generate_construction_alternative_set(
         correlation_id=correlation_id,
         request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
         run_service=run_service,
-        tenant_id=admitted_tenant_id,
+        tenant_id=tenant_id,
     )
     resolved_authority_context = authority_context_with_source_products(
         authority_context=authority_context or ConstructionAuthorityContext(),
@@ -96,27 +100,34 @@ def generate_construction_alternative_set(
         risk_authority_client=risk_authority_client,
         run_service=run_service,
         solver_available=has_solver_dependencies(),
-        tenant_id=admitted_tenant_id,
+        tenant_id=tenant_id,
     )
     alternative_set = build_persistable_alternative_set(
         portfolio_id=request.portfolio_snapshot.portfolio_id,
+        tenant_id=tenant_id,
         alternatives=alternatives,
         request_hash=request_hash,
         source_context=source_context,
     )
-    repository.save_alternative_set(
+    persisted = repository.save_alternative_set(
         alternative_set=alternative_set,
         idempotency_key=idempotency_key,
     )
-    return alternative_set
+    if persisted.request_hash != request_hash:
+        raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
+    return persisted
 
 
 def get_construction_alternative_set(
     *,
     repository: ConstructionRepository,
     alternative_set_id: str,
+    tenant_id: str,
 ) -> ConstructionAlternativeSet:
-    alternative_set = repository.get_alternative_set(alternative_set_id=alternative_set_id)
+    alternative_set = repository.get_alternative_set(
+        alternative_set_id=alternative_set_id,
+        tenant_id=tenant_id,
+    )
     if alternative_set is None:
         raise ConstructionAlternativeSetNotFoundError("CONSTRUCTION_ALTERNATIVE_SET_NOT_FOUND")
     return alternative_set
@@ -131,10 +142,12 @@ def select_construction_alternative(
     reason_code: str,
     comment: str | None,
     correlation_id: str | None,
+    tenant_id: str,
 ) -> ConstructionAlternativeSelection:
     alternative_set = get_construction_alternative_set(
         repository=repository,
         alternative_set_id=alternative_set_id,
+        tenant_id=tenant_id,
     )
     selection = build_construction_selection(
         alternative_set=alternative_set,

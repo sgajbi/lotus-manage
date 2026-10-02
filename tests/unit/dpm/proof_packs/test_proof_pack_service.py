@@ -38,6 +38,9 @@ class _RunService:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
         return self.run
 
+    def get_run_record_for_tenant(self, *, tenant_id: str, rebalance_run_id: str):
+        return self.get_run_record(rebalance_run_id=rebalance_run_id)
+
     def list_workflow_decision_records(self, *, rebalance_run_id: str):
         if self.missing:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
@@ -52,9 +55,10 @@ def _construction_repository() -> tuple[InMemoryConstructionRepository, str, str
         portfolio_id="pf_service_1",
         as_of="2026-05-03",
         alternatives=[alternative],
-    ).model_copy(update={"generated_at": CREATED_AT})
+    ).model_copy(update={"tenant_id": "tenant-test", "generated_at": CREATED_AT})
     selection = ConstructionAlternativeSelection(
         selection_id="casel_service_001",
+        tenant_id="tenant-test",
         alternative_set_id=alternative_set.alternative_set_id,
         alternative_id=alternative.alternative_id,
         actor_id="pm_service",

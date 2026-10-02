@@ -43,6 +43,9 @@ class _RunService:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
         return self.run
 
+    def get_run_record_for_tenant(self, *, tenant_id: str, rebalance_run_id: str):
+        return self.get_run_record(rebalance_run_id=rebalance_run_id)
+
     def list_workflow_decision_records(self, *, rebalance_run_id: str):
         if self.missing:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
@@ -57,9 +60,10 @@ def _construction_repository() -> tuple[InMemoryConstructionRepository, str, str
         portfolio_id="pf_selected_source_1",
         as_of="2026-05-03",
         alternatives=[alternative],
-    ).model_copy(update={"generated_at": CREATED_AT})
+    ).model_copy(update={"tenant_id": "tenant-test", "generated_at": CREATED_AT})
     selection = ConstructionAlternativeSelection(
         selection_id="casel_selected_source_001",
+        tenant_id="tenant-test",
         alternative_set_id=alternative_set.alternative_set_id,
         alternative_id=alternative.alternative_id,
         actor_id="pm_selected_source",
@@ -82,6 +86,7 @@ def test_resolve_selected_alternative_source_returns_selection_run_and_decisions
         selected_alternative_id=selected_alternative_id,
         construction_repository=repository,
         run_service=run_service,
+        tenant_id="tenant-test",
     )
 
     assert source.alternative_set.alternative_set_id == alternative_set_id
@@ -99,6 +104,7 @@ def test_resolve_selected_alternative_source_degrades_when_linked_run_is_missing
         selected_alternative_id=selected_alternative_id,
         construction_repository=repository,
         run_service=_RunService(missing=True),
+        tenant_id="tenant-test",
     )
 
     assert source.run is None
@@ -114,6 +120,7 @@ def test_resolve_selected_alternative_source_rejects_missing_alternative_set() -
             selected_alternative_id=selected_alternative_id,
             construction_repository=repository,
             run_service=_RunService(),
+            tenant_id="tenant-test",
         )
 
 
@@ -126,4 +133,5 @@ def test_resolve_selected_alternative_source_rejects_missing_selected_alternativ
             selected_alternative_id="missing",
             construction_repository=repository,
             run_service=_RunService(),
+            tenant_id="tenant-test",
         )

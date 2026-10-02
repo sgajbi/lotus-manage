@@ -23,6 +23,7 @@ def select_construction_alternative_for_wave(
     reason_code: str,
     comment: str | None,
     correlation_id: str,
+    tenant_id: str,
 ) -> None:
     try:
         construction_service.select_construction_alternative(
@@ -33,6 +34,7 @@ def select_construction_alternative_for_wave(
             reason_code=reason_code,
             comment=comment,
             correlation_id=correlation_id,
+            tenant_id=tenant_id,
         )
     except _CONSTRUCTION_SELECTION_LOOKUP_ERRORS as exc:
         raise DpmWaveLookupError("DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND", str(exc)) from exc

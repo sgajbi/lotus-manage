@@ -100,7 +100,11 @@ def test_generated_construction_runs_are_readable_only_by_admitted_tenant() -> N
                 json=payload,
                 headers={"Idempotency-Key": "owned-construction-runs", "X-Tenant-Id": "tenant_002"},
             )
-            assert foreign_replay.status_code == 409
+            assert foreign_replay.status_code == 200
+            assert (
+                foreign_replay.json()["alternative_set_id"] != response.json()["alternative_set_id"]
+            )
+            assert foreign_replay.json()["tenant_id"] == "tenant_002"
     finally:
         app.dependency_overrides = {}
 
@@ -129,7 +133,8 @@ def test_stateless_construction_refuses_missing_or_blank_tenant_before_writes(
             assert response.status_code == 422
             assert (
                 repository.get_alternative_set_by_idempotency(
-                    idempotency_key="missing-construction-owner"
+                    idempotency_key="missing-construction-owner",
+                    tenant_id="tenant_001",
                 )
                 is None
             )
@@ -149,14 +154,18 @@ def test_stateless_construction_refuses_missing_or_blank_tenant_before_writes(
 
 def test_preexisting_unowned_construction_replay_is_not_adopted_by_tenant() -> None:
     repository = InMemoryConstructionRepository()
-    legacy = construction_service.generate_construction_alternative_set(
+    owned_seed = construction_service.generate_construction_alternative_set(
         request=RebalanceRequest.model_validate(_payload()["stateless_input"]),
         idempotency_key="unowned-legacy-construction",
         correlation_id="corr-legacy-construction",
         repository=repository,
         methods=[ConstructionMethod.HEURISTIC_EXPLAINABLE],
         run_service=None,
+        admitted_tenant_id="legacy_seed_owner",
     )
+    legacy = owned_seed.model_copy(update={"tenant_id": None})
+    repository._alternative_sets[legacy.alternative_set_id] = legacy  # noqa: SLF001
+    repository._idempotency_index.clear()  # noqa: SLF001
     app.dependency_overrides[get_dpm_run_support_service] = lambda: DpmRunSupportService(
         repository=InMemoryDpmRunRepository()
     )
@@ -167,11 +176,11 @@ def test_preexisting_unowned_construction_replay_is_not_adopted_by_tenant() -> N
                 json={**_payload(), "methods": ["HEURISTIC_EXPLAINABLE"]},
                 headers={"Idempotency-Key": "unowned-legacy-construction"},
             )
-        assert response.status_code == 409
+        assert response.status_code == 200
+        assert response.json()["tenant_id"] == "tenant_001"
+        assert response.json()["alternative_set_id"] != legacy.alternative_set_id
         assert (
-            repository.get_alternative_set_by_idempotency(
-                idempotency_key="unowned-legacy-construction"
-            )
+            repository._alternative_sets[legacy.alternative_set_id]  # noqa: SLF001
             == legacy
         )
     finally:
@@ -1185,11 +1194,19 @@ def test_cost_aware_api_rejects_duplicate_point_identity_before_persistence(
     )
     assert (
         repository.list_alternative_sets(
-            portfolio_id=payload["stateless_input"]["portfolio_snapshot"]["portfolio_id"], limit=10
+            portfolio_id=payload["stateless_input"]["portfolio_snapshot"]["portfolio_id"],
+            tenant_id="tenant_001",
+            limit=10,
         )
         == []
     )
-    assert repository.get_alternative_set_by_idempotency(idempotency_key=idempotency_key) is None
+    assert (
+        repository.get_alternative_set_by_idempotency(
+            idempotency_key=idempotency_key,
+            tenant_id="tenant_001",
+        )
+        is None
+    )
 
 
 def test_cost_aware_api_retains_qualified_core_duplicate_evidence_without_estimate() -> None:
@@ -2203,6 +2220,88 @@ def test_read_and_select_construction_alternative_set() -> None:
     assert selection.status_code == 200
     assert selection.json()["alternative_id"] == "alt_min_turnover"
     assert selection.json()["correlation_id"] == "corr-construction-select"
-    assert repository.get_selection(alternative_set_id=alternative_set_id) is not None
+    assert (
+        repository.get_selection(
+            alternative_set_id=alternative_set_id,
+            tenant_id="tenant_001",
+        )
+        is not None
+    )
     assert missing_alternative.status_code == 404
     assert missing_alternative.json()["detail"] == "CONSTRUCTION_ALTERNATIVE_NOT_FOUND"
+
+
+def test_construction_set_read_and_selection_refuse_foreign_tenant() -> None:
+    repository = InMemoryConstructionRepository()
+    with _client(repository) as client:
+        created = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=_payload(),
+            headers={"Idempotency-Key": "idem-construction-tenant-fence"},
+        )
+        assert created.status_code == 200
+        alternative_set_id = created.json()["alternative_set_id"]
+        route = f"/api/v1/construction/alternative-sets/{alternative_set_id}"
+        selection_request = {
+            "alternative_id": created.json()["alternatives"][0]["alternative_id"],
+            "actor_id": "pm_001",
+            "reason_code": "MODEL_REVIEW",
+        }
+        assert client.get(route).status_code == 200
+        assert client.get(route, headers={"X-Tenant-Id": "tenant_002"}).status_code == 404
+        assert (
+            client.post(
+                f"{route}/selections",
+                json=selection_request,
+                headers={"X-Tenant-Id": "tenant_002"},
+            ).status_code
+            == 404
+        )
+        assert (
+            repository.get_selection(
+                alternative_set_id=alternative_set_id,
+                tenant_id="tenant_001",
+            )
+            is None
+        )
+        assert client.post(f"{route}/selections", json=selection_request).status_code == 200
+    app.dependency_overrides = {}
+
+
+@pytest.mark.parametrize("tenant_header", [None, "   "])
+def test_construction_set_read_and_selection_require_tenant_scope(
+    tenant_header: str | None,
+) -> None:
+    repository = InMemoryConstructionRepository()
+    with _client(repository) as client:
+        created = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=_payload(),
+            headers={"Idempotency-Key": f"set-scope-{tenant_header!r}"},
+        )
+        assert created.status_code == 200
+        alternative_set_id = created.json()["alternative_set_id"]
+        headers = {} if tenant_header is None else {"X-Tenant-Id": tenant_header}
+        if tenant_header is None:
+            client.headers.pop("X-Tenant-Id")
+        route = f"/api/v1/construction/alternative-sets/{alternative_set_id}"
+        read = client.get(route, headers=headers)
+        selection = client.post(
+            f"{route}/selections",
+            json={
+                "alternative_id": created.json()["alternatives"][0]["alternative_id"],
+                "actor_id": "pm_001",
+                "reason_code": "MODEL_REVIEW",
+            },
+            headers=headers,
+        )
+        assert read.status_code == 422
+        assert selection.status_code == 422
+        assert (
+            repository.get_selection(
+                alternative_set_id=alternative_set_id,
+                tenant_id="tenant_001",
+            )
+            is None
+        )
+    app.dependency_overrides = {}

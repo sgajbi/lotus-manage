@@ -9,7 +9,12 @@ from src.core.construction.models import (
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
 )
-from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
+from src.core.construction.repository import (
+    ConstructionAlternativeSetNotFoundError,
+    ConstructionIdempotencyConflictError,
+    require_construction_tenant_id,
+)
+from src.infrastructure.mandates.serialization import dump_model_json
 from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
@@ -28,10 +33,13 @@ class PostgresConstructionRepository:
         *,
         alternative_set: ConstructionAlternativeSet,
         idempotency_key: str,
-    ) -> None:
+    ) -> ConstructionAlternativeSet:
+        tenant_id = require_construction_tenant_id(alternative_set.tenant_id)
+        owned_set = alternative_set.model_copy(update={"tenant_id": tenant_id})
         query = """
             INSERT INTO dpm_construction_alternative_sets (
                 alternative_set_id,
+                tenant_id,
                 portfolio_id,
                 as_of,
                 status,
@@ -41,75 +49,94 @@ class PostgresConstructionRepository:
                 source_supportability_state,
                 payload_json,
                 created_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (alternative_set_id) DO UPDATE SET
-                status=excluded.status,
-                request_hash=excluded.request_hash,
-                idempotency_key=excluded.idempotency_key,
-                input_mode=excluded.input_mode,
-                source_supportability_state=excluded.source_supportability_state,
-                payload_json=excluded.payload_json,
-                created_at=excluded.created_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            RETURNING tenant_id, payload_json
         """
         with closing(self._connect()) as connection:
-            connection.execute(
+            row = connection.execute(
                 query,
                 (
-                    alternative_set.alternative_set_id,
-                    alternative_set.portfolio_id,
-                    alternative_set.as_of,
-                    alternative_set.status.value,
-                    alternative_set.request_hash,
+                    owned_set.alternative_set_id,
+                    tenant_id,
+                    owned_set.portfolio_id,
+                    owned_set.as_of,
+                    owned_set.status.value,
+                    owned_set.request_hash,
                     idempotency_key,
-                    alternative_set.input_mode,
-                    alternative_set.source_supportability_state,
-                    dump_model_json(alternative_set),
-                    alternative_set.generated_at.isoformat(),
+                    owned_set.input_mode,
+                    owned_set.source_supportability_state,
+                    dump_model_json(owned_set),
+                    owned_set.generated_at.isoformat(),
                 ),
-            )
+            ).fetchone()
+            if row is None:
+                row = connection.execute(
+                    """
+                    SELECT tenant_id, payload_json
+                    FROM dpm_construction_alternative_sets
+                    WHERE tenant_id = %s AND idempotency_key = %s
+                    """,
+                    (tenant_id, idempotency_key),
+                ).fetchone()
+            if row is None:
+                raise ConstructionIdempotencyConflictError(
+                    "CONSTRUCTION_ALTERNATIVE_SET_ID_CONFLICT"
+                )
             connection.commit()
+        persisted = _alternative_set_from_row(row)
+        if persisted is None:
+            raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
+        return persisted
 
     def get_alternative_set(
         self,
         *,
         alternative_set_id: str,
+        tenant_id: str,
     ) -> ConstructionAlternativeSet | None:
-        query = "SELECT payload_json FROM dpm_construction_alternative_sets WHERE alternative_set_id = %s"
+        query = """
+            SELECT tenant_id, payload_json
+            FROM dpm_construction_alternative_sets
+            WHERE alternative_set_id = %s AND tenant_id = %s
+        """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (alternative_set_id,)).fetchone()
+            row = connection.execute(query, (alternative_set_id, tenant_id)).fetchone()
         return _alternative_set_from_row(row)
 
     def get_alternative_set_by_idempotency(
         self,
         *,
         idempotency_key: str,
+        tenant_id: str,
     ) -> ConstructionAlternativeSet | None:
         query = """
-            SELECT payload_json
+            SELECT tenant_id, payload_json
             FROM dpm_construction_alternative_sets
-            WHERE idempotency_key = %s
+            WHERE tenant_id = %s AND idempotency_key = %s
             ORDER BY created_at DESC
             LIMIT 1
         """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (idempotency_key,)).fetchone()
+            row = connection.execute(query, (tenant_id, idempotency_key)).fetchone()
         return _alternative_set_from_row(row)
 
     def list_alternative_sets(
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
         limit: int,
     ) -> list[ConstructionAlternativeSet]:
         query = """
-            SELECT payload_json
+            SELECT tenant_id, payload_json
             FROM dpm_construction_alternative_sets
-            WHERE portfolio_id = %s
+            WHERE tenant_id = %s AND portfolio_id = %s
             ORDER BY created_at DESC, alternative_set_id DESC
             LIMIT %s
         """
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, (portfolio_id, limit)).fetchall()
+            rows = connection.execute(query, (tenant_id, portfolio_id, limit)).fetchall()
         return [
             alternative_set
             for row in rows
@@ -121,10 +148,13 @@ class PostgresConstructionRepository:
         *,
         selection: ConstructionAlternativeSelection,
     ) -> None:
+        tenant_id = require_construction_tenant_id(selection.tenant_id)
+        owned_selection = selection.model_copy(update={"tenant_id": tenant_id})
         query = """
             INSERT INTO dpm_construction_alternative_selections (
                 selection_id,
                 alternative_set_id,
+                tenant_id,
                 alternative_id,
                 actor_id,
                 reason_code,
@@ -132,7 +162,7 @@ class PostgresConstructionRepository:
                 correlation_id,
                 payload_json,
                 selected_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (alternative_set_id) DO UPDATE SET
                 selection_id=excluded.selection_id,
                 alternative_id=excluded.alternative_id,
@@ -142,39 +172,59 @@ class PostgresConstructionRepository:
                 correlation_id=excluded.correlation_id,
                 payload_json=excluded.payload_json,
                 selected_at=excluded.selected_at
+            WHERE dpm_construction_alternative_selections.tenant_id = excluded.tenant_id
+            RETURNING selection_id
         """
         with closing(self._connect()) as connection:
-            connection.execute(
+            owner = connection.execute(
+                """
+                SELECT 1
+                FROM dpm_construction_alternative_sets
+                WHERE alternative_set_id = %s AND tenant_id = %s
+                """,
+                (owned_selection.alternative_set_id, tenant_id),
+            ).fetchone()
+            if owner is None:
+                raise ConstructionAlternativeSetNotFoundError(
+                    "CONSTRUCTION_ALTERNATIVE_SET_NOT_FOUND"
+                )
+            row = connection.execute(
                 query,
                 (
-                    selection.selection_id,
-                    selection.alternative_set_id,
-                    selection.alternative_id,
-                    selection.actor_id,
-                    selection.reason_code,
-                    selection.comment,
-                    selection.correlation_id,
-                    dump_model_json(selection),
-                    selection.selected_at.isoformat(),
+                    owned_selection.selection_id,
+                    owned_selection.alternative_set_id,
+                    tenant_id,
+                    owned_selection.alternative_id,
+                    owned_selection.actor_id,
+                    owned_selection.reason_code,
+                    owned_selection.comment,
+                    owned_selection.correlation_id,
+                    dump_model_json(owned_selection),
+                    owned_selection.selected_at.isoformat(),
                 ),
-            )
+            ).fetchone()
+            if row is None:
+                raise ConstructionAlternativeSetNotFoundError(
+                    "CONSTRUCTION_ALTERNATIVE_SET_NOT_FOUND"
+                )
             connection.commit()
 
     def get_selection(
         self,
         *,
         alternative_set_id: str,
+        tenant_id: str,
     ) -> ConstructionAlternativeSelection | None:
         query = """
-            SELECT payload_json
+            SELECT tenant_id, payload_json
             FROM dpm_construction_alternative_selections
-            WHERE alternative_set_id = %s
+            WHERE alternative_set_id = %s AND tenant_id = %s
         """
         with closing(self._connect()) as connection:
-            row = connection.execute(query, (alternative_set_id,)).fetchone()
+            row = connection.execute(query, (alternative_set_id, tenant_id)).fetchone()
         if row is None:
             return None
-        return load_model_json(ConstructionAlternativeSelection, _payload(row))
+        return _selection_from_row(row)
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()
@@ -193,7 +243,22 @@ class PostgresConstructionRepository:
 def _alternative_set_from_row(row: Any) -> ConstructionAlternativeSet | None:
     if row is None:
         return None
-    return load_model_json(ConstructionAlternativeSet, _payload(row))
+    return ConstructionAlternativeSet.model_validate(_owned_payload_from_row(row))
+
+
+def _selection_from_row(row: Any) -> ConstructionAlternativeSelection:
+    return ConstructionAlternativeSelection.model_validate(_owned_payload_from_row(row))
+
+
+def _owned_payload_from_row(row: Any) -> dict[str, Any]:
+    payload = _payload(row)
+    decoded = dict(payload) if isinstance(payload, dict) else json.loads(payload)
+    payload_tenant = decoded.get("tenant_id")
+    row_tenant = row["tenant_id"]
+    if payload_tenant is not None and payload_tenant != row_tenant:
+        raise RuntimeError("DPM_CONSTRUCTION_TENANT_DRIFT")
+    decoded["tenant_id"] = row_tenant
+    return decoded
 
 
 def _payload(row: Any) -> str | dict[str, Any]:

@@ -29,6 +29,7 @@ def test_select_construction_alternative_for_wave_delegates_selection(monkeypatc
         reason_code="PM_SELECTED",
         comment="selected for mandate",
         correlation_id="corr_wave_select",
+        tenant_id="tenant-test",
     )
 
     assert service.calls == [
@@ -40,6 +41,7 @@ def test_select_construction_alternative_for_wave_delegates_selection(monkeypatc
             "reason_code": "PM_SELECTED",
             "comment": "selected for mandate",
             "correlation_id": "corr_wave_select",
+            "tenant_id": "tenant-test",
         }
     ]
 
@@ -60,6 +62,7 @@ def test_select_construction_alternative_for_wave_maps_selection_failures(
             reason_code="PM_SELECTED",
             comment=None,
             correlation_id="corr_wave_select",
+            tenant_id="tenant-test",
         )
 
     assert exc_info.value.code == "DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND"
@@ -82,6 +85,7 @@ def test_select_construction_alternative_for_wave_does_not_hide_unexpected_failu
             reason_code="PM_SELECTED",
             comment=None,
             correlation_id="corr_wave_select",
+            tenant_id="tenant-test",
         )
 
 

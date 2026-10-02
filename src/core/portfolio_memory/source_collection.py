@@ -53,6 +53,7 @@ def collect_portfolio_memory_events(
         events.extend(
             construction_memory_events(
                 portfolio_id=portfolio_id,
+                tenant_id=scoped_tenant_id,
                 construction_repository=repositories.construction_repository,
                 limit=limit,
             )

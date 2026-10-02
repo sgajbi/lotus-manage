@@ -7,6 +7,7 @@ from src.api.services.wave_event_evidence import build_wave_event
 from src.api.services.wave_simulation_item import DpmWaveSimulationInput, simulate_item
 from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
+from src.core.construction.repository import require_construction_tenant_id
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, apply_wave_transition
@@ -36,9 +37,11 @@ def build_simulated_wave(
             metadata={"ready_item_count": wave.aggregate_metrics.ready_item_count},
         ),
     )
+    tenant_id = require_construction_tenant_id(simulating.tenant_id)
     simulated_items = [
         simulate_item(
             item=item,
+            tenant_id=tenant_id,
             correlation_id=correlation_id,
             item_inputs=item_inputs,
             methods=methods,

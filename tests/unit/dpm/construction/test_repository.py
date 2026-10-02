@@ -22,7 +22,7 @@ def _alternative_set() -> ConstructionAlternativeSet:
         portfolio_id="pf_construct_1",
         as_of="2026-05-03",
         alternatives=[build_do_nothing_baseline(result=result)],
-    ).model_copy(update={"request_hash": "sha256:repo"})
+    ).model_copy(update={"tenant_id": "tenant_001", "request_hash": "sha256:repo"})
 
 
 def test_in_memory_repository_persists_alternative_set_and_idempotency_lookup() -> None:
@@ -34,8 +34,12 @@ def test_in_memory_repository_persists_alternative_set_and_idempotency_lookup() 
         idempotency_key="idem-repo-001",
     )
 
-    by_id = repository.get_alternative_set(alternative_set_id="cas_repo_001")
-    by_idempotency = repository.get_alternative_set_by_idempotency(idempotency_key="idem-repo-001")
+    by_id = repository.get_alternative_set(
+        alternative_set_id="cas_repo_001", tenant_id="tenant_001"
+    )
+    by_idempotency = repository.get_alternative_set_by_idempotency(
+        idempotency_key="idem-repo-001", tenant_id="tenant_001"
+    )
 
     assert by_id == alternative_set
     assert by_idempotency == alternative_set
@@ -56,11 +60,15 @@ def test_in_memory_repository_lists_alternative_sets_by_portfolio_newest_first()
 
     assert [
         row.alternative_set_id
-        for row in repository.list_alternative_sets(portfolio_id="pf_construct_1", limit=10)
+        for row in repository.list_alternative_sets(
+            portfolio_id="pf_construct_1", tenant_id="tenant_001", limit=10
+        )
     ] == ["cas_repo_newer", "cas_repo_older"]
     assert [
         row.alternative_set_id
-        for row in repository.list_alternative_sets(portfolio_id="pf_construct_1", limit=1)
+        for row in repository.list_alternative_sets(
+            portfolio_id="pf_construct_1", tenant_id="tenant_001", limit=1
+        )
     ] == ["cas_repo_newer"]
 
 
@@ -72,6 +80,7 @@ def test_in_memory_repository_records_latest_selection_decision() -> None:
     )
     selection = ConstructionAlternativeSelection(
         selection_id="casel_repo_001",
+        tenant_id="tenant_001",
         alternative_set_id="cas_repo_001",
         alternative_id="alt_do_nothing_baseline",
         actor_id="pm_001",
@@ -82,7 +91,51 @@ def test_in_memory_repository_records_latest_selection_decision() -> None:
 
     repository.save_selection(selection=selection)
 
-    assert repository.get_selection(alternative_set_id="cas_repo_001") == selection
+    assert (
+        repository.get_selection(alternative_set_id="cas_repo_001", tenant_id="tenant_001")
+        == selection
+    )
+
+
+def test_in_memory_repository_scopes_ids_idempotency_lists_and_selections_by_tenant() -> None:
+    repository = InMemoryConstructionRepository()
+    tenant_a = _alternative_set()
+    tenant_b = tenant_a.model_copy(
+        update={"alternative_set_id": "cas_repo_tenant_b", "tenant_id": "tenant_002"}
+    )
+    repository.save_alternative_set(alternative_set=tenant_a, idempotency_key="shared-key")
+    repository.save_alternative_set(alternative_set=tenant_b, idempotency_key="shared-key")
+
+    assert (
+        repository.get_alternative_set(
+            alternative_set_id=tenant_a.alternative_set_id, tenant_id="tenant_002"
+        )
+        is None
+    )
+    assert (
+        repository.get_alternative_set_by_idempotency(
+            idempotency_key="shared-key", tenant_id="tenant_001"
+        )
+        == tenant_a
+    )
+    assert (
+        repository.get_alternative_set_by_idempotency(
+            idempotency_key="shared-key", tenant_id="tenant_002"
+        )
+        == tenant_b
+    )
+    assert repository.list_alternative_sets(
+        portfolio_id="pf_construct_1", tenant_id="tenant_001", limit=10
+    ) == [tenant_a]
+
+    legacy = tenant_a.model_copy(update={"alternative_set_id": "cas_legacy", "tenant_id": None})
+    repository._alternative_sets[legacy.alternative_set_id] = legacy  # noqa: SLF001
+    assert (
+        repository.get_alternative_set(
+            alternative_set_id=legacy.alternative_set_id, tenant_id="tenant_001"
+        )
+        is None
+    )
 
 
 def test_postgres_repository_requires_dsn() -> None:
@@ -136,9 +189,11 @@ def test_postgres_repository_persists_alternative_set_and_idempotency(
         alternative_set=alternative_set,
         idempotency_key="idem-postgres-001",
     )
-    by_id = repository.get_alternative_set(alternative_set_id="cas_repo_001")
+    by_id = repository.get_alternative_set(
+        alternative_set_id="cas_repo_001", tenant_id="tenant_001"
+    )
     by_idempotency = repository.get_alternative_set_by_idempotency(
-        idempotency_key="idem-postgres-001"
+        idempotency_key="idem-postgres-001", tenant_id="tenant_001"
     )
 
     assert by_id == alternative_set
@@ -158,17 +213,24 @@ def test_postgres_repository_lists_alternative_sets_by_portfolio(
         idempotency_key="idem-postgres-list",
     )
 
-    assert repository.list_alternative_sets(portfolio_id="pf_construct_1", limit=10) == [
-        alternative_set
-    ]
-    assert repository.list_alternative_sets(portfolio_id="other_pf", limit=10) == []
+    assert repository.list_alternative_sets(
+        portfolio_id="pf_construct_1", tenant_id="tenant_001", limit=10
+    ) == [alternative_set]
+    assert (
+        repository.list_alternative_sets(portfolio_id="other_pf", tenant_id="tenant_001", limit=10)
+        == []
+    )
 
 
 def test_postgres_repository_records_latest_selection(monkeypatch: pytest.MonkeyPatch) -> None:
     connection = _FakeConnection()
     repository = _postgres_repository(monkeypatch, connection)
+    repository.save_alternative_set(
+        alternative_set=_alternative_set(), idempotency_key="idem-selection"
+    )
     selection = ConstructionAlternativeSelection(
         selection_id="casel_repo_001",
+        tenant_id="tenant_001",
         alternative_set_id="cas_repo_001",
         alternative_id="alt_do_nothing_baseline",
         actor_id="pm_001",
@@ -179,8 +241,11 @@ def test_postgres_repository_records_latest_selection(monkeypatch: pytest.Monkey
 
     repository.save_selection(selection=selection)
 
-    assert repository.get_selection(alternative_set_id="cas_repo_001") == selection
-    assert connection.commits == 1
+    assert (
+        repository.get_selection(alternative_set_id="cas_repo_001", tenant_id="tenant_001")
+        == selection
+    )
+    assert connection.commits == 2
 
 
 def test_postgres_repository_returns_none_for_missing_selection(
@@ -189,7 +254,7 @@ def test_postgres_repository_returns_none_for_missing_selection(
     connection = _FakeConnection()
     repository = _postgres_repository(monkeypatch, connection)
 
-    assert repository.get_selection(alternative_set_id="missing") is None
+    assert repository.get_selection(alternative_set_id="missing", tenant_id="tenant_001") is None
 
 
 def test_postgres_repository_payload_helpers_cover_missing_and_non_string_rows() -> None:
@@ -235,22 +300,27 @@ class _FakeConnection:
         normalized = " ".join(query.split())
         if normalized.startswith("INSERT INTO dpm_construction_alternative_sets"):
             return self._insert_alternative_set(params)
-        if "FROM dpm_construction_alternative_sets WHERE alternative_set_id" in normalized:
-            return _FakeCursor(self.alternative_sets_by_id.get(str(params[0])))
-        if "FROM dpm_construction_alternative_sets WHERE idempotency_key" in normalized:
-            return _FakeCursor(self.alternative_sets_by_idempotency.get(str(params[0])))
-        if "FROM dpm_construction_alternative_sets WHERE portfolio_id" in normalized:
+        if (
+            "FROM dpm_construction_alternative_sets" in normalized
+            and "WHERE alternative_set_id = %s AND tenant_id = %s" in normalized
+        ):
+            row = self.alternative_sets_by_id.get(str(params[0]))
+            return _FakeCursor(row if row and row["tenant_id"] == str(params[1]) else None)
+        if "WHERE tenant_id = %s AND idempotency_key = %s" in normalized:
+            return _FakeCursor(self.alternative_sets_by_idempotency.get(f"{params[0]}:{params[1]}"))
+        if "WHERE tenant_id = %s AND portfolio_id = %s" in normalized:
             return _FakeCursor(
                 [
                     row
                     for row in self.alternative_sets_by_id.values()
-                    if row["portfolio_id"] == str(params[0])
-                ][: int(params[1])]
+                    if row["tenant_id"] == str(params[0]) and row["portfolio_id"] == str(params[1])
+                ][: int(params[2])]
             )
         if normalized.startswith("INSERT INTO dpm_construction_alternative_selections"):
             return self._insert_selection(params)
         if "FROM dpm_construction_alternative_selections WHERE alternative_set_id" in normalized:
-            return _FakeCursor(self.selections_by_set_id.get(str(params[0])))
+            row = self.selections_by_set_id.get(str(params[0]))
+            return _FakeCursor(row if row and row["tenant_id"] == str(params[1]) else None)
         raise AssertionError(f"Unexpected construction repository query: {normalized}")
 
     def commit(self) -> None:
@@ -261,16 +331,22 @@ class _FakeConnection:
 
     def _insert_alternative_set(self, params: Sequence[Any]) -> "_FakeCursor":
         alternative_set_id = str(params[0])
-        idempotency_key = str(params[5])
-        row = {"portfolio_id": str(params[1]), "payload_json": json.loads(str(params[8]))}
+        tenant_id = str(params[1])
+        idempotency_key = str(params[6])
+        row = {
+            "tenant_id": tenant_id,
+            "portfolio_id": str(params[2]),
+            "payload_json": json.loads(str(params[9])),
+        }
         self.alternative_sets_by_id[alternative_set_id] = row
-        self.alternative_sets_by_idempotency[idempotency_key] = row
-        return _FakeCursor(None)
+        self.alternative_sets_by_idempotency[f"{tenant_id}:{idempotency_key}"] = row
+        return _FakeCursor(row)
 
     def _insert_selection(self, params: Sequence[Any]) -> "_FakeCursor":
         alternative_set_id = str(params[1])
-        self.selections_by_set_id[alternative_set_id] = {"payload_json": json.loads(str(params[7]))}
-        return _FakeCursor(None)
+        row = {"tenant_id": str(params[2]), "payload_json": json.loads(str(params[8]))}
+        self.selections_by_set_id[alternative_set_id] = row
+        return _FakeCursor({"selection_id": str(params[0])})
 
 
 class _FakeCursor:

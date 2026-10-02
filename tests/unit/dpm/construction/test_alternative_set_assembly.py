@@ -8,6 +8,7 @@ def test_build_persistable_alternative_set_applies_deterministic_identity_and_li
     alternative_set = build_persistable_alternative_set(
         alternative_set_id="cas_test_001",
         portfolio_id="pf_assembly",
+        tenant_id="tenant_001",
         as_of="2026-06-01",
         alternatives=[],
         request_hash="sha256:construction",
@@ -16,6 +17,7 @@ def test_build_persistable_alternative_set_applies_deterministic_identity_and_li
 
     assert alternative_set.alternative_set_id == "cas_test_001"
     assert alternative_set.portfolio_id == "pf_assembly"
+    assert alternative_set.tenant_id == "tenant_001"
     assert alternative_set.as_of == "2026-06-01"
     assert alternative_set.status == ConstructionMethodStatus.BLOCKED
     assert alternative_set.request_hash == "sha256:construction"

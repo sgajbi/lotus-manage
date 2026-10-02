@@ -87,6 +87,13 @@ class ConstructionAlternative(BaseModel):
 
 class ConstructionAlternativeSet(BaseModel):
     alternative_set_id: str = Field(description="Stable construction alternative set identifier.")
+    tenant_id: str | None = Field(
+        default=None,
+        description=(
+            "Tenant that owns the alternative set. Legacy rows without an owner remain NULL and "
+            "are quarantined by tenant-scoped repository reads."
+        ),
+    )
     portfolio_id: str = Field(description="Portfolio for which alternatives were generated.")
     as_of: str = Field(description="Business as-of date or timestamp used for construction.")
     status: ConstructionMethodStatus = Field(description="Aggregate alternative set status.")
@@ -940,6 +947,13 @@ class ConstructionMethodPlan(BaseModel):
 
 class ConstructionAlternativeSelection(BaseModel):
     selection_id: str = Field(description="Stable selection decision identifier.")
+    tenant_id: str | None = Field(
+        default=None,
+        description=(
+            "Tenant that owns this decision. Legacy unowned decisions remain quarantined and "
+            "cannot be adopted by a caller."
+        ),
+    )
     alternative_set_id: str = Field(description="Alternative set that contains the selection.")
     alternative_id: str = Field(description="Selected alternative identifier.")
     selected_at: datetime = Field(

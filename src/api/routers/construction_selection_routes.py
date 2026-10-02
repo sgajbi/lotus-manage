@@ -8,6 +8,7 @@ from src.api.dependencies import get_construction_repository
 from src.api.routers.construction import router
 from src.api.routers.construction_http import construction_http_exception
 from src.api.routers.construction_models import ConstructionAlternativeSelectionRequest
+from src.api.routers.mandate_tenant_query import MandateTenantIdHeader
 from src.api.services import construction_service
 from src.core.construction.models import ConstructionAlternativeSelection
 from src.core.construction.repository import (
@@ -43,6 +44,7 @@ def select_alternative(
         Path(description="Construction alternative set identifier.", examples=["cas_001"]),
     ],
     request: ConstructionAlternativeSelectionRequest,
+    x_tenant_id: MandateTenantIdHeader,
     x_correlation_id: Annotated[
         Optional[str],
         Header(
@@ -61,6 +63,7 @@ def select_alternative(
             reason_code=request.reason_code,
             comment=request.comment,
             correlation_id=x_correlation_id,
+            tenant_id=x_tenant_id,
         )
     except _CONSTRUCTION_SELECTION_ROUTE_ERRORS as exc:
         raise construction_http_exception(exc) from exc
