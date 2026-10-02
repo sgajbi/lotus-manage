@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from typing import Any
 import uuid
 
@@ -342,6 +343,18 @@ def test_postgres_migration_backfills_preexisting_revision(monkeypatch: pytest.M
                 migrations_module, "_load_migrations", lambda namespace: all_migrations
             )
             apply_postgres_migrations(connection=connection, namespace="dpm")
+            trigger_order = connection.execute(
+                """
+                SELECT tgname, (tgtype & 2) <> 0 AS before_insert
+                FROM pg_trigger
+                WHERE tgrelid = 'dpm_composite_membership_revisions'::regclass
+                  AND NOT tgisinternal
+                """
+            ).fetchall()
+            assert {row["tgname"]: row["before_insert"] for row in trigger_order} == {
+                "dpm_composite_membership_revision_lock": True,
+                "dpm_composite_membership_revision_publish": False,
+            }
             row = connection.execute(
                 """
                 SELECT p.sequence, p.membership_content_hash, p.published_at
@@ -447,3 +460,51 @@ def test_postgres_refuses_publication_hash_divergence() -> None:
         )
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_IMMUTABLE_CONFLICT"):
         repository.save_membership_revision(revision=revision)
+
+
+def test_postgres_legacy_and_new_writer_share_lock_order_for_same_revision() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-mixed-writer-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    dsn = postgres_dsn_or_skip(_PROOF)
+    repository = PostgresDpmCompositeRepository(dsn=dsn)
+    repository.save_definition(
+        definition=_definition(tenant_id=tenant_id, composite_id=composite_id)
+    )
+    revision = _revision(tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1")
+    barrier = Barrier(2)
+
+    def legacy_insert() -> None:
+        with psycopg.connect(dsn) as connection:
+            barrier.wait(timeout=5)
+            connection.execute(
+                """
+                INSERT INTO dpm_composite_membership_revisions (
+                    tenant_id, composite_id, definition_version, membership_revision,
+                    decided_at, content_hash, payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
+                ON CONFLICT (tenant_id, composite_id, definition_version, membership_revision)
+                DO NOTHING
+                """,
+                (
+                    tenant_id,
+                    composite_id,
+                    revision.definition_version,
+                    revision.membership_revision,
+                    revision.decided_at,
+                    revision.content_hash,
+                    dump_model_json(revision),
+                ),
+            )
+
+    def current_insert() -> None:
+        barrier.wait(timeout=5)
+        repository.save_membership_revision(revision=revision)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(legacy_insert), executor.submit(current_insert)]
+        for future in futures:
+            future.result(timeout=10)
+    page = repository.list_publications(tenant_id=tenant_id, after_sequence=0, limit=10)
+    assert len(page.items) == 1
+    assert page.items[0].membership_content_hash == revision.content_hash

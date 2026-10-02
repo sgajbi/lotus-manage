@@ -16,17 +16,29 @@ CREATE TABLE IF NOT EXISTS dpm_composite_membership_publications (
 CREATE INDEX IF NOT EXISTS idx_dpm_composite_publications_tenant_sequence
     ON dpm_composite_membership_publications (tenant_id, sequence);
 
--- This trigger is installed before the backfill. CREATE TRIGGER takes a table
--- lock that fences legacy application writers until this migration commits;
--- subsequent legacy INSERTs publish atomically even before every replica is
--- upgraded. The same per-tenant lock is used by the new repository writer so
--- tenant-visible sequence allocation follows commit order across versions.
-CREATE FUNCTION dpm_publish_composite_membership_revision() RETURNS trigger
+-- Both triggers are installed before the backfill. CREATE TRIGGER fences old
+-- writers until migration commit. The BEFORE trigger acquires the same tenant
+-- lock as the new writer *before* a legacy writer takes a unique-row lock;
+-- the AFTER trigger publishes only successfully inserted source revisions.
+-- This preserves lock order across old and new replicas and avoids a dangling
+-- publication for an INSERT that loses an immutable-key conflict.
+CREATE FUNCTION dpm_lock_composite_membership_publication() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
     PERFORM pg_advisory_xact_lock(
         hashtext('dpm-composite-publication:' || NEW.tenant_id)::bigint
     );
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER dpm_composite_membership_revision_lock
+BEFORE INSERT ON dpm_composite_membership_revisions
+FOR EACH ROW EXECUTE FUNCTION dpm_lock_composite_membership_publication();
+
+CREATE FUNCTION dpm_publish_composite_membership_revision() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
     INSERT INTO dpm_composite_membership_publications (
         tenant_id, composite_id, definition_version, membership_revision,
         membership_content_hash
