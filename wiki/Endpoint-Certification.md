@@ -1820,8 +1820,9 @@ Functional coverage:
   original/corrected revisions,
 - PostgreSQL migration, restart, tenant fence, and missing parent-definition/correction fencing.
 - atomic publication on committed revision, ordered bounded cursor/correction paging, migration
-  backfill of pre-existing revisions, trigger-published writes from legacy replicas after migration,
-  restart-safe immutable receipt replay, wrong-hash/conflicting receipt rejection, and
+  backfill of pre-existing revisions, lock-before-insert/atomic-publication-after-insert for
+  legacy replicas and concurrent old/new same-revision writes, restart-safe immutable receipt replay,
+  wrong-hash/conflicting receipt rejection, and
   tenant/role/service-identity refusal.
 
 Non-functional posture:

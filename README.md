@@ -39,8 +39,9 @@ a trusted ingress; they are not standalone production authentication. The API pr
 historical revisions and correction impact windows. It does not calculate composite returns, infer
 eligibility from current book membership, or publish Performance member-return facts; those remain
 explicit consumer and source-owner responsibilities.
-Migration `0036` installs publication-on-insert before its backfill, so a previous app replica
-writing during the migrate-before-traffic-switch window cannot leave a revision unpublished.
+Migration `0036` installs lock-before-insert and publication-after-insert triggers before its
+backfill, so a previous app replica writing during the migrate-before-traffic-switch window
+cannot leave a revision unpublished or invert the lock order against a new replica.
 
 Approved DPM instruction packages are a separate, tenant-scoped retrieval product at
 `/api/v1/rebalance/instruction-packages/*`. A release pins the reviewed run, READY proof pack,
