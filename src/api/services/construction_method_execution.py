@@ -3,7 +3,9 @@ from decimal import Decimal
 from typing import Callable, Optional
 
 from src.api.request_models import RebalanceRequest
+from src.api.services.rebalance_source_lineage import apply_source_lineage
 from src.core.construction.vocabulary import ConstructionMethod
+from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.models import EngineOptions, RebalanceResult, TargetMethod
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.service import DpmRunSupportService
@@ -22,6 +24,7 @@ def run_construction_method(
     request_hash: str,
     run_service: DpmRunSupportService | None,
     tenant_id: str | None = None,
+    source_context: DpmResolvedSourceContext | None = None,
 ) -> RebalanceResult:
     options = options_for_construction_method(options=request.options, method=method)
     run_correlation_id = construction_method_correlation_id(
@@ -37,6 +40,7 @@ def run_construction_method(
         request_hash=request_hash,
         correlation_id=run_correlation_id,
     )
+    result = apply_source_lineage(result=result, source_context=source_context)
     if run_service is not None:
         run_service.record_run(
             result=result,

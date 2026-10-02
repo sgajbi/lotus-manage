@@ -40,6 +40,44 @@ def _cash_band_rule_result(
     )
 
 
+def _cash_reserve_target_rule_result(
+    *,
+    state: SimulatedState,
+    options: EngineOptions,
+) -> RuleResult | None:
+    target = options.cash_reserve_target_weight
+    if target is None:
+        return None
+    cash_weight = next(
+        (
+            allocation.weight
+            for allocation in state.allocation_by_asset_class
+            if allocation.key == "CASH"
+        ),
+        Decimal("0"),
+    )
+    tolerance = options.cash_reserve_target_tolerance
+    deviation = cash_weight - target
+    if abs(deviation) <= tolerance:
+        return RuleResult(
+            rule_id="CASH_RESERVE_TARGET",
+            severity="SOFT",
+            status="PASS",
+            measured=cash_weight,
+            threshold={"target": target, "tolerance": tolerance},
+            reason_code="TARGET_MET_WITHIN_TOLERANCE",
+        )
+    return RuleResult(
+        rule_id="CASH_RESERVE_TARGET",
+        severity="SOFT",
+        status="FAIL",
+        measured=cash_weight,
+        threshold={"target": target, "tolerance": tolerance},
+        reason_code="TARGET_DEVIATION",
+        remediation_hint="Review lot, rounding, liquidity, and settlement constraints.",
+    )
+
+
 def _single_position_max_rule_results(
     *,
     state: SimulatedState,
@@ -217,6 +255,9 @@ class RuleEngine:
         results = []
 
         results.append(_cash_band_rule_result(state=state, options=options))
+        cash_reserve_target = _cash_reserve_target_rule_result(state=state, options=options)
+        if cash_reserve_target is not None:
+            results.append(cash_reserve_target)
 
         results.extend(_single_position_max_rule_results(state=state, options=options))
         results.append(_data_quality_rule_result(diagnostics=diagnostics, options=options))

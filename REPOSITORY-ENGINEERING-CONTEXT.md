@@ -500,6 +500,11 @@ Most relevant current governance:
     profile changes are part of the direct simulation request hash. Instruction-package release
     refuses runs without READY source-backed policy evidence and matching portfolio scope; wave
     simulation must propagate that evidence before end-to-end enforcement can be claimed.
+    Preserve `DiscretionaryMandateBinding:v1` cash reserve as an effective-dated target, including
+    binding version and lineage. Apply it to heuristic and solver construction, reject conflicting
+    request or tolerance overrides, and report post-trade deviation; do not reinterpret it as a
+    cash band or make successful target scaling review-required. Reject bindings outside the
+    requested date and persist lineage on construction runs.
     For Risk-event waves, reject duplicate candidate IDs before the authority call and verify
     the returned event/date, affected/excluded uniqueness, candidate membership, and mandate echo
     before constructing wave source refs or writing a wave. Excluded members are validation

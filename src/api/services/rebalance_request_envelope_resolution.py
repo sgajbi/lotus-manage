@@ -19,6 +19,18 @@ StatefulContextResolver = Callable[..., DpmResolvedSourceContext]
 RebalanceRequestBuilder = Callable[..., Any]
 BatchRequestBuilder = Callable[..., BatchRebalanceRequest]
 
+_PUBLIC_CORE_CONTEXT_ERROR_CODES = {
+    "DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT",
+    "DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN",
+}
+
+
+def _core_context_error_detail(exc: DpmCoreContextIncompleteError) -> str:
+    detail = str(exc)
+    if detail in _PUBLIC_CORE_CONTEXT_ERROR_CODES:
+        return detail
+    return "DPM_CORE_CONTEXT_INCOMPLETE"
+
 
 def resolve_rebalance_request_envelope(
     *,
@@ -43,7 +55,9 @@ def resolve_rebalance_request_envelope(
             context=source_context.context,
             options_override=envelope.options_override,
         )
-    except (DpmCoreContextIncompleteError, ValidationError) as exc:
+    except DpmCoreContextIncompleteError as exc:
+        raise DpmRebalanceCoreContextIncompleteError(_core_context_error_detail(exc)) from exc
+    except ValidationError as exc:
         raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
     return RebalanceRequest.model_validate(resolved.model_dump(mode="python")), source_context
 
@@ -71,7 +85,9 @@ def resolve_batch_request_envelope(
             context=source_context.context,
             scenarios=envelope.scenarios,
         )
-    except (DpmCoreContextIncompleteError, ValidationError) as exc:
+    except DpmCoreContextIncompleteError as exc:
+        raise DpmRebalanceCoreContextIncompleteError(_core_context_error_detail(exc)) from exc
+    except ValidationError as exc:
         raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
     return request, source_context
 

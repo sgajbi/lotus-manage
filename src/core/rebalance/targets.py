@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Literal, TypeAlias, cast
 
-from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.common.diagnostics import make_diagnostics_data
+from src.core.common.cash_reserve_policy import effective_cash_reserve_floor
+from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.models import (
     DiagnosticsData,
     EngineOptions,
@@ -465,6 +466,7 @@ def _apply_min_cash_buffer(
     eligible_targets: dict[str, Decimal],
     buy_set: set[str],
     min_cash_buffer_pct: Decimal,
+    status_when_scaled: Literal["READY", "PENDING_REVIEW"] = "PENDING_REVIEW",
 ) -> Literal["READY", "PENDING_REVIEW"]:
     if min_cash_buffer_pct <= Decimal("0.0"):
         return "READY"
@@ -483,7 +485,7 @@ def _apply_min_cash_buffer(
     if not scaled:
         return "READY"
 
-    return "PENDING_REVIEW"
+    return status_when_scaled
 
 
 def _cash_buffer_tradeable_weight_limit(
@@ -546,12 +548,19 @@ def _heuristic_target_control_status(
             ),
         )
 
+    cash_reserve_floor = effective_cash_reserve_floor(options)
     return _target_generation_status(
         status,
         _apply_min_cash_buffer(
             eligible_targets=eligible_targets,
             buy_set=buy_set,
-            min_cash_buffer_pct=options.min_cash_buffer_pct,
+            min_cash_buffer_pct=cash_reserve_floor,
+            status_when_scaled=(
+                "READY"
+                if options.cash_reserve_target_weight is not None
+                and cash_reserve_floor == options.cash_reserve_target_weight
+                else "PENDING_REVIEW"
+            ),
         ),
     )
 

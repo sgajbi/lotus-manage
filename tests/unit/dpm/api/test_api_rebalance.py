@@ -434,6 +434,101 @@ def test_stateful_simulate_uses_resolved_core_context_and_lineage(monkeypatch):
     assert body["lineage"]["stateful_context_hash"].startswith("sha256:")
 
 
+def test_stateful_simulate_applies_source_cash_reserve_target_and_reports_lineage(monkeypatch):
+    source_payload = _core_execution_context().model_dump(mode="python")
+    source_payload["portfolio_snapshot"]["positions"][0]["market_value"] = {
+        "amount": "10000",
+        "currency": "SGD",
+    }
+    source_payload["policy_context"].update(
+        {
+            "mandate_product_version": "v1",
+            "mandate_binding_version": 3,
+            "mandate_effective_from": "2026-03-01",
+            "mandate_effective_to": None,
+            "mandate_lineage": {"source_record_id": "mandate-balanced-v3"},
+            "cash_reserve_target_weight": "0.02",
+        }
+    )
+    fake_resolver = _FakeCoreResolver(DpmCoreExecutionContext.model_validate(source_payload))
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(core_resolver_service, "build_core_resolver_client", lambda: fake_resolver)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={"input_mode": "stateful", "stateful_input": _stateful_input_payload()},
+            headers={
+                "Idempotency-Key": "stateful-source-cash-target-v3",
+                "X-Tenant-Id": "tenant_001",
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert Decimal(body["after_simulated"]["cash_balances"][0]["amount"]) == Decimal("400")
+    cash_allocation = next(
+        row for row in body["after_simulated"]["allocation_by_asset_class"] if row["key"] == "CASH"
+    )
+    assert Decimal(cash_allocation["weight"]) == Decimal("0.02")
+    reserve_rule = next(
+        row for row in body["rule_results"] if row["rule_id"] == "CASH_RESERVE_TARGET"
+    )
+    assert reserve_rule["status"] == "PASS"
+    assert reserve_rule["reason_code"] == "TARGET_MET_WITHIN_TOLERANCE"
+    assert Decimal(reserve_rule["threshold"]["target"]) == Decimal("0.02")
+    assert body["gate_decision"]["gate"] == "COMPLIANCE_REVIEW_REQUIRED"
+    assert body["lineage"]["source_mandate_id"] == "mandate_balanced_discretionary"
+    assert body["lineage"]["source_mandate_product_version"] == "v1"
+    assert body["lineage"]["source_mandate_binding_version"] == 3
+    assert body["lineage"]["source_mandate_effective_from"] == "2026-03-01"
+    assert body["lineage"]["source_mandate_lineage"] == {"source_record_id": "mandate-balanced-v3"}
+    assert Decimal(body["lineage"]["source_cash_reserve_target_weight"]) == Decimal("0.02")
+    assert body["lineage"]["cash_reserve_override_authority"] == "NONE"
+
+
+@pytest.mark.parametrize(
+    ("options_override", "expected_code"),
+    [
+        (
+            {"min_cash_buffer_pct": "0.01"},
+            "DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT",
+        ),
+        (
+            {"cash_reserve_target_tolerance": "1"},
+            "DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN",
+        ),
+    ],
+)
+def test_stateful_simulate_rejects_unauthorized_cash_reserve_override(
+    monkeypatch,
+    options_override,
+    expected_code,
+):
+    source_payload = _core_execution_context().model_dump(mode="python")
+    source_payload["policy_context"]["cash_reserve_target_weight"] = "0.02"
+    fake_resolver = _FakeCoreResolver(DpmCoreExecutionContext.model_validate(source_payload))
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(core_resolver_service, "build_core_resolver_client", lambda: fake_resolver)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "options_override": options_override,
+            },
+            headers={
+                "Idempotency-Key": f"stateful-source-cash-target-{expected_code}",
+                "X-Tenant-Id": "tenant_001",
+            },
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"] == expected_code
+
+
 def test_stateful_simulate_normalizes_request_policy_against_source_resolved_currency(
     monkeypatch,
 ) -> None:
@@ -500,7 +595,22 @@ def test_stateful_simulate_normalizes_request_policy_against_source_resolved_cur
 
 
 def test_stateful_analyze_uses_shared_core_context_for_each_scenario(monkeypatch):
-    fake_resolver = _install_fake_core_resolver(monkeypatch)
+    source_payload = _core_execution_context().model_dump(mode="python")
+    source_payload["portfolio_snapshot"]["positions"][0]["market_value"] = {
+        "amount": "10000",
+        "currency": "SGD",
+    }
+    source_payload["policy_context"].update(
+        {
+            "mandate_product_version": "v1",
+            "mandate_binding_version": 3,
+            "mandate_effective_from": "2026-03-01",
+            "cash_reserve_target_weight": "0.02",
+        }
+    )
+    fake_resolver = _FakeCoreResolver(DpmCoreExecutionContext.model_validate(source_payload))
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(core_resolver_service, "build_core_resolver_client", lambda: fake_resolver)
 
     with TestClient(app) as raw_client:
         response = raw_client.post(
@@ -529,6 +639,26 @@ def test_stateful_analyze_uses_shared_core_context_for_each_scenario(monkeypatch
         assert result["lineage"]["input_mode"] == "stateful"
         assert result["lineage"]["source_system"] == "lotus-core"
         assert result["lineage"]["stateful_context_hash"].startswith("sha256:")
+        assert Decimal(result["lineage"]["source_cash_reserve_target_weight"]) == Decimal("0.02")
+    baseline_rule = next(
+        row
+        for row in body["results"]["baseline"]["rule_results"]
+        if row["rule_id"] == "CASH_RESERVE_TARGET"
+    )
+    constrained_rule = next(
+        row
+        for row in body["results"]["position_cap"]["rule_results"]
+        if row["rule_id"] == "CASH_RESERVE_TARGET"
+    )
+    assert baseline_rule["status"] == "PASS"
+    assert constrained_rule["status"] == "FAIL"
+    assert constrained_rule["reason_code"] == "TARGET_DEVIATION"
+    assert body["results"]["baseline"]["gate_decision"]["gate"] == "EXECUTION_READY"
+    constrained_gate = body["results"]["position_cap"]["gate_decision"]
+    assert constrained_gate["gate"] == "RISK_REVIEW_REQUIRED"
+    assert {reason["reason_code"] for reason in constrained_gate["reasons"]} >= {
+        "SOFT_RULE_FAIL:CASH_RESERVE_TARGET"
+    }
 
 
 def test_stateful_analyze_async_persists_resolved_core_lineage(monkeypatch):

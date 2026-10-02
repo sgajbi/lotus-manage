@@ -42,13 +42,12 @@ def execution_context_policy(
     stateful_input: DpmStatefulInput,
     policy_context: DpmCorePolicyContext,
 ) -> DpmCorePolicyContext:
-    return DpmCorePolicyContext(
-        recommended_policy_pack_id=(
-            stateful_input.policy_pack_id or policy_context.recommended_policy_pack_id
-        ),
-        tenant_id=policy_context.tenant_id,
-        booking_center_code=policy_context.booking_center_code,
-        mandate_id=policy_context.mandate_id,
+    return policy_context.model_copy(
+        update={
+            "recommended_policy_pack_id": (
+                stateful_input.policy_pack_id or policy_context.recommended_policy_pack_id
+            )
+        }
     )
 
 

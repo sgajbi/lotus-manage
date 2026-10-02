@@ -19,6 +19,7 @@ from src.core.construction.alternative_engine import (
 from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import ConstructionAlternative, ConstructionAuthorityContext
+from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.models import RebalanceResult
@@ -37,6 +38,7 @@ def build_construction_alternative_for_method(
     run_service: DpmRunSupportService | None,
     solver_available: bool | None = None,
     tenant_id: str | None = None,
+    source_context: DpmResolvedSourceContext | None = None,
 ) -> ConstructionAlternative:
     if method == ConstructionMethod.DO_NOTHING_BASELINE:
         baseline = build_do_nothing_baseline(result=base_result)
@@ -76,6 +78,7 @@ def build_construction_alternative_for_method(
             request_hash=f"{request_hash}:{plan.effective_method.value}",
             run_service=run_service,
             tenant_id=tenant_id,
+            source_context=source_context,
         )
     alternative = build_rebalance_result_alternative(
         result=result,
@@ -111,6 +114,7 @@ def build_construction_alternatives(
     run_service: DpmRunSupportService | None,
     solver_available: bool | None = None,
     tenant_id: str | None = None,
+    source_context: DpmResolvedSourceContext | None = None,
 ) -> list[ConstructionAlternative]:
     resolved_solver_available = (
         has_solver_dependencies() if solver_available is None else solver_available
@@ -127,6 +131,7 @@ def build_construction_alternatives(
             run_service=run_service,
             solver_available=resolved_solver_available,
             tenant_id=tenant_id,
+            source_context=source_context,
         )
         for method in method_set
     ]

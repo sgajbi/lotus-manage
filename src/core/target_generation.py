@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any, NamedTuple
 
 from src.core.common.capabilities import has_solver_dependencies
+from src.core.common.cash_reserve_policy import effective_cash_reserve_floor
 from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.models import DiagnosticsData, EngineOptions, Money, ShelfEntry, TargetInstrument
 
@@ -242,9 +243,13 @@ def _solver_invested_bounds(
     locked_weight: Decimal,
     options: EngineOptions,
 ) -> SolverInvestedBounds:
+    effective_minimum_cash_weight = max(
+        options.cash_band_min_weight,
+        effective_cash_reserve_floor(options),
+    )
     return SolverInvestedBounds(
         minimum=Decimal("1.0") - options.cash_band_max_weight - locked_weight,
-        maximum=Decimal("1.0") - options.cash_band_min_weight - locked_weight,
+        maximum=Decimal("1.0") - effective_minimum_cash_weight - locked_weight,
     )
 
 

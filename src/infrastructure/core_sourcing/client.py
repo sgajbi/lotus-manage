@@ -488,7 +488,12 @@ class DpmCoreResolverClient:
             unavailable_code="DPM_CORE_MANDATE_BINDING_UNAVAILABLE",
             incomplete_code="DPM_CORE_MANDATE_BINDING_INCOMPLETE",
         )
-        return DpmCoreMandateBindingResponse.model_validate(response)
+        binding = DpmCoreMandateBindingResponse.model_validate(response)
+        if binding.effective_from > as_of_date or (
+            binding.effective_to is not None and binding.effective_to < as_of_date
+        ):
+            raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_BINDING_NOT_EFFECTIVE")
+        return binding
 
     def resolve_benchmark_assignment(
         self,

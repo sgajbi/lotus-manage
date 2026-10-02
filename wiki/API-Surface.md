@@ -441,6 +441,12 @@ tenant admission. This caller-asserted scope is not authenticated-principal proo
 
 Stateful rebalance and alternative-set construction require `X-Tenant-Id` equal to
 `stateful_input.tenant_id` before Core resolution. Missing or disagreeing scope returns `422`.
+The selected Core mandate cash reserve remains a target with binding-version and effective-date
+lineage. Stateful single and batch construction apply it across heuristic and solver paths;
+conflicting target/buffer overrides return `424 DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT`,
+caller tolerance overrides and out-of-date bindings fail closed, and construction runs retain the
+lineage. Successful target scaling remains ready; lot or rounding deviation is review evidence
+rather than a fabricated cash-band result.
 Synchronous stateless simulation also requires `X-Tenant-Id` because it publishes a tenant-owned
 durable run; stateless analysis and alternative-set construction retain their documented optional
 tenant context. The header is caller-asserted routing scope, not an IAM grant.

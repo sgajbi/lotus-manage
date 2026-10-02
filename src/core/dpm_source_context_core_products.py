@@ -83,6 +83,8 @@ class DpmCoreRebalanceBands(BaseModel):
     default_band: Decimal = Field(description="Default rebalance band as a decimal ratio.")
     cash_reserve_weight: Optional[Decimal] = Field(
         default=None,
+        ge=0,
+        le=1,
         description="Optional mandate cash reserve target as a decimal ratio.",
     )
 

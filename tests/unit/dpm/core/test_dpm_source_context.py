@@ -18,6 +18,7 @@ from src.core.dpm_source_context import (
     _portfolio_position_with_tax_lots,
     _shelf_entry_attributes_from_core_eligibility,
     _shelf_entry_from_core_eligibility,
+    _validate_core_tax_lot_coverage,
     build_batch_rebalance_request_from_core_context,
     build_core_resolver_payload,
     build_market_data_snapshot_from_core_coverage,
@@ -33,7 +34,11 @@ from src.core.models import PortfolioSnapshot, SimulationScenario
 from src.infrastructure.core_sourcing.snapshot_mapping import portfolio_snapshot_from_core_snapshot
 
 
-def _core_context(*, supportability_state: str = "READY") -> DpmCoreExecutionContext:
+def _core_context(
+    *,
+    supportability_state: str = "READY",
+    cash_reserve_target_weight: Decimal | None = None,
+) -> DpmCoreExecutionContext:
     return DpmCoreExecutionContext.model_validate(
         {
             "portfolio_snapshot": {
@@ -63,6 +68,12 @@ def _core_context(*, supportability_state: str = "READY") -> DpmCoreExecutionCon
                 "tenant_id": "tenant_001",
                 "booking_center_code": "SG",
                 "mandate_id": "mandate_balanced_discretionary",
+                "mandate_product_version": "v1",
+                "mandate_binding_version": 3,
+                "mandate_effective_from": "2026-04-01",
+                "mandate_effective_to": None,
+                "mandate_lineage": {"source_record_id": "mandate-001-v3"},
+                "cash_reserve_target_weight": cash_reserve_target_weight,
             },
             "source_lineage": {
                 "portfolio_snapshot_id": "core-pf-snap-001",
@@ -107,6 +118,75 @@ def test_core_context_respects_explicit_valuation_mode_override():
     assert request.options.valuation_mode == "CALCULATED"
 
 
+def test_core_context_applies_source_cash_reserve_target_without_reclassifying_it_as_band():
+    request = build_rebalance_request_from_core_context(
+        context=_core_context(cash_reserve_target_weight=Decimal("0.02")),
+        options_override={},
+    )
+
+    assert request.options.cash_reserve_target_weight == Decimal("0.02")
+    assert request.options.min_cash_buffer_pct == Decimal("0")
+    assert request.options.cash_band_min_weight == Decimal("0")
+    assert request.options.cash_band_max_weight == Decimal("1")
+
+
+@pytest.mark.parametrize("override_name", ["cash_reserve_target_weight", "min_cash_buffer_pct"])
+def test_core_context_rejects_conflicting_cash_reserve_override(override_name: str):
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT",
+    ):
+        build_rebalance_request_from_core_context(
+            context=_core_context(cash_reserve_target_weight=Decimal("0.02")),
+            options_override={override_name: "0.01"},
+        )
+
+
+@pytest.mark.parametrize("batch", [False, True])
+def test_core_context_rejects_caller_cash_reserve_tolerance_for_sourced_target(batch: bool):
+    context = _core_context(cash_reserve_target_weight=Decimal("0.02"))
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN",
+    ):
+        if batch:
+            build_batch_rebalance_request_from_core_context(
+                context=context,
+                scenarios={
+                    "conflict": SimulationScenario(options={"cash_reserve_target_tolerance": "1"})
+                },
+            )
+        else:
+            build_rebalance_request_from_core_context(
+                context=context,
+                options_override={"cash_reserve_target_tolerance": "1"},
+            )
+
+
+def test_core_context_accepts_exact_cash_reserve_restatement_and_preserves_explicit_zero():
+    exact = build_rebalance_request_from_core_context(
+        context=_core_context(cash_reserve_target_weight=Decimal("0.02")),
+        options_override={"min_cash_buffer_pct": "0.020"},
+    )
+    zero = build_rebalance_request_from_core_context(
+        context=_core_context(cash_reserve_target_weight=Decimal("0")),
+        options_override={},
+    )
+
+    assert exact.options.cash_reserve_target_weight == Decimal("0.02")
+    assert zero.options.cash_reserve_target_weight == Decimal("0")
+
+
+def test_core_context_without_source_cash_reserve_keeps_request_level_buffer():
+    request = build_rebalance_request_from_core_context(
+        context=_core_context(cash_reserve_target_weight=None),
+        options_override={"min_cash_buffer_pct": "0.03"},
+    )
+
+    assert request.options.cash_reserve_target_weight is None
+    assert request.options.min_cash_buffer_pct == Decimal("0.03")
+
+
 def test_core_context_transforms_stateful_batch_scenarios():
     request = build_batch_rebalance_request_from_core_context(
         context=_core_context(),
@@ -121,6 +201,30 @@ def test_core_context_transforms_stateful_batch_scenarios():
     assert request.market_data_snapshot.snapshot_id == "core-md-snap-001"
     assert request.scenarios["baseline"].options["valuation_mode"] == "TRUST_SNAPSHOT"
     assert request.scenarios["tax_budget"].options["valuation_mode"] == "TRUST_SNAPSHOT"
+
+
+def test_core_context_applies_source_cash_reserve_target_to_every_batch_scenario():
+    request = build_batch_rebalance_request_from_core_context(
+        context=_core_context(cash_reserve_target_weight=Decimal("0.02")),
+        scenarios={
+            "baseline": SimulationScenario(options={}),
+            "same_target": SimulationScenario(options={"min_cash_buffer_pct": "0.020"}),
+        },
+    )
+
+    assert request.scenarios["baseline"].options["cash_reserve_target_weight"] == Decimal("0.02")
+    assert request.scenarios["same_target"].options["cash_reserve_target_weight"] == Decimal("0.02")
+
+
+def test_core_context_rejects_conflicting_batch_cash_reserve_override():
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT",
+    ):
+        build_batch_rebalance_request_from_core_context(
+            context=_core_context(cash_reserve_target_weight=Decimal("0.02")),
+            scenarios={"conflict": SimulationScenario(options={"min_cash_buffer_pct": "0.01"})},
+        )
 
 
 def test_core_model_targets_transform_to_manage_model_portfolio():
@@ -277,6 +381,23 @@ def test_core_mandate_binding_transforms_to_policy_context():
     assert policy_context.tenant_id == "tenant_sg_pb"
     assert policy_context.booking_center_code == "Singapore"
     assert policy_context.mandate_id == "MANDATE_PB_SG_GLOBAL_BAL_001"
+    assert policy_context.mandate_product_version == "v1"
+    assert policy_context.mandate_binding_version == 1
+    assert policy_context.mandate_effective_from.isoformat() == "2026-04-01"
+    assert policy_context.mandate_effective_to is None
+    assert policy_context.mandate_lineage == {}
+    assert policy_context.cash_reserve_target_weight == Decimal("0.0200000000")
+
+
+@pytest.mark.parametrize("cash_reserve_weight", ["-0.01", "1.01"])
+def test_core_mandate_binding_rejects_cash_reserve_target_outside_ratio_bounds(
+    cash_reserve_weight: str,
+):
+    payload = _core_mandate_binding_payload()
+    payload["rebalance_bands"]["cash_reserve_weight"] = cash_reserve_weight
+
+    with pytest.raises(ValidationError, match="cash_reserve_weight"):
+        DpmCoreMandateBindingResponse.model_validate(payload)
 
 
 def test_core_mandate_binding_rejects_incomplete_supportability():
@@ -951,6 +1072,25 @@ def test_portfolio_position_tax_lot_helper_attaches_grouped_lots_by_instrument()
 
     assert [lot.lot_id for lot in position.lots] == ["LOT-AAPL-001"]
     assert position.lots[0].quantity == Decimal("60.0000000000")
+
+
+def test_zero_quantity_position_does_not_require_open_tax_lot_coverage():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [{"instrument_id": "EQ_CLOSED", "quantity": "0"}],
+        }
+    )
+
+    _validate_core_tax_lot_coverage(
+        portfolio_snapshot=portfolio,
+        tax_lot_index=_CoreTaxLotIndex(
+            by_security_id={},
+            by_instrument_id={},
+            security_identities=set(),
+            instrument_identities=set(),
+        ),
+    )
 
 
 def test_core_tax_lots_reject_partial_or_wrong_portfolio_context():
