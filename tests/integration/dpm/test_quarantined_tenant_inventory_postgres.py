@@ -38,6 +38,9 @@ def test_inventory_reports_every_quarantine_without_making_it_tenant_readable() 
         "run_idempotency_key": f"aaa-inventory-run-idem-{suffix}",
         "lineage_source_id": f"aaa_inventory_lineage_source_{suffix}",
         "operation_id": f"aaa_inventory_operation_{suffix}",
+        "alternative_set_id": f"aaa_inventory_alternative_set_{suffix}",
+        "selection_id": f"aaa_inventory_selection_{suffix}",
+        "alternative_id": f"aaa_inventory_alternative_{suffix}",
         "mandate_id": f"MANDATE_INVENTORY_{suffix}",
         "portfolio_id": f"PF_INVENTORY_{suffix}",
     }
@@ -81,6 +84,14 @@ def test_inventory_reports_every_quarantine_without_making_it_tenant_readable() 
             "dpm_pre_trade_proof_packs": ("proof_pack_id", ids["proof_pack_id"]),
             "dpm_monitoring_runs": ("monitoring_run_id", ids["monitoring_run_id"]),
             "dpm_async_operations": ("operation_id", ids["operation_id"]),
+            "dpm_construction_alternative_sets": (
+                "alternative_set_id",
+                ids["alternative_set_id"],
+            ),
+            "dpm_construction_alternative_selections": (
+                "selection_id",
+                ids["selection_id"],
+            ),
         }
         for dataset, (column, value) in expected_identifiers.items():
             assert any(row[column] == value for row in by_name[dataset]["rows"])
@@ -267,6 +278,38 @@ def _insert_quarantined_rows(*, dsn: str, ids: dict[str, str]) -> None:
             """,
             (ids["operation_id"], f"corr-{ids['operation_id']}"),
         )
+        connection.execute(
+            """
+            INSERT INTO dpm_construction_alternative_sets (
+                alternative_set_id, portfolio_id, as_of, status, request_hash,
+                idempotency_key, input_mode, source_supportability_state,
+                payload_json, created_at
+            ) VALUES (%s, %s, '2026-09-09', 'READY', 'sha256:inventory-construction',
+                      %s, 'HOLDINGS', 'SUPPORTED', '{}',
+                      '2026-09-09T00:00:00+00:00')
+            """,
+            (
+                ids["alternative_set_id"],
+                ids["portfolio_id"],
+                f"aaa-inventory-construction-idem-{ids['alternative_set_id']}",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO dpm_construction_alternative_selections (
+                selection_id, alternative_set_id, alternative_id, actor_id,
+                reason_code, comment, correlation_id, payload_json, selected_at
+            ) VALUES (%s, %s, %s, 'inventory-proof', 'OPERATOR_SELECTED',
+                      'Legacy unowned selection', %s, '{}',
+                      '2026-09-09T00:00:00+00:00')
+            """,
+            (
+                ids["selection_id"],
+                ids["alternative_set_id"],
+                ids["alternative_id"],
+                f"corr-{ids['selection_id']}",
+            ),
+        )
         connection.commit()
 
 
@@ -287,6 +330,11 @@ def _row_counts(*, dsn: str, ids: dict[str, str]) -> dict[str, int]:
         "dpm_run_idempotency_history": ("idempotency_key", ids["run_idempotency_key"]),
         "dpm_lineage_edges": ("source_entity_id", ids["lineage_source_id"]),
         "dpm_async_operations": ("operation_id", ids["operation_id"]),
+        "dpm_construction_alternative_sets": (
+            "alternative_set_id",
+            ids["alternative_set_id"],
+        ),
+        "dpm_construction_alternative_selections": ("selection_id", ids["selection_id"]),
     }
     with psycopg.connect(dsn, row_factory=dict_row) as connection:
         return {
@@ -300,6 +348,14 @@ def _row_counts(*, dsn: str, ids: dict[str, str]) -> dict[str, int]:
 
 def _delete_quarantined_rows(*, dsn: str, ids: dict[str, str]) -> None:
     with psycopg.connect(dsn) as connection:
+        connection.execute(
+            "DELETE FROM dpm_construction_alternative_selections WHERE selection_id = %s",
+            (ids["selection_id"],),
+        )
+        connection.execute(
+            "DELETE FROM dpm_construction_alternative_sets WHERE alternative_set_id = %s",
+            (ids["alternative_set_id"],),
+        )
         connection.execute(
             "DELETE FROM dpm_async_operations WHERE operation_id = %s",
             (ids["operation_id"],),
