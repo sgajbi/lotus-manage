@@ -57,12 +57,14 @@ def generate_construction_alternative_set(
     authority_context: ConstructionAuthorityContext | None = None,
     risk_authority_client: RiskAuthorityClient | None = None,
     run_service: DpmRunSupportService | None = None,
+    admitted_tenant_id: str | None = None,
 ) -> ConstructionAlternativeSet:
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
     request_hash = construction_request_hash(
         request=request,
         methods=method_set,
         source_context=source_context,
+        admitted_tenant_id=admitted_tenant_id,
     )
     existing = resolve_existing_construction_alternative_set(
         repository=repository,
@@ -78,6 +80,7 @@ def generate_construction_alternative_set(
         correlation_id=correlation_id,
         request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
         run_service=run_service,
+        tenant_id=admitted_tenant_id,
     )
     resolved_authority_context = authority_context_with_source_products(
         authority_context=authority_context or ConstructionAuthorityContext(),
@@ -93,6 +96,7 @@ def generate_construction_alternative_set(
         risk_authority_client=risk_authority_client,
         run_service=run_service,
         solver_available=has_solver_dependencies(),
+        tenant_id=admitted_tenant_id,
     )
     alternative_set = build_persistable_alternative_set(
         portfolio_id=request.portfolio_snapshot.portfolio_id,

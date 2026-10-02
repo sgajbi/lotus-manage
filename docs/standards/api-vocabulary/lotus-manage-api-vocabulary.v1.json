@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-02T02:45:10.624348+00:00",
+  "generatedAt": "2026-10-02T04:20:11.159953+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -20920,6 +20920,18 @@
       "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant for construction run ownership; stateful requests must also match stateful_input.tenant_id. This is not production identity-provider proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "x_correlation_id",
       "kind": "request_option",
       "location": "header",
@@ -20930,18 +20942,6 @@
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
-    },
-    {
-      "name": "x_tenant_id",
-      "kind": "request_option",
-      "location": "header",
-      "required": false,
-      "type": "object",
-      "description": "Required for stateful Core sourcing and must match stateful_input.tenant_id; not authenticated-principal proof.",
-      "example": "ENTITY_001",
-      "allowedValues": [],
-      "semanticId": "lotus.x_tenant_id",
-      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "alternative_set_id",
@@ -70835,20 +70835,20 @@
             "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
             "type": "object",
             "semanticId": "lotus.x_correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
-          },
-          {
-            "name": "x-tenant-id",
-            "location": "header",
-            "required": false,
-            "type": "object",
-            "semanticId": "lotus.x_tenant_id",
-            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
             "name": "input_mode",

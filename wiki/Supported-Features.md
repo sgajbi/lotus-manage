@@ -22,6 +22,14 @@ execution authority, creates an order, or authorizes client publication. A revie
 only the management-review outcome; it does not establish suitability, OMS state, execution, fill,
 settlement, or publication.
 
+Construction is likewise a bounded backend capability, not a tenant-authorized product surface:
+direct generated rebalance runs now retain the caller-asserted tenant and obey run-read fences,
+but alternative-set retrieval and selection still lack persisted tenant ownership
+([#753](https://github.com/sgajbi/lotus-manage/issues/753)). Any earlier "certified alternative
+APIs" phrasing on this page refers to functional/API checks only, not production identity or
+object-level tenant authorization. Wave propagation remains under
+[#715](https://github.com/sgajbi/lotus-manage/issues/715).
+
 ```mermaid
 flowchart LR
     Core[lotus-core<br/>portfolio, mandate, tax-lot, tax profile/rule, cashflow, market-data sources]

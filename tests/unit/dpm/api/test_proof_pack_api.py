@@ -113,6 +113,7 @@ def _generate_selected_alternative(client: TestClient) -> tuple[str, str]:
         headers={
             "Idempotency-Key": "proof-pack-source-alternatives",
             "X-Correlation-Id": "corr-proof-pack-alternatives",
+            "X-Tenant-Id": "tenant-test",
         },
     )
     assert response.status_code == 200

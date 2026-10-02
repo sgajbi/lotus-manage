@@ -16,12 +16,14 @@ def construction_request_hash(
     request: RebalanceRequest,
     methods: Sequence[ConstructionMethod],
     source_context: DpmResolvedSourceContext | None,
+    admitted_tenant_id: str | None = None,
 ) -> str:
     return hash_canonical_payload(
         construction_request_hash_payload(
             request=request,
             methods=methods,
             source_context=source_context,
+            admitted_tenant_id=admitted_tenant_id,
         )
     )
 
@@ -31,14 +33,18 @@ def construction_request_hash_payload(
     request: RebalanceRequest,
     methods: Sequence[ConstructionMethod],
     source_context: DpmResolvedSourceContext | None,
+    admitted_tenant_id: str | None = None,
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "request": request.model_dump(mode="json"),
         "methods": [method.value for method in methods],
         "source_context_hash": (
             source_context.stateful_context_hash if source_context is not None else None
         ),
     }
+    if admitted_tenant_id is not None:
+        payload["admitted_tenant_id"] = admitted_tenant_id
+    return payload
 
 
 def resolve_existing_construction_alternative_set(

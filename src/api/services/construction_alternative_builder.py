@@ -36,6 +36,7 @@ def build_construction_alternative_for_method(
     risk_authority_client: RiskAuthorityClient | None,
     run_service: DpmRunSupportService | None,
     solver_available: bool | None = None,
+    tenant_id: str | None = None,
 ) -> ConstructionAlternative:
     if method == ConstructionMethod.DO_NOTHING_BASELINE:
         baseline = build_do_nothing_baseline(result=base_result)
@@ -74,6 +75,7 @@ def build_construction_alternative_for_method(
             correlation_id=correlation_id,
             request_hash=f"{request_hash}:{plan.effective_method.value}",
             run_service=run_service,
+            tenant_id=tenant_id,
         )
     alternative = build_rebalance_result_alternative(
         result=result,
@@ -108,6 +110,7 @@ def build_construction_alternatives(
     risk_authority_client: RiskAuthorityClient | None,
     run_service: DpmRunSupportService | None,
     solver_available: bool | None = None,
+    tenant_id: str | None = None,
 ) -> list[ConstructionAlternative]:
     resolved_solver_available = (
         has_solver_dependencies() if solver_available is None else solver_available
@@ -123,6 +126,7 @@ def build_construction_alternatives(
             risk_authority_client=risk_authority_client,
             run_service=run_service,
             solver_available=resolved_solver_available,
+            tenant_id=tenant_id,
         )
         for method in method_set
     ]

@@ -88,7 +88,9 @@ def test_run_construction_method_uses_method_specific_correlation_and_records_su
     calls: list[tuple[str, str, str | None]] = []
 
     class _RunService:
-        def record_run(self, *, result, request_hash, portfolio_id, idempotency_key) -> None:
+        def record_run(
+            self, *, result, request_hash, portfolio_id, idempotency_key, tenant_id
+        ) -> None:
             calls.append((result.correlation_id, request_hash, idempotency_key))
 
     result = run_construction_method(

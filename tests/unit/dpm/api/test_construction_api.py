@@ -9,6 +9,8 @@ from src.api.dependencies import (
     get_risk_authority_client,
 )
 from src.api.main import app
+from src.api.request_models import RebalanceRequest
+from src.api.routers.rebalance_runs import get_dpm_run_support_service
 import src.api.services.construction_service as construction_service
 import src.api.services.core_resolver_service as core_resolver_service
 from src.api.services.construction_transaction_cost_source_context import (
@@ -18,7 +20,10 @@ from src.core.dpm_source_context import (
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreExecutionContext,
 )
+from src.core.construction.vocabulary import ConstructionMethod
 from src.infrastructure.construction import InMemoryConstructionRepository
+from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
+from src.core.rebalance_runs.service import DpmRunSupportService
 from tests.shared.factories import valid_api_payload
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     transaction_cost_curve_response,
@@ -32,7 +37,145 @@ async def override_get_db_session():
 def _client(repository: InMemoryConstructionRepository):
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_construction_repository] = lambda: repository
-    return TestClient(app)
+    return TestClient(app, headers={"X-Tenant-Id": "tenant_001"})
+
+
+def test_generated_construction_runs_are_readable_only_by_admitted_tenant() -> None:
+    repository = InMemoryConstructionRepository()
+    run_repository = InMemoryDpmRunRepository()
+    app.dependency_overrides[get_dpm_run_support_service] = lambda: DpmRunSupportService(
+        repository=run_repository
+    )
+    try:
+        with _client(repository) as client:
+            payload = _payload()
+            payload["stateless_input"]["model_portfolio"]["targets"][0]["weight"] = "1.00"
+            payload["methods"] = [method.value for method in ConstructionMethod]
+            response = client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json=payload,
+                headers={
+                    "Idempotency-Key": "owned-construction-runs",
+                    "X-Tenant-Id": " tenant_001 ",
+                },
+            )
+            assert response.status_code == 200
+            alternatives = {item["method"]: item for item in response.json()["alternatives"]}
+            run_ids = {item["rebalance_run_id"] for item in alternatives.values()}
+            assert len(alternatives) == len(ConstructionMethod)
+            assert len(run_ids) >= 2
+            heuristic = run_repository.get_run(
+                rebalance_run_id=alternatives["HEURISTIC_EXPLAINABLE"]["rebalance_run_id"]
+            )
+            assert heuristic is not None
+            assert Decimal(heuristic.result_json["before"]["total_value"]["amount"]) == Decimal(
+                "10000"
+            )
+            assert heuristic.result_json["intents"][0]["side"] == "BUY"
+            assert Decimal(heuristic.result_json["intents"][0]["quantity"]) == Decimal("50")
+            assert Decimal(heuristic.result_json["intents"][0]["notional"]["amount"]) == Decimal(
+                "5000"
+            )
+            for run_id in run_ids:
+                owner_read = client.get(
+                    f"/api/v1/rebalance/runs/{run_id}",
+                    headers={"X-Tenant-Id": "tenant_001"},
+                )
+                foreign_read = client.get(
+                    f"/api/v1/rebalance/runs/{run_id}",
+                    headers={"X-Tenant-Id": "tenant_002"},
+                )
+                assert owner_read.status_code == 200
+                assert foreign_read.status_code == 404
+                assert run_repository.get_run(rebalance_run_id=run_id).tenant_id == "tenant_001"
+            replay = client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json=payload,
+                headers={"Idempotency-Key": "owned-construction-runs", "X-Tenant-Id": "tenant_001"},
+            )
+            assert replay.status_code == 200
+            assert replay.json() == response.json()
+            foreign_replay = client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json=payload,
+                headers={"Idempotency-Key": "owned-construction-runs", "X-Tenant-Id": "tenant_002"},
+            )
+            assert foreign_replay.status_code == 409
+    finally:
+        app.dependency_overrides = {}
+
+
+@pytest.mark.parametrize("tenant_header", [None, "   "])
+def test_stateless_construction_refuses_missing_or_blank_tenant_before_writes(
+    tenant_header: str | None,
+) -> None:
+    repository = InMemoryConstructionRepository()
+    run_repository = InMemoryDpmRunRepository()
+    app.dependency_overrides[get_dpm_run_support_service] = lambda: DpmRunSupportService(
+        repository=run_repository
+    )
+    try:
+        with _client(repository) as client:
+            if tenant_header is None:
+                client.headers.pop("X-Tenant-Id")
+            response = client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json=_payload(),
+                headers={
+                    "Idempotency-Key": "missing-construction-owner",
+                    **({"X-Tenant-Id": tenant_header} if tenant_header is not None else {}),
+                },
+            )
+            assert response.status_code == 422
+            assert (
+                repository.get_alternative_set_by_idempotency(
+                    idempotency_key="missing-construction-owner"
+                )
+                is None
+            )
+            runs, _ = run_repository.list_runs(
+                created_from=None,
+                created_to=None,
+                status=None,
+                request_hash=None,
+                portfolio_id="pf_1",
+                limit=10,
+                cursor=None,
+            )
+            assert runs == []
+    finally:
+        app.dependency_overrides = {}
+
+
+def test_preexisting_unowned_construction_replay_is_not_adopted_by_tenant() -> None:
+    repository = InMemoryConstructionRepository()
+    legacy = construction_service.generate_construction_alternative_set(
+        request=RebalanceRequest.model_validate(_payload()["stateless_input"]),
+        idempotency_key="unowned-legacy-construction",
+        correlation_id="corr-legacy-construction",
+        repository=repository,
+        methods=[ConstructionMethod.HEURISTIC_EXPLAINABLE],
+        run_service=None,
+    )
+    app.dependency_overrides[get_dpm_run_support_service] = lambda: DpmRunSupportService(
+        repository=InMemoryDpmRunRepository()
+    )
+    try:
+        with _client(repository) as client:
+            response = client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json={**_payload(), "methods": ["HEURISTIC_EXPLAINABLE"]},
+                headers={"Idempotency-Key": "unowned-legacy-construction"},
+            )
+        assert response.status_code == 409
+        assert (
+            repository.get_alternative_set_by_idempotency(
+                idempotency_key="unowned-legacy-construction"
+            )
+            == legacy
+        )
+    finally:
+        app.dependency_overrides = {}
 
 
 def _payload() -> dict:
@@ -1677,6 +1820,8 @@ def test_stateful_construction_rejects_unadmitted_tenant_before_core_sourcing(
         headers["X-Tenant-Id"] = tenant_header
 
     with _client(repository) as client:
+        if tenant_header is None:
+            client.headers.pop("X-Tenant-Id")
         response = client.post(
             "/api/v1/construction/alternative-sets/generate",
             json={"input_mode": "stateful", "stateful_input": _stateful_input_payload()},
@@ -1685,7 +1830,10 @@ def test_stateful_construction_rejects_unadmitted_tenant_before_core_sourcing(
 
     app.dependency_overrides = {}
     assert response.status_code == 422
-    assert response.json()["detail"] == expected_detail
+    if tenant_header is None:
+        assert response.json()["detail"][0]["loc"] == ["header", "x-tenant-id"]
+    else:
+        assert response.json()["detail"] == expected_detail
 
 
 def test_stateful_construction_attaches_core_transaction_cost_curve(monkeypatch) -> None:

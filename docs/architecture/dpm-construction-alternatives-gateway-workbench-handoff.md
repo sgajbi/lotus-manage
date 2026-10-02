@@ -41,7 +41,11 @@ single black-box trade-list generator.
 
 ## Implemented Manage Contract
 
-RFC-0039 currently exposes this certified manage endpoint family:
+RFC-0039 currently exposes this implemented Manage endpoint family. Its construction-run write
+path requires `X-Tenant-Id`, but alternative-set read/selection is not yet tenant-fenced at the
+repository boundary ([Manage #753](https://github.com/sgajbi/lotus-manage/issues/753)); Gateway
+must not treat these routes as tenant-authorized product APIs until that issue and trusted-principal
+integration are proven:
 
 | Product need | `lotus-manage` source API | Gateway behavior |
 | --- | --- | --- |

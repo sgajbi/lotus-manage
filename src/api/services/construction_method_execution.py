@@ -21,6 +21,7 @@ def run_construction_method(
     correlation_id: Optional[str],
     request_hash: str,
     run_service: DpmRunSupportService | None,
+    tenant_id: str | None = None,
 ) -> RebalanceResult:
     options = options_for_construction_method(options=request.options, method=method)
     run_correlation_id = construction_method_correlation_id(
@@ -42,6 +43,7 @@ def run_construction_method(
             request_hash=request_hash,
             portfolio_id=request.portfolio_snapshot.portfolio_id,
             idempotency_key=None,
+            tenant_id=tenant_id,
         )
     return result
 

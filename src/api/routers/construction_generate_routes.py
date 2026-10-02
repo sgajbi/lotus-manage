@@ -15,6 +15,7 @@ from src.api.routers.construction_models import (
     ConstructionAlternativeSetGenerateRequest,
 )
 from src.api.routers.construction_http import construction_http_exception
+from src.api.routers.mandate_tenant_query import require_mandate_tenant
 from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service
@@ -58,6 +59,19 @@ def generate_alternative_set(
             examples=["construction-idem-001"],
         ),
     ],
+    x_tenant_id: Annotated[
+        str,
+        Header(
+            min_length=1,
+            pattern=r"\S",
+            description=(
+                "Required caller-asserted tenant for construction run ownership; stateful "
+                "requests must also match stateful_input.tenant_id. This is not production "
+                "identity-provider proof."
+            ),
+            examples=["tenant_001"],
+        ),
+    ],
     x_correlation_id: Annotated[
         Optional[str],
         Header(
@@ -65,20 +79,12 @@ def generate_alternative_set(
             examples=["corr-construction-001"],
         ),
     ] = None,
-    x_tenant_id: Annotated[
-        Optional[str],
-        Header(
-            description=(
-                "Required for stateful Core sourcing and must match stateful_input.tenant_id; "
-                "not authenticated-principal proof."
-            ),
-        ),
-    ] = None,
     repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> ConstructionAlternativeSet:
+    admitted_tenant_id = require_mandate_tenant(x_tenant_id)
     try:
         (
             rebalance_request,
@@ -86,7 +92,7 @@ def generate_alternative_set(
         ) = rebalance_simulation_service.resolve_rebalance_request_envelope(
             envelope=request.to_execution_envelope(),
             correlation_id=x_correlation_id,
-            admitted_tenant_id=x_tenant_id,
+            admitted_tenant_id=admitted_tenant_id,
         )
     except rebalance_simulation_service.DpmRebalanceEnvelopeError as exc:
         raise rebalance_envelope_http_exception(exc) from exc
@@ -101,6 +107,7 @@ def generate_alternative_set(
             authority_context=request.authority_context,
             risk_authority_client=risk_authority_client,
             run_service=run_service,
+            admitted_tenant_id=admitted_tenant_id,
         )
     except ConstructionIdempotencyConflictError as exc:
         raise construction_http_exception(exc) from exc
