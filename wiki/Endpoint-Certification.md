@@ -1823,6 +1823,7 @@ Functional coverage:
   backfill of pre-existing revisions, lock-before-insert/atomic-publication-after-insert for
   legacy replicas and concurrent old/new same-revision writes, restart-safe immutable receipt replay,
   fail-closed exact-revision retries when publication evidence is missing or hash-divergent,
+  fail-closed list/detail/reconciliation reads for stored-hash divergence,
   wrong-hash/conflicting receipt rejection, and
   tenant/role/service-identity refusal.
 

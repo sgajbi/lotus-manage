@@ -453,6 +453,11 @@ def test_postgres_refuses_publication_hash_divergence() -> None:
     )
     revision = _revision(tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1")
     repository.save_membership_revision(revision=revision)
+    sequence = (
+        repository.list_publications(tenant_id=tenant_id, after_sequence=0, limit=1)
+        .items[0]
+        .sequence
+    )
     with psycopg.connect(dsn) as connection:
         connection.execute(
             """
@@ -464,6 +469,10 @@ def test_postgres_refuses_publication_hash_divergence() -> None:
         )
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_IMMUTABLE_CONFLICT"):
         repository.save_membership_revision(revision=revision)
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"):
+        repository.get_publication(tenant_id=tenant_id, sequence=sequence)
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"):
+        repository.list_publications(tenant_id=tenant_id, after_sequence=0, limit=10)
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"):
         _retry_revision_command(repository, revision)
 

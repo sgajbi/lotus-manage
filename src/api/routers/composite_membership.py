@@ -354,7 +354,7 @@ def get_publication(
 ) -> DpmCompositeMembershipPublication:
     try:
         return service.get_publication(tenant_id=identity.tenant_id, sequence=sequence)
-    except DpmCompositeNotFoundError as exc:
+    except (DpmCompositeNotFoundError, DpmCompositeConflictError) as exc:
         raise _from_domain_error(exc) from exc
 
 
@@ -372,7 +372,7 @@ def get_publication_reconciliation(
 ) -> DpmCompositePublicationReconciliation:
     try:
         return service.publication_reconciliation(tenant_id=identity.tenant_id, sequence=sequence)
-    except DpmCompositeNotFoundError as exc:
+    except (DpmCompositeNotFoundError, DpmCompositeConflictError) as exc:
         raise _from_domain_error(exc) from exc
 
 

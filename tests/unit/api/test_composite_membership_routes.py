@@ -299,5 +299,17 @@ def test_composite_http_replay_refuses_missing_or_divergent_publication() -> Non
                 retry = client.put(revision_url, headers=_headers(), json=_revision_payload())
                 assert retry.status_code == 409
                 assert retry.json()["detail"]["code"] == "COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"
+                if failure == "divergent":
+                    publications = "/api/v1/rebalance/composites/publications"
+                    for url in (
+                        publications,
+                        f"{publications}/1",
+                        f"{publications}/1/reconciliation",
+                    ):
+                        response = client.get(url, headers=_headers())
+                        assert response.status_code == 409
+                        assert response.json()["detail"]["code"] == (
+                            "COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT"
+                        )
         finally:
             app.dependency_overrides.clear()
