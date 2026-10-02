@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-10-02T06:24:44+00:00`
+- Generated at: `2026-10-02T06:40:05+00:00`
 
 - Baseline ref: `origin/main`
 
 - Baseline source snapshot: `485f2502cbe65154cc9750e54d95b9a3c75696f1`
 
-- Report source snapshot: `fab868ca+worktree`
+- Report source snapshot: `a233219f+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,7 +15,7 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 988 | 989 | +1 |
-| Total Python LOC | 241524 | 242581 | +1057 |
+| Total Python LOC | 241524 | 242611 | +1087 |
 | Test functions | 3421 | 3430 | +9 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
@@ -93,7 +93,7 @@
 | 7 | test_unknown_legacy_limits_are_preserved_but_never_act_as_contractual_limits | tests/integration/dpm/mandates/test_legacy_mandate_limit_provenance_postgres.py | 335 |
 | 8 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |
 | 9 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
-| 10 | test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts | tests/unit/dpm/api/test_waves_api.py | 268 |
+| 10 | test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_state | tests/integration/dpm/supportability/test_construction_tenant_ownership_postgres.py | 284 |
 
 ## Most Complex Functions
 

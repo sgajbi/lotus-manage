@@ -37,6 +37,11 @@ class PostgresConstructionRepository:
             idempotency_key=idempotency_key,
         )
         with closing(self._connect()) as connection:
+            # A session advisory lock must outlive the construction operation without leaving
+            # this dedicated connection idle inside a transaction. The repository applies a
+            # bounded idle-in-transaction timeout, which would otherwise terminate the session
+            # and release the fence while method side effects are still being recorded.
+            connection.autocommit = True
             connection.execute("SELECT pg_advisory_lock(%s)", (lock_key,))
             try:
                 yield
