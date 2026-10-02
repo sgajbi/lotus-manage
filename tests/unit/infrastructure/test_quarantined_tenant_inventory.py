@@ -136,6 +136,18 @@ def test_monitoring_run_inventory_requires_its_bounded_scan_index() -> None:
     assert monitoring_runs.migration_version == "0029"
 
 
+def test_construction_inventory_requires_its_bounded_scan_indexes() -> None:
+    migration = Path(
+        "src/infrastructure/postgres_migrations/dpm/0037_construction_tenant_ownership.sql"
+    ).read_text(encoding="utf-8")
+
+    assert "idx_dpm_construction_sets_null_tenant_inventory" in migration
+    assert "ON dpm_construction_alternative_sets (alternative_set_id)" in migration
+    assert "idx_dpm_construction_selections_null_tenant_inventory" in migration
+    assert "ON dpm_construction_alternative_selections (selection_id)" in migration
+    assert migration.count("WHERE tenant_id IS NULL") == 2
+
+
 def test_clean_estate_is_an_explicit_successful_zero_read_only_report() -> None:
     connection = _Connection()
 

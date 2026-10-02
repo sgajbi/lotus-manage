@@ -39,3 +39,12 @@ CREATE INDEX IF NOT EXISTS idx_dpm_construction_sets_tenant_portfolio
 CREATE INDEX IF NOT EXISTS idx_dpm_construction_selections_tenant_set
     ON dpm_construction_alternative_selections (tenant_id, alternative_set_id)
     WHERE tenant_id IS NOT NULL;
+
+-- Keep the operator quarantine inventory bounded as tenant-owned history grows.
+CREATE INDEX IF NOT EXISTS idx_dpm_construction_sets_null_tenant_inventory
+    ON dpm_construction_alternative_sets (alternative_set_id)
+    WHERE tenant_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_dpm_construction_selections_null_tenant_inventory
+    ON dpm_construction_alternative_selections (selection_id)
+    WHERE tenant_id IS NULL;
