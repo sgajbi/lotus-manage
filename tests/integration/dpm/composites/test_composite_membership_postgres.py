@@ -353,11 +353,44 @@ def test_postgres_migration_backfills_preexisting_revision(monkeypatch: pytest.M
             assert row is not None
             assert row["membership_content_hash"] == revision.content_hash
             assert row["published_at"] > revision.decided_at
+            # A previous application replica can still insert after the
+            # migration but before traffic switches to the new writer. The
+            # compatibility trigger must publish that revision atomically.
+            late_revision = _revision(
+                tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.2"
+            )
+            connection.execute(
+                """
+                INSERT INTO dpm_composite_membership_revisions (
+                    tenant_id, composite_id, definition_version, membership_revision,
+                    decided_at, content_hash, payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
+                """,
+                (
+                    tenant_id,
+                    composite_id,
+                    late_revision.definition_version,
+                    late_revision.membership_revision,
+                    late_revision.decided_at,
+                    late_revision.content_hash,
+                    dump_model_json(late_revision),
+                ),
+            )
+            published_late = connection.execute(
+                """
+                SELECT membership_content_hash
+                FROM dpm_composite_membership_publications
+                WHERE tenant_id = %s AND membership_revision = %s
+                """,
+                (tenant_id, late_revision.membership_revision),
+            ).fetchone()
+            assert published_late is not None
+            assert published_late["membership_content_hash"] == late_revision.content_hash
             apply_postgres_migrations(connection=connection, namespace="dpm")
             count = connection.execute(
                 "SELECT COUNT(*) AS count FROM dpm_composite_membership_publications"
             ).fetchone()
-            assert count["count"] == 1
+            assert count["count"] == 2
         finally:
             connection.rollback()
             connection.execute("SET search_path TO public")

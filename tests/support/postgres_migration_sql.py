@@ -23,6 +23,8 @@ MIGRATION_DDL_KEYWORDS = (
     "ALTER TABLE",
     "CREATE INDEX",
     "CREATE UNIQUE INDEX",
+    "CREATE FUNCTION",
+    "CREATE TRIGGER",
     "DROP INDEX",
     "schema_migrations",
 )
