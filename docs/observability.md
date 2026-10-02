@@ -16,6 +16,31 @@
 - Structured logs should avoid raw payload leakage and retain bounded operational fields (route, outcome,
   request family, correlation).
 
+### Ordinary JSON log field policy
+
+`JsonFormatter` does not serialize arbitrary `LogRecord` attributes or arbitrary ordinary
+`extra_fields`. The admitted ordinary field inventory is intentionally scalar and currently covers:
+
+- HTTP completion: `http_method`, `endpoint`, `status_code`, `status_family`,
+  `latency_bucket_ms`;
+- PostgreSQL access: `operation`, `reason`, `classification`, `application_name`,
+  `connection_budget`, `max_connections`, `acquire_timeout_seconds`,
+  `connect_timeout_seconds`;
+- bounded supportability summaries: `wave_state`, `supportability_state`, `outcome_state`,
+  `reason`, `issue_count`, `dimension_count`, `blocked_dimension_count`,
+  `degraded_dimension_count`, `unsupported_dimension_count`, `source_ref_count`.
+
+Keys outside that inventory and dictionaries/lists supplied as ordinary values are discarded.
+Credential-like keys (`password`, `secret`, `token`, `authorization`, and governed siblings) and
+identity keys (`portfolio_id`, `account_id`, `client_id`, run/request/correlation identifiers, and
+governed siblings) are normalized case-insensitively and emitted only as `[REDACTED]`. The
+producer-inventory test fails when a new literal field is added without updating this policy.
+
+The formatter's top-level correlation/request/trace context is a separate approved request context,
+and the enterprise `audit` envelope has its own explicit serializer and recursive metadata
+redaction. These local controls do not prove durable log delivery, retention, exported traces,
+evaluated alerts, or a production-safe external sink.
+
 ## Traceability
 
 - Correlation IDs should remain stable across async request paths.
@@ -28,3 +53,6 @@
   - `scripts/validate_observability_contracts.py`
   - `make mesh-contract-validate`
 - Quality baseline logs are collected by `.github/workflows/quality-baseline.yml`.
+- Formatter and producer-inventory regressions live in
+  `tests/unit/dpm/api/test_observability_api.py`; enterprise audit-envelope regressions remain in
+  `tests/unit/api/test_enterprise_audit_json.py`.

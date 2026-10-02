@@ -452,13 +452,17 @@ Most relevant current governance:
    the shipped `JsonFormatter` as a whitelisted, redacted envelope. Registered-API audit tests must
    cover identity and outcome, while asserted headers and JSON serialization must not be described
    as verified ingress identity or durable audit delivery,
-9. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
+9. ordinary logger `extra_fields` are a separate allowlisted scalar boundary. Credential and
+   identity keys are normalized and redacted case-insensitively; unknown fields and structured
+   dictionaries/lists are discarded. Keep the producer-inventory regression synchronized when a
+   new operational field is intentionally introduced,
+10. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
-10. the current repo-native domain-data-product declaration intentionally records only governed
+11. the current repo-native domain-data-product declaration intentionally records only governed
     `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
     market-data and future stateful `portfolio_id` resolution must be added only after upstream
     producer approval and an explicit source-data retrieval design.
-11. target-state RFC-0037 through RFC-0043 work may redesign or remove stale manage APIs because
+12. target-state RFC-0037 through RFC-0043 work may redesign or remove stale manage APIs because
     no production downstream dependency is assumed for the revamp surface. Any downstream usage
     discovered during implementation should be documented and migrated to the certified target
     contract rather than preserved through permanent compatibility aliases.

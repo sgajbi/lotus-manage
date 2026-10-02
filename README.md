@@ -116,6 +116,9 @@ Current posture under RFC-0082:
    logger, but trusted-ingress identity and durable audit-sink delivery are separate deployment
    obligations; see [enterprise readiness](docs/standards/enterprise-readiness.md) and the
    [Security and Governance wiki source](wiki/Security-and-Governance.md).
+   Ordinary `extra_fields` logging is a separate bounded contract: only the checked-in operational
+   field inventory is serialized, only scalar values are admitted, and credential or identity keys
+   are redacted case-insensitively. Unknown or structured fields are dropped at the formatter.
 5. Solver-capable production installs use the `solver` extra (`cvxpy` and `numpy`), while
    development and CI declare both as required `dev` dependencies. Solver-mode proof surfaces load
    that prerequisite during test collection and execute unconditionally; a missing, suppressed, or

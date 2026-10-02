@@ -1,12 +1,17 @@
+import ast
+import io
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 import src.api.main as main_module
 import src.api.observability as observability_module
 from src.api.main import app
+
+ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_health_endpoints_available():
@@ -448,6 +453,111 @@ def test_json_formatter_redacts_sensitive_extra_fields():
     assert payload["trace_id"] == "trace-log-test"
     assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(payload)
     assert "sha256:secret-request" not in json.dumps(payload)
+
+
+def test_json_formatter_enforces_case_insensitive_bounded_extra_field_policy():
+    formatter = observability_module.JsonFormatter()
+    forbidden_markers = {
+        "synthetic-password",
+        "synthetic-token",
+        "synthetic-email",
+        "synthetic-portfolio",
+        "synthetic-case-id",
+        "synthetic-list-token",
+        "synthetic-unknown",
+    }
+    extra_fields = {
+        "password": "synthetic-password",
+        "Authorization": "synthetic-token",
+        "nested": {
+            "client_email": "synthetic-email",
+            "portfolio_id": "synthetic-portfolio",
+        },
+        "Portfolio_Id": "synthetic-case-id",
+        "items": [{"token": "synthetic-list-token"}],
+        "unapproved_context": "synthetic-unknown",
+        "endpoint": "/synthetic",
+        "status_code": 200,
+        "reason": "synthetic_control",
+    }
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(formatter)
+    logger = logging.getLogger("lotus-manage.synthetic-boundary")
+    previous_level = logger.level
+    previous_propagate = logger.propagate
+    logger.addHandler(handler)
+    logger.setLevel(logging.WARNING)
+    logger.propagate = False
+    try:
+        logger.warning(
+            "synthetic.boundary.control",
+            extra={"extra_fields": extra_fields},
+        )
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(previous_level)
+        logger.propagate = previous_propagate
+
+    payload = json.loads(stream.getvalue())
+    serialized = json.dumps(payload, sort_keys=True)
+
+    assert payload["password"] == "[REDACTED]"
+    assert payload["authorization"] == "[REDACTED]"
+    assert payload["portfolio_id"] == "[REDACTED]"
+    assert payload["endpoint"] == "/synthetic"
+    assert payload["status_code"] == 200
+    assert payload["reason"] == "synthetic_control"
+    assert "nested" not in payload
+    assert "items" not in payload
+    assert "unapproved_context" not in payload
+    assert all(marker not in serialized for marker in forbidden_markers)
+
+
+def test_json_formatter_refuses_structured_values_for_approved_scalar_fields():
+    record = logging.LogRecord(
+        name="lotus-manage.domain",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="synthetic.structured.control",
+        args=(),
+        exc_info=None,
+    )
+    record.extra_fields = {
+        "reason": {"password": "synthetic-nested-password"},
+        "status_family": ["synthetic-list-value"],
+        "endpoint": "/safe-template",
+    }
+
+    payload = observability_module._json_log_payload(record)
+    serialized = json.dumps(payload, sort_keys=True)
+
+    assert payload["endpoint"] == "/safe-template"
+    assert "reason" not in payload
+    assert "status_family" not in payload
+    assert "synthetic-nested-password" not in serialized
+    assert "synthetic-list-value" not in serialized
+
+
+def test_ordinary_extra_field_producers_match_the_formatter_allowlist():
+    producer_fields: set[str] = set()
+    for path in sorted((ROOT / "src").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Dict):
+                continue
+            for key, value in zip(node.keys, node.values, strict=True):
+                if not isinstance(key, ast.Constant) or key.value != "extra_fields":
+                    continue
+                assert isinstance(value, ast.Dict), f"{path}: extra_fields must be a literal dict"
+                for field in value.keys:
+                    assert isinstance(field, ast.Constant) and isinstance(field.value, str), (
+                        f"{path}: extra_fields keys must be literal strings"
+                    )
+                    producer_fields.add(field.value)
+
+    assert producer_fields == observability_module._ALLOWED_LOG_EXTRA_FIELD_NAMES
 
 
 def test_json_log_payload_omits_missing_context_and_preserves_safe_extra_fields():

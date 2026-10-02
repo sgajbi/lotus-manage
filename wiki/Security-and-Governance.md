@@ -264,6 +264,18 @@ composite API and logger contract are exercised by
 These fields are caller assertions without trusted-ingress verification. JSON serialization alone
 does not certify durable audit delivery, retention, or downstream reconciliation.
 
+Ordinary operational logging is intentionally narrower than the audit envelope. The JSON formatter
+accepts only the documented scalar HTTP-completion, PostgreSQL-access, and supportability-summary
+fields. Unknown fields and dictionary/list values are omitted. Credential and identity field names
+are matched case-insensitively and emitted only as `[REDACTED]`, so changing capitalization or
+nesting arbitrary context cannot bypass the boundary. A source-inventory regression requires any
+new ordinary producer field to be reviewed and added explicitly.
+
+Top-level request correlation/request/trace context remains available under its separate approved
+contract, and the audit envelope retains its explicit identity/outcome serializer. Neither local
+JSON formatting control proves durable collection, retention, exported tracing, alert evaluation,
+or external sink hardening.
+
 ## Governing RFCs
 
 | RFC | Establishes |
