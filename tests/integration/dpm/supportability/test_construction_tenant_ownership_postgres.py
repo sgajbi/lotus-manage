@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
@@ -181,7 +182,10 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
         ).fetchone()
         assert quarantined == {"set_tenant": None, "selection_tenant": None}
 
-        schema_dsn = make_conninfo(dsn, options=f"-csearch_path={schema}")
+        schema_dsn = make_conninfo(
+            dsn,
+            options=(f"-csearch_path={schema} -cidle_in_transaction_session_timeout=100ms"),
+        )
         repository = PostgresConstructionRepository(dsn=schema_dsn)
         monkeypatch.setattr(
             repository,
@@ -297,7 +301,28 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
             "_connect",
             lambda: psycopg.connect(schema_dsn, row_factory=dict_row),
         )
-        run_service = DpmRunSupportService(repository=run_repository)
+        durable_run_service = DpmRunSupportService(repository=run_repository)
+
+        class SlowRunService:
+            def record_run(
+                self,
+                *,
+                result,
+                request_hash,
+                portfolio_id,
+                idempotency_key,
+                tenant_id,
+            ) -> None:
+                durable_run_service.record_run(
+                    result=result,
+                    request_hash=request_hash,
+                    portfolio_id=portfolio_id,
+                    idempotency_key=idempotency_key,
+                    tenant_id=tenant_id,
+                )
+                time.sleep(0.25)
+
+        run_service = SlowRunService()
 
         def generate(candidate_repository: PostgresConstructionRepository):
             return construction_service.generate_construction_alternative_set(
@@ -306,7 +331,7 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
                 correlation_id=None,
                 repository=candidate_repository,
                 methods=[ConstructionMethod.HEURISTIC_EXPLAINABLE],
-                run_service=run_service,
+                run_service=run_service,  # type: ignore[arg-type]
                 admitted_tenant_id=service_tenant,
             )
 

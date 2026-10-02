@@ -84,8 +84,9 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    on alternative sets and selections. Idempotency is scoped to `(tenant_id, key)`, so exact
    same-tenant replay converges while different tenants may independently use the same key.
    Acquire the repository idempotency guard before method execution: PostgreSQL uses a stable
-   tenant/key advisory lock shared across service instances, preventing losing requests from
-   recording orphan runs, artifacts, or lineage before the canonical set exists.
+   tenant/key advisory lock on a dedicated autocommit session shared across service instances,
+   preventing losing requests from recording orphan runs, artifacts, or lineage before the
+   canonical set exists without exposing the fence to idle-in-transaction session expiry.
    Set/selection reads, selected-alternative proof-pack sourcing, portfolio-memory projection, and
    wave simulation/selection are tenant-fenced. Legacy NULL-owner rows are preserved but match no
    tenant and are never silently adopted. This remains caller-asserted scope, not production
