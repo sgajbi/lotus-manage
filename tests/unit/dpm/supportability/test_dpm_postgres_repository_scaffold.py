@@ -16,7 +16,10 @@ from src.infrastructure.rebalance_runs.postgres import (
     _json_dump,
 )
 
-from tests.support.postgres_migration_sql import is_migration_ddl
+from tests.support.postgres_migration_sql import (
+    is_composite_publication_backfill,
+    is_migration_ddl,
+)
 
 
 class _FakeCursor:
@@ -505,7 +508,7 @@ class _FakeConnection:
             # Migration 0030 is exercised by the real PostgreSQL mandate
             # integration proof. This fake models rebalance-run storage only.
             return _FakeCursor()
-        if is_migration_ddl(sql):
+        if is_migration_ddl(sql) or is_composite_publication_backfill(sql):
             return _FakeCursor()
         raise AssertionError(f"Unexpected SQL: {sql}")
 

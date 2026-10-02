@@ -29,9 +29,16 @@ performance analytics authority.
 Composite definitions and eligibility revisions are a tenant-scoped Manage source product at
 `/api/v1/rebalance/composites/*`. Writes require trusted tenant, actor, and a
 `DPM_COMPOSITE_ADMIN` or `DPM_PORTFOLIO_MANAGER` role; immutable replays are idempotent and changed
-content conflicts. The API preserves pinned historical revisions and correction impact windows. It
-does not calculate composite returns, infer eligibility from current book membership, or publish
-Performance member-return facts; those remain explicit consumer and source-owner responsibilities.
+content conflicts. Each committed membership revision atomically creates a durable, cursor-paged
+publication (including pre-publication revisions backfilled by migration `0036`); a pinned-hash
+consumer retrieval receipt is immutable and tenant-fenced. Reconciliation distinguishes
+`UNACKNOWLEDGED`, `RECEIVED`, and `REJECTED`, but retrieval is not fact materialization. Publication
+completeness is explicitly `UNVERIFIED`: Manage has not proved the authoritative full portfolio
+universe, Performance member-return ingestion, or capacity. Caller-provided identity headers require
+a trusted ingress; they are not standalone production authentication. The API preserves pinned
+historical revisions and correction impact windows. It does not calculate composite returns, infer
+eligibility from current book membership, or publish Performance member-return facts; those remain
+explicit consumer and source-owner responsibilities.
 
 Approved DPM instruction packages are a separate, tenant-scoped retrieval product at
 `/api/v1/rebalance/instruction-packages/*`. A release pins the reviewed run, READY proof pack,

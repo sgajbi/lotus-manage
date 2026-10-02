@@ -79,10 +79,20 @@ current portfolio-book membership for historical eligibility.
 - `GET .../membership/{membership_revision}/as-of?as_of_date=YYYY-MM-DD` returns only the decisions
   effective on that date from the explicitly pinned revision, retaining exclusions and terminated
   periods for historical consumers.
+- `GET /api/v1/rebalance/composites/publications?after_sequence=N&limit=K` returns bounded,
+  ordered committed-revision metadata with a tenant-scoped high watermark and next cursor.
+  `GET .../publications/{sequence}` reads one pinned publication; each provides the immutable
+  revision identity/hash, source cut, decision count and correction impact window.
+- `PUT .../publications/{sequence}/receipts/lotus-performance` accepts an immutable hash-matched
+  retrieval receipt from the `DPM_COMPOSITE_CONSUMER` role and matching service identity.
+  `GET .../publications/{sequence}/reconciliation` reports `UNACKNOWLEDGED`, `RECEIVED`, or
+  `REJECTED`. A receipt proves retrieval only, not ingestion or calculated return completeness.
 
 This is a source-record API, not a composite calculation, automatic eligibility engine, broker,
-Performance member-return publication, or OMS interface. Consumer materialization and delivery
-acknowledgement remain owned and evidenced separately.
+Performance member-return publication, or OMS interface. Publication completeness stays
+`UNVERIFIED` until authoritative universe and downstream proofs exist; consumer materialization
+remains owned and evidenced separately. Identity headers are caller assertions and require trusted
+ingress for production authorization.
 
 ## Approved instruction-package surfaces
 

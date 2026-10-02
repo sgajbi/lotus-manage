@@ -8,6 +8,11 @@ from src.core.composite_membership import (
     DpmCompositeDefinition,
     DpmCompositeMembershipRevision,
 )
+from src.core.composite_publication import (
+    DpmCompositeMembershipPublication,
+    DpmCompositePublicationPage,
+    DpmCompositePublicationReceipt,
+)
 
 
 class DpmCompositeConflictError(ValueError):
@@ -51,6 +56,24 @@ class DpmCompositeRepository(Protocol):
         offset: int,
     ) -> list[DpmCompositeMembershipRevision]:
         """List immutable membership snapshots with deterministic pagination."""
+
+    def get_publication(
+        self, *, tenant_id: str, sequence: int
+    ) -> DpmCompositeMembershipPublication | None:
+        """Read one immutable publication within its tenant."""
+
+    def list_publications(
+        self, *, tenant_id: str, after_sequence: int, limit: int
+    ) -> DpmCompositePublicationPage:
+        """Traverse committed tenant publications under a stable page watermark."""
+
+    def save_receipt(self, *, receipt: DpmCompositePublicationReceipt) -> bool:
+        """Persist one consumer acknowledgement; replay or conflict by immutable identity."""
+
+    def list_receipts(
+        self, *, tenant_id: str, publication_sequence: int
+    ) -> list[DpmCompositePublicationReceipt]:
+        """Inspect bounded consumer acknowledgements for one publication."""
 
 
 __all__ = ["DpmCompositeConflictError", "DpmCompositeRepository"]

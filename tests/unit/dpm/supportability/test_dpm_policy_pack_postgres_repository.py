@@ -4,7 +4,10 @@ from types import SimpleNamespace
 import src.infrastructure.dpm_policy_packs.postgres as postgres_module
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.dpm_policy_packs.postgres import PostgresDpmPolicyPackRepository
-from tests.support.postgres_migration_sql import is_migration_ddl
+from tests.support.postgres_migration_sql import (
+    is_composite_publication_backfill,
+    is_migration_ddl,
+)
 
 
 class _FakeCursor:
@@ -100,7 +103,7 @@ class _FakeConnection:
             # test_legacy_mandate_limit_provenance_postgres.py. This fake owns
             # only policy-pack behavior and must not emulate that migration.
             return _FakeCursor()
-        if is_migration_ddl(sql):
+        if is_migration_ddl(sql) or is_composite_publication_backfill(sql):
             return _FakeCursor()
         raise AssertionError(f"Unhandled SQL: {sql}")
 

@@ -1799,6 +1799,10 @@ Routes:
 - `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership`
 - `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}`
 - `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/as-of`
+- `GET /api/v1/rebalance/composites/publications`
+- `GET /api/v1/rebalance/composites/publications/{sequence}`
+- `GET /api/v1/rebalance/composites/publications/{sequence}/reconciliation`
+- `PUT /api/v1/rebalance/composites/publications/{sequence}/receipts/lotus-performance`
 
 Purpose:
 
@@ -1815,14 +1819,20 @@ Functional coverage:
 - inclusive effective-date include/exclude decisions, immutable correction lineage, and retained
   original/corrected revisions,
 - PostgreSQL migration, restart, tenant fence, and missing parent-definition/correction fencing.
+- atomic publication on committed revision, ordered bounded cursor/correction paging, migration
+  backfill of pre-existing revisions, restart-safe immutable receipt replay, wrong-hash/conflicting
+  receipt rejection, and tenant/role/service-identity refusal.
 
 Non-functional posture:
 
 - definition and membership records are durable locally when the Composite PostgreSQL DSN is
   configured; the in-memory adapter is limited to development and test use,
-- this is not automatic eligibility determination, composite-return calculation, broker delivery,
-  consumer acknowledgement, or an OMS interface. `lotus-performance` owns member-return facts and
-  calculation; its materialization workflow must retain this revision identity.
+- publication `completeness=UNVERIFIED` and `RECEIVED` mean durable source availability and retrieval,
+  not authoritative universe completeness, member-return materialization, return calculation,
+  broker delivery, or OMS execution. `lotus-performance` owns member-return facts and calculation;
+  its materialization workflow must retain this revision identity. Header identity is a trusted-
+  ingress assumption, not standalone production IAM; no live cross-repository certification or
+  measured horizontal throughput is claimed by this local endpoint suite.
 
 Evidence commands:
 
