@@ -34,7 +34,7 @@ For full repo-native evidence in production-oriented work, run:
 
 ## NULL-tenant quarantine inventory
 
-Migrations `0003`, `0024` through `0029`, `0032`, and `0033` deliberately retain rows that cannot
+Migrations `0003`, `0024` through `0029`, `0032`, `0033`, and `0037` deliberately retain rows that cannot
 be attributed to a verified tenant. Partial quarantine indexes keep bounded sampling from scanning
 unrelated history. Those rows match no
 ordinary tenant-scoped repository read and must not be assigned, updated, deleted, or exposed
@@ -55,7 +55,7 @@ export QUARANTINE_INVENTORY_LIMIT=20
 make quarantine-inventory
 ```
 
-The JSON result covers all twelve governed datasets, reports each total and a stable bounded sample,
+The JSON result covers all fourteen governed datasets, reports each total and a stable bounded sample,
 marks truncation explicitly, and includes the applied migration version and checksum. The command
 opens a repeatable-read, read-only transaction and always rolls it back. It hashes idempotency keys
 and never emits payloads or the DSN.
@@ -69,6 +69,18 @@ and never emits payloads or the DSN.
   connection details.
 - Treat nonzero counts as an attribution backlog for an authorized data owner. This command is
   observation only and provides no remediation or tenant-assignment path.
+
+### Construction ownership migration `0037`
+
+Migration `0037` is forward-only. It adds construction-set and selection ownership, replaces the
+global idempotency constraint with tenant-scoped uniqueness, and leaves pre-existing rows at NULL
+because no verified owner can be inferred. Before applying it, pause construction generation and
+selection writes. Apply the migration, deploy the tenant-aware binary, verify readiness and the
+quarantine inventory, and only then restore write traffic. Do not run an older writer concurrently
+or after the migration: it cannot supply the new owner and its global-idempotency assumptions are
+obsolete. Failure recovery is a forward fix; if environment policy requires rollback, restore the
+complete pre-upgrade database backup and matching application revision as one unit. Never delete,
+backfill, or hand-assign legacy construction rows merely to obtain a zero inventory.
 
 ## Async operation ownership and crash recovery
 

@@ -157,20 +157,21 @@ booking.
   qualification exists for direct construction; wave propagation remains open under
   [#739](https://github.com/sgajbi/lotus-manage/issues/739).
 - `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
-  retrieves a previously generated alternative set without recomputation.
+  requires `X-Tenant-Id` and retrieves that tenant's previously generated alternative set without
+  recomputation; a foreign or missing set is non-disclosing `404`.
 - `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`
-  records the actor-attributed selected alternative for audit and later workflow handoff.
+  requires `X-Tenant-Id` and records the actor-attributed selected alternative under the set owner
+  for audit and later workflow handoff.
 
-Direct generation now writes each method's run, artifact and lineage under the normalized admitted
-tenant; the same tenant can use the run-support GET and another tenant receives 404. An exact
-same-tenant generation replay retains its original set; a reused key with a different tenant
-conflicts. Previously unowned sets also conflict on replay under the new owner-bound hash; they
-are not retroactively attributed. This does **not** make the alternative set itself tenant-owned:
-its GET and selection storage still lack repository tenant fences
-([#753](https://github.com/sgajbi/lotus-manage/issues/753)).
-Do not expose those set/selection routes as tenant-authorized Gateway capabilities yet. Wave-item
-propagation remains under [#715](https://github.com/sgajbi/lotus-manage/issues/715); the local
-header is not production identity proof.
+Direct generation writes each method's run, artifact, lineage, alternative set, and selection under
+the normalized admitted tenant. Exact same-tenant replay converges on the original set; the same
+idempotency key is independent across tenants. Legacy unowned sets and selections remain preserved
+as NULL-owner quarantine, match no tenant-scoped read, and are never retroactively attributed.
+Selected-alternative proof-pack sourcing and portfolio-memory construction projection use the same
+fence. Wave simulation propagates its persisted wave owner into construction generation and wave
+selection preserves it. Broader durable wave work remains under
+[#715](https://github.com/sgajbi/lotus-manage/issues/715). The local header is not production
+identity proof, so Gateway still owns authenticated-principal and entitlement enforcement.
 
 These routes are manage-owned backend contracts. Gateway and Workbench are not yet integrated with
 this surface; construction-specific realization requirements now live in Gateway RFC-0098,

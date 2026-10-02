@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-02T04:20:11.159953+00:00",
+  "generatedAt": "2026-10-02T05:10:04.232459+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -20956,6 +20956,18 @@
       "attributeRef": "#/attributeCatalog/lotus.alternative_set_id"
     },
     {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for a mandate refresh. It must match the request tenant before Core sourcing or Manage persistence; it is not authentication proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+    },
+    {
       "name": "alternative_set_id",
       "kind": "request_option",
       "location": "path",
@@ -20966,6 +20978,18 @@
       "allowedValues": [],
       "semanticId": "lotus.alternative_set_id",
       "attributeRef": "#/attributeCatalog/lotus.alternative_set_id"
+    },
+    {
+      "name": "x_tenant_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": true,
+      "type": "string",
+      "description": "Required caller-asserted tenant scope for a mandate refresh. It must match the request tenant before Core sourcing or Manage persistence; it is not authentication proof.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
     },
     {
       "name": "x_correlation_id",
@@ -73583,6 +73607,14 @@
             "attributeRef": "#/attributeCatalog/lotus.alternative_set_id"
           },
           {
+            "name": "tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
             "name": "portfolio_id",
             "location": "body",
             "required": true,
@@ -73896,6 +73928,14 @@
             "type": "string",
             "semanticId": "lotus.alternative_set_id",
             "attributeRef": "#/attributeCatalog/lotus.alternative_set_id"
+          },
+          {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           }
         ]
       },
@@ -73908,6 +73948,14 @@
             "type": "string",
             "semanticId": "lotus.alternative_set_id",
             "attributeRef": "#/attributeCatalog/lotus.alternative_set_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "portfolio_id",
@@ -74225,6 +74273,14 @@
             "attributeRef": "#/attributeCatalog/lotus.alternative_set_id"
           },
           {
+            "name": "x-tenant-id",
+            "location": "header",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.x_tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
+          },
+          {
             "name": "x-correlation-id",
             "location": "header",
             "required": false,
@@ -74275,6 +74331,14 @@
             "type": "string",
             "semanticId": "lotus.selection_id",
             "attributeRef": "#/attributeCatalog/lotus.selection_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
           },
           {
             "name": "alternative_set_id",
