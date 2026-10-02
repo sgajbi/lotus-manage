@@ -17,6 +17,7 @@ scope unless a future source-owning service publishes and certifies that capabil
 | Campaign workflow triage | Campaign workflow telemetry | `lotus_manage_campaign_workflow_total`, `lotus_manage_campaign_read_model_scan_total`, and monitoring contract panels |
 | Campaign recovery and replay | Campaign workflow operations | Campaign definition routes, launch history, workflow board, assignment tasks, and maker-checker pages |
 | Outcome-review supportability | RFC-0042 outcome review supportability | Outcome-review supportability API and bounded metrics |
+| Composite universe evidence | Composite universe attestation checks | Pinned membership hash, date range, policy/source cuts and discrepancy lists |
 | Synchronous rebalance retry recovery | Rebalance submission ownership and recovery | Tenant/key claim, `409` in-progress response, scoped run and support-bundle reads |
 | Container readiness | Docker production readiness | Compose health, migrations, and readiness logs |
 
@@ -40,6 +41,21 @@ scope unless a future source-owning service publishes and certifies that capabil
   and fails closed (HTTP `500`) when a required DPM migration is absent. Treat
   `CUTOVER_MIGRATION_MISSING:dpm:<version>` as a deployment refusal: apply the governed migration
   and recheck readiness; never bypass the route or insert a synthetic migration marker.
+
+## Composite universe attestation checks
+
+Before treating a range-scoped attestation as `COMPLETE`, reconcile its tenant, composite,
+definition and membership revision to the publication, verify the membership content hash, and
+inspect every named source product contract/version/authority scope/cut/watermark/hash. Exactly one
+product must own the authoritative universe. The admitted expected count must equal
+the exact expected portfolio list, with empty missing, unexpected and coverage-gap lists. Treat
+`INCOMPLETE` as a hard consumer-readiness block and investigate its retained discrepancies. Treat
+`UNAVAILABLE` as source evidence failure; never reinterpret it as an empty eligible universe.
+
+Publication `completeness=UNVERIFIED` remains unchanged. A range-specific attestation is not proof
+of live Core transport, member-return materialization, calculated composite performance, production
+IAM or capacity. Changed content under the same attestation version is an integrity conflict; issue
+a new governed version rather than overwriting history.
 
 ## Synchronous rebalance admission and recovery
 

@@ -58,6 +58,11 @@ support, and [Security and Governance](Security-and-Governance) for authority bo
   source product. Atomic publication cursors and immutable hash-matched retrieval receipts let
   Performance reconcile consumed revisions, but `UNVERIFIED` completeness and retrieval receipts
   do not certify a full member universe, member-return materialization, or calculated returns.
+  Manage can additionally publish an immutable range-scoped universe attestation that reconciles
+  an exact portfolio set against continuous effective-dated decisions and named source
+  cuts/watermarks, with exactly one product declared as authoritative for the universe.
+  That evidence is not a live Core delivery or Performance materialization receipt, and it does
+  not promote the publication envelope beyond `UNVERIFIED`.
   Identity-header admission requires trusted ingress; Manage does not infer historical members
   from the current portfolio book.
 

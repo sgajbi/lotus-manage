@@ -53,6 +53,19 @@ source revision rather than reconstructing a misleading healthy envelope from so
 Receipt retries preserve the original server timestamp and require the same caller correlation;
 a changed correlation is an immutable conflict, not a silently accepted replay.
 
+A separate immutable universe-attestation resource can qualify one pinned membership revision for
+an explicit inclusive business-date range. Only the `DPM_COMPOSITE_UNIVERSE_ATTESTER` role with the
+`lotus-manage` service identity can write it. The attestation names every source product, contract
+version, authority scope, source cut, source watermark, content hash and policy version, and
+requires exactly one source product to own the authoritative universe. `COMPLETE` is accepted only
+when the exact declared portfolio set has continuous effective-dated decision coverage for the
+whole range.
+Missing, unexpected and date-gap portfolios are retained under `INCOMPLETE`; an unavailable
+authoritative cut is recorded as `UNAVAILABLE`, never converted to an empty complete universe.
+Attestations are tenant-fenced, immutable, restart-safe and independently versioned. They do not
+change the publication envelope's `UNVERIFIED` posture or prove live Core delivery, Performance
+materialization, calculated returns, production identity, or scale.
+
 Approved DPM instruction packages are a separate, tenant-scoped retrieval product at
 `/api/v1/rebalance/instruction-packages/*`. A release pins the reviewed run, READY proof pack,
 current mandate/model, exact economic instructions, account/instrument mapping revisions, funding

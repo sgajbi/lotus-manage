@@ -21,6 +21,7 @@ from src.core.composite_publication import (
     DpmCompositePublicationPage,
     DpmCompositePublicationReceipt,
 )
+from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.infrastructure.composites import publication as publication_sql
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
@@ -252,6 +253,127 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
                 publication_sequence=publication_sequence,
             )
 
+    def save_universe_attestation(self, *, attestation: DpmCompositeUniverseAttestation) -> None:
+        key = (
+            attestation.tenant_id,
+            attestation.composite_id,
+            attestation.definition_version,
+            attestation.membership_revision,
+        )
+        with closing(self._connect()) as connection:
+            revision = connection.execute(
+                """
+                SELECT content_hash FROM dpm_composite_membership_revisions
+                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
+                    AND membership_revision = %s
+                """,
+                key,
+            ).fetchone()
+            if revision is None:
+                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_MEMBERSHIP_NOT_FOUND")
+            if revision["content_hash"] != attestation.membership_content_hash:
+                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_MEMBERSHIP_HASH_MISMATCH")
+            connection.execute(
+                """
+                INSERT INTO dpm_composite_universe_attestations (
+                    tenant_id, composite_id, definition_version, membership_revision,
+                    membership_content_hash, attestation_version, attested_at, content_hash,
+                    payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                ON CONFLICT (
+                    tenant_id, composite_id, definition_version, membership_revision,
+                    attestation_version
+                ) DO NOTHING
+                """,
+                (
+                    *key,
+                    attestation.membership_content_hash,
+                    attestation.attestation_version,
+                    attestation.attested_at,
+                    attestation.content_hash,
+                    dump_model_json(attestation),
+                ),
+            )
+            persisted = connection.execute(
+                """
+                SELECT content_hash, membership_content_hash
+                FROM dpm_composite_universe_attestations
+                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
+                    AND membership_revision = %s AND attestation_version = %s
+                """,
+                (*key, attestation.attestation_version),
+            ).fetchone()
+            if persisted is None or (
+                persisted["content_hash"],
+                persisted["membership_content_hash"],
+            ) != (attestation.content_hash, attestation.membership_content_hash):
+                connection.rollback()
+                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_ATTESTATION_IMMUTABLE_CONFLICT")
+            connection.commit()
+
+    def get_universe_attestation(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        membership_revision: str,
+        attestation_version: str,
+    ) -> DpmCompositeUniverseAttestation | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json, content_hash, membership_content_hash
+                FROM dpm_composite_universe_attestations
+                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
+                    AND membership_revision = %s AND attestation_version = %s
+                """,
+                (
+                    tenant_id,
+                    composite_id,
+                    definition_version,
+                    membership_revision,
+                    attestation_version,
+                ),
+            ).fetchone()
+        return _load_universe_attestation(row) if row is not None else None
+
+    def list_universe_attestations(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        membership_revision: str,
+        limit: int,
+        offset: int,
+    ) -> DpmCompositeResultPage[DpmCompositeUniverseAttestation]:
+        key = (tenant_id, composite_id, definition_version, membership_revision)
+        with closing(self._connect()) as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            count = connection.execute(
+                """
+                SELECT COUNT(*) AS count FROM dpm_composite_universe_attestations
+                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
+                    AND membership_revision = %s
+                """,
+                key,
+            ).fetchone()["count"]
+            rows = connection.execute(
+                """
+                SELECT payload_json, content_hash, membership_content_hash
+                FROM dpm_composite_universe_attestations
+                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
+                    AND membership_revision = %s
+                ORDER BY attested_at DESC, attestation_version DESC
+                LIMIT %s OFFSET %s
+                """,
+                (*key, limit, offset),
+            ).fetchall()
+        return DpmCompositeResultPage(
+            items=[_load_universe_attestation(row) for row in rows], count=count
+        )
+
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
             apply_postgres_migrations(connection=connection, namespace="dpm")
@@ -272,6 +394,16 @@ def _load_definition(row: Any) -> DpmCompositeDefinition:
 
 def _load_membership_revision(row: Any) -> DpmCompositeMembershipRevision:
     return load_model_json(DpmCompositeMembershipRevision, _payload(row))
+
+
+def _load_universe_attestation(row: Any) -> DpmCompositeUniverseAttestation:
+    attestation = load_model_json(DpmCompositeUniverseAttestation, _payload(row))
+    if (row["content_hash"], row["membership_content_hash"]) != (
+        attestation.content_hash,
+        attestation.membership_content_hash,
+    ):
+        raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_ATTESTATION_INTEGRITY_CONFLICT")
+    return attestation
 
 
 def _payload(row: Any) -> str | dict[str, Any]:

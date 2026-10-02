@@ -1799,6 +1799,9 @@ Routes:
 - `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership`
 - `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}`
 - `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/as-of`
+- `PUT /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/universe-attestations/{attestation_version}`
+- `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/universe-attestations`
+- `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/universe-attestations/{attestation_version}`
 - `GET /api/v1/rebalance/composites/publications`
 - `GET /api/v1/rebalance/composites/publications/{sequence}`
 - `GET /api/v1/rebalance/composites/publications/{sequence}/reconciliation`
@@ -1819,6 +1822,12 @@ Functional coverage:
   `count`, including offsets beyond the last page; offset traversal may shift across writes,
 - inclusive effective-date include/exclude decisions, immutable correction lineage, and retained
   original/corrected revisions,
+- immutable tenant-owned universe attestations pinned to the membership content hash, policy,
+  exactly one authoritative universe product and named source cuts/watermarks; exact continuous
+  range coverage for `COMPLETE`, explicit missing/unexpected/date-gap
+  evidence for `INCOMPLETE`, and reasoned `UNAVAILABLE` posture,
+- dedicated attester role plus service identity, immutable replay/conflict, tenant-fenced reads,
+  same-snapshot total counts, migration durability and repository reconstruction proof,
 - PostgreSQL migration, restart, tenant fence, and missing parent-definition/correction fencing.
 - atomic publication on committed revision, ordered bounded cursor/correction paging, migration
   backfill of pre-existing revisions, lock-before-insert/atomic-publication-after-insert for
@@ -1838,11 +1847,14 @@ Non-functional posture:
   its materialization workflow must retain this revision identity. Header identity is a trusted-
   ingress assumption, not standalone production IAM; no live cross-repository certification or
   measured horizontal throughput is claimed by this local endpoint suite.
+- a `COMPLETE` universe attestation is limited to its declared date range and exact named source
+  cuts; it does not promote the publication envelope, prove a live Core call, prove Performance
+  materialization, or turn caller-asserted headers into production IAM.
 
 Evidence commands:
 
 ```bash
-python -m pytest tests/unit/api/test_composite_membership_routes.py tests/unit/dpm/composites/test_composite_membership.py -q
+python -m pytest tests/unit/api/test_composite_membership_routes.py tests/unit/dpm/composites/test_composite_membership.py tests/unit/dpm/composites/test_composite_universe.py -q
 python -m pytest tests/integration/dpm/composites/test_composite_membership_postgres.py -q
 python scripts/openapi_quality_gate.py
 ```

@@ -14,6 +14,7 @@ from src.core.composite_publication import (
     DpmCompositePublicationPage,
     DpmCompositePublicationReceipt,
 )
+from src.core.composite_universe import DpmCompositeUniverseAttestation
 
 
 class DpmCompositeConflictError(ValueError):
@@ -89,6 +90,32 @@ class DpmCompositeRepository(Protocol):
         self, *, tenant_id: str, publication_sequence: int
     ) -> list[DpmCompositePublicationReceipt]:
         """Inspect bounded consumer acknowledgements for one publication."""
+
+    def save_universe_attestation(self, *, attestation: DpmCompositeUniverseAttestation) -> None:
+        """Persist immutable completeness evidence for one membership revision."""
+
+    def get_universe_attestation(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        membership_revision: str,
+        attestation_version: str,
+    ) -> DpmCompositeUniverseAttestation | None:
+        """Read one pinned tenant-owned universe attestation."""
+
+    def list_universe_attestations(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        membership_revision: str,
+        limit: int,
+        offset: int,
+    ) -> DpmCompositeResultPage[DpmCompositeUniverseAttestation]:
+        """List immutable attestations and total scoped count in one snapshot."""
 
 
 __all__ = ["DpmCompositeConflictError", "DpmCompositeRepository", "DpmCompositeResultPage"]
