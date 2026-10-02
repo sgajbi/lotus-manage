@@ -526,6 +526,9 @@ async def _request_observability_middleware(
     correlation_id = request.headers.get("X-Correlation-Id") or f"corr_{uuid4().hex[:12]}"
     request_id = request.headers.get("X-Request-Id") or f"req_{uuid4().hex[:12]}"
     trace_id = _trace_id_from_traceparent(request.headers.get("traceparent", ""))
+    request.state.correlation_id = correlation_id
+    request.state.request_id = request_id
+    request.state.trace_id = trace_id
 
     correlation_token = correlation_id_var.set(correlation_id)
     request_token = request_id_var.set(request_id)

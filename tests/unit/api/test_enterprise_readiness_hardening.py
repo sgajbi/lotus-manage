@@ -242,10 +242,24 @@ def test_enterprise_middleware_blocks_oversized_payload(monkeypatch) -> None:
     monkeypatch.setenv("ENTERPRISE_MAX_WRITE_PAYLOAD_BYTES", "5")
     client = TestClient(_enterprise_app())
 
-    response = client.post("/write", content="too-large")
+    response = client.post(
+        "/write",
+        headers={"X-Correlation-Id": "corr-oversized"},
+        content="too-large",
+    )
 
     assert response.status_code == 413
-    assert response.json() == {"detail": "payload_too_large"}
+    assert response.json() == {
+        "type": "about:blank",
+        "title": "Content Too Large",
+        "status": 413,
+        "detail": "payload_too_large",
+        "reasonCode": "payload_too_large",
+        "correlationId": "corr-oversized",
+        "instance": "/write",
+    }
+    assert response.headers["X-Enterprise-Policy-Version"] == "1.0.0"
+    assert response.headers["content-type"].startswith("application/problem+json")
 
 
 def test_enterprise_middleware_rejects_invalid_content_length(monkeypatch) -> None:
@@ -265,7 +279,17 @@ def test_enterprise_middleware_rejects_invalid_content_length(monkeypatch) -> No
     )
 
     assert response.status_code == 400
-    assert response.json() == {"detail": "invalid_content_length"}
+    assert response.json() == {
+        "type": "about:blank",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "invalid_content_length",
+        "reasonCode": "invalid_content_length",
+        "correlationId": "corr",
+        "instance": "/write",
+    }
+    assert response.headers["X-Enterprise-Policy-Version"] == "1.0.0"
+    assert response.headers["content-type"].startswith("application/problem+json")
 
 
 def test_enterprise_middleware_helpers_parse_size_and_audit_identity(monkeypatch) -> None:
@@ -281,7 +305,7 @@ def test_enterprise_middleware_helpers_parse_size_and_audit_identity(monkeypatch
     )
     identity = _audit_identity_from_request(request)
     response = Response()
-    denied_response = _authorization_denied_response("missing_service_identity")
+    denied_response = _authorization_denied_response(request, "missing_service_identity")
     _attach_policy_version_header(response)
 
     assert identity.actor_id == "actor"

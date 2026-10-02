@@ -441,10 +441,12 @@ class DpmInstructionPackageApplicationService:
         self, *, command: DpmInstructionPackageReleaseCommand, result: RebalanceResult
     ) -> None:
         evidence = command.funding_evidence
-        if evidence.disposition != "CERTIFIED" or evidence.fee_reserve_amount in {
-            None,
-            Decimal("0"),
-        }:
+        fee_reserve_amount = evidence.fee_reserve_amount
+        if (
+            evidence.disposition != "CERTIFIED"
+            or fee_reserve_amount is None
+            or fee_reserve_amount == Decimal("0")
+        ):
             return
         balance = next(
             (
@@ -463,7 +465,7 @@ class DpmInstructionPackageApplicationService:
                 else balance.amount
             )
         )
-        if available is None or available < evidence.fee_reserve_amount:
+        if available is None or available < fee_reserve_amount:
             raise DpmInstructionPackageReleaseRefusedError(
                 "INSTRUCTION_PACKAGE_FEE_RESERVE_INSUFFICIENT"
             )

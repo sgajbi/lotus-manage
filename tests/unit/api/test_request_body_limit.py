@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+import json
 from typing import Any
 
 import pytest
@@ -13,7 +14,9 @@ def _streaming_request(
     content_length: str | None = None,
     method: str = "POST",
 ) -> Request:
-    headers = [] if content_length is None else [(b"content-length", content_length.encode())]
+    headers = [(b"x-correlation-id", b"corr-body-limit")]
+    if content_length is not None:
+        headers.append((b"content-length", content_length.encode()))
     chunk_iterator: AsyncIterator[bytes] = _chunks(chunks)
 
     async def receive() -> dict[str, Any]:
@@ -42,6 +45,21 @@ async def _chunks(chunks: list[bytes]) -> AsyncIterator[bytes]:
         yield chunk
 
 
+def _assert_problem(response: Response, *, status: int, title: str, detail: str) -> None:
+    assert response.status_code == status
+    assert response.media_type == "application/problem+json"
+    assert response.headers["X-Enterprise-Policy-Version"] == "1.0.0"
+    assert json.loads(bytes(response.body)) == {
+        "type": "about:blank",
+        "title": title,
+        "status": status,
+        "detail": detail,
+        "reasonCode": detail,
+        "correlationId": "corr-body-limit",
+        "instance": "/write",
+    }
+
+
 @pytest.mark.asyncio
 async def test_middleware_measures_streamed_body_without_content_length(monkeypatch) -> None:
     monkeypatch.setenv("ENTERPRISE_ENFORCE_AUTHZ", "false")
@@ -54,8 +72,12 @@ async def test_middleware_measures_streamed_body_without_content_length(monkeypa
 
     response = await middleware(request, downstream)
 
-    assert response.status_code == 413
-    assert bytes(response.body) == b'{"detail":"payload_too_large"}'
+    _assert_problem(
+        response,
+        status=413,
+        title="Content Too Large",
+        detail="payload_too_large",
+    )
 
 
 @pytest.mark.asyncio
@@ -70,8 +92,12 @@ async def test_middleware_measures_underdeclared_body(monkeypatch) -> None:
 
     response = await middleware(request, downstream)
 
-    assert response.status_code == 413
-    assert bytes(response.body) == b'{"detail":"payload_too_large"}'
+    _assert_problem(
+        response,
+        status=413,
+        title="Content Too Large",
+        detail="payload_too_large",
+    )
 
 
 @pytest.mark.asyncio
@@ -86,8 +112,12 @@ async def test_middleware_rejects_invalid_content_length(monkeypatch, content_le
 
     response = await middleware(request, downstream)
 
-    assert response.status_code == 400
-    assert bytes(response.body) == b'{"detail":"invalid_content_length"}'
+    _assert_problem(
+        response,
+        status=400,
+        title="Bad Request",
+        detail="invalid_content_length",
+    )
 
 
 @pytest.mark.asyncio

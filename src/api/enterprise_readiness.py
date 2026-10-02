@@ -268,7 +268,7 @@ def _audit_identity_from_request(request: Request) -> _AuditIdentity:
         actor_id=request.headers.get("X-Actor-Id", "unknown"),
         tenant_id=request.headers.get("X-Tenant-Id", "default"),
         role=request.headers.get("X-Role", "unknown"),
-        correlation_id=request.headers.get("X-Correlation-Id"),
+        correlation_id=_request_correlation_id(request) or None,
     )
 
 
@@ -284,19 +284,45 @@ def _emit_denied_write_audit(request: Request, *, reason: str | None) -> None:
     )
 
 
-def _authorization_denied_response(reason: str | None) -> JSONResponse:
-    return JSONResponse(
-        status_code=403,
+def _request_correlation_id(request: Request) -> str:
+    context_id = getattr(request.state, "correlation_id", "")
+    if isinstance(context_id, str) and context_id:
+        return context_id
+    return request.headers.get("X-Correlation-Id", "")
+
+
+def _enterprise_problem_response(
+    request: Request,
+    *,
+    status_code: int,
+    title: str,
+    detail: str,
+    reason_code: str | None = None,
+) -> JSONResponse:
+    response = JSONResponse(
+        status_code=status_code,
         media_type="application/problem+json",
         content={
             "type": "about:blank",
-            "title": "Forbidden",
-            "status": 403,
-            "detail": "authorization_policy_denied",
-            "reasonCode": reason or "authorization_policy_denied",
-            "correlationId": "",
-            "instance": "",
+            "title": title,
+            "status": status_code,
+            "detail": detail,
+            "reasonCode": reason_code or detail,
+            "correlationId": _request_correlation_id(request),
+            "instance": request.url.path,
         },
+    )
+    _attach_policy_version_header(response)
+    return response
+
+
+def _authorization_denied_response(request: Request, reason: str | None) -> JSONResponse:
+    return _enterprise_problem_response(
+        request,
+        status_code=403,
+        title="Forbidden",
+        detail="authorization_policy_denied",
+        reason_code=reason,
     )
 
 
@@ -326,21 +352,36 @@ def build_enterprise_audit_middleware() -> MiddlewareCallable:
             try:
                 content_length = declared_content_length(request)
             except ValueError:
-                return JSONResponse(status_code=400, content={"detail": "invalid_content_length"})
+                return _enterprise_problem_response(
+                    request,
+                    status_code=400,
+                    title="Bad Request",
+                    detail="invalid_content_length",
+                )
             if content_length is not None and content_length > max_write_payload_bytes:
-                return JSONResponse(status_code=413, content={"detail": "payload_too_large"})
+                return _enterprise_problem_response(
+                    request,
+                    status_code=413,
+                    title="Content Too Large",
+                    detail="payload_too_large",
+                )
 
         authorized, reason = authorize_write_request(
             request.method, request.url.path, dict(request.headers)
         )
         if not authorized:
             _emit_denied_write_audit(request, reason=reason)
-            return _authorization_denied_response(reason)
+            return _authorization_denied_response(request, reason)
 
         if method_is_write:
             body = await read_limited_body(request, max_bytes=max_write_payload_bytes)
             if body is None:
-                return JSONResponse(status_code=413, content={"detail": "payload_too_large"})
+                return _enterprise_problem_response(
+                    request,
+                    status_code=413,
+                    title="Content Too Large",
+                    detail="payload_too_large",
+                )
             replay_body_for_downstream(request, body)
 
         response = await call_next(request)
