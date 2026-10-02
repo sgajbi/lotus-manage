@@ -7,6 +7,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
+from typing import Any
 
 import pytest
 
@@ -22,6 +23,7 @@ from src.core.construction.vocabulary import ConstructionMethod
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.infrastructure import postgres_migrations
 from src.infrastructure.construction.postgres import PostgresConstructionRepository
+from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.rebalance_runs import PostgresDpmRunRepository
 from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
 from tests.shared.factories import valid_api_payload
@@ -182,15 +184,34 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
         ).fetchone()
         assert quarantined == {"set_tenant": None, "selection_tenant": None}
 
-        schema_dsn = make_conninfo(
-            dsn,
-            options=(f"-csearch_path={schema} -cidle_in_transaction_session_timeout=100ms"),
-        )
+        schema_dsn = make_conninfo(dsn, options=f"-csearch_path={schema}")
+        monkeypatch.setenv("DPM_POSTGRES_MAX_CONNECTIONS", "1")
+        monkeypatch.setenv("DPM_POSTGRES_COORDINATION_MAX_CONNECTIONS", "2")
+        monkeypatch.setenv("DPM_POSTGRES_STATEMENT_TIMEOUT_MS", "100")
+        monkeypatch.setenv("DPM_POSTGRES_COORDINATION_WAIT_TIMEOUT_MS", "3000")
+        monkeypatch.setenv("DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS", "1000")
+
+        def managed_schema_connect(*, application_name: str) -> Any:
+            def connect_with_schema(_dsn: str, **kwargs: Any) -> Any:
+                ordinary_options = kwargs.pop("options")
+                return psycopg.connect(
+                    dsn,
+                    options=f"-csearch_path={schema} {ordinary_options}",
+                    **kwargs,
+                )
+
+            return connect_postgres(
+                dsn,
+                connect_fn=connect_with_schema,
+                row_factory=dict_row,
+                application_name=application_name,
+            )
+
         repository = PostgresConstructionRepository(dsn=schema_dsn)
         monkeypatch.setattr(
             repository,
             "_connect",
-            lambda: psycopg.connect(schema_dsn, row_factory=dict_row),
+            lambda: managed_schema_connect(application_name="lotus-manage:test-construction-a"),
         )
         for tenant in ("tenant-a", "tenant-b"):
             assert (
@@ -293,13 +314,13 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
         monkeypatch.setattr(
             second_repository,
             "_connect",
-            lambda: psycopg.connect(schema_dsn, row_factory=dict_row),
+            lambda: managed_schema_connect(application_name="lotus-manage:test-construction-b"),
         )
         run_repository = PostgresDpmRunRepository(dsn=schema_dsn)
         monkeypatch.setattr(
             run_repository,
             "_connect",
-            lambda: psycopg.connect(schema_dsn, row_factory=dict_row),
+            lambda: managed_schema_connect(application_name="lotus-manage:test-runs"),
         )
         durable_run_service = DpmRunSupportService(repository=run_repository)
 
@@ -320,7 +341,7 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
                     idempotency_key=idempotency_key,
                     tenant_id=tenant_id,
                 )
-                time.sleep(0.25)
+                time.sleep(1.25)
 
         run_service = SlowRunService()
 
@@ -353,7 +374,9 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
         monkeypatch.setattr(
             restarted,
             "_connect",
-            lambda: psycopg.connect(schema_dsn, row_factory=dict_row),
+            lambda: managed_schema_connect(
+                application_name="lotus-manage:test-construction-restarted"
+            ),
         )
         assert (
             restarted.get_alternative_set(

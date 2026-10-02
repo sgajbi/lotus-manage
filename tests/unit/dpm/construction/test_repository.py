@@ -201,6 +201,25 @@ def test_postgres_repository_persists_alternative_set_and_idempotency(
     assert connection.commits == 1
 
 
+def test_postgres_idempotency_guard_uses_managed_autocommit_coordination_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connection = _FakeConnection()
+    repository = _postgres_repository(monkeypatch, connection)
+
+    with repository.idempotency_guard(
+        tenant_id="tenant_001",
+        idempotency_key="idem-guard-001",
+    ):
+        assert connection.autocommit is True
+
+    coordination_call = connection.connection_args[-1]
+    assert coordination_call["application_name"] == "lotus-manage:construction-coordination"
+    assert coordination_call["options"].startswith("-c statement_timeout=60000 ")
+    assert sum("pg_advisory_lock" in query for query in connection.executed_queries) == 1
+    assert sum("pg_advisory_unlock" in query for query in connection.executed_queries) == 1
+
+
 def test_postgres_repository_lists_alternative_sets_by_portfolio(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -294,10 +313,15 @@ class _FakeConnection:
         self.alternative_sets_by_idempotency: dict[str, dict[str, Any]] = {}
         self.selections_by_set_id: dict[str, dict[str, Any]] = {}
         self.connection_args: list[dict[str, Any]] = []
+        self.executed_queries: list[str] = []
         self.commits = 0
+        self.autocommit = False
 
     def execute(self, query: str, params: Sequence[Any] = ()) -> "_FakeCursor":
         normalized = " ".join(query.split())
+        self.executed_queries.append(normalized)
+        if normalized.startswith("SELECT pg_advisory_"):
+            return _FakeCursor({})
         if normalized.startswith("INSERT INTO dpm_construction_alternative_sets"):
             return self._insert_alternative_set(params)
         if (

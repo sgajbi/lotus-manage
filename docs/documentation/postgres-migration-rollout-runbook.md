@@ -13,8 +13,10 @@ Runbook for forward-only schema migration rollout for:
   - `DPM_SUPPORTABILITY_POSTGRES_DSN`
 - Runtime Postgres access policy is configured or defaults are accepted:
   - `DPM_POSTGRES_MAX_CONNECTIONS` (`1..100`, default `10`)
+  - `DPM_POSTGRES_COORDINATION_MAX_CONNECTIONS` (`1..100`, default `4`)
   - `DPM_POSTGRES_CONNECT_TIMEOUT_SECONDS` (`1..30`, default `3`)
   - `DPM_POSTGRES_STATEMENT_TIMEOUT_MS` (`100..60000`, default `5000`)
+  - `DPM_POSTGRES_COORDINATION_WAIT_TIMEOUT_MS` (`1000..300000`, default `60000`)
   - `DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` (`1000..120000`, default `10000`)
   - `DPM_POSTGRES_ACQUIRE_TIMEOUT_SECONDS` (`1..30`, default `2`)
 - Application image/version to deploy is already tested in non-production.

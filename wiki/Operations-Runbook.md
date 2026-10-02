@@ -380,9 +380,12 @@ python scripts/openapi_quality_gate.py
 - The runtime image includes the migration script and the `psycopg` runtime driver required for
   Postgres-backed supportability stores.
 - Runtime Postgres adapters share the bounded access policy controlled by
-  `DPM_POSTGRES_MAX_CONNECTIONS`, `DPM_POSTGRES_CONNECT_TIMEOUT_SECONDS`,
-  `DPM_POSTGRES_STATEMENT_TIMEOUT_MS`, `DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS`, and
-  `DPM_POSTGRES_ACQUIRE_TIMEOUT_SECONDS`. Invalid production values fail readiness with
+  `DPM_POSTGRES_MAX_CONNECTIONS`, `DPM_POSTGRES_COORDINATION_MAX_CONNECTIONS`,
+  `DPM_POSTGRES_CONNECT_TIMEOUT_SECONDS`, `DPM_POSTGRES_STATEMENT_TIMEOUT_MS`,
+  `DPM_POSTGRES_COORDINATION_WAIT_TIMEOUT_MS`, `DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS`,
+  and `DPM_POSTGRES_ACQUIRE_TIMEOUT_SECONDS`. Coordination connections are autocommit sessions
+  with a separate bounded budget so advisory-lock waiters cannot starve protected repository work.
+  Invalid production values fail readiness with
   `POSTGRES_ACCESS_POLICY_INVALID:*` or `POSTGRES_ACCESS_POLICY_OUT_OF_RANGE:*`.
 - `POSTGRES_CONNECTION_ACQUIRE_TIMEOUT` indicates the process-local connection budget is exhausted
   for longer than the configured acquisition timeout. `POSTGRES_CONNECTION_UNAVAILABLE` indicates
