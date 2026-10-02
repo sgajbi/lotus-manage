@@ -50,6 +50,7 @@ def select_persisted_wave_item_alternative(
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
+        tenant_id=tenant_id,
     )
 
     updated = build_wave_with_selected_item_alternative(

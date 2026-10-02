@@ -111,6 +111,7 @@ def collect_portfolio_memory_search_events(
             tenant_id=mandate_tenant_id,
         )
     _collect_construction_events(
+        tenant_id=scoped_tenant_id,
         repositories=repositories,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
@@ -260,6 +261,7 @@ def _collect_mandate_health_events(
 
 def _collect_construction_events(
     *,
+    tenant_id: str,
     repositories: PortfolioMemorySourceRepositories,
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
@@ -271,6 +273,7 @@ def _collect_construction_events(
         events_by_portfolio_id[portfolio_id].extend(
             construction_memory_events(
                 portfolio_id=portfolio_id,
+                tenant_id=tenant_id,
                 construction_repository=repositories.construction_repository,
                 limit=limit,
             )

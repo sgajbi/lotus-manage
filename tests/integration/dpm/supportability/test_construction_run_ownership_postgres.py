@@ -28,7 +28,8 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
         repository=run_repository
     )
     run_ids: set[str] = set()
-    alternative_set_id: str | None = None
+    cleanup_run_ids: set[str] = set()
+    alternative_set_ids: set[str] = set()
     nonce = uuid.uuid4().hex
     headers = {
         "Idempotency-Key": f"construction-owner-{nonce}",
@@ -50,9 +51,11 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
             )
             assert created.status_code == 200
             alternative_set_id = created.json()["alternative_set_id"]
+            alternative_set_ids.add(alternative_set_id)
             run_ids = {
                 alternative["rebalance_run_id"] for alternative in created.json()["alternatives"]
             }
+            cleanup_run_ids.update(run_ids)
             assert len(run_ids) == 2
             for run_id in run_ids:
                 assert (
@@ -76,19 +79,70 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
                 == created.json()
             )
             assert (
-                client.post(
-                    "/api/v1/construction/alternative-sets/generate",
-                    json=request,
-                    headers={**headers, "X-Tenant-Id": "tenant-construction-b"},
+                client.get(
+                    f"/api/v1/construction/alternative-sets/{alternative_set_id}",
+                    headers={"X-Tenant-Id": "tenant-construction-b"},
                 ).status_code
-                == 409
+                == 404
+            )
+            selection_request = {
+                "alternative_id": created.json()["alternatives"][0]["alternative_id"],
+                "actor_id": "pm-construction-owner-proof",
+                "reason_code": "TENANT_FENCE_PROOF",
+            }
+            assert (
+                client.post(
+                    f"/api/v1/construction/alternative-sets/{alternative_set_id}/selections",
+                    json=selection_request,
+                    headers={"X-Tenant-Id": "tenant-construction-b"},
+                ).status_code
+                == 404
+            )
+            selected = client.post(
+                f"/api/v1/construction/alternative-sets/{alternative_set_id}/selections",
+                json=selection_request,
+                headers={"X-Tenant-Id": "tenant-construction-a"},
+            )
+            assert selected.status_code == 200
+            assert selected.json()["tenant_id"] == "tenant-construction-a"
+
+            foreign_created = client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json=request,
+                headers={**headers, "X-Tenant-Id": "tenant-construction-b"},
+            )
+            assert foreign_created.status_code == 200
+            assert foreign_created.json()["alternative_set_id"] != alternative_set_id
+            assert foreign_created.json()["tenant_id"] == "tenant-construction-b"
+            alternative_set_ids.add(foreign_created.json()["alternative_set_id"])
+            cleanup_run_ids.update(
+                alternative["rebalance_run_id"]
+                for alternative in foreign_created.json()["alternatives"]
             )
 
         restarted_repository = PostgresDpmRunRepository(dsn=dsn)
+        restarted_construction_repository = PostgresConstructionRepository(dsn=dsn)
+        app.dependency_overrides[get_construction_repository] = lambda: (
+            restarted_construction_repository
+        )
         app.dependency_overrides[get_dpm_run_support_service] = lambda: DpmRunSupportService(
             repository=restarted_repository
         )
         with TestClient(app) as client:
+            assert (
+                client.get(
+                    f"/api/v1/construction/alternative-sets/{alternative_set_id}",
+                    headers={"X-Tenant-Id": "tenant-construction-a"},
+                ).status_code
+                == 200
+            )
+            assert (
+                client.get(
+                    f"/api/v1/construction/alternative-sets/{alternative_set_id}",
+                    headers={"X-Tenant-Id": "tenant-construction-b"},
+                ).status_code
+                == 404
+            )
             for run_id in run_ids:
                 assert (
                     client.get(
@@ -134,7 +188,7 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
     finally:
         app.dependency_overrides = original_overrides
         with closing(run_repository._connect()) as connection:
-            for run_id in run_ids:
+            for run_id in cleanup_run_ids:
                 connection.execute(
                     "DELETE FROM dpm_lineage_edges WHERE target_entity_id = %s", (run_id,)
                 )
@@ -143,10 +197,17 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
                 )
                 connection.execute("DELETE FROM dpm_runs WHERE rebalance_run_id = %s", (run_id,))
             connection.commit()
-        if alternative_set_id is not None:
+        if alternative_set_ids:
             with closing(construction_repository._connect()) as connection:
-                connection.execute(
-                    "DELETE FROM dpm_construction_alternative_sets WHERE alternative_set_id = %s",
-                    (alternative_set_id,),
-                )
+                for alternative_set_id in alternative_set_ids:
+                    connection.execute(
+                        "DELETE FROM dpm_construction_alternative_selections "
+                        "WHERE alternative_set_id = %s",
+                        (alternative_set_id,),
+                    )
+                    connection.execute(
+                        "DELETE FROM dpm_construction_alternative_sets "
+                        "WHERE alternative_set_id = %s",
+                        (alternative_set_id,),
+                    )
                 connection.commit()

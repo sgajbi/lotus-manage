@@ -5,6 +5,7 @@ from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveItem, DpmWaveAggreg
 def _wave() -> DpmRebalanceWave:
     return DpmRebalanceWave.model_construct(
         wave_id="dwv_simulate",
+        tenant_id="tenant-test",
         state="SOURCE_CHECKED",
         version=3,
         items=[

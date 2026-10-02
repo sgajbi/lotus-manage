@@ -8,13 +8,18 @@ from src.core.construction.models import (
     ConstructionAlternativeSet,
 )
 from src.core.construction.repository import ConstructionRepository
+from src.core.construction.repository import (
+    ConstructionAlternativeSetNotFoundError,
+    ConstructionIdempotencyConflictError,
+    require_construction_tenant_id,
+)
 
 
 class InMemoryConstructionRepository(ConstructionRepository):
     def __init__(self) -> None:
         self._lock = Lock()
         self._alternative_sets: dict[str, ConstructionAlternativeSet] = {}
-        self._idempotency_index: dict[str, str] = {}
+        self._idempotency_index: dict[tuple[str, str], str] = {}
         self._selections: dict[str, ConstructionAlternativeSelection] = {}
 
     def save_alternative_set(
@@ -22,27 +27,40 @@ class InMemoryConstructionRepository(ConstructionRepository):
         *,
         alternative_set: ConstructionAlternativeSet,
         idempotency_key: str,
-    ) -> None:
+    ) -> ConstructionAlternativeSet:
+        tenant_id = require_construction_tenant_id(alternative_set.tenant_id)
+        owned_set = alternative_set.model_copy(update={"tenant_id": tenant_id})
         with self._lock:
-            self._alternative_sets[alternative_set.alternative_set_id] = deepcopy(alternative_set)
-            self._idempotency_index[idempotency_key] = alternative_set.alternative_set_id
+            key = (tenant_id, idempotency_key)
+            existing_id = self._idempotency_index.get(key)
+            if existing_id is not None:
+                return deepcopy(self._alternative_sets[existing_id])
+            if owned_set.alternative_set_id in self._alternative_sets:
+                raise ConstructionIdempotencyConflictError(
+                    "CONSTRUCTION_ALTERNATIVE_SET_ID_CONFLICT"
+                )
+            self._alternative_sets[owned_set.alternative_set_id] = deepcopy(owned_set)
+            self._idempotency_index[key] = owned_set.alternative_set_id
+            return deepcopy(owned_set)
 
     def get_alternative_set(
         self,
         *,
         alternative_set_id: str,
+        tenant_id: str,
     ) -> ConstructionAlternativeSet | None:
         with self._lock:
             row = self._alternative_sets.get(alternative_set_id)
-            return deepcopy(row) if row is not None else None
+            return deepcopy(row) if row is not None and row.tenant_id == tenant_id else None
 
     def get_alternative_set_by_idempotency(
         self,
         *,
         idempotency_key: str,
+        tenant_id: str,
     ) -> ConstructionAlternativeSet | None:
         with self._lock:
-            alternative_set_id = self._idempotency_index.get(idempotency_key)
+            alternative_set_id = self._idempotency_index.get((tenant_id, idempotency_key))
             if alternative_set_id is None:
                 return None
             row = self._alternative_sets.get(alternative_set_id)
@@ -52,13 +70,14 @@ class InMemoryConstructionRepository(ConstructionRepository):
         self,
         *,
         portfolio_id: str,
+        tenant_id: str,
         limit: int,
     ) -> list[ConstructionAlternativeSet]:
         with self._lock:
             rows = [
                 deepcopy(row)
                 for row in self._alternative_sets.values()
-                if row.portfolio_id == portfolio_id
+                if row.portfolio_id == portfolio_id and row.tenant_id == tenant_id
             ]
         return sorted(
             rows,
@@ -71,14 +90,28 @@ class InMemoryConstructionRepository(ConstructionRepository):
         *,
         selection: ConstructionAlternativeSelection,
     ) -> None:
+        tenant_id = require_construction_tenant_id(selection.tenant_id)
         with self._lock:
-            self._selections[selection.alternative_set_id] = deepcopy(selection)
+            alternative_set = self._alternative_sets.get(selection.alternative_set_id)
+            if alternative_set is None or alternative_set.tenant_id != tenant_id:
+                raise ConstructionAlternativeSetNotFoundError(
+                    "CONSTRUCTION_ALTERNATIVE_SET_NOT_FOUND"
+                )
+            current = self._selections.get(selection.alternative_set_id)
+            if current is not None and current.tenant_id != tenant_id:
+                raise ConstructionAlternativeSetNotFoundError(
+                    "CONSTRUCTION_ALTERNATIVE_SET_NOT_FOUND"
+                )
+            self._selections[selection.alternative_set_id] = deepcopy(
+                selection.model_copy(update={"tenant_id": tenant_id})
+            )
 
     def get_selection(
         self,
         *,
         alternative_set_id: str,
+        tenant_id: str,
     ) -> ConstructionAlternativeSelection | None:
         with self._lock:
             row = self._selections.get(alternative_set_id)
-            return deepcopy(row) if row is not None else None
+            return deepcopy(row) if row is not None and row.tenant_id == tenant_id else None

@@ -1,6 +1,7 @@
 from src.core.portfolio_memory.construction_collection import construction_memory_events
 from tests.unit.dpm.api.test_portfolio_memory_api import (
     PORTFOLIO_ID,
+    TENANT_ID,
     _construction_repository,
 )
 
@@ -10,6 +11,7 @@ def test_construction_memory_events_projects_alternative_set_and_selection() -> 
 
     events = construction_memory_events(
         portfolio_id=PORTFOLIO_ID,
+        tenant_id=TENANT_ID,
         construction_repository=repository,
         limit=100,
     )
@@ -29,12 +31,14 @@ def test_construction_memory_events_keeps_alternative_set_without_selection() ->
 
     events = construction_memory_events(
         portfolio_id=PORTFOLIO_ID,
+        tenant_id=TENANT_ID,
         construction_repository=repository,
         limit=100,
     )
 
     alternative_only_events = construction_memory_events(
         portfolio_id=PORTFOLIO_ID,
+        tenant_id=TENANT_ID,
         construction_repository=_AlternativeOnlyConstructionRepository(repository),
         limit=100,
     )
@@ -45,12 +49,26 @@ def test_construction_memory_events_keeps_alternative_set_without_selection() ->
     ]
 
 
+def test_construction_memory_events_do_not_project_foreign_tenant_state() -> None:
+    assert (
+        construction_memory_events(
+            portfolio_id=PORTFOLIO_ID,
+            tenant_id="tenant-foreign",
+            construction_repository=_construction_repository(),
+            limit=100,
+        )
+        == []
+    )
+
+
 class _AlternativeOnlyConstructionRepository:
     def __init__(self, wrapped) -> None:
         self._wrapped = wrapped
 
-    def list_alternative_sets(self, *, portfolio_id: str, limit: int):
-        return self._wrapped.list_alternative_sets(portfolio_id=portfolio_id, limit=limit)
+    def list_alternative_sets(self, *, portfolio_id: str, tenant_id: str, limit: int):
+        return self._wrapped.list_alternative_sets(
+            portfolio_id=portfolio_id, tenant_id=tenant_id, limit=limit
+        )
 
-    def get_selection(self, *, alternative_set_id: str):
+    def get_selection(self, *, alternative_set_id: str, tenant_id: str):
         return None

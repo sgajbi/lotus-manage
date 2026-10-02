@@ -131,6 +131,7 @@ def generate_proof_pack_from_selected_alternative(
         selected_alternative_id=selected_alternative_id,
         construction_repository=construction_repository,
         run_service=run_service,
+        tenant_id=tenant_id,
     )
     mandate_evidence = resolve_mandate_evidence(
         mandate_id=mandate_id,

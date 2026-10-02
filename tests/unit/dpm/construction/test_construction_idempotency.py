@@ -76,7 +76,7 @@ def test_construction_idempotency_returns_replay_and_rejects_conflict() -> None:
         portfolio_id="PF_TEST",
         as_of="2026-06-01",
         alternatives=[],
-    ).model_copy(update={"request_hash": "sha256:construction"})
+    ).model_copy(update={"tenant_id": "tenant_001", "request_hash": "sha256:construction"})
     repository.save_alternative_set(
         alternative_set=alternative_set,
         idempotency_key="idem-construction",
@@ -86,6 +86,7 @@ def test_construction_idempotency_returns_replay_and_rejects_conflict() -> None:
         repository=repository,
         idempotency_key="idem-construction",
         request_hash="sha256:construction",
+        tenant_id="tenant_001",
     )
 
     assert replay is not None
@@ -98,4 +99,5 @@ def test_construction_idempotency_returns_replay_and_rejects_conflict() -> None:
             repository=repository,
             idempotency_key="idem-construction",
             request_hash="sha256:other",
+            tenant_id="tenant_001",
         )

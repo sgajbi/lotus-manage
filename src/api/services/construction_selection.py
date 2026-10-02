@@ -21,6 +21,7 @@ def build_construction_selection(
         raise ConstructionAlternativeNotFoundError("CONSTRUCTION_ALTERNATIVE_NOT_FOUND")
     return ConstructionAlternativeSelection(
         selection_id=selection_id or f"casel_{uuid.uuid4().hex[:12]}",
+        tenant_id=alternative_set.tenant_id,
         alternative_set_id=alternative_set.alternative_set_id,
         alternative_id=alternative_id,
         actor_id=actor_id,

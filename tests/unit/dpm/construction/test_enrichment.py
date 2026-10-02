@@ -292,6 +292,7 @@ def test_construction_error_mapping_and_missing_set() -> None:
         construction_service.get_construction_alternative_set(
             repository=InMemoryConstructionRepository(),
             alternative_set_id="missing",
+            tenant_id="tenant_001",
         )
 
     conflict = construction_http_exception(
@@ -1448,6 +1449,7 @@ def test_construction_service_uses_method_specific_run_correlation_ids() -> None
             ConstructionMethod.MIN_TURNOVER,
         ],
         run_service=run_service,
+        admitted_tenant_id="tenant_001",
     )
 
     assert run_service.correlation_ids == [

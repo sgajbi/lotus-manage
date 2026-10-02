@@ -176,6 +176,35 @@ QUARANTINED_TENANT_DATASETS = (
         ),
         hashed_columns=frozenset({"correlation_id"}),
     ),
+    QuarantinedTenantDataset(
+        name="dpm_construction_alternative_sets",
+        migration_version="0037",
+        migration_path=(
+            "src/infrastructure/postgres_migrations/dpm/0037_construction_tenant_ownership.sql"
+        ),
+        identifying_columns=(
+            "alternative_set_id",
+            "portfolio_id",
+            "as_of",
+            "status",
+            "created_at",
+        ),
+    ),
+    QuarantinedTenantDataset(
+        name="dpm_construction_alternative_selections",
+        migration_version="0037",
+        migration_path=(
+            "src/infrastructure/postgres_migrations/dpm/0037_construction_tenant_ownership.sql"
+        ),
+        identifying_columns=(
+            "selection_id",
+            "alternative_set_id",
+            "alternative_id",
+            "actor_id",
+            "selected_at",
+        ),
+        hashed_columns=frozenset({"actor_id"}),
+    ),
 )
 
 

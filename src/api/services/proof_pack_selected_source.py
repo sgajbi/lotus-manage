@@ -26,9 +26,11 @@ def resolve_selected_alternative_source(
     selected_alternative_id: str,
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
+    tenant_id: str,
 ) -> ProofPackSelectedAlternativeSource:
     alternative_set = construction_repository.get_alternative_set(
-        alternative_set_id=alternative_set_id
+        alternative_set_id=alternative_set_id,
+        tenant_id=tenant_id,
     )
     if alternative_set is None:
         raise ProofPackSourceValidationError("DPM_ALTERNATIVE_SET_NOT_FOUND")
@@ -46,7 +48,10 @@ def resolve_selected_alternative_source(
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] = []
     if selected.rebalance_run_id is not None:
         try:
-            run = run_service.get_run_record(rebalance_run_id=selected.rebalance_run_id)
+            run = run_service.get_run_record_for_tenant(
+                tenant_id=tenant_id,
+                rebalance_run_id=selected.rebalance_run_id,
+            )
             workflow_decisions = run_service.list_workflow_decision_records(
                 rebalance_run_id=selected.rebalance_run_id
             )
@@ -55,7 +60,10 @@ def resolve_selected_alternative_source(
             workflow_decisions = []
     return ProofPackSelectedAlternativeSource(
         alternative_set=alternative_set,
-        selection=construction_repository.get_selection(alternative_set_id=alternative_set_id),
+        selection=construction_repository.get_selection(
+            alternative_set_id=alternative_set_id,
+            tenant_id=tenant_id,
+        ),
         run=run,
         workflow_decisions=workflow_decisions,
     )
