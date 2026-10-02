@@ -10,7 +10,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
-from src.api.enterprise_readiness import redact_sensitive
+from src.api.enterprise_readiness import is_sensitive_field_name, redact_sensitive
 from src.api.response_headers import apply_observability_headers
 
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
@@ -328,6 +328,33 @@ _SENSITIVE_LOG_FIELD_NAMES = frozenset(
         "run_id",
     }
 )
+_ALLOWED_LOG_EXTRA_FIELD_NAMES = frozenset(
+    {
+        "acquire_timeout_seconds",
+        "application_name",
+        "blocked_dimension_count",
+        "classification",
+        "connect_timeout_seconds",
+        "connection_budget",
+        "degraded_dimension_count",
+        "dimension_count",
+        "endpoint",
+        "http_method",
+        "issue_count",
+        "latency_bucket_ms",
+        "max_connections",
+        "operation",
+        "outcome_state",
+        "reason",
+        "source_ref_count",
+        "status_code",
+        "status_family",
+        "supportability_state",
+        "unsupported_dimension_count",
+        "wave_state",
+    }
+)
+_ALLOWED_LOG_EXTRA_VALUE_TYPES = (str, int, float, bool)
 _LATENCY_BUCKETS_MS = (10, 50, 100, 250, 500, 1000)
 _API_ROUTE_PREFIX = "/api/v1"
 _PM_QUALITY_ROUTE_PREFIX = "/api/v1/rebalance/pm-operating-quality"
@@ -376,8 +403,15 @@ def _route_template_with_request_prefix(*, route_path: str, request_path: str) -
 def _safe_log_extra_fields(extra_fields: dict[str, Any]) -> dict[str, Any]:
     safe_fields: dict[str, Any] = {}
     for key, raw_value in extra_fields.items():
-        if key in _SENSITIVE_LOG_FIELD_NAMES:
-            safe_fields[key] = "[REDACTED]"
+        if not isinstance(key, str):
+            continue
+        normalized_key = key.casefold()
+        if normalized_key in _SENSITIVE_LOG_FIELD_NAMES or is_sensitive_field_name(normalized_key):
+            safe_fields[normalized_key] = "[REDACTED]"
+            continue
+        if key not in _ALLOWED_LOG_EXTRA_FIELD_NAMES:
+            continue
+        if not isinstance(raw_value, _ALLOWED_LOG_EXTRA_VALUE_TYPES):
             continue
         safe_fields[key] = raw_value
     return safe_fields

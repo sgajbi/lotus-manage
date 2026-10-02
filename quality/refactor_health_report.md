@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-10-02T07:02:25+00:00`
+- Generated at: `2026-10-02T07:32:02+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `485f2502cbe65154cc9750e54d95b9a3c75696f1`
+- Baseline source snapshot: `55abd32a9c164d4aab7051f5eadf282aaee07ce8`
 
-- Report source snapshot: `9a23a989+worktree`
+- Report source snapshot: `55abd32a+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -14,9 +14,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 988 | 989 | +1 |
-| Total Python LOC | 241524 | 242863 | +1339 |
-| Test functions | 3421 | 3433 | +12 |
+| Python files | 989 | 989 | +0 |
+| Total Python LOC | 242863 | 243011 | +148 |
+| Test functions | 3433 | 3436 | +3 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -45,8 +45,8 @@
 | 6 | tests/unit/dpm/waves/test_campaign_discovery.py | 3215 |
 | 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 3196 |
 | 8 | tests/unit/test_documentation_current_state.py | 3029 |
-| 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2711 |
-| 10 | tests/unit/api/test_pm_operating_quality_api.py | 2308 |
+| 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2713 |
+| 10 | tests/unit/dpm/api/test_construction_api.py | 2378 |
 
 ### current branch
 
@@ -77,8 +77,8 @@
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
 | 7 | test_unknown_legacy_limits_are_preserved_but_never_act_as_contractual_limits | tests/integration/dpm/mandates/test_legacy_mandate_limit_provenance_postgres.py | 335 |
 | 8 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |
-| 9 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
-| 10 | test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts | tests/unit/dpm/api/test_waves_api.py | 268 |
+| 9 | test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_state | tests/integration/dpm/supportability/test_construction_tenant_ownership_postgres.py | 305 |
+| 10 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
 
 ### current branch
 

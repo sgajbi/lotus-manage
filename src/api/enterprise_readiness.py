@@ -222,7 +222,7 @@ def redact_sensitive(value: Any) -> Any:
     if isinstance(value, dict):
         out: dict[str, Any] = {}
         for key, item in value.items():
-            if key.lower() in _REDACT_FIELDS:
+            if is_sensitive_field_name(key):
                 out[key] = "***REDACTED***"
             else:
                 out[key] = redact_sensitive(item)
@@ -230,6 +230,10 @@ def redact_sensitive(value: Any) -> Any:
     if isinstance(value, list):
         return [redact_sensitive(item) for item in value]
     return value
+
+
+def is_sensitive_field_name(field_name: str) -> bool:
+    return field_name.casefold() in _REDACT_FIELDS
 
 
 def emit_audit_event(
