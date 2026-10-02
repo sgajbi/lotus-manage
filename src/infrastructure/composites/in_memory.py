@@ -146,11 +146,10 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
     ) -> DpmCompositeMembershipPublication | None:
         with self._lock:
             publication = self._publications.get(sequence)
-            return (
-                deepcopy(publication)
-                if publication is not None and publication.tenant_id == tenant_id
-                else None
-            )
+            if publication is None or publication.tenant_id != tenant_id:
+                return None
+            self._assert_publication_integrity(publication)
+            return deepcopy(publication)
 
     def assert_membership_published(self, *, revision: DpmCompositeMembershipRevision) -> None:
         with self._lock:
@@ -174,6 +173,18 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             if publication is None or publication.membership_content_hash != revision.content_hash:
                 raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT")
 
+    def _assert_publication_integrity(self, publication: DpmCompositeMembershipPublication) -> None:
+        revision = self._membership_revisions.get(
+            (
+                publication.tenant_id,
+                publication.composite_id,
+                publication.definition_version,
+                publication.membership_revision,
+            )
+        )
+        if revision is None or publication.membership_content_hash != revision.content_hash:
+            raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT")
+
     def list_publications(
         self, *, tenant_id: str, after_sequence: int, limit: int
     ) -> DpmCompositePublicationPage:
@@ -190,6 +201,8 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 publication for publication in available if publication.sequence > after_sequence
             ]
             items = next_items[:limit]
+            for publication in items:
+                self._assert_publication_integrity(publication)
             return DpmCompositePublicationPage(
                 items=deepcopy(items),
                 high_watermark=high_watermark,

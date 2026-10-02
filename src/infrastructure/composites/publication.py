@@ -75,7 +75,7 @@ def assert_membership_published(
 
 
 _PUBLICATION_SELECT = """
-    SELECT p.sequence, p.published_at, r.payload_json
+    SELECT p.sequence, p.published_at, p.membership_content_hash, r.payload_json
     FROM dpm_composite_membership_publications AS p
     JOIN dpm_composite_membership_revisions AS r
       ON r.tenant_id = p.tenant_id AND r.composite_id = p.composite_id
@@ -86,6 +86,8 @@ _PUBLICATION_SELECT = """
 
 def _publication_from_row(row: Any) -> DpmCompositeMembershipPublication:
     revision = load_model_json(DpmCompositeMembershipRevision, row["payload_json"])
+    if row["membership_content_hash"] != revision.content_hash:
+        raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT")
     return publication_from_revision(
         revision=revision,
         sequence=row["sequence"],
