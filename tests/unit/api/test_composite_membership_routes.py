@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_composite_membership_application_service
@@ -7,6 +9,7 @@ from src.api.main import app
 from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
 )
+from src.core.composite_repository import DpmCompositeConflictError
 from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
 
 
@@ -434,6 +437,35 @@ def test_composite_universe_attestation_is_authorized_scoped_and_range_complete(
             assert mismatched.status_code == 409
             assert mismatched.json()["detail"]["code"] == (
                 "COMPOSITE_UNIVERSE_COMPLETENESS_MISMATCH"
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_composite_universe_attestation_list_fails_closed_on_integrity_conflict() -> None:
+    repository = InMemoryDpmCompositeRepository()
+    app.dependency_overrides[get_composite_membership_application_service] = lambda: (
+        DpmCompositeMembershipApplicationService(repository=repository)
+    )
+    url = (
+        "/api/v1/rebalance/composites/PB_GLOBAL_BALANCED_USD/definitions/2026.10/"
+        "membership/2026.10.1/universe-attestations"
+    )
+    try:
+        with (
+            patch.object(
+                repository,
+                "list_universe_attestations",
+                side_effect=DpmCompositeConflictError(
+                    "COMPOSITE_UNIVERSE_ATTESTATION_INTEGRITY_CONFLICT"
+                ),
+            ),
+            TestClient(app) as client,
+        ):
+            response = client.get(url, headers=_headers())
+            assert response.status_code == 409
+            assert response.json()["detail"]["code"] == (
+                "COMPOSITE_UNIVERSE_ATTESTATION_INTEGRITY_CONFLICT"
             )
     finally:
         app.dependency_overrides.clear()

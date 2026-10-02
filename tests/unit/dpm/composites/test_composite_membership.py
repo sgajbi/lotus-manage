@@ -15,6 +15,7 @@ from src.core.composite_membership import (
     composite_membership_revision_hash,
 )
 from src.core.composite_repository import DpmCompositeConflictError
+from src.core.composite_publication import DpmCompositePublicationReceipt
 from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
 from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository, _payload
 
@@ -264,6 +265,23 @@ def test_repository_rejects_membership_without_definition_or_known_superseded_re
         DpmCompositeConflictError, match="COMPOSITE_MEMBERSHIP_SUPERSEDED_REVISION_NOT_FOUND"
     ):
         repository.save_membership_revision(revision=missing_parent)
+
+
+def test_repository_refuses_receipt_without_tenant_owned_publication() -> None:
+    repository = InMemoryDpmCompositeRepository()
+    receipt = DpmCompositePublicationReceipt(
+        tenant_id="tenant-sg",
+        publication_sequence=1,
+        membership_content_hash="sha256:missing-publication",
+        consumer_id="lotus-performance",
+        receipt_evidence_hash="sha256:retrieval-evidence",
+        disposition="RECEIVED",
+        received_at=datetime(2026, 10, 2, tzinfo=timezone.utc),
+        correlation_id="corr-receipt",
+    )
+
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_NOT_FOUND"):
+        repository.save_receipt(receipt=receipt)
 
 
 def test_postgres_repository_fails_closed_when_its_required_runtime_capability_is_missing() -> None:
