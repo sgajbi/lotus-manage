@@ -2,6 +2,8 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, cast
 
+import pytest
+
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_supportability_application import (
     _currency_overlay_authority_context_status,
@@ -215,6 +217,60 @@ def test_supportability_application_attaches_cost_evidence_and_diagnostics() -> 
     assert (
         enriched.diagnostics["authority_context"]["transaction_cost_context"]["source_system"]
         == "lotus-core"
+    )
+
+
+@pytest.mark.parametrize(
+    "method",
+    [ConstructionMethod.HEURISTIC_EXPLAINABLE, ConstructionMethod.COST_AWARE],
+)
+def test_hard_client_restriction_blocks_independent_of_construction_method(method) -> None:
+    result = _trade_result()
+    alternative = apply_construction_supportability(
+        request=_request(),
+        method=method,
+        alternative=build_rebalance_result_alternative(
+            result=result, method=method, alternative_id=f"alt_{method.value.lower()}"
+        ),
+        result=result,
+        plan=resolve_method_plan(method, solver_available=True),
+        authority_context=ConstructionAuthorityContext(
+            client_restriction_required=True,
+            client_restriction_context=_client_restriction_context(),
+        ),
+    )
+    assert alternative.method_status == ConstructionMethodStatus.BLOCKED
+    restriction_trace = next(
+        trace
+        for trace in alternative.constraint_trace
+        if trace.constraint == ConstructionTraceTerm.CLIENT_RESTRICTION
+    )
+    assert restriction_trace.status == ConstructionMethodStatus.BLOCKED
+    assert "CLIENT_RESTRICTION_VIOLATION_NO_BUY_EQ_B" in restriction_trace.reason_codes
+    assert (
+        "CLIENT_RESTRICTION_VIOLATION_NO_BUY_EQ_B"
+        in alternative.diagnostics["enrichment_summary"]["reason_codes"]
+    )
+
+
+def test_stateful_missing_client_restriction_profile_is_not_ready() -> None:
+    result = _trade_result()
+    alternative = apply_construction_supportability(
+        request=_request(),
+        method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
+        alternative=build_rebalance_result_alternative(
+            result=result,
+            method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
+            alternative_id="alt_heuristic_explainable",
+        ),
+        result=result,
+        plan=resolve_method_plan(ConstructionMethod.HEURISTIC_EXPLAINABLE, solver_available=True),
+        authority_context=ConstructionAuthorityContext(client_restriction_required=True),
+    )
+    assert alternative.method_status == ConstructionMethodStatus.DEGRADED
+    assert (
+        "CLIENT_RESTRICTION_PROFILE_UNAVAILABLE"
+        in alternative.diagnostics["enrichment_summary"]["reason_codes"]
     )
 
 

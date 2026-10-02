@@ -498,6 +498,15 @@ Operationally important truths:
    `Demo Certification` workflow is manual because normal hosted CI runners do not own the
    canonical local stack, while Quality Baseline keeps the deterministic command-contract tests
    visible as report-only evidence.
+   Direct stateful simulation and every construction method now qualify candidate trades against
+   Core `ClientRestrictionProfile:v1` independently of optimization method. A valid empty profile
+   differs from an unavailable profile: unavailable or unclassifiable hard-policy evidence cannot
+   produce mandate-compliant `READY`; active matching buy/sell restrictions block the candidate.
+   Stateless simulation remains a mechanical counterfactual: its arithmetic may be `READY`, but
+   `client_restriction_policy.decision=NOT_ASSESSED` and its consumer gate requires review. This
+   is not trade approval, instruction release, acknowledgement, a fill, or core booking. Instruction
+   package release now refuses runs without READY source-backed client-policy evidence and scope;
+   wave simulation must propagate that evidence before its items can become releaseable.
 5. `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS` defaults to 400 days so low-turnover private-banking
    portfolios can consume observed booked-fee evidence without treating it as predictive execution
    cost, venue, or market-impact methodology. `COST_AWARE` publishes an aggregate only when the

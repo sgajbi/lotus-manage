@@ -158,6 +158,7 @@ def simulate_rebalance(
         policy_pack_id=policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
+        source_context=source_context,
         request_hasher=hash_canonical_payload,
         catalog_loader=load_dpm_policy_pack_catalog,
     )

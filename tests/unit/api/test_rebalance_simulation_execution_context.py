@@ -86,6 +86,39 @@ def test_rebalance_simulation_execution_context_exports_only_context_builder() -
     ]
 
 
+def test_stateful_restriction_source_revision_changes_direct_simulation_hash(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        execution_context,
+        "resolve_execution_policy_pack_context",
+        lambda **_kwargs: SimpleNamespace(
+            definition=None,
+            resolution=SimpleNamespace(enabled=False, source="NONE", selected_policy_pack_id=None),
+        ),
+    )
+    monkeypatch.setattr(execution_context, "resolve_rebalance_correlation_id", lambda value: value)
+    monkeypatch.setattr(execution_context, "env_flag", lambda *_args: True)
+    monkeypatch.setattr(
+        execution_context, "resolve_policy_pack_replay_enabled", lambda **_kwargs: True
+    )
+    hashes = [
+        build_simulation_execution_context(
+            request=_Request(),  # type: ignore[arg-type]
+            correlation_id="corr-001",
+            policy_pack_id=None,
+            tenant_default_policy_pack_id=None,
+            tenant_id="tenant_sg",
+            source_context=SimpleNamespace(stateful_context_hash=source_hash),  # type: ignore[arg-type]
+            request_hasher=lambda payload: str(payload),
+        ).request_hash
+        for source_hash in ("profile-revision-a", "profile-revision-b")
+    ]
+    assert hashes[0] != hashes[1]
+    assert "profile-revision-a" in hashes[0]
+    assert "profile-revision-b" in hashes[1]
+
+
 def test_service_preserves_simulation_execution_context_import_surface() -> None:
     assert (
         rebalance_simulation_service.DpmSimulationExecutionContext is DpmSimulationExecutionContext

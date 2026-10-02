@@ -1,6 +1,12 @@
 from typing import Callable
 
 from src.api.request_models import RebalanceRequest
+from src.api.services.construction_client_restriction_supportability import (
+    client_restriction_policy_required,
+    client_restriction_reason_codes,
+    client_restriction_status,
+    with_client_restriction_constraint,
+)
 from src.api.services.construction_esg_supportability import with_esg_restriction_constraints
 from src.api.services.construction_method_readiness import (
     method_specific_reason_codes,
@@ -110,6 +116,13 @@ def apply_construction_supportability(
             result=result,
             context=authority_context.transaction_cost_context,
         )
+    if client_restriction_policy_required(authority_context):
+        alternative = with_client_restriction_constraint(
+            request=request,
+            alternative=alternative,
+            result=result,
+            authority_context=authority_context,
+        )
     if method == ConstructionMethod.ESG_AWARE:
         alternative = with_esg_restriction_constraints(
             request=request,
@@ -123,6 +136,17 @@ def apply_construction_supportability(
         result=result,
         authority_context=authority_context,
     )
+    if client_restriction_policy_required(authority_context):
+        method_reason_codes = sorted(
+            set(method_reason_codes)
+            | set(
+                client_restriction_reason_codes(
+                    request=request,
+                    result=result,
+                    context=authority_context.client_restriction_context,
+                )
+            )
+        )
     status = supportability_status(
         request=request,
         method=method,
@@ -218,6 +242,14 @@ def supportability_status(
     )
     if authority_status is not None:
         statuses.append(authority_status)
+    if client_restriction_policy_required(authority_context):
+        statuses.append(
+            client_restriction_status(
+                request=request,
+                result=result,
+                context=authority_context.client_restriction_context,
+            )
+        )
     return lowest_construction_status(statuses)
 
 

@@ -457,6 +457,13 @@ Most relevant current governance:
     profile with mismatched portfolio/date/mandate or a scoped rule without usable selectors is
     invalid source evidence and must not be swallowed by the optional-source fallback. Preserve
     intentional selector-free `client` and `mandate` restrictions.
+    Mandatory hard client-policy qualification is shared across stateful direct simulation and
+    construction methods, not owned by `ESG_AWARE`. A verified empty profile permits evaluation;
+    unavailable profile or missing rule classification must not infer permission. Direct stateless
+    simulation is a raw counterfactual with review-required consumer gate, not an approval. Source
+    profile changes are part of the direct simulation request hash. Instruction-package release
+    refuses runs without READY source-backed policy evidence and matching portfolio scope; wave
+    simulation must propagate that evidence before end-to-end enforcement can be claimed.
     For Risk-event waves, reject duplicate candidate IDs before the authority call and verify
     the returned event/date, affected/excluded uniqueness, candidate membership, and mandate echo
     before constructing wave source refs or writing a wave. Excluded members are validation

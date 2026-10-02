@@ -239,10 +239,19 @@ portfolio/mandate applicability evidence locally; it only maps missing,
 stale/effective-period-exception, inapplicable, and contribution-partial source evidence into
 bounded proof-pack section states and reason codes. `lotus-risk` owns the auditable
 scenario/contribution methodology for `RegimeScenarioPackEvaluation:v1` through PR #140.
-ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and
-`SustainabilityPreferenceProfile:v1` through the same stateful core-sourcing path. Manage can block
-candidate trades that violate hard client restrictions and can flag sustainability allocation or
-classification evidence gaps for review. It does not infer unsupported ESG classifications or
+All stateful construction methods and direct simulation consume the source-owned hard
+`ClientRestrictionProfile:v1` decision independently of ESG optimization. Active matching buy/sell
+rules block candidate readiness, while unavailable profiles and unresolved issuer/country/asset
+classification cannot imply permission. The direct result carries profile/rule lineage, applicable
+and violated rule references, and an explicit no-override posture; a changed source-context hash
+invalidates stale idempotent replay. `ESG_AWARE` additionally consumes
+`SustainabilityPreferenceProfile:v1` and can flag sustainability allocation/classification evidence
+gaps for review. Stateless simulation is only a mechanical counterfactual and its
+`client_restriction_policy.decision=NOT_ASSESSED` requires consumer review even when the arithmetic
+status is `READY`. Instruction-package release refuses missing, unassessed, or non-READY policy
+evidence and requires the run's source profile hash and portfolio scope. Wave simulation must
+propagate this evidence; existing raw wave results are not implicitly releaseable. This does not
+certify wave propagation, external acknowledgement, fills, or core booking. Manage does not infer unsupported ESG classifications or
 convert sustainability preferences into automatic compliance approval.
 For Core client restrictions, a returned profile must match the requested portfolio, date, and
 mandate. Selector-free `client`/`mandate` rules are intentional global restrictions; scoped

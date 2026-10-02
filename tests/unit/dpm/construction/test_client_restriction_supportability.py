@@ -1,3 +1,7 @@
+from datetime import date
+
+import pytest
+
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_client_restriction_supportability import (
     active_applicable_restrictions,
@@ -9,6 +13,7 @@ from src.api.services.construction_client_restriction_supportability import (
     restriction_matches_shelf,
     shelf_country_code,
     shelf_entries_by_instrument,
+    violated_client_restrictions,
 )
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
@@ -180,14 +185,127 @@ def test_active_applicable_restrictions_filter_status_and_trade_side() -> None:
     buy_restrictions = active_applicable_restrictions(
         restrictions=restrictions,
         trade_side="BUY",
+        as_of_date=date(2026, 6, 1),
     )
     sell_restrictions = active_applicable_restrictions(
         restrictions=restrictions,
         trade_side="SELL",
+        as_of_date=date(2026, 6, 1),
     )
 
     assert [restriction.restriction_code for restriction in buy_restrictions] == ["ACTIVE_BUY"]
     assert [restriction.restriction_code for restriction in sell_restrictions] == ["ACTIVE_SELL"]
+
+
+def test_restriction_lifecycle_includes_effective_boundaries_only() -> None:
+    restrictions = [
+        _restriction_rule(
+            restriction_code="CURRENT", effective_from="2026-06-01", effective_to="2026-06-30"
+        ),
+        _restriction_rule(restriction_code="FUTURE", effective_from="2026-07-01"),
+        _restriction_rule(restriction_code="EXPIRED", effective_to="2026-05-31"),
+    ]
+    for as_of_date in (date(2026, 6, 1), date(2026, 6, 30)):
+        assert [
+            rule.restriction_code
+            for rule in active_applicable_restrictions(
+                restrictions=restrictions, trade_side="BUY", as_of_date=as_of_date
+            )
+        ] == ["CURRENT"]
+    assert active_applicable_restrictions(
+        restrictions=restrictions, trade_side="BUY", as_of_date=date(2026, 5, 31)
+    ) == [restrictions[2]]
+
+
+@pytest.mark.parametrize(
+    ("rule_updates", "expected_missing"),
+    [
+        ({"instrument_ids": [], "asset_classes": ["EQUITY"]}, "asset_class_classification"),
+        ({"instrument_ids": [], "issuer_ids": ["ISSUER_TECH"]}, "issuer_classification"),
+        ({"instrument_ids": [], "country_codes": ["US"]}, "country_classification"),
+    ],
+)
+def test_active_rule_with_missing_shelf_classification_degrades_instead_of_permitting(
+    rule_updates, expected_missing
+) -> None:
+    base_request = _request()
+    missing_shelf = base_request.shelf_entries[-1].model_copy(
+        update={"asset_class": "UNKNOWN", "issuer_id": None, "attributes": {}}
+    )
+    request = base_request.model_copy(
+        update={"shelf_entries": [*base_request.shelf_entries[:-1], missing_shelf]}
+    )
+    result = _trade_result()
+    context = AuthoritativeClientRestrictionContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_restriction_1",
+        client_id="client-1",
+        as_of_date="2026-06-01",
+        restriction_count=1,
+        restrictions=[_restriction_rule(**rule_updates)],
+    )
+
+    assert (
+        client_restriction_status(request=request, result=result, context=context)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert f"MISSING_{expected_missing.upper()}" in client_restriction_reason_codes(
+        request=request, result=result, context=context
+    )
+
+
+def test_verified_empty_profile_is_ready_but_reported_missing_family_is_not() -> None:
+    request = _request()
+    result = _trade_result()
+    context = AuthoritativeClientRestrictionContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_restriction_1",
+        client_id="client-1",
+        as_of_date="2026-06-01",
+        restriction_count=0,
+        restrictions=[],
+    )
+
+    assert (
+        client_restriction_status(request=request, result=result, context=context)
+        == ConstructionMethodStatus.READY
+    )
+    missing = context.model_copy(update={"missing_data_families": ["client_restrictions"]})
+    assert (
+        client_restriction_status(request=request, result=result, context=missing)
+        == ConstructionMethodStatus.DEGRADED
+    )
+
+
+@pytest.mark.parametrize(
+    ("rule_updates", "expected_sides"),
+    [
+        ({"instrument_ids": ["EQ_B"]}, ["BUY"]),
+        ({"instrument_ids": ["EQ_A"], "applies_to_buy": False, "applies_to_sell": True}, ["SELL"]),
+        ({"instrument_ids": ["UNRELATED"]}, []),
+        ({"instrument_ids": [], "restriction_scope": "client"}, ["BUY"]),
+        ({"instrument_ids": [], "issuer_ids": ["ISSUER_TECH"]}, ["BUY"]),
+        ({"instrument_ids": [], "country_codes": ["US"]}, ["BUY"]),
+        ({"instrument_ids": [], "asset_classes": ["EQUITY"]}, ["BUY"]),
+    ],
+)
+def test_hard_rule_buy_sell_global_and_scoped_applicability(rule_updates, expected_sides) -> None:
+    context = AuthoritativeClientRestrictionContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_restriction_1",
+        client_id="client-1",
+        as_of_date="2026-06-01",
+        restriction_count=1,
+        restrictions=[_restriction_rule(**rule_updates)],
+    )
+    violations = violated_client_restrictions(
+        request=_request(), result=_trade_result(), context=context
+    )
+
+    assert [intent.side for intent, _ in violations] == expected_sides
 
 
 def test_shelf_entries_by_instrument_indexes_request_shelf_entries() -> None:

@@ -35,8 +35,7 @@ def authority_context_with_source_products(
         source_context=source_context.context,
         authority_context=authority_context,
     )
-    if not context_updates:
-        return authority_context
+    context_updates["client_restriction_required"] = True
     return authority_context.model_copy(update=context_updates)
 
 

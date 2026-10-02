@@ -14,7 +14,10 @@ import src.api.services.core_resolver_service as core_resolver_service
 from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
 )
-from src.core.dpm_source_context import DpmCoreExecutionContext
+from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
+    DpmCoreExecutionContext,
+)
 from src.infrastructure.construction import InMemoryConstructionRepository
 from tests.shared.factories import valid_api_payload
 from tests.unit.dpm.construction.source_product_context_fixtures import (
@@ -688,6 +691,87 @@ def _core_execution_context(
 class _FakeCoreResolver:
     def resolve_execution_context(self, *, stateful_input, correlation_id):
         return _core_execution_context(supportability_state="DEGRADED")
+
+
+def test_stateful_hard_client_rule_blocks_heuristic_and_esg_construction(monkeypatch) -> None:
+    payload = _core_execution_context(supportability_state="READY").model_dump(mode="json")
+    payload["portfolio_snapshot"]["positions"][0]["market_value"] = {
+        "amount": "5000",
+        "currency": "SGD",
+    }
+    payload["model_portfolio"]["targets"][0]["weight"] = "1.0"
+    payload["shelf_entries"][0]["settlement_days"] = 0
+    payload["client_restriction_profile"] = DpmCoreClientRestrictionProfileResponse.model_validate(
+        {
+            "product_name": "ClientRestrictionProfile",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "restrictions": [
+                {
+                    "restriction_scope": "instrument",
+                    "restriction_code": "NO_EQ_1_BUY",
+                    "restriction_status": "active",
+                    "restriction_source": "client_mandate",
+                    "applies_to_buy": True,
+                    "applies_to_sell": False,
+                    "instrument_ids": ["EQ_1"],
+                    "effective_from": "2026-01-01",
+                    "restriction_version": 3,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "CLIENT_RESTRICTION_PROFILE_READY",
+                "restriction_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"contract_version": "rfc_040_client_restriction_profile_v1"},
+            "data_quality_status": "COMPLETE",
+            "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
+            "source_batch_fingerprint": "sha256:client-restrictions-v3",
+        }
+    ).model_dump(mode="json")
+    source = DpmCoreExecutionContext.model_validate(payload)
+
+    class RestrictedCoreResolver:
+        def resolve_execution_context(self, *, stateful_input, correlation_id):
+            return source
+
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        core_resolver_service,
+        "build_core_resolver_client",
+        RestrictedCoreResolver,
+    )
+    repository = InMemoryConstructionRepository()
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "methods": ["HEURISTIC_EXPLAINABLE", "ESG_AWARE"],
+            },
+            headers={"Idempotency-Key": "hard-client-rule-methods", "X-Tenant-Id": "tenant_001"},
+        )
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    for alternative in response.json()["alternatives"]:
+        assert alternative["method_status"] == "BLOCKED"
+        assert any(
+            trace["constraint"] == "CLIENT_RESTRICTION"
+            and trace["source_family"] == "CLIENT_RESTRICTION_PROFILE"
+            and trace["status"] == "BLOCKED"
+            for trace in alternative["constraint_trace"]
+        )
+        assert (
+            "CLIENT_RESTRICTION_VIOLATION_NO_EQ_1_BUY"
+            in (alternative["diagnostics"]["enrichment_summary"]["reason_codes"])
+        )
 
 
 class _TransactionCostCoreResolver:

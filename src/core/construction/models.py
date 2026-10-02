@@ -777,6 +777,10 @@ class AuthoritativeRegimeStressContext(BaseModel):
 
 
 class ConstructionAuthorityContext(BaseModel):
+    client_restriction_required: bool = Field(
+        default=False,
+        description="Stateful source policy requires an assessed client restriction profile for every method.",
+    )
     risk_context: AuthoritativeRiskContext | None = Field(
         default=None,
         description="Optional lotus-risk authoritative concentration/risk context.",

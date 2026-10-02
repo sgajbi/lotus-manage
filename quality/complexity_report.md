@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-01T23:38:30+00:00`
+- Generated at: `2026-10-02T00:34:53+00:00`
 
-- Baseline source snapshot: `7b03325ffdfa52151fa5148e6a65f0d2a48d9f74`
+- Baseline source snapshot: `8951c46b016d4bd749993a20cb39164ade356b56`
 
-- Report source snapshot: `7b03325f+worktree`
+- Report source snapshot: `47848040+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -37,13 +37,13 @@
 | 1 | _turnover_budget_assessment | src/core/mandate_health_scoring.py | 20 | 60 |
 | 2 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
 | 3 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
-| 4 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
-| 5 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
-| 6 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
-| 7 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
-| 8 | monitoring_exceptions_from_health | src/core/mandates.py | 11 | 90 |
-| 9 | build | src/core/rebalance_runs/operation_support_bundle.py | 11 | 37 |
-| 10 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
+| 4 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
+| 5 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
+| 6 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
+| 7 | _unresolved_rule_classifications | src/api/services/construction_client_restriction_supportability.py | 13 | 24 |
+| 8 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
+| 9 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
+| 10 | monitoring_exceptions_from_health | src/core/mandates.py | 11 | 90 |
 
 ### Most Complex Current Test Functions
 

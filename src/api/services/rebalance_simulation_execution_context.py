@@ -13,6 +13,7 @@ from src.api.services.rebalance_policy_pack_execution import (
 )
 from src.api.services.rebalance_policy_pack_service import load_dpm_policy_pack_catalog
 from src.core.common.canonical import hash_canonical_payload
+from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.rebalance.policy_packs import (
     DpmPolicyPackDefinition,
     resolve_policy_pack_replay_enabled,
@@ -39,6 +40,7 @@ def build_simulation_execution_context(
     policy_pack_id: Optional[str],
     tenant_default_policy_pack_id: Optional[str],
     tenant_id: Optional[str],
+    source_context: DpmResolvedSourceContext | None = None,
     request_hasher: RequestHasher = hash_canonical_payload,
     catalog_loader: PolicyPackCatalogLoader = load_dpm_policy_pack_catalog,
 ) -> DpmSimulationExecutionContext:
@@ -49,8 +51,14 @@ def build_simulation_execution_context(
         surface="simulate",
         catalog_loader=catalog_loader,
     )
+    request_payload = request.model_dump(mode="json")
+    if source_context is not None:
+        request_payload = {
+            "request": request_payload,
+            "source_context_hash": source_context.stateful_context_hash,
+        }
     return DpmSimulationExecutionContext(
-        request_hash=request_hasher(request.model_dump(mode="json")),
+        request_hash=request_hasher(request_payload),
         correlation_id=resolve_rebalance_correlation_id(correlation_id),
         policy_pack_definition=policy_context.definition,
         replay_enabled=resolve_policy_pack_replay_enabled(

@@ -1,10 +1,10 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-10-01T23:38:30+00:00`
+- Generated at: `2026-10-02T00:40:21+00:00`
 
-- Baseline source snapshot: `7b03325ffdfa52151fa5148e6a65f0d2a48d9f74`
+- Baseline source snapshot: `8951c46b016d4bd749993a20cb39164ade356b56`
 
-- Report source snapshot: `7b03325f+worktree`
+- Report source snapshot: `0dea02d3`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
