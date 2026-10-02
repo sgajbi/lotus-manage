@@ -43,6 +43,47 @@ def _selection(*, set_id: str, tenant_id: str | None) -> ConstructionAlternative
     )
 
 
+def test_construction_owner_constraint_is_created_in_each_schema() -> None:
+    dsn = postgres_dsn_or_skip("construction tenant constraint schema ownership")
+    import psycopg
+    from psycopg import sql
+    from psycopg.rows import dict_row
+
+    schemas = [f"construction_owner_{uuid.uuid4().hex[:12]}" for _ in range(2)]
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        try:
+            for schema in schemas:
+                connection.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
+                connection.execute(sql.SQL("SET search_path TO {}").format(sql.Identifier(schema)))
+                postgres_migrations.apply_postgres_migrations(
+                    connection=connection,
+                    namespace="dpm",
+                )
+
+            constraints = connection.execute(
+                """
+                SELECT namespace.nspname AS schema_name
+                FROM pg_constraint constraint_record
+                JOIN pg_class relation
+                  ON relation.oid = constraint_record.conrelid
+                JOIN pg_namespace namespace
+                  ON namespace.oid = relation.relnamespace
+                WHERE constraint_record.conname = 'fk_dpm_construction_selection_owner'
+                  AND namespace.nspname = ANY(%s)
+                ORDER BY namespace.nspname
+                """,
+                (schemas,),
+            ).fetchall()
+            assert [row["schema_name"] for row in constraints] == sorted(schemas)
+        finally:
+            connection.execute("SET search_path TO public")
+            for schema in schemas:
+                connection.execute(
+                    sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(sql.Identifier(schema))
+                )
+            connection.commit()
+
+
 def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_state(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

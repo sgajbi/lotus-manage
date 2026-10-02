@@ -23,6 +23,7 @@ BEGIN
         SELECT 1
         FROM pg_constraint
         WHERE conname = 'fk_dpm_construction_selection_owner'
+          AND conrelid = 'dpm_construction_alternative_selections'::regclass
     ) THEN
         ALTER TABLE dpm_construction_alternative_selections
             ADD CONSTRAINT fk_dpm_construction_selection_owner

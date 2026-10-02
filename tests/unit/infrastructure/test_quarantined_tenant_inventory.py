@@ -146,6 +146,7 @@ def test_construction_inventory_requires_its_bounded_scan_indexes() -> None:
     assert "idx_dpm_construction_selections_null_tenant_inventory" in migration
     assert "ON dpm_construction_alternative_selections (selection_id)" in migration
     assert migration.count("WHERE tenant_id IS NULL") == 2
+    assert "conrelid = 'dpm_construction_alternative_selections'::regclass" in migration
 
 
 def test_clean_estate_is_an_explicit_successful_zero_read_only_report() -> None:
