@@ -271,6 +271,12 @@ def test_postgres_publication_cursor_receipt_and_restart() -> None:
         after_restart.save_receipt(
             receipt=receipt.model_copy(update={"membership_content_hash": "sha256:wrong"})
         )
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_NOT_FOUND"):
+        after_restart.save_receipt(
+            receipt=receipt.model_copy(
+                update={"publication_sequence": second_page.high_watermark + 100}
+            )
+        )
     with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_RECEIPT_IMMUTABLE_CONFLICT"):
         after_restart.save_receipt(
             receipt=receipt.model_copy(update={"receipt_evidence_hash": "sha256:different"})
@@ -384,3 +390,27 @@ def test_postgres_concurrent_publishers_leave_no_tenant_cursor_gap() -> None:
         revision.content_hash for revision in revisions
     }
     assert page.has_more is False
+
+
+def test_postgres_refuses_publication_hash_divergence() -> None:
+    suffix = uuid.uuid4().hex[:12]
+    tenant_id = f"tenant-integrity-{suffix}"
+    composite_id = f"PB_GLOBAL_BALANCED_{suffix}"
+    dsn = postgres_dsn_or_skip(_PROOF)
+    repository = PostgresDpmCompositeRepository(dsn=dsn)
+    repository.save_definition(
+        definition=_definition(tenant_id=tenant_id, composite_id=composite_id)
+    )
+    revision = _revision(tenant_id=tenant_id, composite_id=composite_id, revision="2026.10.1")
+    repository.save_membership_revision(revision=revision)
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            """
+            UPDATE dpm_composite_membership_publications
+            SET membership_content_hash = %s
+            WHERE tenant_id = %s AND composite_id = %s
+            """,
+            ("sha256:diverged", tenant_id, composite_id),
+        )
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_PUBLICATION_IMMUTABLE_CONFLICT"):
+        repository.save_membership_revision(revision=revision)
