@@ -1824,7 +1824,7 @@ Functional coverage:
   legacy replicas and concurrent old/new same-revision writes, restart-safe immutable receipt replay,
   fail-closed exact-revision retries when publication evidence is missing or hash-divergent,
   fail-closed list/detail/reconciliation reads for stored-hash divergence,
-  wrong-hash/conflicting receipt rejection, and
+  wrong-hash/conflicting receipt rejection including changed caller correlation, and
   tenant/role/service-identity refusal.
 
 Non-functional posture:

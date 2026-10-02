@@ -286,6 +286,10 @@ def test_postgres_publication_cursor_receipt_and_restart() -> None:
         after_restart.save_receipt(
             receipt=receipt.model_copy(update={"receipt_evidence_hash": "sha256:different"})
         )
+    with pytest.raises(DpmCompositeConflictError, match="COMPOSITE_RECEIPT_IMMUTABLE_CONFLICT"):
+        after_restart.save_receipt(
+            receipt=receipt.model_copy(update={"correlation_id": "corr-different-retrieval"})
+        )
 
 
 def test_postgres_migration_backfills_preexisting_revision(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -261,6 +261,15 @@ def test_composite_publication_cursor_and_receipt_are_tenant_fenced_and_fail_clo
                 ).status_code
                 == 409
             )
+            changed_correlation = client.put(
+                receipt_url,
+                headers=consumer_headers,
+                json=receipt | {"correlation_id": "corr-different-retrieval"},
+            )
+            assert changed_correlation.status_code == 409
+            assert changed_correlation.json()["detail"]["code"] == (
+                "COMPOSITE_RECEIPT_IMMUTABLE_CONFLICT"
+            )
             reconciliation = client.get(f"{publications}/1/reconciliation", headers=_headers())
             assert reconciliation.status_code == 200
             assert reconciliation.json()["consumer_posture"] == "RECEIVED"
