@@ -40,8 +40,10 @@ class PostgresUnavailableError(PostgresAccessError):
 @dataclass(frozen=True)
 class PostgresAccessPolicy:
     max_connections: int
+    coordination_max_connections: int
     connect_timeout_seconds: int
     statement_timeout_ms: int
+    coordination_wait_timeout_ms: int
     idle_in_transaction_timeout_ms: int
     acquire_timeout_seconds: int
 
@@ -49,6 +51,14 @@ class PostgresAccessPolicy:
     def session_options(self) -> str:
         return (
             f"-c statement_timeout={self.statement_timeout_ms} "
+            "-c idle_in_transaction_session_timeout="
+            f"{self.idle_in_transaction_timeout_ms}"
+        )
+
+    @property
+    def coordination_session_options(self) -> str:
+        return (
+            f"-c statement_timeout={self.coordination_wait_timeout_ms} "
             "-c idle_in_transaction_session_timeout="
             f"{self.idle_in_transaction_timeout_ms}"
         )
@@ -96,6 +106,8 @@ class ManagedPostgresConnection:
 _semaphore_lock = Lock()
 _semaphore: BoundedSemaphore | None = None
 _semaphore_capacity: int | None = None
+_coordination_semaphore: BoundedSemaphore | None = None
+_coordination_semaphore_capacity: int | None = None
 
 
 def postgres_access_policy() -> PostgresAccessPolicy:
@@ -103,6 +115,12 @@ def postgres_access_policy() -> PostgresAccessPolicy:
         max_connections=_bounded_int_env(
             "DPM_POSTGRES_MAX_CONNECTIONS",
             default=10,
+            minimum=1,
+            maximum=100,
+        ),
+        coordination_max_connections=_bounded_int_env(
+            "DPM_POSTGRES_COORDINATION_MAX_CONNECTIONS",
+            default=4,
             minimum=1,
             maximum=100,
         ),
@@ -117,6 +135,12 @@ def postgres_access_policy() -> PostgresAccessPolicy:
             default=5000,
             minimum=100,
             maximum=60000,
+        ),
+        coordination_wait_timeout_ms=_bounded_int_env(
+            "DPM_POSTGRES_COORDINATION_WAIT_TIMEOUT_MS",
+            default=60000,
+            minimum=1000,
+            maximum=300000,
         ),
         idle_in_transaction_timeout_ms=_bounded_int_env(
             "DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS",
@@ -145,8 +169,66 @@ def connect_postgres(
     application_name: str,
 ) -> ManagedPostgresConnection:
     policy = postgres_access_policy()
-    semaphore = _connection_semaphore(policy)
-    acquired = semaphore.acquire(timeout=policy.acquire_timeout_seconds)
+    return _connect_postgres(
+        dsn,
+        connect_fn=connect_fn,
+        row_factory=row_factory,
+        application_name=application_name,
+        max_connections=policy.max_connections,
+        connect_timeout_seconds=policy.connect_timeout_seconds,
+        acquire_timeout_seconds=policy.acquire_timeout_seconds,
+        session_options=policy.session_options,
+        coordination=False,
+        autocommit=False,
+    )
+
+
+def connect_postgres_coordination(
+    dsn: str,
+    *,
+    connect_fn: Callable[..., Any],
+    row_factory: Any,
+    application_name: str,
+) -> ManagedPostgresConnection:
+    """Open an autocommit session from the bounded coordination budget.
+
+    Coordination sessions may wait on advisory locks while protected work uses ordinary
+    repository connections. Keeping the budgets separate prevents coordination waiters from
+    consuming every permit needed by that protected work.
+    """
+    policy = postgres_access_policy()
+    return _connect_postgres(
+        dsn,
+        connect_fn=connect_fn,
+        row_factory=row_factory,
+        application_name=application_name,
+        max_connections=policy.coordination_max_connections,
+        connect_timeout_seconds=policy.connect_timeout_seconds,
+        acquire_timeout_seconds=policy.acquire_timeout_seconds,
+        session_options=policy.coordination_session_options,
+        coordination=True,
+        autocommit=True,
+    )
+
+
+def _connect_postgres(
+    dsn: str,
+    *,
+    connect_fn: Callable[..., Any],
+    row_factory: Any,
+    application_name: str,
+    max_connections: int,
+    connect_timeout_seconds: int,
+    acquire_timeout_seconds: int,
+    session_options: str,
+    coordination: bool,
+    autocommit: bool,
+) -> ManagedPostgresConnection:
+    semaphore = _connection_semaphore(
+        capacity=max_connections,
+        coordination=coordination,
+    )
+    acquired = semaphore.acquire(timeout=acquire_timeout_seconds)
     if not acquired:
         _record_postgres_access(
             operation="connect",
@@ -162,23 +244,31 @@ def connect_postgres(
                     "reason": "acquire_timeout",
                     "classification": "transient",
                     "application_name": application_name,
-                    "max_connections": policy.max_connections,
-                    "acquire_timeout_seconds": policy.acquire_timeout_seconds,
+                    "connection_budget": "coordination" if coordination else "repository",
+                    "max_connections": max_connections,
+                    "acquire_timeout_seconds": acquire_timeout_seconds,
                 }
             },
         )
         raise PostgresUnavailableError("POSTGRES_CONNECTION_ACQUIRE_TIMEOUT")
 
+    connection: Any | None = None
     try:
         connection = connect_fn(
             dsn,
             row_factory=row_factory,
-            connect_timeout=policy.connect_timeout_seconds,
-            options=policy.session_options,
+            connect_timeout=connect_timeout_seconds,
+            options=session_options,
             application_name=application_name,
         )
+        if autocommit:
+            connection.autocommit = True
     except Exception as exc:
         classification = classify_postgres_error(exc)
+        if connection is not None:
+            close = getattr(connection, "close", None)
+            if callable(close):
+                close()
         semaphore.release()
         _record_postgres_access(
             operation="connect",
@@ -194,7 +284,7 @@ def connect_postgres(
                     "reason": "connection_unavailable",
                     "classification": classification,
                     "application_name": application_name,
-                    "connect_timeout_seconds": policy.connect_timeout_seconds,
+                    "connect_timeout_seconds": connect_timeout_seconds,
                 }
             },
         )
@@ -220,12 +310,18 @@ def classify_postgres_error(error: BaseException) -> str:
     return "unknown"
 
 
-def _connection_semaphore(policy: PostgresAccessPolicy) -> BoundedSemaphore:
+def _connection_semaphore(*, capacity: int, coordination: bool) -> BoundedSemaphore:
+    global _coordination_semaphore, _coordination_semaphore_capacity
     global _semaphore, _semaphore_capacity
     with _semaphore_lock:
-        if _semaphore is None or _semaphore_capacity != policy.max_connections:
-            _semaphore = BoundedSemaphore(policy.max_connections)
-            _semaphore_capacity = policy.max_connections
+        if coordination:
+            if _coordination_semaphore is None or _coordination_semaphore_capacity != capacity:
+                _coordination_semaphore = BoundedSemaphore(capacity)
+                _coordination_semaphore_capacity = capacity
+            return _coordination_semaphore
+        if _semaphore is None or _semaphore_capacity != capacity:
+            _semaphore = BoundedSemaphore(capacity)
+            _semaphore_capacity = capacity
         return _semaphore
 
 
@@ -271,7 +367,10 @@ def _sqlstate(error: BaseException) -> str:
 
 
 def _reset_postgres_access_state_for_tests() -> None:
+    global _coordination_semaphore, _coordination_semaphore_capacity
     global _semaphore, _semaphore_capacity
     with _semaphore_lock:
         _semaphore = None
         _semaphore_capacity = None
+        _coordination_semaphore = None
+        _coordination_semaphore_capacity = None

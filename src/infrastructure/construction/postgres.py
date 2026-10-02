@@ -17,7 +17,7 @@ from src.core.construction.repository import (
     require_construction_tenant_id,
 )
 from src.infrastructure.mandates.serialization import dump_model_json
-from src.infrastructure.postgres_access import connect_postgres
+from src.infrastructure.postgres_access import connect_postgres, connect_postgres_coordination
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
@@ -36,12 +36,7 @@ class PostgresConstructionRepository:
             tenant_id=require_construction_tenant_id(tenant_id),
             idempotency_key=idempotency_key,
         )
-        with closing(self._connect()) as connection:
-            # A session advisory lock must outlive the construction operation without leaving
-            # this dedicated connection idle inside a transaction. The repository applies a
-            # bounded idle-in-transaction timeout, which would otherwise terminate the session
-            # and release the fence while method side effects are still being recorded.
-            connection.autocommit = True
+        with closing(self._connect_coordination()) as connection:
             connection.execute("SELECT pg_advisory_lock(%s)", (lock_key,))
             try:
                 yield
@@ -253,6 +248,15 @@ class PostgresConstructionRepository:
             connect_fn=psycopg.connect,
             row_factory=dict_row,
             application_name="lotus-manage:construction",
+        )
+
+    def _connect_coordination(self) -> Any:
+        psycopg, dict_row = _import_psycopg()
+        return connect_postgres_coordination(
+            self._dsn,
+            connect_fn=psycopg.connect,
+            row_factory=dict_row,
+            application_name="lotus-manage:construction-coordination",
         )
 
     def _init_db(self) -> None:

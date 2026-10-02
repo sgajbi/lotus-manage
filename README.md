@@ -94,8 +94,10 @@ Current posture under RFC-0082:
    runs, alternative sets, selections, selected-alternative proof-pack sourcing, portfolio-memory
    projections, and wave simulation/selection are tenant-fenced at their repository boundaries.
    PostgreSQL generation serializes each `(tenant_id, idempotency_key)` on a dedicated autocommit
-   advisory-lock session before method-run side effects, so horizontally concurrent exact replays
-   return one canonical set without orphan runs or idle-transaction fence expiry.
+   advisory-lock session before method-run side effects. Coordination sessions use an independent
+   bounded connection budget and lock-wait timeout, so waiters do not consume repository-write
+   capacity or inherit the shorter ordinary statement timeout. Horizontally concurrent exact
+   replays return one canonical set without orphan runs or idle-transaction fence expiry.
    Legacy construction rows without attributable ownership remain quarantined and unreachable.
    These local headers are caller assertions, not production identity-provider proof.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
@@ -451,8 +453,10 @@ Runtime Postgres adapters use one bounded access policy instead of direct unboun
 Production operators should set and monitor:
 
 - `DPM_POSTGRES_MAX_CONNECTIONS` (default `10`, allowed `1..100`)
+- `DPM_POSTGRES_COORDINATION_MAX_CONNECTIONS` (default `4`, allowed `1..100`)
 - `DPM_POSTGRES_CONNECT_TIMEOUT_SECONDS` (default `3`, allowed `1..30`)
 - `DPM_POSTGRES_STATEMENT_TIMEOUT_MS` (default `5000`, allowed `100..60000`)
+- `DPM_POSTGRES_COORDINATION_WAIT_TIMEOUT_MS` (default `60000`, allowed `1000..300000`)
 - `DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` (default `10000`, allowed `1000..120000`)
 - `DPM_POSTGRES_ACQUIRE_TIMEOUT_SECONDS` (default `2`, allowed `1..30`)
 
