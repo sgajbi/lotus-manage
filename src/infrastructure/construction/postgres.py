@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
-from contextlib import closing
+from collections.abc import Iterator
+from contextlib import closing, contextmanager
 from typing import Any
 
 from src.core.common.capabilities import has_psycopg
@@ -27,6 +29,19 @@ class PostgresConstructionRepository:
             raise RuntimeError("DPM_CONSTRUCTION_POSTGRES_DRIVER_MISSING")
         self._dsn = dsn
         self._init_db()
+
+    @contextmanager
+    def idempotency_guard(self, *, tenant_id: str, idempotency_key: str) -> Iterator[None]:
+        lock_key = _construction_advisory_lock_key(
+            tenant_id=require_construction_tenant_id(tenant_id),
+            idempotency_key=idempotency_key,
+        )
+        with closing(self._connect()) as connection:
+            connection.execute("SELECT pg_advisory_lock(%s)", (lock_key,))
+            try:
+                yield
+            finally:
+                connection.execute("SELECT pg_advisory_unlock(%s)", (lock_key,))
 
     def save_alternative_set(
         self,
@@ -275,3 +290,8 @@ def _import_psycopg() -> tuple[Any, Any]:
     from psycopg.rows import dict_row
 
     return psycopg, dict_row
+
+
+def _construction_advisory_lock_key(*, tenant_id: str, idempotency_key: str) -> int:
+    digest = hashlib.sha256(f"{tenant_id}\0{idempotency_key}".encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], byteorder="big", signed=True)

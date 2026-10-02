@@ -93,6 +93,8 @@ Current posture under RFC-0082:
    construction generation also require `X-Tenant-Id` for durable run ownership. Construction
    runs, alternative sets, selections, selected-alternative proof-pack sourcing, portfolio-memory
    projections, and wave simulation/selection are tenant-fenced at their repository boundaries.
+   PostgreSQL generation serializes each `(tenant_id, idempotency_key)` before method-run side
+   effects, so horizontally concurrent exact replays return one canonical set without orphan runs.
    Legacy construction rows without attributable ownership remain quarantined and unreachable.
    These local headers are caller assertions, not production identity-provider proof.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope

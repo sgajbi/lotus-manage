@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from copy import deepcopy
-from threading import Lock
+from collections.abc import Iterator
+from threading import RLock
 
 from src.core.construction.models import (
     ConstructionAlternativeSelection,
@@ -17,10 +19,16 @@ from src.core.construction.repository import (
 
 class InMemoryConstructionRepository(ConstructionRepository):
     def __init__(self) -> None:
-        self._lock = Lock()
+        self._lock = RLock()
         self._alternative_sets: dict[str, ConstructionAlternativeSet] = {}
         self._idempotency_index: dict[tuple[str, str], str] = {}
         self._selections: dict[str, ConstructionAlternativeSelection] = {}
+
+    @contextmanager
+    def idempotency_guard(self, *, tenant_id: str, idempotency_key: str) -> Iterator[None]:
+        del tenant_id, idempotency_key
+        with self._lock:
+            yield
 
     def save_alternative_set(
         self,

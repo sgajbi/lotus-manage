@@ -1,5 +1,6 @@
 """Persistence contracts for RFC-0039 construction alternative sets."""
 
+from contextlib import AbstractContextManager
 from typing import Protocol
 
 from src.core.construction.models import (
@@ -33,6 +34,14 @@ def require_construction_tenant_id(tenant_id: str | None) -> str:
 
 
 class ConstructionRepository(Protocol):
+    def idempotency_guard(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+    ) -> AbstractContextManager[None]:
+        """Serialize one tenant-scoped idempotent generation across repository instances."""
+
     def save_alternative_set(
         self,
         *,
