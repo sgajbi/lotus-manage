@@ -9,15 +9,21 @@ from contextlib import closing
 
 import pytest
 
+import src.api.services.construction_service as construction_service
+from src.api.request_models import RebalanceRequest
 from src.core.construction.models import (
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
 )
 from src.core.construction.repository import ConstructionAlternativeSetNotFoundError
 from src.core.construction.vocabulary import ConstructionMethodStatus
+from src.core.construction.vocabulary import ConstructionMethod
+from src.core.rebalance_runs.service import DpmRunSupportService
 from src.infrastructure import postgres_migrations
 from src.infrastructure.construction.postgres import PostgresConstructionRepository
+from src.infrastructure.rebalance_runs import PostgresDpmRunRepository
 from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
+from tests.shared.factories import valid_api_payload
 
 
 def _set(*, set_id: str, tenant_id: str | None, request_hash: str) -> ConstructionAlternativeSet:
@@ -272,6 +278,51 @@ def test_construction_tenant_migration_quarantines_legacy_and_scopes_concurrent_
                 ("tenant-a", concurrent_key),
             ).fetchone()
         assert stored["count"] == 1
+
+        service_key = f"concurrent-service-{uuid.uuid4().hex}"
+        service_tenant = f"tenant-service-{uuid.uuid4().hex[:12]}"
+        service_portfolio = f"PF_CONSTRUCTION_SERVICE_{uuid.uuid4().hex[:12]}"
+        request_payload = valid_api_payload()
+        request_payload["portfolio_snapshot"]["portfolio_id"] = service_portfolio
+        request = RebalanceRequest.model_validate(request_payload)
+        second_repository = PostgresConstructionRepository(dsn=schema_dsn)
+        monkeypatch.setattr(
+            second_repository,
+            "_connect",
+            lambda: psycopg.connect(schema_dsn, row_factory=dict_row),
+        )
+        run_repository = PostgresDpmRunRepository(dsn=schema_dsn)
+        monkeypatch.setattr(
+            run_repository,
+            "_connect",
+            lambda: psycopg.connect(schema_dsn, row_factory=dict_row),
+        )
+        run_service = DpmRunSupportService(repository=run_repository)
+
+        def generate(candidate_repository: PostgresConstructionRepository):
+            return construction_service.generate_construction_alternative_set(
+                request=request,
+                idempotency_key=service_key,
+                correlation_id=None,
+                repository=candidate_repository,
+                methods=[ConstructionMethod.HEURISTIC_EXPLAINABLE],
+                run_service=run_service,
+                admitted_tenant_id=service_tenant,
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            generated = list(executor.map(generate, (repository, second_repository)))
+        assert len({row.alternative_set_id for row in generated}) == 1
+        with closing(repository._connect()) as connection:
+            run_count = connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM dpm_runs
+                WHERE tenant_id = %s AND portfolio_id = %s
+                """,
+                (service_tenant, service_portfolio),
+            ).fetchone()
+        assert run_count["count"] == 1
 
         restarted = PostgresConstructionRepository(dsn=schema_dsn)
         monkeypatch.setattr(

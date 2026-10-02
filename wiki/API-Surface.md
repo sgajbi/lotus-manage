@@ -165,7 +165,9 @@ booking.
 
 Direct generation writes each method's run, artifact, lineage, alternative set, and selection under
 the normalized admitted tenant. Exact same-tenant replay converges on the original set; the same
-idempotency key is independent across tenants. Legacy unowned sets and selections remain preserved
+idempotency key is independent across tenants. PostgreSQL acquires a stable tenant/key advisory
+lock before method execution, so concurrent requests across service instances cannot leave losing
+run, artifact, or lineage side effects before returning the canonical set. Legacy unowned sets and selections remain preserved
 as NULL-owner quarantine, match no tenant-scoped read, and are never retroactively attributed.
 Selected-alternative proof-pack sourcing and portfolio-memory construction projection use the same
 fence. Wave simulation propagates its persisted wave owner into construction generation and wave

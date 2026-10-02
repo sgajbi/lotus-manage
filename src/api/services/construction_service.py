@@ -69,53 +69,54 @@ def generate_construction_alternative_set(
         source_context=source_context,
         admitted_tenant_id=tenant_id,
     )
-    existing = resolve_existing_construction_alternative_set(
-        repository=repository,
-        idempotency_key=idempotency_key,
-        request_hash=request_hash,
-        tenant_id=tenant_id,
-    )
-    if existing is not None:
-        return existing
+    with repository.idempotency_guard(tenant_id=tenant_id, idempotency_key=idempotency_key):
+        existing = resolve_existing_construction_alternative_set(
+            repository=repository,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            tenant_id=tenant_id,
+        )
+        if existing is not None:
+            return existing
 
-    base_result = run_construction_method(
-        request=request,
-        method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
-        correlation_id=correlation_id,
-        request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
-        run_service=run_service,
-        tenant_id=tenant_id,
-    )
-    resolved_authority_context = authority_context_with_source_products(
-        authority_context=authority_context or ConstructionAuthorityContext(),
-        source_context=source_context,
-    )
-    alternatives = build_construction_alternatives(
-        request=request,
-        method_set=method_set,
-        base_result=base_result,
-        correlation_id=correlation_id,
-        request_hash=request_hash,
-        authority_context=resolved_authority_context,
-        risk_authority_client=risk_authority_client,
-        run_service=run_service,
-        solver_available=has_solver_dependencies(),
-        tenant_id=tenant_id,
-    )
-    alternative_set = build_persistable_alternative_set(
-        portfolio_id=request.portfolio_snapshot.portfolio_id,
-        tenant_id=tenant_id,
-        alternatives=alternatives,
-        request_hash=request_hash,
-        source_context=source_context,
-    )
-    persisted = repository.save_alternative_set(
-        alternative_set=alternative_set,
-        idempotency_key=idempotency_key,
-    )
-    if persisted.request_hash != request_hash:
-        raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
-    return persisted
+        base_result = run_construction_method(
+            request=request,
+            method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
+            correlation_id=correlation_id,
+            request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
+            run_service=run_service,
+            tenant_id=tenant_id,
+        )
+        resolved_authority_context = authority_context_with_source_products(
+            authority_context=authority_context or ConstructionAuthorityContext(),
+            source_context=source_context,
+        )
+        alternatives = build_construction_alternatives(
+            request=request,
+            method_set=method_set,
+            base_result=base_result,
+            correlation_id=correlation_id,
+            request_hash=request_hash,
+            authority_context=resolved_authority_context,
+            risk_authority_client=risk_authority_client,
+            run_service=run_service,
+            solver_available=has_solver_dependencies(),
+            tenant_id=tenant_id,
+        )
+        alternative_set = build_persistable_alternative_set(
+            portfolio_id=request.portfolio_snapshot.portfolio_id,
+            tenant_id=tenant_id,
+            alternatives=alternatives,
+            request_hash=request_hash,
+            source_context=source_context,
+        )
+        persisted = repository.save_alternative_set(
+            alternative_set=alternative_set,
+            idempotency_key=idempotency_key,
+        )
+        if persisted.request_hash != request_hash:
+            raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
+        return persisted
 
 
 def get_construction_alternative_set(

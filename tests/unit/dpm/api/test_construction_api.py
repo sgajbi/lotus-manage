@@ -1,4 +1,8 @@
 from decimal import Decimal
+from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from threading import Barrier, Lock, local
 
 import pytest
 from fastapi.testclient import TestClient
@@ -107,6 +111,73 @@ def test_generated_construction_runs_are_readable_only_by_admitted_tenant() -> N
             assert foreign_replay.json()["tenant_id"] == "tenant_002"
     finally:
         app.dependency_overrides = {}
+
+
+def test_same_tenant_concurrent_replay_records_method_run_once() -> None:
+    class RaceProofRepository(InMemoryConstructionRepository):
+        def __init__(self) -> None:
+            super().__init__()
+            self._race = Barrier(2)
+            self._guard_state = local()
+
+        @contextmanager
+        def idempotency_guard(
+            self,
+            *,
+            tenant_id: str,
+            idempotency_key: str,
+        ) -> Iterator[None]:
+            with super().idempotency_guard(
+                tenant_id=tenant_id,
+                idempotency_key=idempotency_key,
+            ):
+                self._guard_state.active = True
+                try:
+                    yield
+                finally:
+                    self._guard_state.active = False
+
+        def get_alternative_set_by_idempotency(self, *, idempotency_key: str, tenant_id: str):
+            existing = super().get_alternative_set_by_idempotency(
+                idempotency_key=idempotency_key,
+                tenant_id=tenant_id,
+            )
+            if existing is None and not getattr(self._guard_state, "active", False):
+                self._race.wait(timeout=5)
+            return existing
+
+    class CountingRunService:
+        def __init__(self) -> None:
+            self._lock = Lock()
+            self.recorded = 0
+
+        def record_run(
+            self, *, result, request_hash, portfolio_id, idempotency_key, tenant_id
+        ) -> None:
+            del result, request_hash, portfolio_id, idempotency_key, tenant_id
+            with self._lock:
+                self.recorded += 1
+
+    repository = RaceProofRepository()
+    run_service = CountingRunService()
+    request = RebalanceRequest.model_validate(_payload()["stateless_input"])
+
+    def generate():
+        return construction_service.generate_construction_alternative_set(
+            request=request,
+            idempotency_key="concurrent-side-effect-proof",
+            correlation_id=None,
+            repository=repository,
+            methods=[ConstructionMethod.HEURISTIC_EXPLAINABLE],
+            run_service=run_service,  # type: ignore[arg-type]
+            admitted_tenant_id="tenant_001",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _: generate(), range(2)))
+
+    assert len({result.alternative_set_id for result in results}) == 1
+    assert run_service.recorded == 1
 
 
 @pytest.mark.parametrize("tenant_header", [None, "   "])
