@@ -46,6 +46,8 @@ An exact HTTP retry succeeds only when the original revision's publication is st
 the matching content hash; missing or divergent publication evidence fails closed with a conflict.
 Publication list/detail/reconciliation reads also verify the stored publication hash against the
 source revision rather than reconstructing a misleading healthy envelope from source payload alone.
+Receipt retries preserve the original server timestamp and require the same caller correlation;
+a changed correlation is an immutable conflict, not a silently accepted replay.
 
 Approved DPM instruction packages are a separate, tenant-scoped retrieval product at
 `/api/v1/rebalance/instruction-packages/*`. A release pins the reviewed run, READY proof pack,

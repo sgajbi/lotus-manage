@@ -224,6 +224,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                     existing.disposition != receipt.disposition
                     or existing.reason_code != receipt.reason_code
                     or existing.receipt_evidence_hash != receipt.receipt_evidence_hash
+                    or existing.correlation_id != receipt.correlation_id
                 ):
                     raise DpmCompositeConflictError("COMPOSITE_RECEIPT_IMMUTABLE_CONFLICT")
                 return False

@@ -171,7 +171,8 @@ def save_receipt(*, connection: Any, receipt: DpmCompositePublicationReceipt) ->
         return True
     existing = connection.execute(
         """
-        SELECT membership_content_hash, receipt_evidence_hash, disposition, reason_code
+        SELECT membership_content_hash, receipt_evidence_hash, disposition, reason_code,
+            correlation_id
         FROM dpm_composite_publication_receipts
         WHERE tenant_id = %s AND publication_sequence = %s AND consumer_id = %s
         """,
@@ -184,6 +185,7 @@ def save_receipt(*, connection: Any, receipt: DpmCompositePublicationReceipt) ->
             "receipt_evidence_hash",
             "disposition",
             "reason_code",
+            "correlation_id",
         )
     ):
         raise DpmCompositeConflictError("COMPOSITE_RECEIPT_IMMUTABLE_CONFLICT")
