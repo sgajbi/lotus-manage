@@ -70,6 +70,9 @@ class DpmCompositeRepository(Protocol):
     def save_receipt(self, *, receipt: DpmCompositePublicationReceipt) -> bool:
         """Persist one consumer acknowledgement; replay or conflict by immutable identity."""
 
+    def assert_membership_published(self, *, revision: DpmCompositeMembershipRevision) -> None:
+        """Fail closed when an immutable revision lacks matching publication evidence."""
+
     def list_receipts(
         self, *, tenant_id: str, publication_sequence: int
     ) -> list[DpmCompositePublicationReceipt]:

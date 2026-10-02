@@ -152,6 +152,28 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 else None
             )
 
+    def assert_membership_published(self, *, revision: DpmCompositeMembershipRevision) -> None:
+        with self._lock:
+            publications = (
+                publication
+                for publication in self._publications.values()
+                if (
+                    publication.tenant_id,
+                    publication.composite_id,
+                    publication.definition_version,
+                    publication.membership_revision,
+                )
+                == (
+                    revision.tenant_id,
+                    revision.composite_id,
+                    revision.definition_version,
+                    revision.membership_revision,
+                )
+            )
+            publication = next(publications, None)
+            if publication is None or publication.membership_content_hash != revision.content_hash:
+                raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT")
+
     def list_publications(
         self, *, tenant_id: str, after_sequence: int, limit: int
     ) -> DpmCompositePublicationPage:

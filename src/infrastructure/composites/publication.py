@@ -54,6 +54,26 @@ def publish_revision(*, connection: Any, revision: DpmCompositeMembershipRevisio
         raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_IMMUTABLE_CONFLICT")
 
 
+def assert_membership_published(
+    *, connection: Any, revision: DpmCompositeMembershipRevision
+) -> None:
+    row = connection.execute(
+        """
+        SELECT membership_content_hash FROM dpm_composite_membership_publications
+        WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
+          AND membership_revision = %s
+        """,
+        (
+            revision.tenant_id,
+            revision.composite_id,
+            revision.definition_version,
+            revision.membership_revision,
+        ),
+    ).fetchone()
+    if row is None or row["membership_content_hash"] != revision.content_hash:
+        raise DpmCompositeConflictError("COMPOSITE_PUBLICATION_INTEGRITY_CONFLICT")
+
+
 _PUBLICATION_SELECT = """
     SELECT p.sequence, p.published_at, r.payload_json
     FROM dpm_composite_membership_publications AS p
@@ -185,6 +205,7 @@ def list_receipts(
 
 
 __all__ = [
+    "assert_membership_published",
     "get_publication",
     "list_publications",
     "list_receipts",

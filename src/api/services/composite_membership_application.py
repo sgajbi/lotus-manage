@@ -90,7 +90,9 @@ class DpmCompositeMembershipApplicationService:
         )
         try:
             self.repository.save_definition(definition=definition)
-        except DpmCompositeConflictError:
+        except DpmCompositeConflictError as exc:
+            if str(exc) != "COMPOSITE_DEFINITION_IMMUTABLE_CONFLICT":
+                raise
             original = self.repository.get_definition(
                 tenant_id=command.tenant_id,
                 composite_id=command.composite_id,
@@ -139,7 +141,9 @@ class DpmCompositeMembershipApplicationService:
         )
         try:
             self.repository.save_membership_revision(revision=revision)
-        except DpmCompositeConflictError:
+        except DpmCompositeConflictError as exc:
+            if str(exc) != "COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT":
+                raise
             original = self.repository.get_membership_revision(
                 tenant_id=command.tenant_id,
                 composite_id=command.composite_id,
@@ -150,6 +154,7 @@ class DpmCompositeMembershipApplicationService:
                 original, revision, server_time_field="decided_at"
             ):
                 raise
+            self.repository.assert_membership_published(revision=original)
             return original
         return revision
 
