@@ -456,21 +456,26 @@ Most relevant current governance:
    identity keys are normalized and redacted case-insensitively; unknown fields and structured
    dictionaries/lists are discarded. Keep the producer-inventory regression synchronized when a
    new operational field is intentionally introduced,
-10. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
+10. request observability must remain the outer application middleware envelope. Enterprise
+    authorization, malformed-length, declared-size, and streamed-size refusals must retain one
+    bounded completion observation, correlated Problem Details, hardened headers, and the policy
+    version without invoking route persistence. Pre-routing metrics use `unmatched`, never a raw
+    request path,
+11. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
-11. the current repo-native domain-data-product declaration intentionally records only governed
+12. the current repo-native domain-data-product declaration intentionally records only governed
     `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
     market-data and future stateful `portfolio_id` resolution must be added only after upstream
     producer approval and an explicit source-data retrieval design.
-12. target-state RFC-0037 through RFC-0043 work may redesign or remove stale manage APIs because
+13. target-state RFC-0037 through RFC-0043 work may redesign or remove stale manage APIs because
     no production downstream dependency is assumed for the revamp surface. Any downstream usage
     discovered during implementation should be documented and migrated to the certified target
     contract rather than preserved through permanent compatibility aliases.
-12. durable RFC control artifacts such as `docs/rfcs/RFC-worktobedone.md`, source maps, proof
+14. durable RFC control artifacts such as `docs/rfcs/RFC-worktobedone.md`, source maps, proof
     indexes, and supported-feature ledgers must be referenced from stable navigation docs and pinned
     by `tests/unit/test_documentation_current_state.py` or an equivalent docs/current-state test
     whenever practical.
-13. Core and Risk source-product adapter mappings must fail closed on incomplete response payloads.
+15. Core and Risk source-product adapter mappings must fail closed on incomplete response payloads.
     Do not reintroduce implicit `USD`, `v1`, empty-fingerprint, empty-section, or zero-metric
     defaults for missing source facts. Valid zero values are allowed only when explicitly supplied
     by the source response and must stay distinguishable from omission.

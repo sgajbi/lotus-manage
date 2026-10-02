@@ -253,6 +253,16 @@ bounded body is replayed unchanged to route handling. Authorization runs before 
 declaration is otherwise valid, so the service does not buffer an unauthorized caller's body.
 Ingress limits remain defense in depth rather than a substitute for this service boundary.
 
+Request observability wraps this enterprise boundary. Missing-header, missing-service-identity,
+missing-capability, malformed-length, declared-oversize, and streamed-oversize refusals therefore
+return correlated Problem Details with request/trace, hardened-security, and enterprise-policy
+headers. Each produces exactly one bounded completion log and HTTP metric observation. Refusals
+that occur before route resolution use the fixed `unmatched` metric label, never the raw path or an
+identity. Authorization denials keep their asserted-identity/reason audit record; body-size and
+framing failures do not masquerade as authorization decisions. This is local propagation and
+instrumentation evidence, not proof of exported tracing, durable telemetry retention, evaluated
+alerts, or production capacity.
+
 Sensitive fields — `password`, `secret`, `token` and their siblings — are redacted from audit
 records rather than logged. The shipped JSON logger preserves a structured `audit` envelope on
 write responses and enterprise-policy denials: asserted actor, tenant, role, correlation, action,

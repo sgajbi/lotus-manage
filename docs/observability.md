@@ -16,6 +16,21 @@
 - Structured logs should avoid raw payload leakage and retain bounded operational fields (route, outcome,
   request family, correlation).
 
+### Enterprise refusal coverage
+
+Request observability is the outer application middleware envelope. Enterprise authorization and
+write-body guards run inside it, so application-produced `400 invalid_content_length`,
+`403 authorization_policy_denied`, and `413 payload_too_large` responses receive the same stable
+correlation, request, trace, hardened-security, and enterprise-policy headers as routed responses.
+Their Problem Details bodies carry `correlationId` and the request-path `instance`.
+
+Each request contributes exactly one completion log and one HTTP count/latency observation. A
+request refused before routing uses the bounded `unmatched` endpoint label; raw paths and identities
+are never metric labels. Authorization denials retain their asserted-identity audit event, while
+body-framing/size refusals do not invent an authorization audit. These controls prove local
+instrumentation and propagation only, not collector export, durable retention, alert evaluation,
+or production capacity.
+
 ### Ordinary JSON log field policy
 
 `JsonFormatter` does not serialize arbitrary `LogRecord` attributes or arbitrary ordinary
@@ -56,3 +71,5 @@ evaluated alerts, or a production-safe external sink.
 - Formatter and producer-inventory regressions live in
   `tests/unit/dpm/api/test_observability_api.py`; enterprise audit-envelope regressions remain in
   `tests/unit/api/test_enterprise_audit_json.py`.
+- The composed-application seven-control refusal and authorized-request reconciliation lives in
+  `tests/unit/api/test_enterprise_refusal_observability.py`.

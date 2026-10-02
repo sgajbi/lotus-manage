@@ -119,6 +119,10 @@ Current posture under RFC-0082:
    Ordinary `extra_fields` logging is a separate bounded contract: only the checked-in operational
    field inventory is serialized, only scalar values are admitted, and credential or identity keys
    are redacted case-insensitively. Unknown or structured fields are dropped at the formatter.
+   Application-produced enterprise refusals (`400`, `403`, and `413`) remain inside the same outer
+   request-observability envelope as routed responses: they return correlated Problem Details and
+   security/policy headers and contribute exactly one bounded completion log and HTTP observation.
+   This correlation is local propagation, not evidence of exported tracing or evaluated alerts.
 5. Solver-capable production installs use the `solver` extra (`cvxpy` and `numpy`), while
    development and CI declare both as required `dev` dependencies. Solver-mode proof surfaces load
    that prerequisite during test collection and execute unconditionally; a missing, suppressed, or

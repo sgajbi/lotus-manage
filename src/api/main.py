@@ -226,9 +226,9 @@ def custom_openapi() -> dict[str, Any]:
 app.openapi = custom_openapi  # type: ignore[method-assign]
 
 logger = logging.getLogger(__name__)
-setup_observability(app)
 validate_enterprise_runtime_config()
 app.middleware("http")(build_enterprise_audit_middleware())
+setup_observability(app)
 
 # Canonical versioned API surface.
 app.include_router(rebalance_run_support_router, prefix="/api/v1")

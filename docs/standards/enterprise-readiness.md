@@ -11,12 +11,16 @@
 - Ordinary logger `extra_fields` use a distinct allowlisted scalar contract. Credential and identity
   keys are redacted case-insensitively; unknown and structured values are discarded rather than
   copied into the JSON payload.
+- The outer request-observability envelope covers enterprise authorization and body-limit refusals.
+  Application-produced `400`, `403`, and `413` responses carry correlated Problem Details plus
+  hardened and policy-version headers and produce one bounded HTTP completion observation.
 
 Evidence:
 - `src/api/enterprise_readiness.py`
 - `src/api/main.py`
 - `src/api/observability.py`
 - `tests/unit/api/test_enterprise_audit_json.py`
+- `tests/unit/api/test_enterprise_refusal_observability.py`
 - `tests/unit/api/test_enterprise_readiness.py`
 - `tests/unit/dpm/api/test_observability_api.py`
 
@@ -72,4 +76,3 @@ Evidence:
 ## Deviations
 
 - Deviations require ADR with mitigation and expiry review date.
-
