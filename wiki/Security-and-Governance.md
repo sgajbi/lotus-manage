@@ -1,7 +1,9 @@
 # Security and Governance
 
 What protects `lotus-manage`, what is off unless switched on, and what a deployment must supply.
-Measured against `main` in
+Current scope: code-backed write authorization and JSON audit serialization, not certification of
+trusted ingress identity, durable audit collection, or complete production security. Evidence is
+the registered API/logger regression and the implementation in
 [`src/api/enterprise_readiness.py`](https://github.com/sgajbi/lotus-manage/blob/main/src/api/enterprise_readiness.py).
 
 ## How authorization is actually gated
@@ -252,7 +254,15 @@ declaration is otherwise valid, so the service does not buffer an unauthorized c
 Ingress limits remain defense in depth rather than a substitute for this service boundary.
 
 Sensitive fields — `password`, `secret`, `token` and their siblings — are redacted from audit
-records rather than logged.
+records rather than logged. The shipped JSON logger preserves a structured `audit` envelope on
+write responses and enterprise-policy denials: asserted actor, tenant, role, correlation, action,
+policy version, UTC audit timestamp, and redacted outcome metadata. A successful write and its
+idempotent replay both report the HTTP status; a role refusal or immutable conflict records its
+own status, while a middleware policy denial records a denial action and reason. The registered
+composite API and logger contract are exercised by
+[`test_enterprise_audit_json.py`](https://github.com/sgajbi/lotus-manage/blob/main/tests/unit/api/test_enterprise_audit_json.py).
+These fields are caller assertions without trusted-ingress verification. JSON serialization alone
+does not certify durable audit delivery, retention, or downstream reconciliation.
 
 ## Governing RFCs
 

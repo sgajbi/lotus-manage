@@ -435,7 +435,10 @@ Most relevant current governance:
 7. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,
 8. enterprise audit and readiness surfaces must emit `lotus-manage` service identity rather than
-   stale split-era names,
+   stale split-era names; the `enterprise_readiness` emitter's structured `audit` field must survive
+   the shipped `JsonFormatter` as a whitelisted, redacted envelope. Registered-API audit tests must
+   cover identity and outcome, while asserted headers and JSON serialization must not be described
+   as verified ingress identity or durable audit delivery,
 9. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
 10. the current repo-native domain-data-product declaration intentionally records only governed

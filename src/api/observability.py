@@ -10,6 +10,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
+from src.api.enterprise_readiness import redact_sensitive
 from src.api.response_headers import apply_observability_headers
 
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
@@ -392,7 +393,36 @@ def _json_log_payload(record: logging.LogRecord) -> dict[str, Any]:
     extra_fields = getattr(record, "extra_fields", None)
     if isinstance(extra_fields, dict):
         payload.update(_safe_log_extra_fields(extra_fields))
+    audit = getattr(record, "audit", None)
+    if record.name == "enterprise_readiness" and record.msg == "enterprise_audit_event":
+        safe_audit = _safe_audit_envelope(audit)
+        if safe_audit is not None:
+            payload["audit"] = safe_audit
     return _without_none_values(payload)
+
+
+def _safe_audit_envelope(audit: Any) -> dict[str, Any] | None:
+    """Serialize only the emitter's known fields, not arbitrary LogRecord attributes."""
+    text_fields = (
+        "service",
+        "action",
+        "actor_id",
+        "tenant_id",
+        "role",
+        "correlation_id",
+        "timestamp_utc",
+        "policy_version",
+    )
+    if (
+        not isinstance(audit, dict)
+        or any(not isinstance(audit.get(field), str) for field in text_fields)
+        or not isinstance(audit.get("metadata"), dict)
+    ):
+        return None
+    return {
+        **{field: audit[field] for field in text_fields},
+        "metadata": redact_sensitive(audit["metadata"]),
+    }
 
 
 def _base_json_log_payload(record: logging.LogRecord) -> dict[str, Any]:
