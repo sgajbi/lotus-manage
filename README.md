@@ -104,6 +104,11 @@ Current posture under RFC-0082:
    Stateful rebalance and construction requests require matching `X-Tenant-Id` and
    `stateful_input.tenant_id` before Core resolution. Synchronous stateless simulation and
    construction generation also require `X-Tenant-Id` for durable run ownership. Construction
+   preserves the effective `DiscretionaryMandateBinding:v1` cash reserve as a target for heuristic
+   and solver paths. Missing and explicit zero remain distinct; conflicting request overrides fail
+   before simulation, callers cannot widen its tolerance, and post-trade deviation is reported with
+   a bounded tolerance. Successful target scaling remains ready; only deviation requires review.
+   Out-of-date bindings fail closed and construction runs retain binding lineage.
    runs, alternative sets, selections, selected-alternative proof-pack sourcing, portfolio-memory
    projections, and wave simulation/selection are tenant-fenced at their repository boundaries.
    PostgreSQL generation serializes each `(tenant_id, idempotency_key)` on a dedicated autocommit

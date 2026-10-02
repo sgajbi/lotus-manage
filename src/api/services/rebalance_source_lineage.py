@@ -29,4 +29,14 @@ def apply_source_lineage(
     result.lineage.source_lineage_bundle_id = lineage.source_lineage_bundle_id
     result.lineage.source_supportability_state = source_context.context.supportability.state
     result.lineage.stateful_context_hash = source_context.stateful_context_hash
+    policy = source_context.context.policy_context
+    result.lineage.source_mandate_id = policy.mandate_id
+    result.lineage.source_mandate_product_version = policy.mandate_product_version
+    result.lineage.source_mandate_binding_version = policy.mandate_binding_version
+    result.lineage.source_mandate_effective_from = policy.mandate_effective_from
+    result.lineage.source_mandate_effective_to = policy.mandate_effective_to
+    result.lineage.source_mandate_lineage = policy.mandate_lineage
+    result.lineage.source_cash_reserve_target_weight = policy.cash_reserve_target_weight
+    if policy.cash_reserve_target_weight is not None:
+        result.lineage.cash_reserve_override_authority = "NONE"
     return result

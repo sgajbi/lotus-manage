@@ -1286,6 +1286,10 @@ Functional coverage:
 - `client_restriction_policy` reports policy decision, requested scope, source hash, rule versions,
   applicable/violated references, and no-override authority. Stateless arithmetic `READY` is a
   non-approving counterfactual with a review-required consumer gate,
+- stateful mandate cash reserve targets retain product/binding/effective-date lineage, influence
+  heuristic and solver construction, reject conflicting or tolerance overrides and out-of-date
+  bindings before calculation, persist construction-run lineage, and emit `CASH_RESERVE_TARGET`
+  measured deviation with bounded tolerance without reviewing successful scaling,
 - core resolver transformation and source-safe resolver failure behavior covered by unit tests.
 
 Non-functional posture:

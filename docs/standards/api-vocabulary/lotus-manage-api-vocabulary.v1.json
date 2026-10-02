@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-02T09:05:13.494729+00:00",
+  "generatedAt": "2026-10-02T11:14:35.156387+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2494,6 +2494,48 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.cash_reserve_override_authority",
+      "canonicalTerm": "cash_reserve_override_authority",
+      "preferredName": "cash_reserve_override_authority",
+      "description": "Override authority for a source-supplied cash reserve target.",
+      "example": "cash_reserve_override_authority_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.cash_reserve_target_tolerance",
+      "canonicalTerm": "cash_reserve_target_tolerance",
+      "preferredName": "cash_reserve_target_tolerance",
+      "description": "Absolute weight tolerance for evaluating the cash reserve target.",
+      "example": "cash_reserve_target_tolerance_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.cash_reserve_target_weight",
+      "canonicalTerm": "cash_reserve_target_weight",
+      "preferredName": "cash_reserve_target_weight",
+      "description": "Source-backed target cash weight. This is evaluated as a target and is not reclassified as a hard cash-band limit.",
+      "example": "cash_reserve_target_weight_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -15110,6 +15152,20 @@
       ]
     },
     {
+      "semanticId": "lotus.source_cash_reserve_target_weight",
+      "canonicalTerm": "source_cash_reserve_target_weight",
+      "preferredName": "source_cash_reserve_target_weight",
+      "description": "Source mandate cash reserve target used by the run.",
+      "example": "source_cash_reserve_target_weight_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.source_context_metadata",
       "canonicalTerm": "source_context_metadata",
       "preferredName": "source_context_metadata",
@@ -15312,6 +15368,92 @@
       "preferredName": "source_lineage_bundle_id",
       "description": "Source-data lineage bundle id used by stateful runs.",
       "example": "SOURCE_LINEAGE_BUNDLE_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_mandate_binding_version",
+      "canonicalTerm": "source_mandate_binding_version",
+      "preferredName": "source_mandate_binding_version",
+      "description": "Effective source mandate-binding version.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_mandate_effective_from",
+      "canonicalTerm": "source_mandate_effective_from",
+      "preferredName": "source_mandate_effective_from",
+      "description": "Effective start date of the selected source mandate binding.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_mandate_effective_to",
+      "canonicalTerm": "source_mandate_effective_to",
+      "preferredName": "source_mandate_effective_to",
+      "description": "Effective end date of the selected source mandate binding.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_mandate_id",
+      "canonicalTerm": "source_mandate_id",
+      "preferredName": "source_mandate_id",
+      "description": "Source-governed mandate identifier used for policy resolution.",
+      "example": "SOURCE_MANDATE_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_mandate_lineage",
+      "canonicalTerm": "source_mandate_lineage",
+      "preferredName": "source_mandate_lineage",
+      "description": "Source mandate lineage retained for audit and replay.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_mandate_product_version",
+      "canonicalTerm": "source_mandate_product_version",
+      "preferredName": "source_mandate_product_version",
+      "description": "Source mandate-binding product version.",
+      "example": "2026-03-02",
       "type": "object",
       "locations": [
         "body"
@@ -27822,6 +27964,70 @@
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
           },
           {
+            "name": "result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
+          },
+          {
             "name": "result.lineage.idempotency_key",
             "location": "body",
             "required": false,
@@ -30219,6 +30425,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "result.lineage.idempotency_key",
@@ -32762,6 +33032,70 @@
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
           },
           {
+            "name": "result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
+          },
+          {
             "name": "result.lineage.idempotency_key",
             "location": "body",
             "required": false,
@@ -35191,6 +35525,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "run.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "run.result.lineage.idempotency_key",
@@ -37623,6 +38021,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "artifact.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "artifact.result.lineage.idempotency_key",
@@ -40440,6 +40902,70 @@
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
           },
           {
+            "name": "run.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "run.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
+          },
+          {
             "name": "run.result.lineage.idempotency_key",
             "location": "body",
             "required": false,
@@ -42870,6 +43396,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "artifact.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "artifact.result.lineage.idempotency_key",
@@ -45687,6 +46277,70 @@
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
           },
           {
+            "name": "run.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "run.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "run.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
+          },
+          {
             "name": "run.result.lineage.idempotency_key",
             "location": "body",
             "required": false,
@@ -48117,6 +48771,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "artifact.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "artifact.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "artifact.result.lineage.idempotency_key",
@@ -51110,6 +51828,70 @@
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
           },
           {
+            "name": "historical_runs[].bundle.run.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
+          },
+          {
             "name": "historical_runs[].bundle.run.result.lineage.idempotency_key",
             "location": "body",
             "required": false,
@@ -53540,6 +54322,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "historical_runs[].bundle.artifact.result.lineage.idempotency_key",
@@ -56379,6 +57225,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "result.lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "result.lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "result.lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "result.lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "result.lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "result.lineage.idempotency_key",
@@ -61311,6 +62221,22 @@
             "attributeRef": "#/attributeCatalog/lotus.min_cash_buffer_pct"
           },
           {
+            "name": "stateless_input.options.cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_target_weight"
+          },
+          {
+            "name": "stateless_input.options.cash_reserve_target_tolerance",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_target_tolerance",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_target_tolerance"
+          },
+          {
             "name": "stateless_input.options.max_turnover_pct",
             "location": "body",
             "required": false,
@@ -63809,6 +64735,70 @@
             "type": "object",
             "semanticId": "lotus.stateful_context_hash",
             "attributeRef": "#/attributeCatalog/lotus.stateful_context_hash"
+          },
+          {
+            "name": "lineage.source_mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_id"
+          },
+          {
+            "name": "lineage.source_mandate_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_product_version"
+          },
+          {
+            "name": "lineage.source_mandate_binding_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_binding_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_binding_version"
+          },
+          {
+            "name": "lineage.source_mandate_effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_from"
+          },
+          {
+            "name": "lineage.source_mandate_effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_effective_to"
+          },
+          {
+            "name": "lineage.source_mandate_lineage",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_mandate_lineage",
+            "attributeRef": "#/attributeCatalog/lotus.source_mandate_lineage"
+          },
+          {
+            "name": "lineage.source_cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "lineage.cash_reserve_override_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_override_authority",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_override_authority"
           },
           {
             "name": "lineage.idempotency_key",
@@ -71794,6 +72784,22 @@
             "type": "object",
             "semanticId": "lotus.min_cash_buffer_pct",
             "attributeRef": "#/attributeCatalog/lotus.min_cash_buffer_pct"
+          },
+          {
+            "name": "stateless_input.options.cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_target_weight"
+          },
+          {
+            "name": "stateless_input.options.cash_reserve_target_tolerance",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_target_tolerance",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_target_tolerance"
           },
           {
             "name": "stateless_input.options.max_turnover_pct",
@@ -120941,6 +121947,22 @@
             "type": "object",
             "semanticId": "lotus.min_cash_buffer_pct",
             "attributeRef": "#/attributeCatalog/lotus.min_cash_buffer_pct"
+          },
+          {
+            "name": "item_inputs[].stateless_input.options.cash_reserve_target_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_target_weight",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_target_weight"
+          },
+          {
+            "name": "item_inputs[].stateless_input.options.cash_reserve_target_tolerance",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cash_reserve_target_tolerance",
+            "attributeRef": "#/attributeCatalog/lotus.cash_reserve_target_tolerance"
           },
           {
             "name": "item_inputs[].stateless_input.options.max_turnover_pct",

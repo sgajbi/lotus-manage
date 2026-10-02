@@ -777,7 +777,15 @@ def test_stateful_http_accepts_valid_global_and_scoped_restriction_sources(monke
         )
 
     assert response.status_code == 200
-    assert response.json()["lineage"]["input_mode"] == "stateful"
+    body = response.json()
+    assert body["lineage"]["input_mode"] == "stateful"
+    assert body["lineage"]["source_mandate_product_version"] == "v1"
+    assert body["lineage"]["source_mandate_binding_version"] == 1
+    assert Decimal(body["lineage"]["source_cash_reserve_target_weight"]) == Decimal("0.02")
+    reserve_rule = next(
+        row for row in body["rule_results"] if row["rule_id"] == "CASH_RESERVE_TARGET"
+    )
+    assert Decimal(reserve_rule["threshold"]["target"]) == Decimal("0.02")
 
 
 def test_construction_http_rejects_blank_scoped_core_restriction_before_method_decision(
@@ -1338,7 +1346,9 @@ def _source_readiness_payload(
 def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
     path = request.url.path
     if path.endswith("/mandate-binding"):
-        return httpx.Response(200, json=_mandate_binding_payload())
+        payload = _mandate_binding_payload()
+        payload["effective_from"] = json.loads(request.content)["as_of_date"]
+        return httpx.Response(200, json=payload)
     if path.endswith("/targets"):
         payload = _model_portfolio_target_payload()
         payload["model_portfolio_id"] = path.split("/")[-2]
@@ -1529,6 +1539,11 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "model_balanced_sgd"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
+    assert context.policy_context.mandate_product_version == "v1"
+    assert context.policy_context.mandate_binding_version == 1
+    assert context.policy_context.mandate_effective_from == date(2026, 3, 25)
+    assert context.policy_context.mandate_lineage["source_record_id"] == "mandate_001_v1"
+    assert context.policy_context.cash_reserve_target_weight == Decimal("0.0200000000")
     assert context.transaction_cost_curve is not None
     assert context.transaction_cost_curve.supportability.state == "READY"
     assert context.portfolio_cashflow_projection is not None
@@ -2043,6 +2058,36 @@ def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
     assert response.supportability.state == "READY"
     assert response.policy_pack_id == "POLICY_DPM_SG_BALANCED_V1"
     assert response.rebalance_bands.default_band == Decimal("0.0250000000")
+
+
+@pytest.mark.parametrize(
+    ("effective_from", "effective_to"),
+    [("2026-04-11", None), ("2026-03-01", "2026-04-09")],
+)
+def test_core_resolver_rejects_mandate_binding_outside_requested_date(
+    effective_from: str,
+    effective_to: str | None,
+) -> None:
+    payload = _mandate_binding_payload()
+    payload["effective_from"] = effective_from
+    payload["effective_to"] = effective_to
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda _request: httpx.Response(200, json=payload))
+        ),
+    )
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MANDATE_BINDING_NOT_EFFECTIVE",
+    ):
+        client.resolve_mandate_binding(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            tenant_id="tenant_sg_pb",
+            correlation_id="corr-mandate-not-effective",
+        )
 
 
 def test_core_resolver_does_not_invent_tenant_header_for_unscoped_mandate_read():

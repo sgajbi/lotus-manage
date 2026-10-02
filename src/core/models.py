@@ -349,8 +349,27 @@ class EngineOptions(BaseModel):
     )
     min_cash_buffer_pct: Decimal = Field(
         default=Decimal("0.0"),
+        ge=0,
+        le=1,
         description="Minimum cash buffer preserved during target generation.",
         examples=["0.05"],
+    )
+    cash_reserve_target_weight: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description=(
+            "Source-backed target cash weight. This is evaluated as a target and is not "
+            "reclassified as a hard cash-band limit."
+        ),
+        examples=["0.02"],
+    )
+    cash_reserve_target_tolerance: Decimal = Field(
+        default=Decimal("0.0001"),
+        ge=0,
+        le=1,
+        description="Absolute weight tolerance for evaluating the cash reserve target.",
+        examples=["0.0001"],
     )
     max_turnover_pct: Optional[Decimal] = Field(
         default=None,
@@ -797,6 +816,38 @@ class LineageData(BaseModel):
     stateful_context_hash: Optional[str] = Field(
         default=None,
         description="Canonical hash of the resolved stateful execution context.",
+    )
+    source_mandate_id: Optional[str] = Field(
+        default=None,
+        description="Source-governed mandate identifier used for policy resolution.",
+    )
+    source_mandate_product_version: Optional[str] = Field(
+        default=None,
+        description="Source mandate-binding product version.",
+    )
+    source_mandate_binding_version: Optional[int] = Field(
+        default=None,
+        description="Effective source mandate-binding version.",
+    )
+    source_mandate_effective_from: Optional[date] = Field(
+        default=None,
+        description="Effective start date of the selected source mandate binding.",
+    )
+    source_mandate_effective_to: Optional[date] = Field(
+        default=None,
+        description="Effective end date of the selected source mandate binding.",
+    )
+    source_mandate_lineage: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Source mandate lineage retained for audit and replay.",
+    )
+    source_cash_reserve_target_weight: Optional[Decimal] = Field(
+        default=None,
+        description="Source mandate cash reserve target used by the run.",
+    )
+    cash_reserve_override_authority: Optional[Literal["NONE"]] = Field(
+        default=None,
+        description="Override authority for a source-supplied cash reserve target.",
     )
     idempotency_key: Optional[str] = Field(
         default=None,

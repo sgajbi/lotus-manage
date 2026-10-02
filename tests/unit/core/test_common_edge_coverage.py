@@ -17,6 +17,7 @@ from src.core.common.workflow_gates import evaluate_gate_decision
 from src.core.compliance import (
     RuleEngine,
     _cash_band_rule_result,
+    _cash_reserve_target_rule_result,
     _data_quality_rule_result,
     _insufficient_cash_rule_result,
     _min_trade_size_rule_result,
@@ -555,3 +556,60 @@ def test_cash_band_rule_result_fails_when_cash_breaches_policy_band() -> None:
     assert result.status == "FAIL"
     assert result.reason_code == "THRESHOLD_BREACH"
     assert result.remediation_hint == "Portfolio cash is outside policy bands."
+
+
+@pytest.mark.parametrize(
+    ("cash_weight", "expected_status", "expected_reason"),
+    [
+        (Decimal("0.02005"), "PASS", "TARGET_MET_WITHIN_TOLERANCE"),
+        (Decimal("0.021"), "FAIL", "TARGET_DEVIATION"),
+        (Decimal("0.019"), "FAIL", "TARGET_DEVIATION"),
+    ],
+)
+def test_cash_reserve_target_rule_reports_rounding_and_lot_deviation(
+    cash_weight: Decimal,
+    expected_status: str,
+    expected_reason: str,
+) -> None:
+    state = SimulatedState(
+        total_value=Money(amount=Decimal("100"), currency="USD"),
+        positions=[],
+        cash_balances=[],
+        allocation_by_asset_class=[
+            AllocationMetric(
+                key="CASH",
+                weight=cash_weight,
+                value=Money(amount=cash_weight * Decimal("100"), currency="USD"),
+            )
+        ],
+        allocation_by_instrument=[],
+    )
+
+    result = _cash_reserve_target_rule_result(
+        state=state,
+        options=EngineOptions(
+            cash_reserve_target_weight=Decimal("0.02"),
+            cash_reserve_target_tolerance=Decimal("0.0001"),
+        ),
+    )
+
+    assert result is not None
+    assert result.status == expected_status
+    assert result.reason_code == expected_reason
+    assert result.measured == cash_weight
+    assert result.threshold == {
+        "target": Decimal("0.02"),
+        "tolerance": Decimal("0.0001"),
+    }
+
+
+def test_cash_reserve_target_rule_is_absent_when_source_target_is_missing() -> None:
+    state = SimulatedState(
+        total_value=Money(amount=Decimal("100"), currency="USD"),
+        positions=[],
+        cash_balances=[],
+        allocation_by_asset_class=[],
+        allocation_by_instrument=[],
+    )
+
+    assert _cash_reserve_target_rule_result(state=state, options=EngineOptions()) is None

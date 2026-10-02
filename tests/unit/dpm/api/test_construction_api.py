@@ -912,8 +912,11 @@ def _core_execution_context(
 
 
 class _FakeCoreResolver:
+    def __init__(self, context: DpmCoreExecutionContext | None = None) -> None:
+        self._context = context
+
     def resolve_execution_context(self, *, stateful_input, correlation_id):
-        return _core_execution_context(supportability_state="DEGRADED")
+        return self._context or _core_execution_context(supportability_state="DEGRADED")
 
 
 def test_stateful_hard_client_rule_blocks_heuristic_and_esg_construction(monkeypatch) -> None:
@@ -1858,11 +1861,27 @@ def test_generate_construction_alternative_set_preserves_degraded_stateful_sourc
     monkeypatch,
 ) -> None:
     repository = InMemoryConstructionRepository()
+    run_repository = InMemoryDpmRunRepository()
+    context_payload = _core_execution_context(supportability_state="DEGRADED").model_dump(
+        mode="python"
+    )
+    context_payload["policy_context"].update(
+        {
+            "mandate_product_version": "v1",
+            "mandate_binding_version": 4,
+            "mandate_effective_from": "2026-05-01",
+            "mandate_lineage": {"source_record_id": "mandate-001-v4"},
+            "cash_reserve_target_weight": "0.02",
+        }
+    )
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
         core_resolver_service,
         "build_core_resolver_client",
-        lambda: _FakeCoreResolver(),
+        lambda: _FakeCoreResolver(DpmCoreExecutionContext.model_validate(context_payload)),
+    )
+    app.dependency_overrides[get_dpm_run_support_service] = lambda: DpmRunSupportService(
+        repository=run_repository
     )
 
     with _client(repository) as client:
@@ -1884,6 +1903,19 @@ def test_generate_construction_alternative_set_preserves_degraded_stateful_sourc
     body = response.json()
     assert body["input_mode"] == "stateful"
     assert body["source_supportability_state"] == "DEGRADED"
+    heuristic = next(
+        alternative
+        for alternative in body["alternatives"]
+        if alternative["method"] == "HEURISTIC_EXPLAINABLE"
+    )
+    run = run_repository.get_run(rebalance_run_id=heuristic["rebalance_run_id"])
+    assert run is not None
+    lineage = run.result_json["lineage"]
+    assert lineage["source_mandate_binding_version"] == 4
+    assert lineage["source_mandate_effective_from"] == "2026-05-01"
+    assert lineage["source_mandate_lineage"] == {"source_record_id": "mandate-001-v4"}
+    assert Decimal(lineage["source_cash_reserve_target_weight"]) == Decimal("0.02")
+    assert lineage["cash_reserve_override_authority"] == "NONE"
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -392,6 +393,34 @@ def test_rebalance_request_envelope_resolution_handles_stateless_and_transform_f
             ),
         )
 
+    with pytest.raises(
+        service.DpmRebalanceCoreContextIncompleteError,
+        match="DPM_CORE_CONTEXT_INCOMPLETE",
+    ):
+        envelope_resolution.resolve_rebalance_request_envelope(
+            envelope=stateful_envelope,
+            correlation_id="corr",
+            stateful_context_resolver=lambda **_kwargs: SimpleNamespace(context=object()),
+            rebalance_request_builder=lambda **_kwargs: RebalanceRequest.model_validate({}),
+        )
+
+
+def test_batch_request_envelope_resolution_maps_invalid_transformed_request() -> None:
+    with pytest.raises(
+        service.DpmRebalanceCoreContextIncompleteError,
+        match="DPM_CORE_CONTEXT_INCOMPLETE",
+    ):
+        envelope_resolution.resolve_batch_request_envelope(
+            envelope=BatchExecutionRequestEnvelope(
+                input_mode="stateful",
+                stateful_input=_stateful_input(),
+                scenarios={"base": {"options": {}}},
+            ),
+            correlation_id="corr",
+            stateful_context_resolver=lambda **_kwargs: SimpleNamespace(context=object()),
+            batch_request_builder=lambda **_kwargs: BatchRebalanceRequest.model_validate({}),
+        )
+
 
 def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> None:
     source_context = type("_SourceContext", (), {"context": object()})()
@@ -586,6 +615,15 @@ def test_rebalance_source_lineage_stamps_result_metadata() -> None:
                 source_lineage_bundle_id="lineage-bundle-001",
             ),
             supportability=SimpleNamespace(state="READY"),
+            policy_context=SimpleNamespace(
+                mandate_id="mandate-balanced",
+                mandate_product_version="v1",
+                mandate_binding_version=3,
+                mandate_effective_from=date(2026, 4, 1),
+                mandate_effective_to=None,
+                mandate_lineage={"source_record_id": "mandate-balanced-v3"},
+                cash_reserve_target_weight=Decimal("0.02"),
+            ),
         ),
     )
     stateful_result = SimpleNamespace(lineage=SimpleNamespace(input_mode="stateless"))
@@ -607,6 +645,15 @@ def test_rebalance_source_lineage_stamps_result_metadata() -> None:
     assert stateful_result.lineage.source_lineage_bundle_id == "lineage-bundle-001"
     assert stateful_result.lineage.source_supportability_state == "READY"
     assert stateful_result.lineage.stateful_context_hash == "stateful-hash-001"
+    assert stateful_result.lineage.source_mandate_id == "mandate-balanced"
+    assert stateful_result.lineage.source_mandate_product_version == "v1"
+    assert stateful_result.lineage.source_mandate_binding_version == 3
+    assert stateful_result.lineage.source_mandate_effective_from == date(2026, 4, 1)
+    assert stateful_result.lineage.source_mandate_lineage == {
+        "source_record_id": "mandate-balanced-v3"
+    }
+    assert stateful_result.lineage.source_cash_reserve_target_weight == Decimal("0.02")
+    assert stateful_result.lineage.cash_reserve_override_authority == "NONE"
 
 
 def test_rebalance_async_config_normalizes_modes_and_flags(monkeypatch) -> None:

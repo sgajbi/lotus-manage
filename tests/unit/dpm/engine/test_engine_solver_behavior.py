@@ -64,6 +64,30 @@ def test_solver_counts_locked_group_weight_in_group_constraint():
     assert eligible_targets["BOND"] >= Decimal("0.7500")
 
 
+def test_solver_honours_source_cash_reserve_target():
+    model = model_portfolio(targets=[target("A", "1.0")])
+    eligible_targets = {"A": Decimal("1.0")}
+
+    _, status = _generate_targets(
+        model=model,
+        eligible_targets=eligible_targets,
+        buy_list=["A"],
+        sell_only_excess=Decimal("0"),
+        shelf=[ShelfEntry(instrument_id="A", status="APPROVED")],
+        options=EngineOptions(
+            target_method="SOLVER",
+            cash_reserve_target_weight=Decimal("0.02"),
+        ),
+        total_val=Decimal("100000"),
+        base_ccy="USD",
+        diagnostics=_diag(),
+    )
+
+    assert status == "READY"
+    assert eligible_targets["A"] <= Decimal("0.9801")
+    assert eligible_targets["A"] >= Decimal("0.9799")
+
+
 def test_solver_warns_unknown_attribute_and_continues():
     model = model_portfolio(targets=[target("A", "0.6"), target("B", "0.4")])
     eligible_targets = {"A": Decimal("0.6"), "B": Decimal("0.4")}

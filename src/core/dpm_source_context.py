@@ -107,6 +107,33 @@ class DpmCorePolicyContext(BaseModel):
         description="Resolved booking-center selector.",
     )
     mandate_id: Optional[str] = Field(default=None, description="Resolved mandate selector.")
+    mandate_product_version: Optional[str] = Field(
+        default=None,
+        description="Source mandate-binding product version.",
+    )
+    mandate_binding_version: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Effective source mandate-binding version.",
+    )
+    mandate_effective_from: Optional[date] = Field(
+        default=None,
+        description="Effective start date of the source mandate binding.",
+    )
+    mandate_effective_to: Optional[date] = Field(
+        default=None,
+        description="Effective end date of the source mandate binding.",
+    )
+    mandate_lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Source mandate lineage retained for audit and replay.",
+    )
+    cash_reserve_target_weight: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description="Source-owned mandate cash reserve target as a decimal ratio.",
+    )
 
 
 class DpmCoreSourceLineage(BaseModel):
@@ -437,6 +464,52 @@ def _options_from_override(
     return EngineOptions.model_validate(payload)
 
 
+def _options_with_source_cash_reserve_target(
+    options_override: dict[str, Any],
+    *,
+    policy_context: DpmCorePolicyContext,
+    default_valuation_mode: ValuationMode | None = None,
+) -> EngineOptions:
+    options = _options_from_override(
+        options_override,
+        default_valuation_mode=default_valuation_mode,
+    )
+    source_target = policy_context.cash_reserve_target_weight
+    if source_target is None:
+        return options
+
+    if "cash_reserve_target_tolerance" in options_override:
+        raise DpmCoreContextIncompleteError(
+            "DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN"
+        )
+
+    for field_name in ("cash_reserve_target_weight", "min_cash_buffer_pct"):
+        if field_name not in options_override:
+            continue
+        if getattr(options, field_name) != source_target:
+            raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT")
+    return options.model_copy(update={"cash_reserve_target_weight": source_target})
+
+
+def _batch_scenario_options_with_source_cash_reserve_target(
+    *,
+    scenario_options: dict[str, Any],
+    policy_context: DpmCorePolicyContext,
+) -> dict[str, Any]:
+    options = _options_with_source_cash_reserve_target(
+        scenario_options,
+        policy_context=policy_context,
+        default_valuation_mode=ValuationMode.TRUST_SNAPSHOT,
+    )
+    payload = {
+        "valuation_mode": ValuationMode.TRUST_SNAPSHOT,
+        **scenario_options,
+    }
+    if policy_context.cash_reserve_target_weight is not None:
+        payload["cash_reserve_target_weight"] = options.cash_reserve_target_weight
+    return payload
+
+
 def build_model_portfolio_from_core_targets(
     response: DpmCoreModelPortfolioTargetResponse,
 ) -> ModelPortfolio:
@@ -469,6 +542,12 @@ def build_policy_context_from_core_mandate(
         tenant_id=tenant_id,
         booking_center_code=response.booking_center_code,
         mandate_id=response.mandate_id,
+        mandate_product_version=response.product_version,
+        mandate_binding_version=response.binding_version,
+        mandate_effective_from=response.effective_from,
+        mandate_effective_to=response.effective_to,
+        mandate_lineage=response.lineage,
+        cash_reserve_target_weight=response.rebalance_bands.cash_reserve_weight,
     )
 
 
@@ -725,8 +804,9 @@ def build_rebalance_request_from_core_context(
         market_data_snapshot=context.market_data_snapshot,
         model_portfolio=context.model_portfolio,
         shelf_entries=context.shelf_entries,
-        options=_options_from_override(
+        options=_options_with_source_cash_reserve_target(
             options_override,
+            policy_context=context.policy_context,
             default_valuation_mode=ValuationMode.TRUST_SNAPSHOT,
         ),
     )
@@ -750,10 +830,10 @@ def build_batch_rebalance_request_from_core_context(
         scenarios={
             name: SimulationScenario(
                 description=scenario.description,
-                options={
-                    "valuation_mode": ValuationMode.TRUST_SNAPSHOT,
-                    **scenario.options,
-                },
+                options=_batch_scenario_options_with_source_cash_reserve_target(
+                    scenario_options=scenario.options,
+                    policy_context=context.policy_context,
+                ),
             )
             for name, scenario in scenarios.items()
         },

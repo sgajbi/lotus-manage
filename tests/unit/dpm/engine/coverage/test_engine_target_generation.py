@@ -359,6 +359,25 @@ class TestTargetGeneration:
         assert tgt.final_weight <= Decimal("0.91")
         assert_status(result, "PENDING_REVIEW")
 
+    def test_source_cash_reserve_target_scales_tradeable_weight_without_becoming_cash_band(self):
+        eligible_targets = {"BUY_A": Decimal("1.0")}
+
+        trace, status = _generate_targets(
+            model=model_portfolio(targets=[target("BUY_A", "1.0")]),
+            eligible_targets=eligible_targets,
+            buy_list=["BUY_A"],
+            sell_only_excess=Decimal("0"),
+            shelf=[ShelfEntry(instrument_id="BUY_A", status="APPROVED")],
+            options=EngineOptions(cash_reserve_target_weight=Decimal("0.02")),
+            total_val=Decimal("100000"),
+            base_ccy="USD",
+            diagnostics=DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[]),
+        )
+
+        assert status == "READY"
+        assert eligible_targets == {"BUY_A": Decimal("0.98")}
+        assert trace[0].final_value.amount == Decimal("98000.00")
+
     def test_generate_targets_marks_pending_when_redistribution_remainder_stays(self):
         model = model_portfolio(targets=[target("B1", "0.2313"), target("B2", "0.4895")])
         eligible_targets = {

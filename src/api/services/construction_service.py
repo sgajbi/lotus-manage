@@ -86,6 +86,7 @@ def generate_construction_alternative_set(
             request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
             run_service=run_service,
             tenant_id=tenant_id,
+            source_context=source_context,
         )
         resolved_authority_context = authority_context_with_source_products(
             authority_context=authority_context or ConstructionAuthorityContext(),
@@ -102,6 +103,7 @@ def generate_construction_alternative_set(
             run_service=run_service,
             solver_available=has_solver_dependencies(),
             tenant_id=tenant_id,
+            source_context=source_context,
         )
         alternative_set = build_persistable_alternative_set(
             portfolio_id=request.portfolio_snapshot.portfolio_id,
