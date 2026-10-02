@@ -209,11 +209,14 @@ def build_bulk_review_campaign_definition_maker_checker_control_page(
     limit: int = 50,
     offset: int = 0,
 ) -> DpmBulkReviewCampaignDefinitionMakerCheckerControlPage:
-    controls = sorted(
-        definition.maker_checker_controls,
-        key=lambda control: control.recorded_at,
-        reverse=True,
-    )
+    controls = [
+        control
+        for _, control in sorted(
+            enumerate(definition.maker_checker_controls),
+            key=lambda indexed: (indexed[1].recorded_at, indexed[0]),
+            reverse=True,
+        )
+    ]
     page = controls[offset : offset + limit]
     latest = controls[0] if controls else None
     return DpmBulkReviewCampaignDefinitionMakerCheckerControlPage(

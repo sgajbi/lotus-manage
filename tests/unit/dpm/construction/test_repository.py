@@ -1,5 +1,6 @@
 import json
 from collections.abc import Sequence
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -49,7 +50,12 @@ def test_in_memory_repository_persists_alternative_set_and_idempotency_lookup() 
 def test_in_memory_repository_lists_alternative_sets_by_portfolio_newest_first() -> None:
     repository = InMemoryConstructionRepository()
     older = _alternative_set().model_copy(update={"alternative_set_id": "cas_repo_older"})
-    newer = _alternative_set().model_copy(update={"alternative_set_id": "cas_repo_newer"})
+    newer = _alternative_set().model_copy(
+        update={
+            "alternative_set_id": "cas_repo_newer",
+            "generated_at": older.generated_at + timedelta(seconds=1),
+        }
+    )
     other = _alternative_set().model_copy(
         update={"alternative_set_id": "cas_repo_other", "portfolio_id": "other_pf"}
     )

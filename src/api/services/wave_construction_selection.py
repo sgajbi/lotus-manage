@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from src.api.services import construction_service
-from src.api.services.wave_errors import DpmWaveLookupError
+from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
 from src.core.construction.repository import (
+    ConstructionAlternativeBlockedError,
     ConstructionAlternativeNotFoundError,
     ConstructionAlternativeSetNotFoundError,
     ConstructionRepository,
@@ -36,6 +37,11 @@ def select_construction_alternative_for_wave(
             correlation_id=correlation_id,
             tenant_id=tenant_id,
         )
+    except ConstructionAlternativeBlockedError as exc:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_CONSTRUCTION_ALTERNATIVE_BLOCKED",
+            "A blocked construction alternative cannot be selected for a wave item.",
+        ) from exc
     except _CONSTRUCTION_SELECTION_LOOKUP_ERRORS as exc:
         raise DpmWaveLookupError("DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND", str(exc)) from exc
 

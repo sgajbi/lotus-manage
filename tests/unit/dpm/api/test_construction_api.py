@@ -2245,6 +2245,7 @@ def test_generate_construction_alternative_set_idempotency_conflict() -> None:
 def test_construction_http_exception_mapping() -> None:
     from src.api.routers.construction_http import construction_http_exception
     from src.core.construction.repository import (
+        ConstructionAlternativeBlockedError,
         ConstructionAlternativeNotFoundError,
         ConstructionAlternativeSetNotFoundError,
         ConstructionIdempotencyConflictError,
@@ -2252,6 +2253,7 @@ def test_construction_http_exception_mapping() -> None:
 
     mappings = [
         (ConstructionIdempotencyConflictError("conflict"), 409, "conflict"),
+        (ConstructionAlternativeBlockedError("blocked"), 422, "blocked"),
         (ConstructionAlternativeSetNotFoundError("missing-set"), 404, "missing-set"),
         (ConstructionAlternativeNotFoundError("missing-alternative"), 404, "missing-alternative"),
         (RuntimeError("boom"), 500, "RuntimeError"),

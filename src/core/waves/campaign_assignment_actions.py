@@ -216,11 +216,15 @@ def build_bulk_review_campaign_definition_assignment_action_page(
 def _sorted_assignment_actions(
     definition: DpmBulkReviewCampaignDefinition,
 ) -> list[DpmBulkReviewCampaignDefinitionAssignmentAction]:
-    return sorted(
-        definition.assignment_actions,
-        key=lambda action: action.recorded_at,
-        reverse=True,
-    )
+    indexed_actions = enumerate(definition.assignment_actions)
+    return [
+        action
+        for _, action in sorted(
+            indexed_actions,
+            key=lambda indexed: (indexed[1].recorded_at, indexed[0]),
+            reverse=True,
+        )
+    ]
 
 
 def _assignment_action_page_state(

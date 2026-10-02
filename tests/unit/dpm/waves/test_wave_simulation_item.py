@@ -1,5 +1,6 @@
 import pytest
 from pytest import MonkeyPatch
+from types import SimpleNamespace
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import wave_simulation_item
@@ -24,7 +25,9 @@ def _item(*, state: str = "SOURCE_READY") -> DpmRebalanceWaveItem:
 
 
 def _request() -> RebalanceRequest:
-    return RebalanceRequest.model_construct(portfolio_id="PB_SG_SIMULATE")
+    return RebalanceRequest.model_construct(
+        portfolio_snapshot=SimpleNamespace(portfolio_id="PB_SG_SIMULATE")
+    )
 
 
 def _alternative_set() -> ConstructionAlternativeSet:
@@ -233,6 +236,40 @@ def test_simulate_item_blocks_construction_generation_failure(
         "required_action": "REVIEW_CONSTRUCTION_INPUTS",
         "construction_error": "ConstructionIdempotencyConflictError",
     }
+
+
+def test_simulate_item_refuses_foreign_input_or_returned_construction_portfolio(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    foreign_request = RebalanceRequest.model_construct(
+        portfolio_snapshot=SimpleNamespace(portfolio_id="PB_SG_FOREIGN")
+    )
+    assert simulate_item(
+        item=_item(),
+        tenant_id="tenant-test",
+        correlation_id="corr-simulate",
+        item_inputs={"dwi_simulate": DpmWaveSimulationInput(stateless_input=foreign_request)},
+        methods=None,
+        construction_repository=object(),  # type: ignore[arg-type]
+        run_service=object(),  # type: ignore[arg-type]
+        risk_authority_client=None,
+    ).reason_codes == ["DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"]
+
+    monkeypatch.setattr(
+        wave_simulation_item.construction_service,
+        "generate_construction_alternative_set",
+        lambda **_kwargs: _alternative_set().model_copy(update={"portfolio_id": "PB_SG_FOREIGN"}),
+    )
+    assert simulate_item(
+        item=_item(),
+        tenant_id="tenant-test",
+        correlation_id="corr-simulate",
+        item_inputs={"dwi_simulate": DpmWaveSimulationInput(stateless_input=_request())},
+        methods=None,
+        construction_repository=object(),  # type: ignore[arg-type]
+        run_service=object(),  # type: ignore[arg-type]
+        risk_authority_client=None,
+    ).reason_codes == ["DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"]
 
 
 def test_construction_generation_failed_item_records_safe_error_type() -> None:

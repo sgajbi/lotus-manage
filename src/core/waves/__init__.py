@@ -158,6 +158,14 @@ from src.core.waves.state_machine import (
     validate_wave_transition,
 )
 from src.core.waves.source_readiness import classify_wave_item_source_readiness
+from src.core.waves.simulation_operations import (
+    DpmWaveSimulationItemClaim,
+    DpmWaveSimulationItemPage,
+    DpmWaveSimulationItemRecord,
+    DpmWaveSimulationOperation,
+    WaveSimulationItemStatus,
+    WaveSimulationOperationStatus,
+)
 
 __all__ = [
     "DpmRebalanceWave",
@@ -178,6 +186,10 @@ __all__ = [
     "CampaignWorkflowAutomationStatus",
     "DpmRebalanceWaveEvent",
     "DpmRebalanceWaveItem",
+    "DpmWaveSimulationItemClaim",
+    "DpmWaveSimulationItemPage",
+    "DpmWaveSimulationItemRecord",
+    "DpmWaveSimulationOperation",
     "DpmBulkReviewCampaignApprovalInboxItem",
     "DpmBulkReviewCampaignApprovalInboxPage",
     "DpmBulkReviewCampaignAssignmentPlanItem",
@@ -239,6 +251,8 @@ __all__ = [
     "DpmWaveVersionConflictError",
     "WAVE_REPORT_INPUT_REF_TYPE",
     "WaveItemState",
+    "WaveSimulationItemStatus",
+    "WaveSimulationOperationStatus",
     "WaveState",
     "WaveTriggerType",
     "apply_wave_transition",

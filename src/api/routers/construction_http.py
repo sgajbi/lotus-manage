@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import HTTPException, status
 
 from src.core.construction.repository import (
+    ConstructionAlternativeBlockedError,
     ConstructionAlternativeNotFoundError,
     ConstructionAlternativeSetNotFoundError,
     ConstructionIdempotencyConflictError,
@@ -10,6 +11,8 @@ from src.core.construction.repository import (
 
 
 def construction_http_exception(exc: Exception) -> HTTPException:
+    if isinstance(exc, ConstructionAlternativeBlockedError):
+        return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
     if isinstance(exc, ConstructionIdempotencyConflictError):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     if isinstance(

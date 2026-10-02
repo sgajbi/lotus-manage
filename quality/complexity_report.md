@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-02T11:14:50+00:00`
+- Generated at: `2026-10-02T17:08:32+00:00`
 
-- Baseline source snapshot: `58656c9ee802dbca11b5aa5d53ef7bb0a09b6243`
+- Baseline source snapshot: `1ebed11d33dd6c3ddbeaf3ad2fd9ef4e7b75cb94`
 
-- Report source snapshot: `26085578+worktree`
+- Report source snapshot: `0cf2a6f8+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -37,13 +37,13 @@
 | 1 | _turnover_budget_assessment | src/core/mandate_health_scoring.py | 20 | 60 |
 | 2 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
 | 3 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
-| 4 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
-| 5 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
-| 6 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
-| 7 | _unresolved_rule_classifications | src/api/services/construction_client_restriction_supportability.py | 13 | 24 |
-| 8 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
-| 9 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 12 | 54 |
-| 10 | monitoring_exceptions_from_health | src/core/mandates.py | 11 | 90 |
+| 4 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 16 | 76 |
+| 5 | _resolve_item_payloads | src/api/services/wave_simulation_operations.py | 15 | 51 |
+| 6 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
+| 7 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
+| 8 | cancel_simulation_operation | src/infrastructure/waves/in_memory.py | 13 | 55 |
+| 9 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
+| 10 | derive_wave_simulation_operation_status_from_counts | src/core/waves/simulation_operations.py | 13 | 26 |
 
 ### Most Complex Current Test Functions
 

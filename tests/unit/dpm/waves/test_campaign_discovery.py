@@ -1016,6 +1016,15 @@ def test_campaign_assignment_action_page_state_tracks_latest_action() -> None:
         sla_posture="ATTENTION",
         correlation_id="corr-campaign-assignment-action-002",
     )
+    first, latest = escalated.assignment_actions
+    escalated = escalated.model_copy(
+        update={
+            "assignment_actions": [
+                first,
+                latest.model_copy(update={"recorded_at": first.recorded_at}),
+            ]
+        }
+    )
 
     actions = _sorted_assignment_actions(escalated)
     state = _assignment_action_page_state(actions)
