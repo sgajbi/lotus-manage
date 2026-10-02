@@ -6,12 +6,14 @@
 
 ## Security and IAM Baseline
 
-- Enterprise audit middleware captures privileged state transitions.
-- Actor/tenant/role/correlation metadata is logged with sensitive-value redaction.
+- Enterprise audit middleware emits a structured JSON envelope for write responses and enterprise-policy denials. It records the asserted actor, tenant, role, correlation, action, policy version, timestamp, and status or denial reason; exact replays and conflicts remain distinguishable by status.
+- Business metadata is redacted before serialization. The audit identity headers are caller assertions unless verified by a trusted ingress; JSON logger output is not proof of a durable audit sink, retention, or delivery.
 
 Evidence:
 - `src/api/enterprise_readiness.py`
 - `src/api/main.py`
+- `src/api/observability.py`
+- `tests/unit/api/test_enterprise_audit_json.py`
 - `tests/unit/api/test_enterprise_readiness.py`
 
 ## API Governance Baseline
@@ -53,11 +55,12 @@ Evidence:
 
 ## Privacy and Compliance Baseline
 
-- Audit-trail integrity includes actor context and redacted metadata for sensitive values.
+- The serialized audit envelope preserves actor context and redacted metadata. Deployment still needs independently verified ingress identity and durable audit collection before claiming end-to-end audit-trail integrity.
 
 Evidence:
 - `src/api/enterprise_readiness.py`
-- `tests/unit/api/test_enterprise_readiness.py`
+- `src/api/observability.py`
+- `tests/unit/api/test_enterprise_audit_json.py`
 
 ## Deviations
 

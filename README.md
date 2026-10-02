@@ -104,6 +104,10 @@ Current posture under RFC-0082:
    breadth so proof loss cannot hide behind total coverage.
 4. Host/runtime coexistence and gateway-facing capability discovery are part of the operational
    contract.
+   Enterprise write audit events retain structured asserted identity and outcome in the JSON
+   logger, but trusted-ingress identity and durable audit-sink delivery are separate deployment
+   obligations; see [enterprise readiness](docs/standards/enterprise-readiness.md) and the
+   [Security and Governance wiki source](wiki/Security-and-Governance.md).
 5. Solver-capable production installs use the `solver` extra (`cvxpy` and `numpy`), while
    development and CI declare both as required `dev` dependencies. Solver-mode proof surfaces load
    that prerequisite during test collection and execute unconditionally; a missing, suppressed, or
