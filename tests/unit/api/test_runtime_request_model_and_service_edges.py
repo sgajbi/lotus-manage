@@ -623,6 +623,10 @@ def test_rebalance_source_lineage_stamps_result_metadata() -> None:
                 mandate_effective_to=None,
                 mandate_lineage={"source_record_id": "mandate-balanced-v3"},
                 cash_reserve_target_weight=Decimal("0.02"),
+                cash_reserve_scope="TOTAL_PORTFOLIO_MARKET_VALUE",
+                cash_reserve_currency_basis="PORTFOLIO_BASE_CURRENCY",
+                cash_reserve_authority="MANDATE_BINDING",
+                cash_reserve_consumer_override_allowed=False,
             ),
         ),
     )

@@ -200,6 +200,10 @@ def _core_execution_context() -> DpmCoreExecutionContext:
                 "tenant_id": "tenant_001",
                 "booking_center_code": "SG",
                 "mandate_id": "mandate_balanced_discretionary",
+                "cash_reserve_scope": "TOTAL_PORTFOLIO_MARKET_VALUE",
+                "cash_reserve_currency_basis": "PORTFOLIO_BASE_CURRENCY",
+                "cash_reserve_authority": "MANDATE_BINDING",
+                "cash_reserve_consumer_override_allowed": False,
             },
             "source_lineage": {
                 "portfolio_snapshot_id": "core-pf-snap-001",

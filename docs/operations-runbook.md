@@ -32,6 +32,32 @@ For full repo-native evidence in production-oriented work, run:
   parity; no service source tree outside `lotus-manage` is writable inside the CI container.
 - `make mesh-contract-validate`
 
+## Source mandate cash reserve
+
+Stateful single/batch execution requires the effective binding's reserve scope
+`TOTAL_PORTFOLIO_MARKET_VALUE`, currency basis `PORTFOLIO_BASE_CURRENCY`, authority
+`MANDATE_BINDING` and explicit `consumer_override_allowed=false`. These source facts, target,
+binding version and effective dates survive in retained run lineage. An absent target differs from
+zero. Missing authority or `MANDATE_CASH_RESERVE_INVALID` returns 424 before financial writes;
+restore valid source evidence, not a caller override. Old artifacts remain readable.
+
+The target is not a hard cash band. Absolute cash-weight tolerance is 0.0001; larger post-trade
+deviation requires review. With USD NAV 100,000, one security and no costs:
+
+| Target | Price | Whole Shares After | Cash After | Reserve Result |
+| --- | --- | --- | --- | --- |
+| 0.02 | 100 | 980 | 2,000 | Within tolerance |
+| 0 or absent | 100 | 1,000 | 0 | Explicit zero passes; absence emits no target rule |
+| 0.50 | 100 | 500 | 50,000 | Within tolerance |
+| 0.02 | 123 | 796 | 2,092 | Weight 0.02092 requires review |
+
+Independent reconciliation is `shares * price + cash = NAV`. See
+[native HTTP/PostgreSQL tests](../tests/integration/dpm/supportability/test_source_cash_reserve_network.py)
+for controlled-producer proof, batch position-cap deviation, tenant isolation and retained replay
+after process replacement. No real Core, bank IAM, capacity, approval, settlement or booking
+acceptance is claimed. Wave stateless inputs share the calculation kernel but do not establish
+source-bound enforcement; that gap remains in issue #733.
+
 ## NULL-tenant quarantine inventory
 
 Migrations `0003`, `0024` through `0029`, `0032`, `0033`, and `0037` deliberately retain rows that cannot

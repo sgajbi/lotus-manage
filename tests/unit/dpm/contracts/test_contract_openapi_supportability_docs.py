@@ -11,7 +11,7 @@ from src.api.simulation_examples import (
     SIMULATE_READY_EXAMPLE,
 )
 from src.api.main import app
-from src.core.models import BatchRebalanceResult, RebalanceResult
+from src.core.models import BatchRebalanceResult, LineageData, RebalanceResult
 from src.core.rebalance_runs import DpmAsyncAcceptedResponse
 
 
@@ -61,6 +61,28 @@ def _is_error_status(status_code: object) -> bool:
 
 
 TENANT_PARAMETER_DESCRIPTION = "Tenant whose preserved mandate-health source-ref evidence is summarised. Required whenever `portfolio_id` is supplied, because that evidence is stored per tenant; omitting it there is refused rather than answered from an assumed tenant."
+
+
+@pytest.mark.parametrize(
+    ("field", "example"),
+    [
+        ("source_cash_reserve_scope", "TOTAL_PORTFOLIO_MARKET_VALUE"),
+        ("source_cash_reserve_currency_basis", "PORTFOLIO_BASE_CURRENCY"),
+        ("source_cash_reserve_authority", "MANDATE_BINDING"),
+        ("source_cash_reserve_consumer_override_allowed", False),
+    ],
+)
+def test_reserve_lineage_examples_are_valid_and_legacy_reads_do_not_infer_authority(field, example):
+    properties = app.openapi()["components"]["schemas"]["LineageData"]["properties"]
+    assert properties[field]["examples"] == [example]
+    legacy = {
+        "portfolio_snapshot_id": "old",
+        "market_data_snapshot_id": "old",
+        "request_hash": "sha256:old",
+        "source_cash_reserve_target_weight": "0.02",
+    }
+    assert getattr(LineageData.model_validate(legacy), field) is None
+    assert getattr(LineageData.model_validate({**legacy, field: example}), field) == example
 
 
 def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():

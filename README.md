@@ -108,8 +108,11 @@ Current posture under RFC-0082:
    and solver paths. Missing and explicit zero remain distinct; conflicting request overrides fail
    before simulation, callers cannot widen its tolerance, and post-trade deviation is reported with
    a bounded tolerance. Successful target scaling remains ready; only deviation requires review.
-   Out-of-date bindings fail closed and construction runs retain binding lineage.
-   runs, alternative sets, selections, selected-alternative proof-pack sourcing, portfolio-memory
+   Source-declared reserve basis and no-override authority are retained in run lineage; missing
+   authority or invalid legacy source targets fail closed. Controlled HTTP/PostgreSQL proof is
+   not real Core or bank acceptance; source-bound wave enforcement remains tracked in issue #733.
+   Out-of-date bindings fail closed. Construction runs, alternative sets, selections,
+   selected-alternative proof-pack sourcing, portfolio-memory
    projections, and wave simulation/selection are tenant-fenced at their repository boundaries.
    PostgreSQL generation serializes each `(tenant_id, idempotency_key)` on a dedicated autocommit
    advisory-lock session before method-run side effects. Coordination sessions use an independent

@@ -41,7 +41,7 @@ def disposable_database():
             )
 
 
-def _serve(dsn, pipe, stop):
+def _serve(dsn, pipe, stop, core_url=None):
     # Spawned interpreters do not inherit parent's in-process dependency overrides.
     for name in list(os.environ):
         if name.startswith(("DPM_", "ENTERPRISE_", "APP_")):
@@ -56,6 +56,13 @@ def _serve(dsn, pipe, stop):
         ENTERPRISE_ENFORCE_AUTHZ="true",
         ENTERPRISE_CAPABILITY_RULES_JSON=json.dumps({"POST /api/v1": "manage.write"}),
     )
+    if core_url is not None:
+        os.environ.update(
+            DPM_STATEFUL_CORE_SOURCING_ENABLED="true",
+            DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED="true",
+            DPM_CORE_BASE_URL=core_url,
+            DPM_CORE_RESOLVER_MAX_ATTEMPTS="1",
+        )
     import uvicorn
     from src.api.main import app
 
@@ -76,8 +83,10 @@ def _serve(dsn, pipe, stop):
 
 
 @contextmanager
-def native_api(dsn):
+def native_api(dsn, *, core_url=None):
     if os.environ.get("DPM_NETWORK_IMAGE_ID"):
+        if core_url is not None:
+            raise ValueError("Controlled source proof requires the native installed API.")
         from tests.integration.dpm.image_runtime import image_api
 
         with image_api(dsn) as runtime:
@@ -86,7 +95,7 @@ def native_api(dsn):
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe(duplex=False)
     stop = context.Event()
-    process = context.Process(target=_serve, args=(dsn, child, stop))
+    process = context.Process(target=_serve, args=(dsn, child, stop, core_url))
     process.start()
     child.close()
     port = None

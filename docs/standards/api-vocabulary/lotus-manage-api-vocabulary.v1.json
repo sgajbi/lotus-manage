@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-03T01:42:16.448708+00:00",
+  "generatedAt": "2026-10-03T08:53:00.730427+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -15395,6 +15395,62 @@
       ]
     },
     {
+      "semanticId": "lotus.source_cash_reserve_authority",
+      "canonicalTerm": "source_cash_reserve_authority",
+      "preferredName": "source_cash_reserve_authority",
+      "description": "Effective source mandate authority for the target.",
+      "example": "source_cash_reserve_authority_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+      "canonicalTerm": "source_cash_reserve_consumer_override_allowed",
+      "preferredName": "source_cash_reserve_consumer_override_allowed",
+      "description": "Source-declared override permission; null is legacy/unsourced.",
+      "example": "source_cash_reserve_consumer_override_allowed_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_cash_reserve_currency_basis",
+      "canonicalTerm": "source_cash_reserve_currency_basis",
+      "preferredName": "source_cash_reserve_currency_basis",
+      "description": "Source-owned cash and portfolio valuation basis.",
+      "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_cash_reserve_scope",
+      "canonicalTerm": "source_cash_reserve_scope",
+      "preferredName": "source_cash_reserve_scope",
+      "description": "Source-owned denominator retained from the mandate binding.",
+      "example": "source_cash_reserve_scope_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.source_cash_reserve_target_weight",
       "canonicalTerm": "source_cash_reserve_target_weight",
       "preferredName": "source_cash_reserve_target_weight",
@@ -28525,6 +28581,38 @@
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
           },
           {
+            "name": "result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
+          },
+          {
             "name": "result.lineage.cash_reserve_override_authority",
             "location": "body",
             "required": false,
@@ -30986,6 +31074,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "result.lineage.cash_reserve_override_authority",
@@ -33593,6 +33713,38 @@
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
           },
           {
+            "name": "result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
+          },
+          {
             "name": "result.lineage.cash_reserve_override_authority",
             "location": "body",
             "required": false,
@@ -36086,6 +36238,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "run.result.lineage.cash_reserve_override_authority",
@@ -38582,6 +38766,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "artifact.result.lineage.cash_reserve_override_authority",
@@ -41463,6 +41679,38 @@
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
           },
           {
+            "name": "run.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
+          },
+          {
             "name": "run.result.lineage.cash_reserve_override_authority",
             "location": "body",
             "required": false,
@@ -43957,6 +44205,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "artifact.result.lineage.cash_reserve_override_authority",
@@ -46838,6 +47118,38 @@
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
           },
           {
+            "name": "run.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "run.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
+          },
+          {
             "name": "run.result.lineage.cash_reserve_override_authority",
             "location": "body",
             "required": false,
@@ -49332,6 +49644,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "artifact.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "artifact.result.lineage.cash_reserve_override_authority",
@@ -52389,6 +52733,38 @@
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
           },
           {
+            "name": "historical_runs[].bundle.run.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "historical_runs[].bundle.run.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
+          },
+          {
             "name": "historical_runs[].bundle.run.result.lineage.cash_reserve_override_authority",
             "location": "body",
             "required": false,
@@ -54883,6 +55259,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "historical_runs[].bundle.artifact.result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "historical_runs[].bundle.artifact.result.lineage.cash_reserve_override_authority",
@@ -57786,6 +58194,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "result.lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "result.lineage.cash_reserve_override_authority",
@@ -65296,6 +65736,38 @@
             "type": "object",
             "semanticId": "lotus.source_cash_reserve_target_weight",
             "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_target_weight"
+          },
+          {
+            "name": "lineage.source_cash_reserve_scope",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_scope"
+          },
+          {
+            "name": "lineage.source_cash_reserve_currency_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_currency_basis",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_currency_basis"
+          },
+          {
+            "name": "lineage.source_cash_reserve_authority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_authority",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_authority"
+          },
+          {
+            "name": "lineage.source_cash_reserve_consumer_override_allowed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_cash_reserve_consumer_override_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.source_cash_reserve_consumer_override_allowed"
           },
           {
             "name": "lineage.cash_reserve_override_authority",

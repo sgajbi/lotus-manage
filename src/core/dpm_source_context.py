@@ -134,6 +134,18 @@ class DpmCorePolicyContext(BaseModel):
         le=1,
         description="Source-owned mandate cash reserve target as a decimal ratio.",
     )
+    cash_reserve_scope: Optional[Literal["TOTAL_PORTFOLIO_MARKET_VALUE"]] = Field(
+        default=None, description="Source-declared reserve denominator; absent in legacy contexts."
+    )
+    cash_reserve_currency_basis: Optional[Literal["PORTFOLIO_BASE_CURRENCY"]] = Field(
+        default=None, description="Source-declared valuation basis; absent in legacy contexts."
+    )
+    cash_reserve_authority: Optional[Literal["MANDATE_BINDING"]] = Field(
+        default=None, description="Source-declared effective mandate authority."
+    )
+    cash_reserve_consumer_override_allowed: Optional[Literal[False]] = Field(
+        default=None, description="Source-declared consumer override permission."
+    )
 
 
 class DpmCoreSourceLineage(BaseModel):
@@ -478,6 +490,17 @@ def _options_with_source_cash_reserve_target(
     if source_target is None:
         return options
 
+    if any(
+        value is None
+        for value in (
+            policy_context.cash_reserve_scope,
+            policy_context.cash_reserve_currency_basis,
+            policy_context.cash_reserve_authority,
+            policy_context.cash_reserve_consumer_override_allowed,
+        )
+    ):
+        raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_CASH_RESERVE_AUTHORITY_INCOMPLETE")
+
     if "cash_reserve_target_tolerance" in options_override:
         raise DpmCoreContextIncompleteError(
             "DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN"
@@ -531,6 +554,8 @@ def build_policy_context_from_core_mandate(
     *,
     tenant_id: Optional[str] = None,
 ) -> DpmCorePolicyContext:
+    if response.supportability.reason == "MANDATE_CASH_RESERVE_INVALID":
+        raise DpmCoreContextIncompleteError(response.supportability.reason)
     if response.supportability.state not in {"READY", "DEGRADED"}:
         raise DpmCoreContextIncompleteError(response.supportability.reason)
     if response.mandate_type.lower() != "discretionary":
@@ -548,6 +573,10 @@ def build_policy_context_from_core_mandate(
         mandate_effective_to=response.effective_to,
         mandate_lineage=response.lineage,
         cash_reserve_target_weight=response.rebalance_bands.cash_reserve_weight,
+        cash_reserve_scope=response.rebalance_bands.cash_reserve_scope,
+        cash_reserve_currency_basis=response.rebalance_bands.cash_reserve_currency_basis,
+        cash_reserve_authority=response.rebalance_bands.cash_reserve_authority,
+        cash_reserve_consumer_override_allowed=response.rebalance_bands.consumer_override_allowed,
     )
 
 

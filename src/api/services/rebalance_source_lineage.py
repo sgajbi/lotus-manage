@@ -37,6 +37,15 @@ def apply_source_lineage(
     result.lineage.source_mandate_effective_to = policy.mandate_effective_to
     result.lineage.source_mandate_lineage = policy.mandate_lineage
     result.lineage.source_cash_reserve_target_weight = policy.cash_reserve_target_weight
-    if policy.cash_reserve_target_weight is not None:
+    result.lineage.source_cash_reserve_scope = policy.cash_reserve_scope
+    result.lineage.source_cash_reserve_currency_basis = policy.cash_reserve_currency_basis
+    result.lineage.source_cash_reserve_authority = policy.cash_reserve_authority
+    result.lineage.source_cash_reserve_consumer_override_allowed = (
+        policy.cash_reserve_consumer_override_allowed
+    )
+    if (
+        policy.cash_reserve_target_weight is not None
+        and policy.cash_reserve_consumer_override_allowed is False
+    ):
         result.lineage.cash_reserve_override_authority = "NONE"
     return result
