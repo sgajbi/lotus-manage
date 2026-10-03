@@ -17,18 +17,28 @@ no dependency override or direct financial database write is used.
 - Forced API-process death and fresh interpreter recovery preserve exact sets, complete artifacts,
   owner/lineage rows and replay identity without additional runs or selections.
 
+The served OpenAPI no-action example has no economic run reference and typed BEFORE evaluation context.
+Complete ordered run/artifact/set/lineage rows, including metadata and duplicate multiplicity,
+are compared across recovery. Exact method statuses and diagnostic codes distinguish unavailable
+cost/Risk/ESG/regime authority from derived liquidity policy and no foreign-currency exposure.
+
 ## Independent Calculation
 
 USD 100,000 NAV = 975 shares × USD 100 + USD 2,500 cash. A 2% reserve target yields 980 shares,
 USD 2,000 cash and BUY 5. Liquidity's 3% floor yields 970 shares, USD 3,000 cash and SELL 5.
 Risk's 30% single-position cap yields 300 shares, USD 70,000 cash and SELL 675.
 Each method's actual artifact is checked against these independent quantity/cash/NAV expectations.
-Unavailable cost, tax, liquidity, Risk or other authority remains qualified rather than fabricated.
+Required unavailable authority remains qualified rather than fabricated; local derived policy and
+non-applicable foreign-currency exposure are identified separately.
 
 Falsification caught both representative regressions: dropping admitted run ownership fails the
 same-tenant HTTP read; bypassing shared hard-policy evaluation fails the restriction trace assertion.
 Both temporary mutations were restored before final validation. Initial test-authoring failures
 corrected the enabled authorization layer's 403 expectation and decoded stored JSON text for comparison.
+Review falsification additionally caught changed lineage metadata with identical run/artifact/set
+rows and a removed cost-authority reason despite unchanged DEGRADED status. The stale served
+no-action example failed an independent schema assertion before correction. All mutations and
+temporary diagnostics were removed before final proof.
 
 ## Reproduction And Limits
 

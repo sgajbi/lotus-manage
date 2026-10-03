@@ -6,15 +6,36 @@ Only supported APIs write financial records in the disposable database.
 
 from copy import deepcopy
 from decimal import Decimal
+import json
 import uuid
 
 import psycopg
+from psycopg.rows import dict_row
 import pytest
 
 from src.core.construction.vocabulary import ConstructionMethod
 from tests.integration.dpm.controlled_core import AS_OF, controlled_core, controlled_products
 from tests.integration.dpm.network_runtime import disposable_database, native_api
 from tests.shared.factories import valid_api_payload
+
+
+_QUALIFIED_METHODS = {
+    "COST_AWARE": ("DEGRADED", {"TRANSACTION_COST_CURVE_UNAVAILABLE"}),
+    "LIQUIDITY_AWARE": (
+        "PENDING_REVIEW",
+        {"LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES", "SETTLEMENT_AWARENESS_ENABLED"},
+    ),
+    "RISK_AWARE": ("DEGRADED", {"RISK_AUTHORITY_NOT_CONNECTED", "RISK_ENRICHMENT_UNAVAILABLE"}),
+    "ESG_AWARE": ("DEGRADED", {"SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE"}),
+    "CURRENCY_OVERLAY": (
+        "DEGRADED",
+        {
+            "CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE",
+            "CURRENCY_OVERLAY_POLICY_DERIVED_FROM_MANAGE_FX_RULES",
+        },
+    ),
+    "REGIME_STRESS_AWARE": ("DEGRADED", {"REGIME_SCENARIO_PACK_UNAVAILABLE"}),
+}
 
 
 def _headers(tenant):
@@ -124,15 +145,11 @@ def _assert_alternatives(client, owned, headers, mode, restricted):
         assert len(changes) == 1
         assert changes[0]["action"] == ("BUY" if shares > 975 else "SELL")
         assert Decimal(changes[0]["quantity"]) == abs(shares - 975)
-        if not restricted and row["method"] in {
-            "COST_AWARE",
-            "LIQUIDITY_AWARE",
-            "RISK_AWARE",
-            "ESG_AWARE",
-            "CURRENCY_OVERLAY",
-            "REGIME_STRESS_AWARE",
-        }:
-            assert row["method_status"] != "READY", row["method"]
+        if not restricted and row["method"] in _QUALIFIED_METHODS:
+            status, reasons = _QUALIFIED_METHODS[row["method"]]
+            assert row["method_status"] == status, row["method"]
+            actual = row["diagnostics"]["enrichment_summary"]["reason_codes"]
+            assert reasons <= set(actual), (row["method"], actual)
         if mode == "stateful":
             assert result["lineage"]["source_mandate_binding_version"] == 7
             trace = [r for r in row["constraint_trace"] if r["constraint"] == "CLIENT_RESTRICTION"]
@@ -162,36 +179,43 @@ def _assert_alternatives(client, owned, headers, mode, restricted):
     return artifacts
 
 
-def _stored_runs(dsn, tenant, artifacts):
-    with psycopg.connect(dsn) as connection:
+def _stored_snapshot(dsn, tenant, owned, artifacts):
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
         connection.execute("SET TRANSACTION READ ONLY")
-        rows = connection.execute(
-            "SELECT rebalance_run_id, tenant_id, result_json::jsonb FROM dpm_runs ORDER BY rebalance_run_id"
-        ).fetchall()
-        assert {row[0] for row in rows} == set(artifacts)
-        assert all(row[1] == tenant for row in rows)
-        assert all(result == artifacts[rid]["result"] for rid, _owner, result in rows)
-        assert {
-            row[0] for row in connection.execute("SELECT rebalance_run_id FROM dpm_run_artifacts")
-        } == set(artifacts)
-        edges = connection.execute(
-            "SELECT target_entity_id, tenant_id FROM dpm_lineage_edges"
-        ).fetchall()
-        assert {row[0] for row in edges} == set(artifacts)
-        assert all(row[1] == tenant for row in edges)
-        assert (
-            connection.execute("SELECT COUNT(*) FROM dpm_construction_alternative_sets").fetchone()[
-                0
-            ]
-            == 1
+        rows = connection.execute("SELECT * FROM dpm_runs ORDER BY rebalance_run_id").fetchall()
+        assert {row["rebalance_run_id"] for row in rows} == set(artifacts)
+        assert all(row["tenant_id"] == tenant for row in rows)
+        assert all(
+            json.loads(row["result_json"]) == artifacts[row["rebalance_run_id"]]["result"]
+            for row in rows
         )
+        stored_artifacts = connection.execute(
+            "SELECT * FROM dpm_run_artifacts ORDER BY rebalance_run_id"
+        ).fetchall()
+        assert {row["rebalance_run_id"] for row in stored_artifacts} == set(artifacts)
+        assert all(
+            json.loads(row["artifact_json"]) == artifacts[row["rebalance_run_id"]]
+            for row in stored_artifacts
+        )
+        edges = connection.execute(
+            "SELECT * FROM dpm_lineage_edges ORDER BY source_entity_id, edge_type, "
+            "target_entity_id, created_at, metadata_json, tenant_id"
+        ).fetchall()
+        assert {row["target_entity_id"] for row in edges} == set(artifacts)
+        assert all(row["tenant_id"] == tenant for row in edges)
+        sets = connection.execute(
+            "SELECT * FROM dpm_construction_alternative_sets ORDER BY alternative_set_id"
+        ).fetchall()
+        assert len(sets) == 1 and sets[0]["tenant_id"] == tenant
+        assert sets[0]["payload_json"] == owned
         assert (
             connection.execute(
-                "SELECT COUNT(*) FROM dpm_construction_alternative_selections"
-            ).fetchone()[0]
+                "SELECT COUNT(*) AS count FROM dpm_construction_alternative_selections"
+            ).fetchone()["count"]
             == 0
         )
-        return rows
+        # Lists preserve multiplicity; compare every retained field, not only IDs/owners.
+        return {"runs": rows, "artifacts": stored_artifacts, "edges": edges, "sets": sets}
 
 
 @pytest.mark.parametrize(
@@ -221,10 +245,16 @@ def test_all_method_owned_artifacts_and_policy_survive_process_replacement(mode,
                 )
                 owned = _call(client, "POST", generate, headers, request)
                 artifacts = _assert_alternatives(client, owned, headers, mode, restricted)
+                schema = _call(client, "GET", "/openapi.json", headers)
+                example = schema["paths"][generate]["post"]["responses"]["200"]["content"][
+                    "application/json"
+                ]["example"]["alternatives"][0]
+                assert example.get("rebalance_run_id") is None
+                assert example["evaluation_context"]["state_basis"] == "BEFORE"
                 assert _call(client, "POST", generate, headers, request) == owned
                 changed = {**request, "methods": ["HEURISTIC_EXPLAINABLE"]}
                 _call(client, "POST", generate, headers, changed, expected=409)
-                before = _stored_runs(dsn, tenant, artifacts)
+                before = _stored_snapshot(dsn, tenant, owned, artifacts)
                 old_pid = original.pid
                 original.kill()
                 original.join(10)
@@ -245,7 +275,7 @@ def test_all_method_owned_artifacts_and_policy_survive_process_replacement(mode,
                 )
                 assert _call(client, "POST", generate, headers, request) == owned
                 assert _assert_alternatives(client, owned, headers, mode, restricted) == artifacts
-            assert _stored_runs(dsn, tenant, artifacts) == before
+            assert _stored_snapshot(dsn, tenant, owned, artifacts) == before
         source_calls = list(observations.queue)
         assert all(call[2] == tenant for call in source_calls)
         assert bool(source_calls) == (mode == "stateful")
