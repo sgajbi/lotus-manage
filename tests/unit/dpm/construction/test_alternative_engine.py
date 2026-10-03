@@ -232,6 +232,22 @@ def test_explicit_no_action_contract_rejects_action_material(field: str, value: 
         ConstructionAlternative.model_validate(payload)
 
 
+@pytest.mark.parametrize("amount", ["10.00", "-10.00", "0.00"])
+def test_no_action_comparator_rejects_transaction_cost_estimates(amount: str) -> None:
+    payload = build_do_nothing_baseline(result=_ready_rebalance_result()).model_dump(mode="json")
+    payload["comparison_metrics"]["estimated_transaction_cost"] = {
+        "amount": amount,
+        "currency": "USD",
+    }
+    with pytest.raises(ValidationError, match="CONSTRUCTION_NO_ACTION_ECONOMICS_MISMATCH"):
+        ConstructionAlternative.model_validate(payload)
+
+
+def test_no_action_comparator_has_no_transaction_cost_estimate() -> None:
+    baseline = build_do_nothing_baseline(result=_ready_rebalance_result())
+    assert baseline.comparison_metrics.estimated_transaction_cost is None
+
+
 def test_rebalance_result_proposed_changes_preserve_constraint_labels() -> None:
     result = _ready_rebalance_result()
     result = result.model_copy(
