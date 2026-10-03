@@ -379,6 +379,12 @@ Functional behavior:
   optional correlation id. It does not execute trades.
 - Unknown alternative sets and unknown alternative ids return governed `404` errors.
 
+Native [all-method construction proof](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/supportability/test_construction_method_network.py)
+checks stateless/stateful owner-scoped run, artifact and support-bundle reads, blocked selection,
+independent USD economics and exact replay after forced API-process replacement against PostgreSQL.
+The stateful producer serves controlled Core contracts; missing method authority remains qualified.
+This does not certify live Core ingestion, downstream instruction release, bank IAM or capacity.
+
 ```mermaid
 flowchart LR
     Caller[Gateway, operator, or certification probe] --> Generate[POST generate]
