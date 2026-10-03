@@ -487,10 +487,7 @@ def _options_with_source_cash_reserve_target(
         default_valuation_mode=default_valuation_mode,
     )
     source_target = policy_context.cash_reserve_target_weight
-    if source_target is None:
-        return options
-
-    if any(
+    if source_target is not None and any(
         value is None
         for value in (
             policy_context.cash_reserve_scope,
@@ -501,16 +498,22 @@ def _options_with_source_cash_reserve_target(
     ):
         raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_CASH_RESERVE_AUTHORITY_INCOMPLETE")
 
-    if "cash_reserve_target_tolerance" in options_override:
-        raise DpmCoreContextIncompleteError(
-            "DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN"
-        )
-
-    for field_name in ("cash_reserve_target_weight", "min_cash_buffer_pct"):
-        if field_name not in options_override:
-            continue
-        if getattr(options, field_name) != source_target:
+    # No-override authority also protects an absent target; None is not zero.
+    if policy_context.cash_reserve_consumer_override_allowed is False:
+        if "cash_reserve_target_tolerance" in options_override:
+            raise DpmCoreContextIncompleteError(
+                "DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN"
+            )
+        if (
+            "cash_reserve_target_weight" in options_override
+            and options.cash_reserve_target_weight != source_target
+        ):
             raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT")
+
+    if source_target is None:
+        return options
+    if "min_cash_buffer_pct" in options_override and options.min_cash_buffer_pct != source_target:
+        raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT")
     return options.model_copy(update={"cash_reserve_target_weight": source_target})
 
 

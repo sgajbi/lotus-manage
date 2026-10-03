@@ -42,6 +42,10 @@ zero. Missing authority or `MANDATE_CASH_RESERVE_INVALID` returns 424 before fin
 writes. Invalid-reserve validation belongs to shared binding ingestion, including mandate refresh;
 restore valid source evidence, not a caller override. Old artifacts remain readable.
 
+No-override authority also rejects a caller-supplied target when the source target is absent,
+including explicit zero. The independent request-level `min_cash_buffer_pct` remains available
+in that case; it does not create a mandate target or reserve-target rule.
+
 The target is not a hard cash band. Absolute cash-weight tolerance is 0.0001; larger post-trade
 deviation requires review. With USD NAV 100,000, one security and no costs:
 

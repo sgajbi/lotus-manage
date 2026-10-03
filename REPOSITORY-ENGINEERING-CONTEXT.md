@@ -561,8 +561,10 @@ Most relevant current governance:
     consumer-override permission; never infer these facts locally. Invalid legacy targets are
     incomplete, not ordinary absence. Reject them at shared binding DTO ingestion so mandate
     refresh cannot persist invalid evidence before rebalance policy resolution. Retained legacy
-    contexts remain readable, but cannot execute
-    a non-null source target without its authority metadata. Native HTTP/PostgreSQL reserve proof
+    contexts remain readable, but cannot execute a non-null source target without its authority
+    metadata. Enforce explicit no-override authority even for an absent source target; preserve the
+    separately modeled request-level cash buffer without inventing a mandate target.
+    Native HTTP/PostgreSQL reserve proof
     uses `tests/integration/dpm/supportability/test_source_cash_reserve_network.py` with the controlled
     source fixture; it is not real Core, bank IAM or capacity evidence. Wave stateless-input
     propagation does not prove enforcement of the Core binding; that acceptance remains in #733.

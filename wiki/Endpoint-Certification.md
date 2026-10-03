@@ -1293,6 +1293,8 @@ Functional coverage:
 - reserve lineage preserves the producer's total-portfolio market-value scope, portfolio-base-
   currency basis, mandate authority and explicit no-override permission. Missing authority or
   `MANDATE_CASH_RESERVE_INVALID` fails at shared binding ingestion, including mandate refresh.
+  No-override authority protects absent targets too; the independent request-level cash buffer
+  remains available without creating a mandate target.
   The [native HTTP/PostgreSQL reserve tests](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/supportability/test_source_cash_reserve_network.py)
   reconcile zero, absent, 2%, 50%, constrained and whole-share residual cases against a controlled
   producer, including artifact replay after process replacement and foreign-tenant refusal.

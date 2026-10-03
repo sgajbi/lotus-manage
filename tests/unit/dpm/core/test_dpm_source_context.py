@@ -146,27 +146,6 @@ def test_core_context_rejects_conflicting_cash_reserve_override(override_name: s
         )
 
 
-@pytest.mark.parametrize("batch", [False, True])
-def test_core_context_rejects_caller_cash_reserve_tolerance_for_sourced_target(batch: bool):
-    context = _core_context(cash_reserve_target_weight=Decimal("0.02"))
-    with pytest.raises(
-        DpmCoreContextIncompleteError,
-        match="DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN",
-    ):
-        if batch:
-            build_batch_rebalance_request_from_core_context(
-                context=context,
-                scenarios={
-                    "conflict": SimulationScenario(options={"cash_reserve_target_tolerance": "1"})
-                },
-            )
-        else:
-            build_rebalance_request_from_core_context(
-                context=context,
-                options_override={"cash_reserve_target_tolerance": "1"},
-            )
-
-
 def test_core_context_accepts_exact_cash_reserve_restatement_and_preserves_explicit_zero():
     exact = build_rebalance_request_from_core_context(
         context=_core_context(cash_reserve_target_weight=Decimal("0.02")),
@@ -181,6 +160,40 @@ def test_core_context_accepts_exact_cash_reserve_restatement_and_preserves_expli
     assert zero.options.cash_reserve_target_weight == Decimal("0")
 
 
+@pytest.mark.parametrize("batch", [False, True])
+@pytest.mark.parametrize("target", ["0", "0.02"])
+def test_absent_source_target_does_not_authorize_a_caller_target(batch: bool, target: str):
+    context = _core_context()
+    override = {"cash_reserve_target_weight": target}
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MANDATE_CASH_RESERVE_OVERRIDE_CONFLICT",
+    ):
+        if batch:
+            build_batch_rebalance_request_from_core_context(
+                context=context, scenarios={"caller": SimulationScenario(options=override)}
+            )
+        else:
+            build_rebalance_request_from_core_context(context=context, options_override=override)
+
+
+@pytest.mark.parametrize("target", [None, Decimal("0.02")])
+@pytest.mark.parametrize("batch", [False, True])
+def test_explicit_no_override_forbids_tolerance_even_without_a_target(target, batch: bool):
+    context = _core_context(cash_reserve_target_weight=target)
+    override = {"cash_reserve_target_tolerance": "1"}
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MANDATE_CASH_RESERVE_TOLERANCE_OVERRIDE_FORBIDDEN",
+    ):
+        if batch:
+            build_batch_rebalance_request_from_core_context(
+                context=context, scenarios={"caller": SimulationScenario(options=override)}
+            )
+        else:
+            build_rebalance_request_from_core_context(context=context, options_override=override)
+
+
 def test_core_context_without_source_cash_reserve_keeps_request_level_buffer():
     request = build_rebalance_request_from_core_context(
         context=_core_context(cash_reserve_target_weight=None),
@@ -189,6 +202,17 @@ def test_core_context_without_source_cash_reserve_keeps_request_level_buffer():
 
     assert request.options.cash_reserve_target_weight is None
     assert request.options.min_cash_buffer_pct == Decimal("0.03")
+
+    batch = build_batch_rebalance_request_from_core_context(
+        context=_core_context(),
+        scenarios={
+            "buffer": SimulationScenario(
+                options={"min_cash_buffer_pct": "0.03", "cash_reserve_target_weight": None}
+            )
+        },
+    )
+    assert batch.scenarios["buffer"].options["cash_reserve_target_weight"] is None
+    assert batch.scenarios["buffer"].options["min_cash_buffer_pct"] == "0.03"
 
 
 def test_core_context_transforms_stateful_batch_scenarios():
