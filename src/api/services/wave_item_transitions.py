@@ -7,7 +7,7 @@ def approve_item(
     reason_code: str,
     comment: str | None,
 ) -> DpmRebalanceWaveItem:
-    if item.state not in {"SELECTED", "PROOF_PACK_READY"}:
+    if item.state not in {"SELECTED", "PROOF_PACK_READY"} or _proof_pack_blocked(item):
         return item
     diagnostics = {
         **item.diagnostics,
@@ -32,7 +32,7 @@ def stage_item(
     reason_code: str,
     comment: str | None,
 ) -> DpmRebalanceWaveItem:
-    if item.state != "APPROVED":
+    if item.state != "APPROVED" or _proof_pack_blocked(item):
         return item
     diagnostics = {
         **item.diagnostics,
@@ -58,7 +58,7 @@ def handoff_item(
     reason_code: str,
     comment: str | None,
 ) -> DpmRebalanceWaveItem:
-    if item.state != "STAGED":
+    if item.state != "STAGED" or _proof_pack_blocked(item):
         return item
     diagnostics = {
         **item.diagnostics,
@@ -76,6 +76,10 @@ def handoff_item(
         },
         deep=True,
     )
+
+
+def _proof_pack_blocked(item: DpmRebalanceWaveItem) -> bool:
+    return item.diagnostics.get("proof_pack_state") == "BLOCKED"
 
 
 def cancel_item(

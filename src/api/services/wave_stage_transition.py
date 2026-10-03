@@ -17,7 +17,11 @@ def build_staged_wave(
     correlation_id: str,
 ) -> DpmRebalanceWave:
     staged_items = [stage_item(item, actor_id, reason_code, comment) for item in wave.items]
-    staged_count = sum(1 for item in staged_items if item.state == "STAGED")
+    staged_count = sum(
+        1
+        for item in staged_items
+        if item.state == "STAGED" and item.diagnostics.get("proof_pack_state") != "BLOCKED"
+    )
     if staged_count == 0:
         raise DpmWaveValidationError(
             "DPM_WAVE_STAGE_NO_ELIGIBLE_ITEMS",

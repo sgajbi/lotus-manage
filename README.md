@@ -275,6 +275,7 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   changes. Its typed `evaluation_context` references only the source run's `BEFORE` state for
   audit; it is not an executable proposal. Selection projects only the chosen alternative's
   proposals. No-action proof packs have no economic run and remain blocked for trade release.
+  Blocked proof packs remain visible for audit and cannot advance wave approval, staging or handoff.
   Historical borrowed references are interpreted as evaluation context without rewriting stored
   records; inconsistent historical proof packs cannot be replayed or released as trade authority.
 
