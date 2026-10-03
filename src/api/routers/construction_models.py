@@ -25,7 +25,8 @@ CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE = {
             "method": "DO_NOTHING_BASELINE",
             "method_status": "READY",
             "summary": "No-action baseline keeps current holdings unchanged for comparison.",
-            "rebalance_run_id": "rr_001",
+            "rebalance_run_id": None,
+            "evaluation_context": {"rebalance_run_id": "rr_001", "state_basis": "BEFORE"},
             "objective_trace": [],
             "constraint_trace": [],
             "comparison_metrics": {
