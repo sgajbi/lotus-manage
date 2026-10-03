@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from pytest import MonkeyPatch
+from src.core.common.canonical import hash_canonical_payload
 
 from src.api.services import wave_simulation_operations
 from src.core.waves.models import (
@@ -108,7 +109,7 @@ def _items() -> list[DpmWaveSimulationItemRecord]:
             ordinal=index,
             portfolio_id=f"portfolio-{index}",
             input_payload={"portfolio_id": f"portfolio-{index}"},
-            input_hash=f"sha256:input-{index}",
+            input_hash=hash_canonical_payload({"portfolio_id": f"portfolio-{index}"}),
             source_identity_hash=f"sha256:source-{index}",
             updated_at=NOW,
         )

@@ -734,7 +734,9 @@ artifact-commit recovery, and a 100-item concurrency-4 sequential-oracle compari
 issue #715 load probe records a bounded workstation envelope only; it is not production capacity,
 an OMS, an order/instruction publisher, fill/settlement evidence, or authoritative core booking.
 Stateful wave items resolve Core inputs from persisted scope and freeze mandate policy/source
-context before durable admission. Exact retries never refetch Core; source-version and input-hash
+context before durable admission. Tenant/key guards serialize concurrent source resolution;
+foreign binding scope and deleted/replaced financial payloads fail closed. Exact retries never
+refetch Core; source-version and input-hash
 conflicts fail closed. Controlled HTTP proof uses explicitly caller-supplied synthetic complete
 health; Core cash-band/turnover gaps still prevent source-backed wave readiness. See the
 [source-bound wave evidence](https://github.com/sgajbi/lotus-manage/blob/main/docs/evidence/issue-733-source-bound-waves/README.md).

@@ -202,6 +202,7 @@ def controlled_core(
     invalid_legacy=False,
     starting_shares=100,
     product_overrides=None,
+    response_hook=None,
 ):
     products = deepcopy(controlled_products(portfolio, reserve, price))
     positions = products["core-snapshot"]["sections"]["positions_baseline"]
@@ -231,6 +232,8 @@ def controlled_core(
             key = path.rsplit("/", 1)[-1]
             payload = (product_overrides or {}).get(key, products.get(key))
             observations.put((path, body, self.headers.get("X-Tenant-Id")))
+            if response_hook is not None:
+                response_hook(path, payload)
             self.send_response(200 if payload else 404)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

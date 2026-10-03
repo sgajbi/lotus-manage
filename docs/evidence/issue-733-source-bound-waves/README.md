@@ -12,7 +12,10 @@ checked mandate revision must match. Caller snapshots, mixed modes, arbitrary so
 unknown options and changed source controls are refused before financial/admission writes.
 
 Durable admission retains the effective financial request, full source context and original options
-in existing JSON storage. Exact retries never refetch Core. Workers verify input/context hashes;
+in existing JSON storage. Tenant/key guards serialize concurrent source resolution and admission;
+PostgreSQL coordination sessions release locks on failure or process loss. Exact retries never
+refetch Core. Binding portfolio, mandate and model identities must match before downstream reads.
+Workers verify whole input/context hashes before the missing-input shortcut;
 corruption is non-retryable. Existing leases, fencing, concurrency budgets and stateless hashes are
 unchanged. Synchronous simulation remains bounded and lacks durable admission/recovery guarantees.
 
@@ -32,6 +35,11 @@ financial rows are injected.
   leave no financial runs or admitted operations. Foreign artifact reads return 404.
 - Unit guards prove missing revision, altered frozen economics and missing/invalid/context-hash
   evidence fail closed. Existing wave regression suites retain stateless behavior.
+- Concurrent native HTTP admission observes the second PostgreSQL session waiting on the key guard.
+  Changing Core to revision 8 while the winner owns revision 7 still yields one source resolution,
+  one operation/item and exact replay; frozen worker figures remain BUY 5 / 980 shares / 2,000 cash.
+- Foreign binding portfolio/mandate/model inputs return 424 with no financial/admission writes.
+  Deleted or replaced financial payloads become non-retryable corruption, not successful blockage.
 
 ## Readiness Dependency
 

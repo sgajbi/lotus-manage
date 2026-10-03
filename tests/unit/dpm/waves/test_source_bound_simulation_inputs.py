@@ -201,7 +201,16 @@ def test_stateless_freezing_preserves_legacy_payload(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "mutation", ["portfolio", "tenant", "mandate", "model", "version", "missing_version"]
+    "mutation",
+    [
+        "portfolio",
+        "tenant",
+        "mandate",
+        "model",
+        "version",
+        "missing_version",
+        "missing_binding_version",
+    ],
 )
 def test_resolution_refuses_different_checked_source_revision(monkeypatch, mutation):
     source, wave = _source(), _wave()
@@ -211,6 +220,8 @@ def test_resolution_refuses_different_checked_source_revision(monkeypatch, mutat
         source.context.source_lineage.model_portfolio_id = "other"
     elif mutation == "missing_version":
         wave.items[0].source_refs = []
+    elif mutation == "missing_binding_version":
+        source.context.policy_context.mandate_binding_version = None
     else:
         field = {
             "tenant": "tenant_id",
@@ -308,7 +319,10 @@ def test_stateful_resolution_refuses_missing_resolver_evidence(monkeypatch):
         )
 
 
-def test_worker_publishes_non_retryable_corruption_without_financial_execution(monkeypatch):
+@pytest.mark.parametrize("mutation", ["cash", "missing_input", "invalid_input"])
+def test_worker_publishes_non_retryable_corruption_without_financial_execution(
+    monkeypatch, mutation
+):
     source = _source()
     monkeypatch.setattr(
         "src.api.services.rebalance_simulation_service.resolve_rebalance_request_envelope",
@@ -341,7 +355,14 @@ def test_worker_publishes_non_retryable_corruption_without_financial_execution(m
         claimed_at=now,
         lease_expires_at=now + timedelta(minutes=1),
     )[0]
-    claim.input_payload["stateless_input"]["portfolio_snapshot"]["cash_balances"][0]["amount"] = "1"
+    if mutation == "cash":
+        claim.input_payload["stateless_input"]["portfolio_snapshot"]["cash_balances"][0][
+            "amount"
+        ] = "1"
+    elif mutation == "missing_input":
+        del claim.input_payload["stateless_input"]
+    else:
+        claim.input_payload["stateless_input"] = "invalid"
 
     def unexpected(**_kwargs):
         pytest.fail("Corrupt admitted inputs must not enter financial calculation")

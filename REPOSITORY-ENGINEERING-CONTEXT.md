@@ -569,7 +569,11 @@ Most relevant current governance:
     source fixture; it is not real Core, bank IAM or capacity evidence. Wave stateful item inputs
     derive scope from the persisted wave and reuse this resolver. Durable admission freezes the
     effective request, full source context and original options; workers validate hashes and exact
-    retries never refetch Core. Stateless hashes remain unchanged. Source-ready items require a
+    retries never refetch Core. Serialize source resolution/admission by tenant/idempotency key
+    using the repository guard; PostgreSQL uses a separate coordination session, not a financial
+    transaction held across network I/O. Validate binding portfolio/mandate/model identity before
+    downstream reads; verify whole input hashes before accepting missing financial inputs.
+    Stateless hashes remain unchanged. Source-ready items require a
     matching known mandate revision; review-required health is not promoted. Native wave proof
     uses separately identified complete caller-supplied synthetic health, not Core ingestion;
     current source cash-band/turnover gaps still block real source-backed wave qualification.

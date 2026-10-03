@@ -67,7 +67,9 @@ For synchronous or durable waves, supply an item selector with `input_mode=state
 selectors. Manage derives scope from the checked wave and resolves Core inputs before calculation
 or admission. A changed checked mandate revision returns409; missing authority or conflicting
 controls return424. Durable workers/retries consume frozen inputs without refetching Core;
-hash corruption becomes a non-retryable failure. Existing readiness/approval gates remain intact.
+hash corruption, including missing financial payloads, becomes a non-retryable failure.
+Tenant/key admission guards serialize concurrent resolution; foreign binding scope returns424.
+Existing readiness/approval gates remain intact.
 Core's missing cash-band/turnover applicability leaves health review-required; fix source data,
 not readiness flags. [Wave proof and limitations](evidence/issue-733-source-bound-waves/README.md).
 

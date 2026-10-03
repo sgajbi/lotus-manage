@@ -1351,7 +1351,12 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
     path = request.url.path
     if path.endswith("/mandate-binding"):
         payload = _mandate_binding_payload()
-        payload["effective_from"] = json.loads(request.content)["as_of_date"]
+        selectors = json.loads(request.content)
+        payload["effective_from"] = selectors["as_of_date"]
+        # Two deliberately configured fixture mandates, not arbitrary identity echo.
+        if selectors.get("mandate_id") == "mandate_balanced_discretionary":
+            payload["mandate_id"] = "mandate_balanced_discretionary"
+            payload["model_portfolio_id"] = "model_balanced_sgd"
         return httpx.Response(200, json=payload)
     if path.endswith("/targets"):
         payload = _model_portfolio_target_payload()

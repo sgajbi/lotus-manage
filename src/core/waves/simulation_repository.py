@@ -32,6 +32,11 @@ def wave_simulation_idempotency_key(*, tenant_id: str, idempotency_key: str) -> 
 
 
 class DpmWaveSimulationRepository(DpmWaveRepository, Protocol):
+    def simulation_admission_guard(
+        self, *, tenant_id: str, idempotency_key_hash: str
+    ) -> AbstractContextManager[None]:
+        """Serialize immutable source resolution and admission for one tenant/key."""
+
     def simulation_reconciliation_guard(
         self, *, tenant_id: str, wave_id: str
     ) -> AbstractContextManager[None]:
