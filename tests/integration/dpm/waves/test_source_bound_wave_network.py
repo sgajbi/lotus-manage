@@ -254,6 +254,16 @@ def test_source_bound_wave_refuses_changed_authority_and_source_before_admission
                 body["item_inputs"][0]["options_override"] = options
                 rejected = _call(client, "POST", path, _headers(tenant), body, expected=status)
                 assert "ADVERSARIAL_MARKER" not in str(rejected)
+            for field, foreign in [
+                ("portfolio_id", "other-portfolio"),
+                ("model_portfolio_id", "other-model"),
+                ("mandate_id", "other-mandate"),
+            ]:
+                binding = controlled_products(portfolio)["mandate-binding"]
+                binding[field] = foreign
+                overrides["mandate-binding"] = binding
+                rejected = _call(client, "POST", path, _headers(tenant), _input(wave), expected=424)
+                assert rejected["detail"] == "DPM_CORE_CONTEXT_INCOMPLETE"
             binding = controlled_products(portfolio)["mandate-binding"]
             binding["binding_version"] = 8
             overrides["mandate-binding"] = binding

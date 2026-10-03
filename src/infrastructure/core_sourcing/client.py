@@ -193,6 +193,11 @@ class DpmCoreResolverClient:
             include_policy_pack=True,
             correlation_id=correlation_id,
         )
+        if (
+            stateful_input.model_portfolio_id is not None
+            and stateful_input.model_portfolio_id != mandate.model_portfolio_id
+        ):
+            raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_MODEL_IDENTITY_MISMATCH")
         policy_context = build_policy_context_from_core_mandate(
             mandate,
             tenant_id=stateful_input.tenant_id,
@@ -489,6 +494,10 @@ class DpmCoreResolverClient:
             incomplete_code="DPM_CORE_MANDATE_BINDING_INCOMPLETE",
         )
         binding = DpmCoreMandateBindingResponse.model_validate(response)
+        if binding.portfolio_id != portfolio_id or (
+            mandate_id is not None and binding.mandate_id != mandate_id
+        ):
+            raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_BINDING_IDENTITY_MISMATCH")
         if binding.effective_from > as_of_date or (
             binding.effective_to is not None and binding.effective_to < as_of_date
         ):

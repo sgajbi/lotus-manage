@@ -11,6 +11,7 @@ from threading import Barrier, Lock
 import pytest
 
 from src.api.request_models import RebalanceRequest
+from src.core.common.canonical import hash_canonical_payload
 from src.api.services import wave_simulation_operations
 from src.api.services.wave_simulation_item import DpmWaveSimulationInput, simulate_item
 from src.core.construction.vocabulary import ConstructionMethod
@@ -85,7 +86,7 @@ def _admit(
             ordinal=index,
             portfolio_id=item.portfolio_id,
             input_payload={"portfolio_id": item.portfolio_id},
-            input_hash=f"sha256:input-{index}",
+            input_hash=hash_canonical_payload({"portfolio_id": item.portfolio_id}),
             source_identity_hash=f"sha256:item-source-{index}",
             updated_at=now,
         )

@@ -489,7 +489,9 @@ lineage. Successful target scaling remains ready; lot or rounding deviation is r
 rather than a fabricated cash-band result.
 Wave `/simulate` and `/simulation-operations` accept item `input_mode=stateful`; scope comes from
 the persisted wave, not a caller snapshot. Durable admission freezes Core inputs/source context;
-workers and exact retries never refetch Core. Checked mandate-version changes return409, binding
+workers and exact retries never refetch Core. Tenant/key guards serialize concurrent admission;
+binding portfolio/mandate/model mismatches fail before downstream reads. Whole payload hashes
+are verified before missing-input handling. Checked mandate-version changes return409, binding
 authority conflicts424. Review-required health remains blocked. Core cash-band/turnover source gaps
 still prevent live source-backed wave qualification; see the
 [wave evidence](https://github.com/sgajbi/lotus-manage/blob/main/docs/evidence/issue-733-source-bound-waves/README.md).

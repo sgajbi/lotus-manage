@@ -21,6 +21,9 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Review draft: `review/lotus-manage/MANAGE-733-CORE-TARGET-HANDOFF-20261003.md` semantics adopted;
   its earlier candidate revision is superseded by the accepted Core main above.
 - Earlier single/batch acceptance did not establish source-bound wave enforcement.
+- PR #775 review: foreign binding scope and missing-input hash bypass reproduced and fixed.
+  Serialize tenant/key source admission; native HTTP/PostgreSQL contention proves one resolution
+  and winner replay despite a changed Core revision. Red-first corruption/concurrency evidence retained.
   Controlled producer proof is not actual Core, bank IAM, capacity or booking proof.
 - Guidance: repository context/docs/wiki updated; shared skills, routing and AGENTS unchanged.
 - Review P1: native HTTP reproduced invalid-reserve mandate refresh returning200 before correction.

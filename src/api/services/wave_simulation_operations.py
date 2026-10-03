@@ -55,6 +55,35 @@ def admit_wave_simulation_operation(
     max_attempts: int,
     repository: DpmWaveSimulationRepository,
 ) -> tuple[DpmWaveSimulationOperation, bool]:
+    key_hash = wave_simulation_idempotency_key(tenant_id=tenant_id, idempotency_key=idempotency_key)
+    with repository.simulation_admission_guard(tenant_id=tenant_id, idempotency_key_hash=key_hash):
+        return _admit_wave_simulation_operation(
+            wave_id=wave_id,
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+            idempotency_key=idempotency_key,
+            item_payloads=item_payloads,
+            methods=methods,
+            max_concurrency=max_concurrency,
+            max_attempts=max_attempts,
+            repository=repository,
+        )
+
+
+def _admit_wave_simulation_operation(
+    *,
+    wave_id: str,
+    tenant_id: str,
+    actor_id: str,
+    correlation_id: str,
+    idempotency_key: str,
+    item_payloads: list[dict[str, object]],
+    methods: list[ConstructionMethod] | None,
+    max_concurrency: int,
+    max_attempts: int,
+    repository: DpmWaveSimulationRepository,
+) -> tuple[DpmWaveSimulationOperation, bool]:
     wave = repository.get_wave(wave_id=wave_id, tenant_id=tenant_id)
     if wave is None:
         raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
@@ -673,11 +702,11 @@ def _wave_item_source_identity_hash(*, wave: DpmRebalanceWave, item: DpmRebalanc
 def _simulation_inputs_for_claim(
     claim: DpmWaveSimulationItemClaim,
 ) -> dict[str, RebalanceRequest | DpmWaveSimulationInput]:
+    if hash_canonical_payload(claim.input_payload) != claim.input_hash:
+        raise DpmWaveFrozenInputIntegrityError("DPM_WAVE_SIMULATION_INPUT_HASH_CONFLICT")
     stateless_payload = claim.input_payload.get("stateless_input")
     if not isinstance(stateless_payload, dict):
         return {}
-    if hash_canonical_payload(claim.input_payload) != claim.input_hash:
-        raise DpmWaveFrozenInputIntegrityError("DPM_WAVE_SIMULATION_INPUT_HASH_CONFLICT")
     return {claim.wave_item_id: simulation_input_from_payload(claim.input_payload)}
 
 

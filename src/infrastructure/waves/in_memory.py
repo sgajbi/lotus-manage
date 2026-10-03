@@ -44,8 +44,21 @@ class InMemoryDpmWaveRepository(DpmWaveSimulationPublicationMixin, DpmWaveReposi
 
     @contextmanager
     def simulation_reconciliation_guard(self, *, tenant_id: str, wave_id: str) -> Iterator[None]:
+        with self._simulation_coordination_guard(key=(tenant_id, wave_id)):
+            yield
+
+    @contextmanager
+    def simulation_admission_guard(
+        self, *, tenant_id: str, idempotency_key_hash: str
+    ) -> Iterator[None]:
+        key = (tenant_id, f"admission:{idempotency_key_hash}")
+        with self._simulation_coordination_guard(key=key):
+            yield
+
+    @contextmanager
+    def _simulation_coordination_guard(self, *, key: tuple[str, str]) -> Iterator[None]:
         with self._lock:
-            guard = self._simulation_reconciliation_locks.setdefault((tenant_id, wave_id), Lock())
+            guard = self._simulation_reconciliation_locks.setdefault(key, Lock())
         with guard:
             yield
 

@@ -31,6 +31,19 @@ class PostgresDpmWaveSimulationMixin(DpmWaveSimulationPublicationMixin):
     @contextmanager
     def simulation_reconciliation_guard(self, *, tenant_id: str, wave_id: str) -> Iterator[None]:
         key = derived_identity("wave_projection", tenant_id, wave_id)
+        with self._simulation_coordination_guard(key=key):
+            yield
+
+    @contextmanager
+    def simulation_admission_guard(
+        self, *, tenant_id: str, idempotency_key_hash: str
+    ) -> Iterator[None]:
+        key = derived_identity("wave_admission", tenant_id, idempotency_key_hash)
+        with self._simulation_coordination_guard(key=key):
+            yield
+
+    @contextmanager
+    def _simulation_coordination_guard(self, *, key: str) -> Iterator[None]:
         with closing(self._connect_coordination()) as connection:  # type: ignore[attr-defined]
             connection.execute(
                 "SELECT pg_advisory_lock(hashtextextended(%s, 0))",
