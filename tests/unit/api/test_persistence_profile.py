@@ -30,6 +30,30 @@ def test_profile_name_normalizes_to_production(monkeypatch: pytest.MonkeyPatch) 
     assert profile.app_persistence_profile_name() == "PRODUCTION"
 
 
+@pytest.mark.parametrize("value", ["LOCAL", " local ", "PRODUCTION", " production "])
+def test_profile_name_accepts_only_documented_profiles(monkeypatch, value):
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", value)
+    assert profile.app_persistence_profile_name() == value.strip().upper()
+
+
+@pytest.mark.parametrize("value", ["", " \t", "PRODUCITON", "prod", "test", "secret-value"])
+def test_invalid_profile_refuses_admission_before_dependency_checks(monkeypatch, value):
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", value)
+    monkeypatch.setattr(
+        profile,
+        "_persistence_profile_guardrail_error",
+        lambda: pytest.fail("invalid profile consulted persistence dependencies"),
+    )
+
+    for admission in (
+        profile.app_persistence_profile_name,
+        profile.validate_persistence_profile_guardrails,
+    ):
+        with pytest.raises(RuntimeError) as failure:
+            admission()
+        assert str(failure.value) == "PERSISTENCE_PROFILE_UNSUPPORTED"
+
+
 def test_policy_pack_catalog_required_in_profile() -> None:
     assert profile.policy_pack_catalog_required_in_profile() is False
 

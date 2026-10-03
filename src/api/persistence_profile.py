@@ -21,7 +21,9 @@ _LOCAL_PROFILE = "LOCAL"
 
 def app_persistence_profile_name() -> str:
     profile = os.getenv("APP_PERSISTENCE_PROFILE", _LOCAL_PROFILE).strip().upper()
-    return _PRODUCTION_PROFILE if profile == _PRODUCTION_PROFILE else _LOCAL_PROFILE
+    if profile not in {_LOCAL_PROFILE, _PRODUCTION_PROFILE}:
+        raise RuntimeError("PERSISTENCE_PROFILE_UNSUPPORTED")
+    return profile
 
 
 def policy_pack_catalog_required_in_profile() -> bool:
