@@ -197,7 +197,6 @@ def _products(portfolio, reserve, price):
 def controlled_core(*, portfolio, reserve="0.02", price=100, invalid_legacy=False):
     products = deepcopy(_products(portfolio, reserve, price))
     if invalid_legacy:
-        products["mandate-binding"]["rebalance_bands"]["cash_reserve_weight"] = None
         products["mandate-binding"]["supportability"] = {
             "state": "INCOMPLETE",
             "reason": "MANDATE_CASH_RESERVE_INVALID",

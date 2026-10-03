@@ -456,18 +456,17 @@ def test_core_reserve_rejects_nonfinite_or_nonnumeric_target(target):
 
 
 @pytest.mark.parametrize("state", ["INCOMPLETE", "READY", "DEGRADED"])
-def test_invalid_legacy_reserve_is_not_ordinary_absence(state):
+@pytest.mark.parametrize("target", [None, "0.02"])
+def test_invalid_legacy_reserve_is_refused_at_shared_binding_ingestion(state, target):
     payload = _core_mandate_binding_payload()
-    payload["rebalance_bands"]["cash_reserve_weight"] = None
+    payload["rebalance_bands"]["cash_reserve_weight"] = target
     payload["supportability"].update(
         state=state,
         reason="MANDATE_CASH_RESERVE_INVALID",
         missing_data_families=["cash_reserve_target"],
     )
-    with pytest.raises(DpmCoreContextIncompleteError, match="MANDATE_CASH_RESERVE_INVALID"):
-        build_policy_context_from_core_mandate(
-            DpmCoreMandateBindingResponse.model_validate(payload)
-        )
+    with pytest.raises(ValidationError, match="MANDATE_CASH_RESERVE_INVALID"):
+        DpmCoreMandateBindingResponse.model_validate(payload)
 
 
 @pytest.mark.parametrize("batch", [False, True])

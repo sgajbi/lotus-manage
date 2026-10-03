@@ -194,6 +194,13 @@ class DpmCoreMandateBindingResponse(BaseModel):
         description="Latest evidence timestamp returned by lotus-core.",
     )
 
+    @model_validator(mode="after")
+    def require_valid_reserve_evidence(self) -> "DpmCoreMandateBindingResponse":
+        # Every binding consumer, including mandate refresh, shares this boundary.
+        if self.supportability.reason == "MANDATE_CASH_RESERVE_INVALID":
+            raise ValueError("MANDATE_CASH_RESERVE_INVALID")
+        return self
+
 
 class DpmCoreBenchmarkAssignmentResponse(BaseModel):
     product_name: Literal["BenchmarkAssignment"] = Field(

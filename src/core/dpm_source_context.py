@@ -554,8 +554,6 @@ def build_policy_context_from_core_mandate(
     *,
     tenant_id: Optional[str] = None,
 ) -> DpmCorePolicyContext:
-    if response.supportability.reason == "MANDATE_CASH_RESERVE_INVALID":
-        raise DpmCoreContextIncompleteError(response.supportability.reason)
     if response.supportability.state not in {"READY", "DEGRADED"}:
         raise DpmCoreContextIncompleteError(response.supportability.reason)
     if response.mandate_type.lower() != "discretionary":
