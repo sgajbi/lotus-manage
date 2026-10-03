@@ -35,6 +35,9 @@ scope unless a future source-owning service publishes and certifies that capabil
 - capability discovery is backend-owned and should not be inferred by downstream callers
 - local Docker keeps PostgreSQL internal to the Compose network by default
 - Docker startup applies PostgreSQL migrations before serving traffic
+- `APP_PERSISTENCE_PROFILE` accepts only `LOCAL` or `PRODUCTION` (case-insensitive, trimmed).
+  Unset defaults to `LOCAL`; explicit blank or unknown values refuse startup and readiness with
+  `PERSISTENCE_PROFILE_UNSUPPORTED`. Correct the profile; never bypass production checks.
 - `/health/ready` validates production persistence guardrails, trusted write authorization posture,
   bounded Postgres access policy, and applied migrations in production profile, so container
   health is tied to supportability backing-store and authz readiness instead of `/docs`

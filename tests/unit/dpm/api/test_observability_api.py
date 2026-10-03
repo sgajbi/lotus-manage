@@ -5,6 +5,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 import src.api.main as main_module
@@ -12,6 +13,47 @@ import src.api.observability as observability_module
 from src.api.main import app
 
 ROOT = Path(__file__).resolve().parents[4]
+
+
+@pytest.mark.parametrize("value", ["", " \t", "PRODUCITON", "prod"])
+def test_invalid_profile_refuses_application_startup(monkeypatch, value):
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", value)
+
+    with pytest.raises(RuntimeError, match="^PERSISTENCE_PROFILE_UNSUPPORTED$"):
+        with TestClient(app):
+            pytest.fail("application admitted an unsupported persistence profile")
+
+
+@pytest.mark.parametrize("value", ["", " \t", "PRODUCITON", "secret-value"])
+def test_ready_refuses_invalid_profile_without_dependency_access(monkeypatch, value):
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", "LOCAL")
+    monkeypatch.setattr(
+        main_module,
+        "validate_cutover_migrations_applied",
+        lambda: pytest.fail("invalid profile consulted migration dependencies"),
+    )
+    monkeypatch.setattr(
+        "src.api.persistence_profile._persistence_profile_guardrail_error",
+        lambda: pytest.fail("invalid profile consulted persistence dependencies"),
+    )
+    # Change configuration after valid startup to exercise the registered diagnostic route.
+    with TestClient(app, raise_server_exceptions=False) as client:
+        assert client.get("/health/ready").status_code == 200
+        monkeypatch.setenv("APP_PERSISTENCE_PROFILE", value)
+        response = client.get("/health/ready")
+        assert response.status_code == 500
+        assert response.headers["content-type"] == "application/problem+json"
+        assert response.json() == {
+            "type": "about:blank",
+            "title": "Internal Server Error",
+            "status": 500,
+            "detail": "An unexpected error occurred.",
+            "instance": "/health/ready",
+            "correlation_id": "",
+        }
+        assert client.get("/health/live").json() == {"status": "live"}
+        monkeypatch.delenv("APP_PERSISTENCE_PROFILE")
+        assert client.get("/health/ready").status_code == 200
 
 
 def test_health_endpoints_available():

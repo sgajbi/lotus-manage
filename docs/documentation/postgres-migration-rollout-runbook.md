@@ -25,6 +25,11 @@ Runbook for forward-only schema migration rollout for:
 
 ## Profile Modes
 
+Only `LOCAL` and `PRODUCTION` are accepted (case-insensitive, surrounding whitespace ignored).
+An unset `APP_PERSISTENCE_PROFILE` defaults to `LOCAL`; an explicitly blank or unknown value
+refuses startup and readiness with `PERSISTENCE_PROFILE_UNSUPPORTED`. Correct the configured
+value rather than disabling production checks.
+
 - `APP_PERSISTENCE_PROFILE=LOCAL`:
   - Intended for local development workflows.
   - Postgres-backed runtime is the default local mode.
