@@ -109,7 +109,9 @@ Current posture under RFC-0082:
    before simulation, callers cannot widen its tolerance, and post-trade deviation is reported with
    a bounded tolerance. Successful target scaling remains ready; only deviation requires review.
    Source-declared reserve basis and no-override authority are retained in run lineage; missing
-   authority or invalid legacy source targets fail closed. Controlled HTTP/PostgreSQL proof is
+   authority or invalid legacy source targets fail closed. An absent source target does not permit
+   a caller target override; the independent request-level cash buffer remains available.
+   Controlled HTTP/PostgreSQL proof is
    not real Core or bank acceptance; source-bound wave enforcement remains tracked in issue #733.
    Out-of-date bindings fail closed. Construction runs, alternative sets, selections,
    selected-alternative proof-pack sourcing, portfolio-memory

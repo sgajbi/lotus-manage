@@ -17,6 +17,9 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Review P1: native HTTP reproduced invalid-reserve mandate refresh returning200 before correction.
   Validation moved to shared binding DTO ingestion; refresh and rebalance must both return424,
   perform no downstream model fetch and leave no retained run or mandate.
+- Review P1 follow-up: six red-first single/batch cases reproduced absent-target override and
+  tolerance bypasses. Check explicit no-override authority before the null-target return; preserve
+  independent cash-buffer economics and unchanged null restatement.
 
 ## RFC36-S2-001: Review control docs were missing
 

@@ -215,6 +215,39 @@ def test_conflicting_overrides_leave_no_financial_records():
                 assert connection.execute("SELECT count(*) FROM dpm_runs").fetchone()[0] == 0
 
 
+@pytest.mark.parametrize("batch", [False, True])
+def test_absent_source_target_refuses_caller_target_but_allows_independent_buffer(batch):
+    portfolio, tenant = f"reserve-{uuid.uuid4().hex}", f"tenant-{uuid.uuid4().hex}"
+    path = "/api/v1/rebalance/analyze" if batch else "/api/v1/rebalance/simulate"
+    with controlled_core(portfolio=portfolio, reserve=None) as (core_url, _observations):
+        with disposable_database() as dsn, native_api(dsn, core_url=core_url) as (client, _process):
+            request = _request(portfolio, tenant)
+            base_options = request.pop("options_override")
+
+            def set_options(override):
+                options = {**base_options, **override}
+                if batch:
+                    request["scenarios"] = {"caller": {"options": options}}
+                else:
+                    request["options_override"] = options
+
+            for override in [
+                {"cash_reserve_target_weight": "0"},
+                {"cash_reserve_target_weight": "0.02"},
+                {"cash_reserve_target_tolerance": "1"},
+            ]:
+                set_options(override)
+                _call(client, "POST", path, _headers(tenant), request, expected=424)
+            with psycopg.connect(dsn) as connection:
+                assert connection.execute("SELECT count(*) FROM dpm_runs").fetchone()[0] == 0
+
+            set_options({"cash_reserve_target_weight": None, "min_cash_buffer_pct": "0.03"})
+            response = _call(client, "POST", path, _headers(tenant), request)
+            result = response["results"]["caller"] if batch else response
+            # The independent 3% operating buffer leaves $3,000; no mandate target is invented.
+            _assert_result(result, None, expected_shares=970, expected_cash=3000)
+
+
 def test_source_reserve_whole_share_residual_requires_review_without_widening_tolerance():
     portfolio, tenant = f"reserve-{uuid.uuid4().hex}", f"tenant-{uuid.uuid4().hex}"
     with controlled_core(portfolio=portfolio, price=123) as (core_url, _observations):
