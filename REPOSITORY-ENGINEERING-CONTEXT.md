@@ -348,6 +348,13 @@ independent economics, tenant-fenced run/artifact/support-bundle reads, selectio
 PostgreSQL owner/lineage and exact replay after API-process death. Source-aware methods retain
 missing-authority qualifications; this is not live Core, downstream release or bank identity proof.
 
+The native restriction matrix also covers direct simulation and every trading construction method
+across buy/sell, inclusive effective dates, lifecycle, issuer/country/asset/global selectors and
+missing-versus-empty profiles. Construction execution persists the shared hard-policy qualification
+while returning mechanical comparison context; keep no-action comparison semantics independent.
+Legacy artifacts are not rewritten. New artifacts retain decision, source hash/scope and versioned
+rule references; missing authority remains non-release-ready. Complete database rows survive API death.
+
 The PR/Main Docker job repeats these cases against the built image with
 `make test-image-financial-runtime` from this repository root (Windows or POSIX).
 `make workflow-policy-gate` parses PR/Main workflow structure and protects the image proof's

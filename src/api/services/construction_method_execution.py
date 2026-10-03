@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Callable, Optional
 
 from src.api.request_models import RebalanceRequest
+from src.api.services.rebalance_client_restriction_policy import apply_client_restriction_policy
 from src.api.services.rebalance_source_lineage import apply_source_lineage
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.dpm_source_context import DpmResolvedSourceContext
@@ -42,8 +43,13 @@ def run_construction_method(
     )
     result = apply_source_lineage(result=result, source_context=source_context)
     if run_service is not None:
+        # Alternatives qualify the mechanical result independently. Durable run consumers
+        # must also retain the evaluated policy; a missing profile never grants release.
+        persisted_result = apply_client_restriction_policy(
+            request=request, result=result, source_context=source_context
+        )
         run_service.record_run(
-            result=result,
+            result=persisted_result,
             request_hash=request_hash,
             portfolio_id=request.portfolio_snapshot.portfolio_id,
             idempotency_key=None,
