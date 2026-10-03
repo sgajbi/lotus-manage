@@ -13,6 +13,7 @@ from src.core.rebalance_runs.service import DpmAsyncOperationConflictError, DpmR
 from src.core.waves import DpmRebalanceWaveItem
 from src.core.waves.source_analytics import build_source_analytics_from_alternative_set
 from src.core.construction.models import ConstructionAlternativeSet, ConstructionAuthorityContext
+from src.core.dpm_source_context import DpmResolvedSourceContext
 
 _PORTFOLIO_IDENTITY_CONFLICT = "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"
 
@@ -27,6 +28,7 @@ _CONSTRUCTION_SIMULATION_BLOCKING_ERRORS = (
 class DpmWaveSimulationInput:
     stateless_input: RebalanceRequest
     authority_context: ConstructionAuthorityContext | None = None
+    source_context: DpmResolvedSourceContext | None = None
 
 
 def _simulation_input_for_item(
@@ -75,6 +77,11 @@ def simulate_item(
             repository=construction_repository,
             methods=methods,
             authority_context=authority_context,
+            source_context=(
+                simulation_input.source_context
+                if isinstance(simulation_input, DpmWaveSimulationInput)
+                else None
+            ),
             risk_authority_client=risk_authority_client,
             run_service=run_service,
             admitted_tenant_id=tenant_id,

@@ -21,7 +21,7 @@ def _ready(reason, **counts):
     return {"state": "READY", "reason": reason, **counts}
 
 
-def _products(portfolio, reserve, price):
+def controlled_products(portfolio, reserve="0.02", price=100):
     common = {
         "product_version": "v1",
         "as_of_date": AS_OF,
@@ -194,8 +194,22 @@ def _products(portfolio, reserve, price):
 
 
 @contextmanager
-def controlled_core(*, portfolio, reserve="0.02", price=100, invalid_legacy=False):
-    products = deepcopy(_products(portfolio, reserve, price))
+def controlled_core(
+    *,
+    portfolio,
+    reserve="0.02",
+    price=100,
+    invalid_legacy=False,
+    starting_shares=100,
+    product_overrides=None,
+):
+    products = deepcopy(controlled_products(portfolio, reserve, price))
+    positions = products["core-snapshot"]["sections"]["positions_baseline"]
+    positions[0].update(
+        quantity=str(starting_shares), market_value_local=str(price * starting_shares)
+    )
+    cash = str(100000 - price * starting_shares)
+    positions[1].update(quantity=cash, market_value_local=cash)
     if invalid_legacy:
         products["mandate-binding"]["supportability"] = {
             "state": "INCOMPLETE",
@@ -215,7 +229,7 @@ def controlled_core(*, portfolio, reserve="0.02", price=100, invalid_legacy=Fals
         def respond(self, body):
             path = self.path.split("?")[0]
             key = path.rsplit("/", 1)[-1]
-            payload = products.get(key)
+            payload = (product_overrides or {}).get(key, products.get(key))
             observations.put((path, body, self.headers.get("X-Tenant-Id")))
             self.send_response(200 if payload else 404)
             self.send_header("Content-Type", "application/json")

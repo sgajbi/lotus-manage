@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-03T08:53:00.730427+00:00",
+  "generatedAt": "2026-10-03T10:38:03.260224+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -16387,8 +16387,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
-        "RebalanceRequest"
+        "object"
       ]
     },
     {
@@ -122422,6 +122421,14 @@
             "attributeRef": "#/attributeCatalog/lotus.item_inputs"
           },
           {
+            "name": "item_inputs[].input_mode",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.input_mode",
+            "attributeRef": "#/attributeCatalog/lotus.input_mode"
+          },
+          {
             "name": "item_inputs[].wave_item_id",
             "location": "body",
             "required": false,
@@ -122440,8 +122447,8 @@
           {
             "name": "item_inputs[].stateless_input",
             "location": "body",
-            "required": true,
-            "type": "RebalanceRequest",
+            "required": false,
+            "type": "object",
             "semanticId": "lotus.stateless_input",
             "attributeRef": "#/attributeCatalog/lotus.stateless_input"
           },
@@ -123084,6 +123091,14 @@
             "type": "object",
             "semanticId": "lotus.group_constraints",
             "attributeRef": "#/attributeCatalog/lotus.group_constraints"
+          },
+          {
+            "name": "item_inputs[].options_override",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.options_override",
+            "attributeRef": "#/attributeCatalog/lotus.options_override"
           },
           {
             "name": "item_inputs[].authority_context",
@@ -126005,6 +126020,14 @@
             "attributeRef": "#/attributeCatalog/lotus.item_inputs"
           },
           {
+            "name": "item_inputs[].input_mode",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.input_mode",
+            "attributeRef": "#/attributeCatalog/lotus.input_mode"
+          },
+          {
             "name": "item_inputs[].wave_item_id",
             "location": "body",
             "required": false,
@@ -126023,8 +126046,8 @@
           {
             "name": "item_inputs[].stateless_input",
             "location": "body",
-            "required": true,
-            "type": "RebalanceRequest",
+            "required": false,
+            "type": "object",
             "semanticId": "lotus.stateless_input",
             "attributeRef": "#/attributeCatalog/lotus.stateless_input"
           },
@@ -126667,6 +126690,14 @@
             "type": "object",
             "semanticId": "lotus.group_constraints",
             "attributeRef": "#/attributeCatalog/lotus.group_constraints"
+          },
+          {
+            "name": "item_inputs[].options_override",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.options_override",
+            "attributeRef": "#/attributeCatalog/lotus.options_override"
           },
           {
             "name": "item_inputs[].authority_context",

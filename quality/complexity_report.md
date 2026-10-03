@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-03T09:30:52+00:00`
+- Generated at: `2026-10-03T10:45:54+00:00`
 
-- Baseline source snapshot: `6e3c79b5befc533d88552540b22a5edba2a60a71`
+- Baseline source snapshot: `8453abcce7efa9443d59d3d0e6e290d98294759d`
 
-- Report source snapshot: `92740af5+worktree`
+- Report source snapshot: `8453abcc+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -35,10 +35,10 @@
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
 | 1 | _turnover_budget_assessment | src/core/mandate_health_scoring.py | 20 | 60 |
-| 2 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
-| 3 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
-| 4 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 16 | 76 |
-| 5 | _resolve_item_payloads | src/api/services/wave_simulation_operations.py | 15 | 51 |
+| 2 | _resolve_item_payloads | src/api/services/wave_simulation_operations.py | 19 | 67 |
+| 3 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
+| 4 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
+| 5 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 16 | 76 |
 | 6 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
 | 7 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
 | 8 | cancel_simulation_operation | src/infrastructure/waves/in_memory.py | 13 | 55 |
