@@ -26,6 +26,11 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    from src.api.persistence_profile import app_persistence_profile_name
+
+    # Compose invokes this before API startup: refuse invalid profiles before database I/O.
+    app_persistence_profile_name()
+
     if find_spec("psycopg") is None:
         raise RuntimeError("POSTGRES_MIGRATION_DRIVER_MISSING")
     import psycopg

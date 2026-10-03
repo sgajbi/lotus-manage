@@ -478,8 +478,9 @@ Local Docker runtime does not publish the internal PostgreSQL port by default.
 is published for local API access.
 
 Docker startup applies the forward-only PostgreSQL migrations before `uvicorn` starts. The
-API accepts only `LOCAL` or `PRODUCTION` persistence profiles. An unset profile defaults to
-`LOCAL`; explicit blank or unknown values refuse startup and readiness.
+API and migration command accept only `LOCAL` or `PRODUCTION` persistence profiles. Native unset
+profiles default to `LOCAL`; Compose defaults to `PRODUCTION` only when unset and preserves
+explicit blanks. Blank or unknown values refuse admission before migrations or API startup.
 The container healthcheck uses `/health/ready` rather than `/docs`. In production profile,
 `/health/ready` validates persistence guardrails, applied migration versions, and trusted write
 authorization posture so supportability APIs cannot look healthy while their backing store,
