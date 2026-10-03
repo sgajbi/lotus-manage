@@ -5536,7 +5536,10 @@ def test_wave_source_check_reports_missing_and_invalid_state_errors() -> None:
     assert _error_reason_code(invalid) == "DPM_WAVE_SOURCE_CHECK_INVALID_STATE"
 
 
-def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -> None:
+@pytest.mark.parametrize("alternative_id", ["alt_min_turnover", "alt_do_nothing_baseline"])
+def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload(
+    alternative_id: str,
+) -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
     mandate_repository.save_mandate_snapshot(ready_twin, tenant_id="tenant-sg")
@@ -5551,7 +5554,7 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
         wave_repository,
         construction_repository,
         proof_pack_repository,
-        run_service,
+        run_service=run_service,
     ) as client:
         created = client.post(
             "/api/v1/rebalance/waves",
@@ -5585,13 +5588,19 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
         selected = client.post(
             f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
             json={
-                "alternative_id": "alt_min_turnover",
+                "alternative_id": alternative_id,
                 "actor_id": "pm_001",
                 "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
                 "comment": "Chosen for lower turnover.",
             },
             headers={"X-Correlation-Id": "corr-wave-select"},
         )
+        rejected = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/approve",
+            json={"actor_id": "pm_001", "reason_code": "REVIEWED"},
+        )
+        supportability = client.get(f"/api/v1/rebalance/waves/{wave_id}/supportability")
+        proof_posture = client.get(f"/api/v1/rebalance/waves/{wave_id}/proof-pack")
 
     assert simulated.status_code == 200
     simulated_payload = simulated.json()
@@ -5616,12 +5625,23 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
 
     assert selected.status_code == 200
     selected_item = selected.json()["wave"]["items"][0]
-    assert selected_item["state"] == "PROOF_PACK_READY"
-    assert selected_item["selected_alternative_id"] == "alt_min_turnover"
+    assert selected_item["state"] == "SELECTED"
+    assert selected_item["diagnostics"]["proof_pack_state"] == "BLOCKED"
+    assert selected_item["selected_alternative_id"] == alternative_id
+    assert selected_item["diagnostics"]["proposed_changes"] == []
+    assert rejected.status_code == 422
+    assert _error_reason_code(rejected) == "DPM_WAVE_APPROVAL_NO_ELIGIBLE_ITEMS"
+    assert supportability.status_code == 200
+    assert supportability.json()["supportability_state"] == "blocked"
+    assert supportability.json()["issue_counts"]["critical"] == 1
+    assert "PROOF_PACK_BLOCKED" in supportability.json()["issues"][0]["reason_codes"]
+    assert proof_posture.status_code == 200
+    assert proof_posture.json()["ready_proof_pack_count"] == 0
+    assert proof_posture.json()["proof_pack_refs"][0]["proof_pack_state"] == "BLOCKED"
     assert selected_item["proof_pack_id"].startswith("dpp_")
     persisted = wave_repository.get_wave(wave_id=wave_id, tenant_id="tenant-sg")
     assert persisted is not None
-    assert persisted.items[0].selected_alternative_id == "alt_min_turnover"
+    assert persisted.items[0].selected_alternative_id == alternative_id
     assert persisted.items[0].proof_pack_id == selected_item["proof_pack_id"]
     assert (
         proof_pack_repository.get_proof_pack(
@@ -6196,7 +6216,7 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
         client.post(
             f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
             json={
-                "alternative_id": "alt_min_turnover",
+                "alternative_id": "alt_heuristic_explainable",
                 "actor_id": "pm_001",
                 "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
             },
@@ -6340,7 +6360,7 @@ def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> 
         client.post(
             f"/api/v1/rebalance/waves/{handoff_wave_id}/items/{wave_item_id}/select",
             json={
-                "alternative_id": "alt_min_turnover",
+                "alternative_id": "alt_heuristic_explainable",
                 "actor_id": "pm_001",
                 "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
             },
@@ -6433,7 +6453,7 @@ def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -
         client.post(
             f"/api/v1/rebalance/waves/{wave_id}/items/{ready_item_id}/select",
             json={
-                "alternative_id": "alt_min_turnover",
+                "alternative_id": "alt_heuristic_explainable",
                 "actor_id": "pm_001",
                 "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
             },

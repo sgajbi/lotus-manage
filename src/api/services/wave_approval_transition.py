@@ -17,7 +17,11 @@ def build_approved_wave(
     correlation_id: str,
 ) -> DpmRebalanceWave:
     approved_items = [approve_item(item, actor_id, reason_code, comment) for item in wave.items]
-    approved_count = sum(1 for item in approved_items if item.state == "APPROVED")
+    approved_count = sum(
+        1
+        for item in approved_items
+        if item.state == "APPROVED" and item.diagnostics.get("proof_pack_state") != "BLOCKED"
+    )
     if approved_count == 0:
         raise DpmWaveValidationError(
             "DPM_WAVE_APPROVAL_NO_ELIGIBLE_ITEMS",

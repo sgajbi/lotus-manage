@@ -132,6 +132,66 @@ def test_selection_links_generated_proof_pack(monkeypatch: MonkeyPatch) -> None:
     assert updated.diagnostics["proof_pack_state"] == "READY"
 
 
+def test_blocked_proof_pack_stays_selected_and_cannot_advance(monkeypatch: MonkeyPatch) -> None:
+    from src.api.services.wave_item_transitions import approve_item, stage_item, handoff_item
+    from src.api.services.wave_supportability_diagnostics import supportability_issue
+
+    monkeypatch.setattr(
+        wave_selection_item.proof_pack_service,
+        "generate_proof_pack_from_selected_alternative",
+        lambda **kwargs: DpmPreTradeProofPack.model_construct(
+            proof_pack_id="dpp_blocked", status="BLOCKED"
+        ),
+    )
+    updated = _select()
+    assert updated.state == "SELECTED"
+    assert updated.proof_pack_id == "dpp_blocked"
+    assert "PROOF_PACK_BLOCKED" in updated.reason_codes
+    assert "PROOF_PACK_READY" not in updated.reason_codes
+    assert approve_item(updated, "pm", "APPROVE", None) == updated
+    for state, transition in [
+        ("PROOF_PACK_READY", approve_item),
+        ("APPROVED", stage_item),
+        ("STAGED", handoff_item),
+        ("HANDOFF_READY", handoff_item),
+    ]:
+        retained = updated.model_copy(update={"state": state, "reason_codes": ["OLD_READY"]})
+        assert transition(retained, "pm", "ADVANCE", None) == retained
+        issue = supportability_issue(wave_id="wave", item=retained, item_index=0)
+        assert issue is not None
+        assert issue["severity"] == "CRITICAL"
+        assert "PROOF_PACK_BLOCKED" in issue["reason_codes"]
+        assert issue["remediation_route"] == "REPAIR_BLOCKED_PROOF_PACK"
+
+
+@pytest.mark.parametrize("target", ["APPROVED", "STAGED", "HANDOFF_READY"])
+def test_retained_blocked_target_state_is_not_eligible_for_wave_transition(target: str) -> None:
+    from src.api.services.wave_approval_transition import build_approved_wave
+    from src.api.services.wave_stage_transition import build_staged_wave
+    from src.api.services.wave_handoff_transition import build_handoff_ready_wave
+    from src.api.services.wave_errors import DpmWaveValidationError
+    from src.core.waves import DpmRebalanceWave
+
+    builders = {
+        "APPROVED": build_approved_wave,
+        "STAGED": build_staged_wave,
+        "HANDOFF_READY": build_handoff_ready_wave,
+    }
+    retained = _item().model_copy(
+        update={"state": target, "diagnostics": {"proof_pack_state": "BLOCKED"}}
+    )
+    wave = DpmRebalanceWave.model_construct(wave_id="wave_blocked", items=[retained])
+    with pytest.raises(DpmWaveValidationError) as rejected:
+        builders[target](
+            wave=wave,
+            actor_id="pm",
+            reason_code="ADVANCE",
+            comment=None,
+            correlation_id="corr-blocked",
+        )
+    assert rejected.value.code.endswith("NO_ELIGIBLE_ITEMS")
+
+
 def test_selection_records_degraded_proof_pack_generation_failure(
     monkeypatch: MonkeyPatch,
 ) -> None:

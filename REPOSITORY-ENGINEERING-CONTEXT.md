@@ -136,6 +136,8 @@ repository, while Manage owns only its declared consumption and fail-closed beha
    as a proposal or approval source. Legacy borrowed references are normalized on read without
    rewriting retained rows. No-action proof packs cannot authorize instructions or borrowed-run
    outcome economics. Wave selection replaces candidate diagnostics with the selected proposal.
+   Blocked proof packs stay linked for audit, surface critical supportability, and cannot advance
+   wave approval, staging or handoff; this also applies to retained ready-state items.
    A comparison-only baseline does not carry a transaction-cost estimate, including a fabricated
    zero estimate; this field remains null rather than claiming a calculation was performed.
 3. The RFC-0040 foundation provides deterministic proof-pack generation, persistence, report and AI

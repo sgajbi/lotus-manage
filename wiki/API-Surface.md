@@ -9,7 +9,10 @@ the evaluation run's post-trade state or approvals as baseline evidence.
 The comparison-only baseline has no transaction-cost estimate; non-null estimates are rejected.
 
 Selection retains this distinction and replaces wave diagnostics with the selected proposal.
-No-action proof packs lack an economic run and are blocked for trade release. Historical borrowed
+No-action proof packs lack an economic run and are blocked for trade release. Blocked
+proofs remain visible as critical wave supportability findings; blocked packs cannot advance
+through wave approval, staging or handoff, including retained ready-state items. Selection keeps
+a blocked pack linked for audit without marking the item proof-pack-ready. Historical borrowed
 run references are interpreted on construction read without rewriting stored rows; historical
 proof packs that combine no action with a heuristic run cannot be replayed or used for instruction
 release. Heuristic alternatives retain their economic run, proposals and tenant fences.

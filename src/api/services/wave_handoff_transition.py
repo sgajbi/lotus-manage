@@ -19,7 +19,9 @@ def build_handoff_ready_wave(
 ) -> DpmRebalanceWave:
     handoff_items = [handoff_item(item, actor_id, reason_code, comment) for item in wave.items]
     handoff_item_ids = [
-        item.wave_item_id for item in handoff_items if item.state == "HANDOFF_READY"
+        item.wave_item_id
+        for item in handoff_items
+        if item.state == "HANDOFF_READY" and item.diagnostics.get("proof_pack_state") != "BLOCKED"
     ]
     if not handoff_item_ids:
         raise DpmWaveValidationError(

@@ -89,12 +89,16 @@ def with_selection_and_proof_pack(
             },
             deep=True,
         )
+    proof_blocked = proof_pack.status == "BLOCKED"
     return item.model_copy(
         update={
-            "state": "PROOF_PACK_READY",
+            "state": "SELECTED" if proof_blocked else "PROOF_PACK_READY",
             "selected_alternative_id": alternative_id,
             "proof_pack_id": proof_pack.proof_pack_id,
-            "reason_codes": ["CONSTRUCTION_ALTERNATIVE_SELECTED", "PROOF_PACK_READY"],
+            "reason_codes": [
+                "CONSTRUCTION_ALTERNATIVE_SELECTED",
+                "PROOF_PACK_BLOCKED" if proof_blocked else "PROOF_PACK_READY",
+            ],
             "diagnostics": {
                 **diagnostics,
                 "proof_pack_state": proof_pack.status,

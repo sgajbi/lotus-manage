@@ -21,6 +21,8 @@ def supportability_issue(
 
 
 def _should_emit_supportability_issue(item: DpmRebalanceWaveItem) -> bool:
+    if _proof_pack_state(item) == "BLOCKED":
+        return True
     if item.state not in _COMPLETED_WAVE_ITEM_STATES:
         return True
     return item.state == "PROOF_PACK_READY" and _proof_pack_state(item) == "DEGRADED"
@@ -48,6 +50,8 @@ def _supportability_issue_payload(
 
 
 def _supportability_reason_codes(item: DpmRebalanceWaveItem) -> list[str]:
+    if _proof_pack_state(item) == "BLOCKED":
+        return list(dict.fromkeys([*item.reason_codes, "PROOF_PACK_BLOCKED"]))
     return item.reason_codes or [supportability_reason(item)]
 
 
@@ -67,6 +71,8 @@ _PROOF_PACK_SOURCE_OWNER_STATES = {"SELECTED", "PROOF_PACK_READY"}
 
 
 def supportability_severity(item: DpmRebalanceWaveItem) -> str | None:
+    if _proof_pack_state(item) == "BLOCKED":
+        return "CRITICAL"
     if item.state in _CRITICAL_SUPPORTABILITY_STATES:
         return "CRITICAL"
     if _has_warning_supportability(item):
@@ -117,6 +123,8 @@ def supportability_remediation(item: DpmRebalanceWaveItem) -> str:
     explicit = item.diagnostics.get("required_action")
     if isinstance(explicit, str) and explicit:
         return explicit
+    if _proof_pack_state(item) == "BLOCKED":
+        return "REPAIR_BLOCKED_PROOF_PACK"
     remediation_by_state = {
         "CANDIDATE": "RUN_SOURCE_CHECK",
         "SOURCE_READY": "RUN_WAVE_SIMULATION",
