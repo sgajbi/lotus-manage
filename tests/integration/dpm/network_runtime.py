@@ -1,0 +1,119 @@
+"""Owned disposable PostgreSQL and unmodified native HTTP API test runtime."""
+
+from __future__ import annotations
+
+import json
+import multiprocessing
+import os
+import socket
+import threading
+import time
+import uuid
+from contextlib import contextmanager
+
+import httpx
+import psycopg
+from psycopg import sql
+from psycopg.conninfo import make_conninfo
+from psycopg.rows import dict_row
+
+from src.infrastructure.postgres_migrations import apply_postgres_migrations
+from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
+
+
+@contextmanager
+def disposable_database():
+    dsn = postgres_dsn_or_skip("native HTTP/API-process recovery")
+    name = f"manage_network_{uuid.uuid4().hex}"
+    with psycopg.connect(dsn, autocommit=True) as admin:
+        admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+        try:
+            isolated = make_conninfo(dsn, dbname=name)
+            with psycopg.connect(isolated, row_factory=dict_row) as connection:
+                apply_postgres_migrations(connection=connection, namespace="dpm")
+            yield isolated
+        finally:
+            # Only this successfully created UUID database is eligible for removal.
+            admin.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+            assert (
+                admin.execute("SELECT 1 FROM pg_database WHERE datname=%s", (name,)).fetchone()
+                is None
+            )
+
+
+def _serve(dsn, pipe, stop):
+    # Spawned interpreters do not inherit parent's in-process dependency overrides.
+    for name in list(os.environ):
+        if name.startswith(("DPM_", "ENTERPRISE_", "APP_")):
+            del os.environ[name]
+    os.environ.update(
+        APP_PERSISTENCE_PROFILE="LOCAL",
+        DPM_MANAGE_POSTGRES_DSN=dsn,
+        DPM_SUPPORTABILITY_POSTGRES_DSN=dsn,
+        DPM_ARTIFACT_STORE_MODE="PERSISTED",
+        DPM_SUPPORT_APIS_ENABLED="true",
+        DPM_ARTIFACTS_ENABLED="true",
+        ENTERPRISE_ENFORCE_AUTHZ="true",
+        ENTERPRISE_CAPABILITY_RULES_JSON=json.dumps({"POST /api/v1": "manage.write"}),
+    )
+    import uvicorn
+    from src.api.main import app
+
+    assert not app.dependency_overrides
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", log_level="warning"))
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        pipe.send(listener.getsockname()[1])
+        pipe.close()
+
+        def shutdown():
+            stop.wait()
+            server.should_exit = True
+
+        threading.Thread(target=shutdown, daemon=True).start()
+        server.run(sockets=[listener])
+
+
+@contextmanager
+def native_api(dsn):
+    context = multiprocessing.get_context("spawn")
+    parent, child = context.Pipe(duplex=False)
+    stop = context.Event()
+    process = context.Process(target=_serve, args=(dsn, child, stop))
+    process.start()
+    child.close()
+    port = None
+    try:
+        assert parent.poll(45), "Native API did not publish its bound port"
+        port = parent.recv()
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{port}", timeout=30, trust_env=False
+        ) as client:
+            deadline = time.monotonic() + 45
+            while True:
+                assert process.is_alive(), "Native API exited before readiness"
+                try:
+                    if client.get("/health/ready").status_code == 200:
+                        break
+                except httpx.TransportError:
+                    pass
+                assert time.monotonic() < deadline, "Native API readiness timed out"
+                time.sleep(0.1)
+            yield client, process
+    finally:
+        parent.close()
+        # A killed process can leave multiprocessing.Event's lock held. Never
+        # signal that shared primitive after its owning process has terminated.
+        if process.is_alive():
+            stop.set()
+        process.join(15)
+        if process.is_alive():
+            process.kill()
+            process.join(10)
+        assert not process.is_alive(), "Owned API process was not removed"
+        process.close()
+        if port is not None:
+            with socket.socket() as probe:
+                probe.settimeout(1)
+                assert probe.connect_ex(("127.0.0.1", port)) != 0, "Owned listener survived"

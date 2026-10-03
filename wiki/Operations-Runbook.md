@@ -212,6 +212,12 @@ The [construction network recovery test](https://github.com/sgajbi/lotus-manage/
 uses unmodified Uvicorn over HTTP and PostgreSQL. USD/FX cases verify no-action economics, selection,
 blocked proof packs, tenant refusals and exact replay after externally killing the API process.
 Read-only storage checks detect duplicate artifacts; cleanup verifies removal of owned listeners and databases.
+The [wave network recovery test](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/waves/test_wave_network_recovery.py)
+forces the financial-commit/checkpoint gap with observed PostgreSQL locks, kills the API and aborts
+only its blocked publication session. After real lease expiry, a fresh API reuses the same financial
+artifact and publishes one result. It checks immutable admission identity, replay, tenant/capability
+refusals and the independent NAV15,000/BUY20/120shares/SGD3,000 cash example. Faults affect only its
+disposable database; this is a combined process/session interruption, not a database-failover proof.
 Run `make test-idea-management-action-postgres` from the repository root with the supported environment
 activated, `DPM_POSTGRES_INTEGRATION_DSN` set to an isolated test server and
 `DPM_POSTGRES_INTEGRATION_REQUIRED=1`. The test account needs `CREATEDB` for disposable UUID databases;
