@@ -9,6 +9,7 @@ from src.core.construction.models import (
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
 )
+from src.core.construction.vocabulary import ConstructionMethod
 from src.core.proof_packs import alternative_sections as _alternative_sections
 from src.core.proof_packs import decision_artifacts as _decision_artifacts
 from src.core.proof_packs import identity as _identity
@@ -234,6 +235,8 @@ def build_proof_pack_from_selected_alternative(
         selected_alternative_id=selected_alternative_id,
         selection=selection,
     )
+    if selected.method == ConstructionMethod.DO_NOTHING_BASELINE and run is not None:
+        raise ProofPackSourceValidationError("DPM_NO_ACTION_EVALUATION_RUN_NOT_ECONOMIC_SOURCE")
     return _build_proof_pack(
         tenant_id=tenant_id,
         source_type="SELECTED_ALTERNATIVE",

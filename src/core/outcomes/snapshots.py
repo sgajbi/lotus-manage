@@ -209,6 +209,13 @@ def _validate_proof_pack_linkage(
         proof_pack.selected_alternative_id,
         selection.alternative_id,
     )
+    if (
+        selected_alternative.method == "DO_NOTHING_BASELINE"
+        and proof_pack.rebalance_run_id is not None
+    ):
+        raise DpmExpectedSnapshotAssemblyError(
+            "no-action proof pack must not borrow an economic run"
+        )
     if selected_alternative.rebalance_run_id and proof_pack.rebalance_run_id:
         _require_equal(
             "proof_pack.rebalance_run_id",

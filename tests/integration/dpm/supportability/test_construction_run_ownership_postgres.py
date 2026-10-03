@@ -37,12 +37,13 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
         "X-Correlation-Id": f"corr-construction-{nonce}",
     }
     payload = valid_api_payload()
-    payload["portfolio_snapshot"]["positions"] = [{"instrument_id": "EQ_1", "quantity": "50"}]
+    payload["portfolio_snapshot"]["positions"] = [{"instrument_id": "EQ_1", "quantity": "100"}]
     payload["portfolio_snapshot"]["cash_balances"] = [{"currency": "SGD", "amount": "5000.00"}]
+    payload["model_portfolio"]["targets"][0]["weight"] = "0.80"
     request = {
         "input_mode": "stateless",
         "stateless_input": payload,
-        "methods": ["HEURISTIC_EXPLAINABLE", "MIN_TURNOVER"],
+        "methods": ["DO_NOTHING_BASELINE", "HEURISTIC_EXPLAINABLE", "MIN_TURNOVER"],
     }
     try:
         with TestClient(app) as client:
@@ -52,8 +53,28 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
             assert created.status_code == 200
             alternative_set_id = created.json()["alternative_set_id"]
             alternative_set_ids.add(alternative_set_id)
+            alternatives = {
+                alternative["method"]: alternative for alternative in created.json()["alternatives"]
+            }
+            baseline = alternatives["DO_NOTHING_BASELINE"]
+            heuristic = alternatives["HEURISTIC_EXPLAINABLE"]
+            assert baseline["rebalance_run_id"] is None
+            assert baseline["evaluation_context"] == {
+                "rebalance_run_id": heuristic["rebalance_run_id"],
+                "state_basis": "BEFORE",
+            }
+            assert baseline["intent_ids"] == []
+            assert baseline["diagnostics"]["proposed_changes"] == []
+            assert Decimal(baseline["comparison_metrics"]["cash_weight_after"]) == Decimal("0.3333")
+            assert baseline["comparison_metrics"]["trade_count"] == 0
+            assert heuristic["diagnostics"]["proposed_changes"][0]["action"] == "BUY"
+            assert Decimal(heuristic["diagnostics"]["proposed_changes"][0]["quantity"]) == Decimal(
+                "20"
+            )
             run_ids = {
-                alternative["rebalance_run_id"] for alternative in created.json()["alternatives"]
+                alternative["rebalance_run_id"]
+                for alternative in created.json()["alternatives"]
+                if alternative["rebalance_run_id"] is not None
             }
             cleanup_run_ids.update(run_ids)
             assert len(run_ids) == 2
@@ -118,6 +139,7 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
             cleanup_run_ids.update(
                 alternative["rebalance_run_id"]
                 for alternative in foreign_created.json()["alternatives"]
+                if alternative["rebalance_run_id"] is not None
             )
 
         restarted_repository = PostgresDpmRunRepository(dsn=dsn)
@@ -129,6 +151,21 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
             repository=restarted_repository
         )
         with TestClient(app) as client:
+            retained = client.get(
+                f"/api/v1/construction/alternative-sets/{alternative_set_id}",
+                headers={"X-Tenant-Id": "tenant-construction-a"},
+            )
+            assert retained.json() == created.json()
+            assert (
+                client.post(
+                    "/api/v1/construction/alternative-sets/generate", json=request, headers=headers
+                ).json()
+                == created.json()
+            )
+            retained_selection = restarted_construction_repository.get_selection(
+                alternative_set_id=alternative_set_id, tenant_id="tenant-construction-a"
+            )
+            assert retained_selection.alternative_id == baseline["alternative_id"]
             assert (
                 client.get(
                     f"/api/v1/construction/alternative-sets/{alternative_set_id}",
@@ -184,7 +221,7 @@ def test_registered_construction_run_owner_survives_repository_reconstruction() 
                 for run_id in run_ids
             )
             run = restarted_repository.get_run(rebalance_run_id=next(iter(run_ids)))
-            assert Decimal(run.result_json["before"]["total_value"]["amount"]) == Decimal("10000")
+            assert Decimal(run.result_json["before"]["total_value"]["amount"]) == Decimal("15000")
     finally:
         app.dependency_overrides = original_overrides
         with closing(run_repository._connect()) as connection:

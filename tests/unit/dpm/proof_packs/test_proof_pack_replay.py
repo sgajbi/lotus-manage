@@ -1,11 +1,45 @@
 from datetime import datetime, timezone
+import pytest
 
 from src.api.services.proof_pack_replay import find_replayable_proof_pack
+from src.core.proof_packs import ProofPackSourceValidationError
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from tests.unit.dpm.proof_packs.test_proof_pack_repository import _proof_pack
 
 
 RETENTION_EXPIRES_AT = datetime(2033, 5, 3, 9, 30, tzinfo=timezone.utc)
+
+
+@pytest.mark.parametrize("idempotency_key", [None, "idem-legacy-no-action"])
+def test_historical_no_action_proof_cannot_replay_heuristic_run(
+    idempotency_key: str | None,
+) -> None:
+    repository = InMemoryDpmProofPackRepository()
+    pack = _proof_pack()
+    selected = pack.sections[0].model_copy(
+        update={"section_type": "selected_alternative", "facts": {"method": "DO_NOTHING_BASELINE"}}
+    )
+    pack = pack.model_copy(
+        update={"rebalance_run_id": "rr_borrowed_heuristic", "sections": [selected]}
+    )
+    repository.save_proof_pack(
+        proof_pack=pack,
+        idempotency_key=idempotency_key,
+        retention_expires_at=RETENTION_EXPIRES_AT,
+        tenant_id="tenant-test",
+    )
+    with pytest.raises(
+        ProofPackSourceValidationError, match="DPM_NO_ACTION_EVALUATION_RUN_NOT_ECONOMIC_SOURCE"
+    ):
+        find_replayable_proof_pack(
+            proof_pack_id=pack.proof_pack_id,
+            idempotency_key=idempotency_key,
+            proof_pack_repository=repository,
+            tenant_id="tenant-test",
+        )
+    assert (
+        repository.get_proof_pack(proof_pack_id=pack.proof_pack_id, tenant_id="tenant-test") == pack
+    )
 
 
 def test_find_replayable_proof_pack_prefers_idempotency_match() -> None:

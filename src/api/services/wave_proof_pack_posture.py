@@ -27,7 +27,7 @@ def _ready_proof_pack_count(wave: DpmRebalanceWave) -> int:
     return sum(
         1
         for item in wave.items
-        if item.proof_pack_id is not None and item.diagnostics.get("proof_pack_state") != "DEGRADED"
+        if item.proof_pack_id is not None and item.diagnostics.get("proof_pack_state") == "READY"
     )
 
 

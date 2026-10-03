@@ -16,6 +16,7 @@ from src.core.construction import (
     ConstructionAuthorityContext,
     ConstructionAlternativeSelection,
     build_alternative_set,
+    build_do_nothing_baseline,
     build_rebalance_result_alternative,
 )
 from src.core.models import (
@@ -84,6 +85,49 @@ from tests.shared.factories import (
 
 
 CREATED_AT = datetime(2026, 5, 3, 9, 30, tzinfo=timezone.utc)
+
+
+def test_no_action_proof_pack_cannot_borrow_heuristic_economics() -> None:
+    result = _ready_rebalance_result()
+    baseline = build_do_nothing_baseline(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_no_action",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[baseline],
+    )
+    with pytest.raises(
+        ProofPackSourceValidationError, match="DPM_NO_ACTION_EVALUATION_RUN_NOT_ECONOMIC_SOURCE"
+    ):
+        build_proof_pack_from_selected_alternative(
+            alternative_set=alternative_set,
+            selected_alternative_id=baseline.alternative_id,
+            run=_run_record(result=result),
+            created_by="pm-test",
+            reason="No action",
+            tenant_id="tenant-test",
+        )
+    pack = build_proof_pack_from_selected_alternative(
+        alternative_set=alternative_set,
+        selected_alternative_id=baseline.alternative_id,
+        run=None,
+        created_by="pm-test",
+        reason="No action",
+        tenant_id="tenant-test",
+    )
+    assert pack.rebalance_run_id is None
+    assert pack.status == "BLOCKED"
+    trade_section = next(
+        section for section in pack.sections if section.section_type == "trade_intents"
+    )
+    assert trade_section.facts == {}
+    selected_section = next(
+        section for section in pack.sections if section.section_type == "selected_alternative"
+    )
+    assert selected_section.facts["evaluation_context"] == {
+        "rebalance_run_id": result.rebalance_run_id,
+        "state_basis": "BEFORE",
+    }
 
 
 def _ready_rebalance_result() -> RebalanceResult:

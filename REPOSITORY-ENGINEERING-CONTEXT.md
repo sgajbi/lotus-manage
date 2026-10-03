@@ -131,6 +131,11 @@ repository, while Manage owns only its declared consumption and fail-closed beha
 2. The RFC-0039 foundation provides persisted construction alternatives and selected-alternative
    decisions. Manage consumes source-owned context but does not calculate external risk,
    performance, market-data, treasury, tax, advice, execution, order, fill, or settlement truth.
+   `DO_NOTHING_BASELINE` carries zero action and before-state metrics. Its audit-only
+   `evaluation_context` is separate from the null economic `rebalance_run_id`; never resolve it
+   as a proposal or approval source. Legacy borrowed references are normalized on read without
+   rewriting retained rows. No-action proof packs cannot authorize instructions or borrowed-run
+   outcome economics. Wave selection replaces candidate diagnostics with the selected proposal.
 3. The RFC-0040 foundation provides deterministic proof-pack generation, persistence, report and AI
    evidence inputs, and downstream handoff metadata without taking ownership of rendering, archive,
    report materialization, or AI-generated content.

@@ -55,6 +55,15 @@ class ConstructionComparisonMetrics(BaseModel):
     )
 
 
+class ConstructionEvaluationContext(BaseModel):
+    rebalance_run_id: str = Field(
+        description="Audit-only evaluation run; not the alternative's economic or instruction run."
+    )
+    state_basis: Literal["BEFORE"] = Field(
+        default="BEFORE", description="Only the evaluation run's before-state describes no action."
+    )
+
+
 class ConstructionAlternative(BaseModel):
     alternative_id: str = Field(description="Stable identifier within the alternative set.")
     method: ConstructionMethod = Field(description="Construction method used for this alternative.")
@@ -64,7 +73,11 @@ class ConstructionAlternative(BaseModel):
     summary: str = Field(description="Short business summary for the portfolio manager.")
     rebalance_run_id: str | None = Field(
         default=None,
-        description="Source rebalance run id when this alternative wraps a simulation result.",
+        description="Alternative-owned economic simulation run; null for a no-action comparator.",
+    )
+    evaluation_context: ConstructionEvaluationContext | None = Field(
+        default=None,
+        description="Audit-only calculation context, never a trade proposal or release authority.",
     )
     objective_trace: list[ConstructionObjectiveTerm] = Field(
         description="Bounded objective terms used for comparison."
@@ -83,6 +96,45 @@ class ConstructionAlternative(BaseModel):
         default_factory=dict,
         description="Bounded diagnostic summary, not raw request or source payloads.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def separate_legacy_baseline_evaluation(cls, value: Any) -> Any:
+        """Interpret historical borrowed references without rewriting retained source rows."""
+        if (
+            not isinstance(value, dict)
+            or value.get("method") != ConstructionMethod.DO_NOTHING_BASELINE
+        ):
+            return value
+        if value.get("evaluation_context") is not None or not value.get("rebalance_run_id"):
+            return value
+        return {
+            **value,
+            "rebalance_run_id": None,
+            "evaluation_context": {
+                "rebalance_run_id": value["rebalance_run_id"],
+                "state_basis": "BEFORE",
+            },
+            "intent_ids": [],
+            "diagnostics": {**value.get("diagnostics", {}), "proposed_changes": []},
+        }
+
+    @model_validator(mode="after")
+    def require_no_action_economics(self) -> ConstructionAlternative:
+        if self.method != ConstructionMethod.DO_NOTHING_BASELINE:
+            return self
+        metrics = self.comparison_metrics
+        if (
+            self.rebalance_run_id is not None
+            or self.intent_ids
+            or self.diagnostics.get("proposed_changes")
+            or metrics.trade_count != 0
+            or metrics.turnover_weight != 0
+            or metrics.drift_after != metrics.drift_before
+            or metrics.drift_reduction != 0
+        ):
+            raise ValueError("CONSTRUCTION_NO_ACTION_ECONOMICS_MISMATCH")
+        return self
 
 
 class ConstructionAlternativeSet(BaseModel):

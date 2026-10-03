@@ -1,5 +1,18 @@
 # API Surface
 
+## No-action Construction Contract
+
+`DO_NOTHING_BASELINE` preserves before-state comparison metrics and exposes no intents, proposed
+changes or economic `rebalance_run_id`. `evaluation_context.rebalance_run_id` is an audit reference
+to the source evaluation; `state_basis=BEFORE` identifies the comparator's economics. Do not treat
+the evaluation run's post-trade state or approvals as baseline evidence.
+
+Selection retains this distinction and replaces wave diagnostics with the selected proposal.
+No-action proof packs lack an economic run and are blocked for trade release. Historical borrowed
+run references are interpreted on construction read without rewriting stored rows; historical
+proof packs that combine no action with a heuristic run cannot be replayed or used for instruction
+release. Heuristic alternatives retain their economic run, proposals and tenant fences.
+
 ## Current Scope And Reader Map
 
 This page maps the current `lotus-manage` API surface to implementation-backed discretionary

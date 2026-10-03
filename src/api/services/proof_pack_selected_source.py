@@ -7,6 +7,7 @@ from src.core.construction.models import (
     ConstructionAlternativeSet,
 )
 from src.core.construction.repository import ConstructionRepository
+from src.core.construction.vocabulary import ConstructionMethod
 from src.core.proof_packs import ProofPackSourceValidationError
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
 from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
@@ -46,7 +47,10 @@ def resolve_selected_alternative_source(
         raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
     run = None
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] = []
-    if selected.rebalance_run_id is not None:
+    if (
+        selected.method != ConstructionMethod.DO_NOTHING_BASELINE
+        and selected.rebalance_run_id is not None
+    ):
         try:
             run = run_service.get_run_record_for_tenant(
                 tenant_id=tenant_id,
