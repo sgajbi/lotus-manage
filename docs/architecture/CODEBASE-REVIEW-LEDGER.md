@@ -4,6 +4,15 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 
 ## Issue #733: Reserve Authority Consumption
 
+- Wave slice: explicit stateful item mode, server-derived scope, shared envelope resolution,
+  immutable durable source context/options and hash-checked worker execution. Known checked mandate
+  revisions must match; exact durable retries do not refetch Core. Legacy stateless hashes retained.
+- Native proof: supported refresh/health/create/source-check/admit/work/artifact APIs and real
+  PostgreSQL; USD100,000 NAV, BUY5, 980 shares and USD2,000 cash, offline replay and no-write refusals.
+  Positive health is explicitly CALLER_SUPPLIED synthetic input; Core refresh remains review-required.
+- Dependency: Core #1086 owns missing cash-band/turnover applicability; no readiness bypass.
+  Keep #733 open for actual source-backed wave acceptance. Detailed evidence lives in
+  `docs/evidence/issue-733-source-bound-waves/README.md`, not a production-readiness claim.
 - Scope: source DTO, policy resolution, retained run lineage and native single/batch HTTP proof.
 - Authority: Core PR #1193, main `ebb8102a19f3b57d83f8a79160087fcda1665795`; source scope,
   currency basis and no-override permission must be declared, never inferred by Manage.
@@ -11,8 +20,8 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   zero versus absence and old artifact readability. No topology or calculation-kernel change.
 - Review draft: `review/lotus-manage/MANAGE-733-CORE-TARGET-HANDOFF-20261003.md` semantics adopted;
   its earlier candidate revision is superseded by the accepted Core main above.
-- Remaining acceptance: wave stateless-input propagation is not source-binding enforcement.
-  Keep #733 open; controlled producer proof is not actual Core, bank IAM, capacity or booking proof.
+- Earlier single/batch acceptance did not establish source-bound wave enforcement.
+  Controlled producer proof is not actual Core, bank IAM, capacity or booking proof.
 - Guidance: repository context/docs/wiki updated; shared skills, routing and AGENTS unchanged.
 - Review P1: native HTTP reproduced invalid-reserve mandate refresh returning200 before correction.
   Validation moved to shared binding DTO ingestion; refresh and rebalance must both return424,

@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-10-03T09:30:52+00:00`
+- Generated at: `2026-10-03T10:45:54+00:00`
 
 - Baseline ref: `origin/main`
 
-- Baseline source snapshot: `6e3c79b5befc533d88552540b22a5edba2a60a71`
+- Baseline source snapshot: `8453abcce7efa9443d59d3d0e6e290d98294759d`
 
-- Report source snapshot: `92740af5+worktree`
+- Report source snapshot: `8453abcc+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -14,9 +14,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 1016 | 1018 | +2 |
-| Total Python LOC | 254976 | 255757 | +781 |
-| Test functions | 3562 | 3576 | +14 |
+| Python files | 1018 | 1023 | +5 |
+| Total Python LOC | 255757 | 256756 | +999 |
+| Test functions | 3576 | 3595 | +19 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -38,15 +38,15 @@
 | Rank | File | Lines |
 | --- | --- | --- |
 | 1 | tests/unit/dpm/api/test_waves_api.py | 8189 |
-| 2 | tests/unit/dpm/api/test_api_rebalance.py | 4234 |
+| 2 | tests/unit/dpm/api/test_api_rebalance.py | 4238 |
 | 3 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3685 |
 | 4 | tests/unit/test_ci_workflow_gate_enforcement.py | 3398 |
 | 5 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3391 |
-| 6 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 3241 |
+| 6 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 3245 |
 | 7 | tests/unit/dpm/waves/test_campaign_discovery.py | 3224 |
 | 8 | tests/unit/test_documentation_current_state.py | 3029 |
 | 9 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2713 |
-| 10 | tests/unit/dpm/api/test_construction_api.py | 2416 |
+| 10 | tests/unit/dpm/api/test_construction_api.py | 2420 |
 
 ### current branch
 
@@ -73,7 +73,7 @@
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 794 |
 | 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 426 |
 | 4 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 380 |
-| 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
+| 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 358 |
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
 | 7 | test_unknown_legacy_limits_are_preserved_but_never_act_as_contractual_limits | tests/integration/dpm/mandates/test_legacy_mandate_limit_provenance_postgres.py | 335 |
 | 8 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 334 |

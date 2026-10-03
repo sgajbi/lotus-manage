@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.api.request_models import RebalanceRequest
 from src.api.routers.mandate_tenant_query import NormalisedTenantId
@@ -277,6 +277,16 @@ class DpmWaveSourceCheckRequest(BaseModel):
 
 
 class DpmWaveSimulationItemInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    input_mode: Literal["stateless", "stateful"] = Field(
+        default="stateless",
+        description=(
+            "Stateless counterfactual input or Core-resolved stateful input. Stateful scope is "
+            "derived from the persisted wave item, business date and admitted tenant."
+        ),
+        examples=["stateful"],
+    )
     wave_item_id: str | None = Field(
         default=None,
         description="Wave item id receiving this construction input.",
@@ -287,11 +297,20 @@ class DpmWaveSimulationItemInput(BaseModel):
         description="Portfolio id fallback when the caller does not know the wave item id.",
         examples=["PB_SG_GLOBAL_BAL_001"],
     )
-    stateless_input: RebalanceRequest = Field(
+    stateless_input: RebalanceRequest | None = Field(
+        default=None,
         description=(
             "Complete RFC-0039 stateless construction input for this ready item. "
             "Wave simulation does not synthesize holdings, market data, or shelf data."
-        )
+        ),
+    )
+    options_override: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Stateful engine options only. Source mandate controls cannot be changed; source "
+            "holdings, model targets, dates and authority cannot be supplied here."
+        ),
+        examples=[{"enable_tax_awareness": False}],
     )
     authority_context: ConstructionAuthorityContext | None = Field(
         default=None,
@@ -302,6 +321,15 @@ class DpmWaveSimulationItemInput(BaseModel):
             "from lotus-performance until a dedicated manage performance client is promoted."
         ),
     )
+
+    @model_validator(mode="after")
+    def require_one_financial_input_mode(self) -> "DpmWaveSimulationItemInput":
+        if self.input_mode == "stateful":
+            if self.stateless_input is not None:
+                raise ValueError("DPM_WAVE_SIMULATION_MIXED_INPUT_MODES")
+        elif self.stateless_input is None or self.options_override:
+            raise ValueError("DPM_WAVE_SIMULATION_STATELESS_INPUT_REQUIRED")
+        return self
 
 
 class DpmWaveSimulationRequest(BaseModel):

@@ -15,6 +15,8 @@ from src.api.routers.wave_http_errors import (
     wave_validation_http_exception,
 )
 from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
+from src.api.services.rebalance_simulation_errors import DpmRebalanceEnvelopeError
+from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.routers.wave_request_models import (
     DpmWaveSimulationCancelRequest,
     DpmWaveSimulationOperationRequest,
@@ -71,9 +73,21 @@ ResultsOffsetQuery = Annotated[int, Query(ge=0)]
     description=(
         "Persists immutable item inputs and source identities before acceptance. Exact retries "
         "return the existing operation; conflicting reuse fails. Financial work is performed only "
-        "by separately fenced worker calls and remains bounded by the persisted concurrency limit."
+        "by separately fenced worker calls and remains bounded by the persisted concurrency limit. "
+        "Stateful items derive scope from the checked wave, resolve Core-owned inputs and mandate "
+        "policy once, then retain the effective financial request and source context. Workers and "
+        "exact retries never refetch Core. Stateless items remain explicit counterfactual inputs; "
+        "neither mode approves, releases or books trades."
     ),
-    responses={404: _NOT_FOUND_RESPONSE, 409: _CONFLICT_RESPONSE},
+    responses={
+        404: _NOT_FOUND_RESPONSE,
+        409: _CONFLICT_RESPONSE,
+        422: {"description": "Invalid input mode/options or item is not source-ready."},
+        424: {
+            "description": "Core input or binding authority is incomplete or conflicts with requested options."
+        },
+        503: {"description": "Core source resolution is unavailable."},
+    },
 )
 def admit_simulation_operation(
     wave_id: WaveIdPath,
@@ -99,6 +113,8 @@ def admit_simulation_operation(
         )
     except DpmWaveLookupError as exc:
         raise wave_lookup_http_exception(exc) from exc
+    except DpmRebalanceEnvelopeError as exc:
+        raise rebalance_envelope_http_exception(exc) from exc
     except DpmWaveValidationError as exc:
         raise wave_validation_http_exception(
             exc,
@@ -107,6 +123,7 @@ def admit_simulation_operation(
                 "DPM_WAVE_SIMULATION_CORRELATION_CONFLICT",
                 "DPM_WAVE_SIMULATION_WAVE_VERSION_CONFLICT",
                 "DPM_WAVE_SIMULATION_TRANSITION_CONFLICT",
+                "DPM_WAVE_SIMULATION_SOURCE_REVISION_CONFLICT",
             ),
         ) from exc
     return simulation_operation_response(

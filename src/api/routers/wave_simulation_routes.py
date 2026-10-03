@@ -29,16 +29,21 @@ router = APIRouter()
     summary="Generate construction alternatives for source-ready wave items",
     description=(
         "Calls the RFC-0039 construction alternative authority for source-ready wave items that "
-        "have caller-supplied construction inputs. Source-blocked, degraded, and review-required "
-        "items are preserved with their reasons. Ready items without construction input become "
-        "`SIMULATION_BLOCKED`; the endpoint does not synthesize portfolio holdings, market data, "
-        "model targets, or shelf data from mandate identifiers."
+        "have explicit stateless counterfactual inputs or stateful Core inputs. Stateful scope "
+        "comes from the persisted wave; Core owns holdings, prices, targets and mandate policy. "
+        "Source-blocked, degraded and review-required items are never promoted. Ready items "
+        "without input become `SIMULATION_BLOCKED`. This generates simulations, not approval, "
+        "release or core booking. Use durable simulation operations for frozen-input recovery."
     ),
     responses={
         200: {"description": "Durable simulated or partially simulated wave."},
         404: {"description": "Wave not found."},
-        409: {"description": "Wave version conflict during optimistic update."},
+        409: {"description": "Wave/source revision conflict or stateful sourcing is disabled."},
         422: {"description": "Wave is not source-checked or request is invalid."},
+        424: {
+            "description": "Core input or binding authority is incomplete or conflicts with requested options."
+        },
+        503: {"description": "Core source resolution is unavailable."},
     },
 )
 def simulate_wave(

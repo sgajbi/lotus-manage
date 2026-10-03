@@ -34,7 +34,7 @@ For full repo-native evidence in production-oriented work, run:
 
 ## Source mandate cash reserve
 
-Stateful single/batch execution requires the effective binding's reserve scope
+Stateful single/batch and source-bound wave execution require the effective binding's reserve scope
 `TOTAL_PORTFOLIO_MARKET_VALUE`, currency basis `PORTFOLIO_BASE_CURRENCY`, authority
 `MANDATE_BINDING` and explicit `consumer_override_allowed=false`. These source facts, target,
 binding version and effective dates survive in retained run lineage. An absent target differs from
@@ -60,8 +60,16 @@ Independent reconciliation is `shares * price + cash = NAV`. See
 [native HTTP/PostgreSQL tests](../tests/integration/dpm/supportability/test_source_cash_reserve_network.py)
 for controlled-producer proof, batch position-cap deviation, tenant isolation and retained replay
 after process replacement. No real Core, bank IAM, capacity, approval, settlement or booking
-acceptance is claimed. Wave stateless inputs share the calculation kernel but do not establish
-source-bound enforcement; that gap remains in issue #733.
+acceptance is claimed. Stateless wave inputs are explicit counterfactuals, not Core-binding proof.
+
+For synchronous or durable waves, supply an item selector with `input_mode=stateful` and optional
+`options_override`; do not send snapshots, source context or repeated tenant/date/mandate/model
+selectors. Manage derives scope from the checked wave and resolves Core inputs before calculation
+or admission. A changed checked mandate revision returns409; missing authority or conflicting
+controls return424. Durable workers/retries consume frozen inputs without refetching Core;
+hash corruption becomes a non-retryable failure. Existing readiness/approval gates remain intact.
+Core's missing cash-band/turnover applicability leaves health review-required; fix source data,
+not readiness flags. [Wave proof and limitations](evidence/issue-733-source-bound-waves/README.md).
 
 ## NULL-tenant quarantine inventory
 

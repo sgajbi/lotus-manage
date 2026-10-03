@@ -566,8 +566,13 @@ Most relevant current governance:
     separately modeled request-level cash buffer without inventing a mandate target.
     Native HTTP/PostgreSQL reserve proof
     uses `tests/integration/dpm/supportability/test_source_cash_reserve_network.py` with the controlled
-    source fixture; it is not real Core, bank IAM or capacity evidence. Wave stateless-input
-    propagation does not prove enforcement of the Core binding; that acceptance remains in #733.
+    source fixture; it is not real Core, bank IAM or capacity evidence. Wave stateful item inputs
+    derive scope from the persisted wave and reuse this resolver. Durable admission freezes the
+    effective request, full source context and original options; workers validate hashes and exact
+    retries never refetch Core. Stateless hashes remain unchanged. Source-ready items require a
+    matching known mandate revision; review-required health is not promoted. Native wave proof
+    uses separately identified complete caller-supplied synthetic health, not Core ingestion;
+    current source cash-band/turnover gaps still block real source-backed wave qualification.
     For Risk-event waves, reject duplicate candidate IDs before the authority call and verify
     the returned event/date, affected/excluded uniqueness, candidate membership, and mandate echo
     before constructing wave source refs or writing a wave. Excluded members are validation

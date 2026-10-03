@@ -733,6 +733,11 @@ cover competing workers, stale fencing, retry exhaustion, cancellation, source-r
 artifact-commit recovery, and a 100-item concurrency-4 sequential-oracle comparison. The committed
 issue #715 load probe records a bounded workstation envelope only; it is not production capacity,
 an OMS, an order/instruction publisher, fill/settlement evidence, or authoritative core booking.
+Stateful wave items resolve Core inputs from persisted scope and freeze mandate policy/source
+context before durable admission. Exact retries never refetch Core; source-version and input-hash
+conflicts fail closed. Controlled HTTP proof uses explicitly caller-supplied synthetic complete
+health; Core cash-band/turnover gaps still prevent source-backed wave readiness. See the
+[source-bound wave evidence](https://github.com/sgajbi/lotus-manage/blob/main/docs/evidence/issue-733-source-bound-waves/README.md).
 
 Campaign discovery universe-posture addendum: `GET /api/v1/rebalance/waves/campaign-discovery` now emits `BulkReviewCampaignUniversePosture:v1` on each `BulkReviewCampaignDiscovery:v1` item from `src/core/waves/campaign_discovery.py`, making the persisted-candidate source scope and `UNSUPPORTED` global portfolio-universe discovery boundary machine-readable for Gateway/Workbench and other consumers.
 

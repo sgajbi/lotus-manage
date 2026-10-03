@@ -487,6 +487,12 @@ conflicting target/buffer overrides return `424 DPM_CORE_MANDATE_CASH_RESERVE_OV
 caller tolerance overrides and out-of-date bindings fail closed, and construction runs retain the
 lineage. Successful target scaling remains ready; lot or rounding deviation is review evidence
 rather than a fabricated cash-band result.
+Wave `/simulate` and `/simulation-operations` accept item `input_mode=stateful`; scope comes from
+the persisted wave, not a caller snapshot. Durable admission freezes Core inputs/source context;
+workers and exact retries never refetch Core. Checked mandate-version changes return409, binding
+authority conflicts424. Review-required health remains blocked. Core cash-band/turnover source gaps
+still prevent live source-backed wave qualification; see the
+[wave evidence](https://github.com/sgajbi/lotus-manage/blob/main/docs/evidence/issue-733-source-bound-waves/README.md).
 Synchronous stateless simulation also requires `X-Tenant-Id` because it publishes a tenant-owned
 durable run; stateless analysis and alternative-set construction retain their documented optional
 tenant context. The header is caller-asserted routing scope, not an IAM grant.

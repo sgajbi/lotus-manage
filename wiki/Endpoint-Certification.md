@@ -1300,6 +1300,9 @@ Functional coverage:
   producer, including artifact replay after process replacement and foreign-tenant refusal.
   This is not real Core, bank IAM, approval or booking acceptance. Source-bound wave enforcement
   remains open in [issue #733](https://github.com/sgajbi/lotus-manage/issues/733),
+  now with stateful wave resolution/frozen offline replay. Native wave positives use explicitly
+  caller-supplied synthetic complete health; raw Core-refreshed health stays review-required because
+  cash-band/turnover applicability is unsourced. This is not source-backed readiness acceptance.
 - core resolver transformation and source-safe resolver failure behavior covered by unit tests.
 
 Non-functional posture:

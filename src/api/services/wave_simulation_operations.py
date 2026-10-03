@@ -16,9 +16,13 @@ from src.api.services.wave_simulation_item import (
     _PORTFOLIO_IDENTITY_CONFLICT,
     simulate_item,
 )
+from src.api.services.wave_inputs.resolution import (
+    DpmWaveFrozenInputIntegrityError,
+    freeze_wave_inputs,
+    simulation_input_from_payload,
+)
 from src.core.common.canonical import hash_canonical_payload
 from src.core.common.derived_identity import derived_identity
-from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.rebalance_runs.service import DpmRunSupportService
@@ -61,6 +65,35 @@ def admit_wave_simulation_operation(
     )
     operation_id = derived_identity("wso", tenant_id, wave_id, idempotency_key)
     method_values = [] if methods is None else [method.value for method in methods]
+    existing = repository.get_simulation_operation_by_idempotency(
+        tenant_id=tenant_id,
+        idempotency_key_hash=idempotency_hash,
+    )
+    if existing is None and wave.state != "SOURCE_CHECKED":
+        record_async_operation(
+            event="submit", execution_mode="accept_only", outcome="not_executable"
+        )
+        raise DpmWaveValidationError(
+            "DPM_WAVE_SIMULATION_INVALID_STATE",
+            f"Wave {wave_id} must be SOURCE_CHECKED before asynchronous simulation.",
+        )
+    retained_inputs = None
+    if existing is not None and any(
+        payload.get("input_mode") == "stateful" for payload in resolved_inputs.values()
+    ):
+        retained_inputs = {
+            record.wave_item_id: record.input_payload
+            for record in _all_simulation_items(
+                tenant_id=tenant_id, operation_id=existing.operation_id, repository=repository
+            )
+        }
+    resolved_inputs = freeze_wave_inputs(
+        wave=wave,
+        item_inputs=resolved_inputs,
+        tenant_id=tenant_id,
+        correlation_id=correlation_id,
+        retained_inputs=retained_inputs,
+    )
     item_records = [
         _build_item_record(
             operation_id=operation_id,
@@ -105,10 +138,6 @@ def admit_wave_simulation_operation(
             ],
         }
     )
-    existing = repository.get_simulation_operation_by_idempotency(
-        tenant_id=tenant_id,
-        idempotency_key_hash=idempotency_hash,
-    )
     if existing is not None:
         if existing.request_hash != request_hash:
             record_async_operation(event="submit", execution_mode="accept_only", outcome="conflict")
@@ -118,14 +147,6 @@ def admit_wave_simulation_operation(
             )
         record_async_operation(event="submit", execution_mode="accept_only", outcome="accepted")
         return existing, True
-    if wave.state != "SOURCE_CHECKED":
-        record_async_operation(
-            event="submit", execution_mode="accept_only", outcome="not_executable"
-        )
-        raise DpmWaveValidationError(
-            "DPM_WAVE_SIMULATION_INVALID_STATE",
-            f"Wave {wave_id} must be SOURCE_CHECKED before asynchronous simulation.",
-        )
     operation = DpmWaveSimulationOperation(
         operation_id=operation_id,
         tenant_id=tenant_id,
@@ -499,6 +520,15 @@ def _execute_claim(
                 f"wave-operation:{claim.operation_id}:{claim.wave_item_id}:simulate"
             ),
         )
+    except DpmWaveFrozenInputIntegrityError as exc:
+        repository.publish_simulation_item_failure(
+            claim=claim,
+            error_code=str(exc),
+            error_message="Persisted simulation input failed integrity validation.",
+            retryable=False,
+            completed_at=datetime.now(UTC),
+        )
+        return False
     except Exception as exc:  # noqa: BLE001 - worker boundary persists typed failure before retry
         operation = get_wave_simulation_operation(
             tenant_id=claim.tenant_id, operation_id=claim.operation_id, repository=repository
@@ -566,7 +596,8 @@ def _resolve_item_payloads(
             stateless_input.get("portfolio_snapshot") if isinstance(stateless_input, dict) else None
         )
         nested_portfolio_id = snapshot.get("portfolio_id") if isinstance(snapshot, dict) else None
-        if nested_portfolio_id != resolved_item.portfolio_id:
+        stateful = supplied.get("input_mode") == "stateful"
+        if not stateful and nested_portfolio_id != resolved_item.portfolio_id:
             raise DpmWaveValidationError(
                 "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT",
                 "The construction input portfolio must match the admitted wave item.",
@@ -576,6 +607,21 @@ def _resolve_item_payloads(
             for key, value in supplied.items()
             if key in {"stateless_input", "authority_context"} and value is not None
         }
+        if stateful:
+            if stateless_input is not None:
+                raise DpmWaveValidationError(
+                    "DPM_WAVE_SIMULATION_MIXED_INPUT_MODES",
+                    "Stateful input cannot include caller-supplied financial snapshots.",
+                )
+            payload = {
+                "input_mode": "stateful",
+                "options_override": supplied.get("options_override", {}),
+                **(
+                    {"authority_context": payload["authority_context"]}
+                    if "authority_context" in payload
+                    else {}
+                ),
+            }
         existing = resolved.get(resolved_item.wave_item_id)
         if existing is not None and existing != payload:
             raise DpmWaveValidationError(
@@ -630,18 +676,9 @@ def _simulation_inputs_for_claim(
     stateless_payload = claim.input_payload.get("stateless_input")
     if not isinstance(stateless_payload, dict):
         return {}
-    authority_payload = claim.input_payload.get("authority_context")
-    authority_context = (
-        ConstructionAuthorityContext.model_validate(authority_payload)
-        if isinstance(authority_payload, dict)
-        else None
-    )
-    return {
-        claim.wave_item_id: DpmWaveSimulationInput(
-            stateless_input=RebalanceRequest.model_validate(stateless_payload),
-            authority_context=authority_context,
-        )
-    }
+    if hash_canonical_payload(claim.input_payload) != claim.input_hash:
+        raise DpmWaveFrozenInputIntegrityError("DPM_WAVE_SIMULATION_INPUT_HASH_CONFLICT")
+    return {claim.wave_item_id: simulation_input_from_payload(claim.input_payload)}
 
 
 def _reconciled_wave_items(

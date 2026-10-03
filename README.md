@@ -695,6 +695,11 @@ Operationally important truths:
     recovery proof, including physical worker termination after durable financial commit, and
     measured local operating envelope. Synthetic source-ready inputs do not certify live integration
     or production capacity.
+    Items may opt into `input_mode=stateful`: Manage derives scope from the checked wave and
+    freezes Core inputs, mandate authority and source lineage before durable admission. Exact
+    retries and workers do not refetch Core. Review-required health is never promoted; Core's
+    unsourced cash-band/turnover controls still prevent source-backed wave qualification. See the
+    [source-bound wave evidence](docs/evidence/issue-733-source-bound-waves/README.md).
 
 ## Documentation Map
 
