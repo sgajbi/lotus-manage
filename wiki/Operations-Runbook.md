@@ -199,6 +199,11 @@ The committed issue #715 result is a controlled workstation measurement, not pro
 Repeat it on the target tier with representative database, network, source-service, contention, and
 workload conditions before setting worker counts or service-level objectives.
 
+The separate PostgreSQL process-recovery test externally kills a worker after financial artifacts
+commit and resumes through the registered work API in a fresh spawned process. It verifies artifact
+reuse, stale-owner fencing, financial figures and tenant-scoped results. Its manually source-ready
+synthetic inputs do not prove upstream ingestion, downstream execution or production capacity.
+
 ## PM-quality lifecycle operations
 
 PM operating-quality evidence is immutable governance and supportability state, not an HR,

@@ -48,12 +48,20 @@ provide restart or competing-worker guarantees and must not be represented as th
 ## Verification
 
 `tests/integration/dpm/waves/test_wave_simulation_operations_postgres.py` uses real PostgreSQL and
-proves competing claims, shared concurrency limits, stale-owner fencing, artifact-commit/process-
-replacement recovery, retry exhaustion, cancellation races, source-revision conflicts, tenant-
+proves competing claims, shared concurrency limits, stale-owner fencing, artifact-commit/repository-
+instance replacement recovery, retry exhaustion, cancellation races, source-revision conflicts, tenant-
 scoped stable paging, and the deterministic 100-item evaluation condition. The 100-item test uses
 concurrency 4, interrupts four items after construction artifacts commit, resumes with replacement
 repository/worker instances, reaches 100 explained terminal dispositions, preserves one alternative
 set per item, and compares financial comparison metrics with a sequential oracle.
+
+`tests/integration/dpm/waves/test_wave_worker_process_recovery.py` proves actual process termination:
+the parent kills a spawned worker after PostgreSQL construction and financial-run commits but before
+the item checkpoint. A fresh spawned process invokes the registered `/work` API after lease expiry,
+reuses the immutable alternative/run artifact, and publishes one terminal item. Assertions verify
+one retained run, stale-owner refusal, tenant-scoped status/results and the independent financial
+example: SGD 15,000 NAV, 120 shares and SGD 3,000 cash. All stores are PostgreSQL; inputs are synthetic
+and manually source-ready. This is not positive upstream/downstream, approval or capacity proof.
 
 API and in-memory repository regression tests additionally prove admission replay/conflict behavior,
 selector/nested-portfolio identity binding, returned-association refusal, supported
@@ -109,7 +117,7 @@ are not production capacity evidence.
 
 ## Review-inbox disposition
 
-The three current review-inbox files were reviewed. `INTEGRATION-RUNTIME-WINDOW.md` remains
+The original review-inbox files were reviewed. `INTEGRATION-RUNTIME-WINDOW.md` remains
 coordination-only; its released runtime hold and #715 takeover were followed without copying it into
 product documentation. `AUDIT-REFUSAL-AND-LOG-SAFETY-20261002.md` and
 `COMPOSITE-PUBLICATION-QA-20261002.md` concern already merged #756/#757 and #714 work and add no

@@ -664,7 +664,9 @@ Operationally important truths:
     synchronous `/simulate` route remains a bounded convenience and is not restart-safe book-scale
     orchestration. See
     [issue #715 evidence](docs/evidence/issue-715-wave-simulation/README.md) for the real PostgreSQL
-    recovery proof and measured local operating envelope; neither is a production capacity claim.
+    recovery proof, including physical worker termination after durable financial commit, and
+    measured local operating envelope. Synthetic source-ready inputs do not certify live integration
+    or production capacity.
 
 ## Documentation Map
 
