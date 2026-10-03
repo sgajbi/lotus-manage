@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+import pytest
+
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_method_execution import (
     _currency_overlay_options,
@@ -10,7 +12,7 @@ from src.api.services.construction_method_execution import (
     run_construction_method,
 )
 from src.core.construction.vocabulary import ConstructionMethod
-from src.core.models import EngineOptions, TargetMethod
+from src.core.models import EngineOptions, RebalanceResult, TargetMethod
 from tests.shared.factories import valid_api_payload
 
 
@@ -103,3 +105,43 @@ def test_run_construction_method_uses_method_specific_correlation_and_records_su
 
     assert result.correlation_id == "corr-construction:min_turnover"
     assert calls == [("corr-construction:min_turnover", "hash-method", None)]
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        ConstructionMethod.HEURISTIC_EXPLAINABLE,
+        ConstructionMethod.LIQUIDITY_AWARE,
+        ConstructionMethod.RISK_AWARE,
+    ],
+)
+def test_recorded_counterfactual_is_qualified_without_changing_comparison(method) -> None:
+    request = RebalanceRequest.model_validate(valid_api_payload())
+    recorded: list[RebalanceResult] = []
+
+    class _RunService:
+        def record_run(self, *, result, request_hash, portfolio_id, idempotency_key, tenant_id):
+            assert request_hash == "comparison-hash"
+            assert portfolio_id == request.portfolio_snapshot.portfolio_id
+            assert tenant_id == "tenant-comparison"
+            assert idempotency_key is None
+            recorded.append(result)
+
+    mechanical = run_construction_method(
+        request=request,
+        method=method,
+        correlation_id="comparison",
+        request_hash="comparison-hash",
+        tenant_id="tenant-comparison",
+        run_service=_RunService(),  # type: ignore[arg-type]
+    )
+    assert len(recorded) == 1
+    persisted = recorded[0]
+    assert mechanical.client_restriction_policy is None
+    assert persisted.client_restriction_policy is not None
+    assert persisted.client_restriction_policy.decision == "NOT_ASSESSED"
+    assert persisted.client_restriction_policy.override_authority == "NONE"
+    assert persisted.gate_decision is not None
+    assert persisted.gate_decision.gate == "COMPLIANCE_REVIEW_REQUIRED"
+    excluded = {"client_restriction_policy", "gate_decision"}
+    assert persisted.model_dump(exclude=excluded) == mechanical.model_dump(exclude=excluded)
