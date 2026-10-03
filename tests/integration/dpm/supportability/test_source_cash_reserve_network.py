@@ -93,6 +93,24 @@ def test_stateful_source_reserve_http_economics_and_retained_replay(reserve, sha
             with native_api(dsn, core_url=core_url) as (client, _process):
                 result = _call(client, "POST", "/api/v1/rebalance/simulate", headers, request)
                 _assert_result(result, reserve, expected_shares=shares, expected_cash=cash)
+                if reserve == "0.02":
+                    refreshed = _call(
+                        client,
+                        "POST",
+                        "/api/v1/mandates/mandate-reserve/refresh-from-core",
+                        _headers(tenant),
+                        {"portfolio_id": portfolio, "tenant_id": tenant, "as_of_date": AS_OF},
+                    )
+                    assert Decimal(
+                        refreshed["mandate"]["constraints"]["cash_reserve_weight"]
+                    ) == Decimal(reserve)
+                    retained = _call(
+                        client,
+                        "GET",
+                        f"/api/v1/mandates/mandate-reserve?tenant_id={tenant}",
+                        _headers(tenant),
+                    )
+                    assert retained["mandate_version"] == "7"
                 path = f"/api/v1/rebalance/runs/{result['rebalance_run_id']}/artifact"
                 artifact = _call(client, "GET", path, headers)
                 _assert_result(
@@ -138,9 +156,13 @@ def test_stateful_batch_cash_target_and_constrained_deviation_are_not_silently_a
             }
 
 
-def test_invalid_legacy_source_and_conflicting_override_leave_no_financial_records():
+@pytest.mark.parametrize("invalid_target", [None, "0.02"])
+def test_invalid_legacy_source_cannot_enter_runs_or_mandate_state(invalid_target):
     portfolio, tenant = f"reserve-{uuid.uuid4().hex}", f"tenant-{uuid.uuid4().hex}"
-    with controlled_core(portfolio=portfolio, invalid_legacy=True) as (core_url, observations):
+    with controlled_core(portfolio=portfolio, reserve=invalid_target, invalid_legacy=True) as (
+        core_url,
+        observations,
+    ):
         with disposable_database() as dsn, native_api(dsn, core_url=core_url) as (client, _process):
             _call(
                 client,
@@ -150,9 +172,28 @@ def test_invalid_legacy_source_and_conflicting_override_leave_no_financial_recor
                 _request(portfolio, tenant),
                 expected=424,
             )
+            _call(
+                client,
+                "POST",
+                "/api/v1/mandates/mandate-reserve/refresh-from-core",
+                _headers(tenant),
+                {"portfolio_id": portfolio, "tenant_id": tenant, "as_of_date": AS_OF},
+                expected=424,
+            )
+            _call(
+                client,
+                "GET",
+                f"/api/v1/mandates/mandate-reserve?tenant_id={tenant}",
+                _headers(tenant),
+                expected=404,
+            )
             with psycopg.connect(dsn) as connection:
                 assert connection.execute("SELECT count(*) FROM dpm_runs").fetchone()[0] == 0
-        assert len(list(observations.queue)) == 1
+        assert len(list(observations.queue)) == 2
+
+
+def test_conflicting_overrides_leave_no_financial_records():
+    portfolio, tenant = f"reserve-{uuid.uuid4().hex}", f"tenant-{uuid.uuid4().hex}"
     with controlled_core(portfolio=portfolio) as (core_url, _observations):
         with disposable_database() as dsn, native_api(dsn, core_url=core_url) as (client, _process):
             request = _request(portfolio, tenant)

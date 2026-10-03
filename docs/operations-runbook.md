@@ -38,7 +38,8 @@ Stateful single/batch execution requires the effective binding's reserve scope
 `TOTAL_PORTFOLIO_MARKET_VALUE`, currency basis `PORTFOLIO_BASE_CURRENCY`, authority
 `MANDATE_BINDING` and explicit `consumer_override_allowed=false`. These source facts, target,
 binding version and effective dates survive in retained run lineage. An absent target differs from
-zero. Missing authority or `MANDATE_CASH_RESERVE_INVALID` returns 424 before financial writes;
+zero. Missing authority or `MANDATE_CASH_RESERVE_INVALID` returns 424 before financial or mandate
+writes. Invalid-reserve validation belongs to shared binding ingestion, including mandate refresh;
 restore valid source evidence, not a caller override. Old artifacts remain readable.
 
 The target is not a hard cash band. Absolute cash-weight tolerance is 0.0001; larger post-trade

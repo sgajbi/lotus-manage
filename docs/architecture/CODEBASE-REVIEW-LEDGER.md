@@ -14,6 +14,9 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Remaining acceptance: wave stateless-input propagation is not source-binding enforcement.
   Keep #733 open; controlled producer proof is not actual Core, bank IAM, capacity or booking proof.
 - Guidance: repository context/docs/wiki updated; shared skills, routing and AGENTS unchanged.
+- Review P1: native HTTP reproduced invalid-reserve mandate refresh returning200 before correction.
+  Validation moved to shared binding DTO ingestion; refresh and rebalance must both return424,
+  perform no downstream model fetch and leave no retained run or mandate.
 
 ## RFC36-S2-001: Review control docs were missing
 

@@ -1292,7 +1292,8 @@ Functional coverage:
   measured deviation with bounded tolerance without reviewing successful scaling,
 - reserve lineage preserves the producer's total-portfolio market-value scope, portfolio-base-
   currency basis, mandate authority and explicit no-override permission. Missing authority or
-  `MANDATE_CASH_RESERVE_INVALID` fails closed. The [native HTTP/PostgreSQL reserve tests](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/supportability/test_source_cash_reserve_network.py)
+  `MANDATE_CASH_RESERVE_INVALID` fails at shared binding ingestion, including mandate refresh.
+  The [native HTTP/PostgreSQL reserve tests](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/supportability/test_source_cash_reserve_network.py)
   reconcile zero, absent, 2%, 50%, constrained and whole-share residual cases against a controlled
   producer, including artifact replay after process replacement and foreign-tenant refusal.
   This is not real Core, bank IAM, approval or booking acceptance. Source-bound wave enforcement
