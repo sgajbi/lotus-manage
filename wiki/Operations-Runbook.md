@@ -204,6 +204,16 @@ commit and resumes through the registered work API in a fresh spawned process. I
 reuse, stale-owner fencing, financial figures and tenant-scoped results. Its manually source-ready
 synthetic inputs do not prove upstream ingestion, downstream execution or production capacity.
 
+The [construction network recovery test](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/supportability/test_construction_network_recovery.py)
+uses unmodified Uvicorn over HTTP and PostgreSQL. USD/FX cases verify no-action economics, selection,
+blocked proof packs, tenant refusals and exact replay after externally killing the API process.
+Read-only storage checks detect duplicate artifacts; cleanup verifies removal of owned listeners and databases.
+Run `make test-idea-management-action-postgres` from the repository root with the supported environment
+activated, `DPM_POSTGRES_INTEGRATION_DSN` set to an isolated test server and
+`DPM_POSTGRES_INTEGRATION_REQUIRED=1`. The test account needs `CREATEDB` for disposable UUID databases;
+never use a production server. Caller-asserted authorization is enabled, but this test does not establish
+production IAM, upstream/downstream integration, shipped-image equivalence or capacity.
+
 ## PM-quality lifecycle operations
 
 PM operating-quality evidence is immutable governance and supportability state, not an HR,
