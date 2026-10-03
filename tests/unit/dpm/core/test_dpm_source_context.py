@@ -74,6 +74,10 @@ def _core_context(
                 "mandate_effective_to": None,
                 "mandate_lineage": {"source_record_id": "mandate-001-v3"},
                 "cash_reserve_target_weight": cash_reserve_target_weight,
+                "cash_reserve_scope": "TOTAL_PORTFOLIO_MARKET_VALUE",
+                "cash_reserve_currency_basis": "PORTFOLIO_BASE_CURRENCY",
+                "cash_reserve_authority": "MANDATE_BINDING",
+                "cash_reserve_consumer_override_allowed": False,
             },
             "source_lineage": {
                 "portfolio_snapshot_id": "core-pf-snap-001",
@@ -356,6 +360,10 @@ def _core_mandate_binding_payload(**overrides: object) -> dict:
         "rebalance_bands": {
             "default_band": "0.0250000000",
             "cash_reserve_weight": "0.0200000000",
+            "cash_reserve_scope": "TOTAL_PORTFOLIO_MARKET_VALUE",
+            "cash_reserve_currency_basis": "PORTFOLIO_BASE_CURRENCY",
+            "cash_reserve_authority": "MANDATE_BINDING",
+            "consumer_override_allowed": False,
         },
         "effective_from": "2026-04-01",
         "binding_version": 1,
@@ -387,6 +395,102 @@ def test_core_mandate_binding_transforms_to_policy_context():
     assert policy_context.mandate_effective_to is None
     assert policy_context.mandate_lineage == {}
     assert policy_context.cash_reserve_target_weight == Decimal("0.0200000000")
+    assert policy_context.cash_reserve_scope == "TOTAL_PORTFOLIO_MARKET_VALUE"
+    assert policy_context.cash_reserve_currency_basis == "PORTFOLIO_BASE_CURRENCY"
+    assert policy_context.cash_reserve_authority == "MANDATE_BINDING"
+    assert policy_context.cash_reserve_consumer_override_allowed is False
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid"),
+    [
+        ("cash_reserve_scope", "CASH_BALANCE"),
+        ("cash_reserve_currency_basis", "TRADE_CURRENCY"),
+        ("cash_reserve_authority", "MODEL_PORTFOLIO"),
+        ("consumer_override_allowed", True),
+        ("consumer_override_allowed", 0),
+        ("consumer_override_allowed", "false"),
+    ],
+)
+def test_core_reserve_rejects_contradictory_authority(field, invalid):
+    payload = _core_mandate_binding_payload()
+    payload["rebalance_bands"][field] = invalid
+    with pytest.raises(ValidationError, match=field):
+        DpmCoreMandateBindingResponse.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "cash_reserve_scope",
+        "cash_reserve_currency_basis",
+        "cash_reserve_authority",
+        "consumer_override_allowed",
+    ],
+)
+def test_core_reserve_does_not_default_missing_source_authority(field):
+    payload = _core_mandate_binding_payload()
+    del payload["rebalance_bands"][field]
+    with pytest.raises(ValidationError, match=field):
+        DpmCoreMandateBindingResponse.model_validate(payload)
+
+
+@pytest.mark.parametrize("target", ["0", "0.02", None])
+def test_core_reserve_preserves_zero_absence_and_source_authority(target):
+    payload = _core_mandate_binding_payload()
+    payload["rebalance_bands"]["cash_reserve_weight"] = target
+    policy = build_policy_context_from_core_mandate(
+        DpmCoreMandateBindingResponse.model_validate(payload)
+    )
+    assert policy.cash_reserve_target_weight == (None if target is None else Decimal(target))
+    assert policy.cash_reserve_consumer_override_allowed is False
+    assert policy.cash_reserve_authority == "MANDATE_BINDING"
+
+
+@pytest.mark.parametrize("target", ["NaN", "Infinity", "-Infinity", True, "invalid"])
+def test_core_reserve_rejects_nonfinite_or_nonnumeric_target(target):
+    payload = _core_mandate_binding_payload()
+    payload["rebalance_bands"]["cash_reserve_weight"] = target
+    with pytest.raises(ValidationError, match="cash_reserve_weight"):
+        DpmCoreMandateBindingResponse.model_validate(payload)
+
+
+@pytest.mark.parametrize("state", ["INCOMPLETE", "READY", "DEGRADED"])
+def test_invalid_legacy_reserve_is_not_ordinary_absence(state):
+    payload = _core_mandate_binding_payload()
+    payload["rebalance_bands"]["cash_reserve_weight"] = None
+    payload["supportability"].update(
+        state=state,
+        reason="MANDATE_CASH_RESERVE_INVALID",
+        missing_data_families=["cash_reserve_target"],
+    )
+    with pytest.raises(DpmCoreContextIncompleteError, match="MANDATE_CASH_RESERVE_INVALID"):
+        build_policy_context_from_core_mandate(
+            DpmCoreMandateBindingResponse.model_validate(payload)
+        )
+
+
+@pytest.mark.parametrize("batch", [False, True])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "cash_reserve_scope",
+        "cash_reserve_currency_basis",
+        "cash_reserve_authority",
+        "cash_reserve_consumer_override_allowed",
+    ],
+)
+def test_legacy_target_without_source_authority_cannot_execute(field, batch):
+    context = _core_context(cash_reserve_target_weight=Decimal("0.02"))
+    context.policy_context = context.policy_context.model_copy(update={field: None})
+    with pytest.raises(DpmCoreContextIncompleteError, match="CASH_RESERVE_AUTHORITY_INCOMPLETE"):
+        if batch:
+            build_batch_rebalance_request_from_core_context(
+                context=context,
+                scenarios={"baseline": SimulationScenario()},
+            )
+        else:
+            build_rebalance_request_from_core_context(context=context, options_override={})
 
 
 @pytest.mark.parametrize("cash_reserve_weight", ["-0.01", "1.01"])

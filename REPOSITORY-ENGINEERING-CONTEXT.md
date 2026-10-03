@@ -556,7 +556,14 @@ Most relevant current governance:
     binding version and lineage. Apply it to heuristic and solver construction, reject conflicting
     request or tolerance overrides, and report post-trade deviation; do not reinterpret it as a
     cash band or make successful target scaling review-required. Reject bindings outside the
-    requested date and persist lineage on construction runs.
+    requested date and persist lineage on construction runs. Require the producer's total-portfolio
+    market-value scope, portfolio-base-currency basis, mandate authority and explicit false
+    consumer-override permission; never infer these facts locally. Invalid legacy targets are
+    incomplete, not ordinary absence. Retained legacy contexts remain readable, but cannot execute
+    a non-null source target without its authority metadata. Native HTTP/PostgreSQL reserve proof
+    uses `tests/integration/dpm/supportability/test_source_cash_reserve_network.py` with the controlled
+    source fixture; it is not real Core, bank IAM or capacity evidence. Wave stateless-input
+    propagation does not prove enforcement of the Core binding; that acceptance remains in #733.
     For Risk-event waves, reject duplicate candidate IDs before the authority call and verify
     the returned event/date, affected/excluded uniqueness, candidate membership, and mandate echo
     before constructing wave source refs or writing a wave. Excluded members are validation

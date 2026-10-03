@@ -2,6 +2,19 @@
 
 This ledger records cleanup and structural review evidence for RFC-0036.
 
+## Issue #733: Reserve Authority Consumption
+
+- Scope: source DTO, policy resolution, retained run lineage and native single/batch HTTP proof.
+- Authority: Core PR #1193, main `ebb8102a19f3b57d83f8a79160087fcda1665795`; source scope,
+  currency basis and no-override permission must be declared, never inferred by Manage.
+- Guard: reject incomplete authority and invalid legacy targets before financial writes; preserve
+  zero versus absence and old artifact readability. No topology or calculation-kernel change.
+- Review draft: `review/lotus-manage/MANAGE-733-CORE-TARGET-HANDOFF-20261003.md` semantics adopted;
+  its earlier candidate revision is superseded by the accepted Core main above.
+- Remaining acceptance: wave stateless-input propagation is not source-binding enforcement.
+  Keep #733 open; controlled producer proof is not actual Core, bank IAM, capacity or booking proof.
+- Guidance: repository context/docs/wiki updated; shared skills, routing and AGENTS unchanged.
+
 ## RFC36-S2-001: Review control docs were missing
 
 - Date: 2026-05-01

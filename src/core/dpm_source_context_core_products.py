@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class DpmCoreModelPortfolioTargetRow(BaseModel):
@@ -85,8 +85,27 @@ class DpmCoreRebalanceBands(BaseModel):
         default=None,
         ge=0,
         le=1,
-        description="Optional mandate cash reserve target as a decimal ratio.",
+        description="Finite target ratio of total portfolio market value in portfolio base currency.",
     )
+    cash_reserve_scope: Literal["TOTAL_PORTFOLIO_MARKET_VALUE"] = Field(
+        description="Source-owned denominator for the reserve target."
+    )
+    cash_reserve_currency_basis: Literal["PORTFOLIO_BASE_CURRENCY"] = Field(
+        description="Source-owned valuation basis for cash and total portfolio value."
+    )
+    cash_reserve_authority: Literal["MANDATE_BINDING"] = Field(
+        description="The effective mandate binding owns the reserve target."
+    )
+    consumer_override_allowed: Literal[False] = Field(
+        description="A changed target requires a changed source mandate binding."
+    )
+
+    @field_validator("consumer_override_allowed", mode="before")
+    @classmethod
+    def require_explicit_no_override(cls, value: Any) -> Any:
+        if value is not False:
+            raise ValueError("Consumer override permission must be an explicit false boolean.")
+        return value
 
 
 class DpmCoreMandateBindingSupportability(BaseModel):

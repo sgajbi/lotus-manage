@@ -1290,6 +1290,13 @@ Functional coverage:
   heuristic and solver construction, reject conflicting or tolerance overrides and out-of-date
   bindings before calculation, persist construction-run lineage, and emit `CASH_RESERVE_TARGET`
   measured deviation with bounded tolerance without reviewing successful scaling,
+- reserve lineage preserves the producer's total-portfolio market-value scope, portfolio-base-
+  currency basis, mandate authority and explicit no-override permission. Missing authority or
+  `MANDATE_CASH_RESERVE_INVALID` fails closed. The [native HTTP/PostgreSQL reserve tests](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/supportability/test_source_cash_reserve_network.py)
+  reconcile zero, absent, 2%, 50%, constrained and whole-share residual cases against a controlled
+  producer, including artifact replay after process replacement and foreign-tenant refusal.
+  This is not real Core, bank IAM, approval or booking acceptance. Source-bound wave enforcement
+  remains open in [issue #733](https://github.com/sgajbi/lotus-manage/issues/733),
 - core resolver transformation and source-safe resolver failure behavior covered by unit tests.
 
 Non-functional posture:

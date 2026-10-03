@@ -845,6 +845,26 @@ class LineageData(BaseModel):
         default=None,
         description="Source mandate cash reserve target used by the run.",
     )
+    source_cash_reserve_scope: Optional[Literal["TOTAL_PORTFOLIO_MARKET_VALUE"]] = Field(
+        default=None,
+        description="Source-owned denominator retained from the mandate binding.",
+        examples=["TOTAL_PORTFOLIO_MARKET_VALUE"],
+    )
+    source_cash_reserve_currency_basis: Optional[Literal["PORTFOLIO_BASE_CURRENCY"]] = Field(
+        default=None,
+        description="Source-owned cash and portfolio valuation basis.",
+        examples=["PORTFOLIO_BASE_CURRENCY"],
+    )
+    source_cash_reserve_authority: Optional[Literal["MANDATE_BINDING"]] = Field(
+        default=None,
+        description="Effective source mandate authority for the target.",
+        examples=["MANDATE_BINDING"],
+    )
+    source_cash_reserve_consumer_override_allowed: Optional[Literal[False]] = Field(
+        default=None,
+        description="Source-declared override permission; null is legacy/unsourced.",
+        examples=[False],
+    )
     cash_reserve_override_authority: Optional[Literal["NONE"]] = Field(
         default=None,
         description="Override authority for a source-supplied cash reserve target.",
