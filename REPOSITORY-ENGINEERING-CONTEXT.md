@@ -327,6 +327,17 @@ Use these commands as the primary local contract:
     state. `DPM_ASYNC_EXECUTION_LEASE_SECONDS` defaults to 300 seconds. Attempt and lease expiry are
     operator-visible, while the fence token must never cross an API or log boundary.
 
+## Repo-Scoped Testing Practice
+
+The construction network recovery test uses actual Uvicorn/HTTP and PostgreSQL, with no dependency
+overrides. The required PostgreSQL lane runs it through `make test-idea-management-action-postgres`
+from this repository root, on Windows or POSIX with the supported environment activated.
+Set `DPM_POSTGRES_INTEGRATION_DSN` to an isolated test server and
+`DPM_POSTGRES_INTEGRATION_REQUIRED=1`. Its test account needs `CREATEDB`: each case creates and
+removes only its UUID database. Never point this lane at production. API listeners bind ephemeral
+localhost ports; a killed API process must be joined without signalling its potentially abandoned
+shared Event lock. This proves bounded USD/FX durability, not Core authority, production IAM or capacity.
+
 ## Validation And CI Expectations
 
 `lotus-manage` uses explicit CI lanes:
