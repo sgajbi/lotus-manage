@@ -6,6 +6,7 @@
 changes or economic `rebalance_run_id`. `evaluation_context.rebalance_run_id` is an audit reference
 to the source evaluation; `state_basis=BEFORE` identifies the comparator's economics. Do not treat
 the evaluation run's post-trade state or approvals as baseline evidence.
+The comparison-only baseline has no transaction-cost estimate; non-null estimates are rejected.
 
 Selection retains this distinction and replaces wave diagnostics with the selected proposal.
 No-action proof packs lack an economic run and are blocked for trade release. Historical borrowed

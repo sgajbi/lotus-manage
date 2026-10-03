@@ -130,6 +130,7 @@ class ConstructionAlternative(BaseModel):
             or self.diagnostics.get("proposed_changes")
             or metrics.trade_count != 0
             or metrics.turnover_weight != 0
+            or metrics.estimated_transaction_cost is not None
             or metrics.drift_after != metrics.drift_before
             or metrics.drift_reduction != 0
         ):
