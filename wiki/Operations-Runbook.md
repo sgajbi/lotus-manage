@@ -218,6 +218,12 @@ only its blocked publication session. After real lease expiry, a fresh API reuse
 artifact and publishes one result. It checks immutable admission identity, replay, tenant/capability
 refusals and the independent NAV15,000/BUY20/120shares/SGD3,000 cash example. Faults affect only its
 disposable database; this is a combined process/session interruption, not a database-failover proof.
+
+The PR/Main Docker lane runs these three USD/EUR/wave cases against the same immutable application
+image through `make test-image-financial-runtime`, after image build. OCI and `/version` revisions
+must match; source mounts, skipped cases and failed financial assertions cannot produce acceptance.
+Receipts live under `output/docker-image-evidence/financial-runtime`. This synthetic image proof
+does not clear actual-source, production IAM, database failover or capacity acceptance.
 Run `make test-idea-management-action-postgres` from the repository root with the supported environment
 activated, `DPM_POSTGRES_INTEGRATION_DSN` set to an isolated test server and
 `DPM_POSTGRES_INTEGRATION_REQUIRED=1`. The test account needs `CREATEDB` for disposable UUID databases;

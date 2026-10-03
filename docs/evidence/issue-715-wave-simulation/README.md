@@ -72,6 +72,13 @@ tenant refusal, exact replay and NAV15,000/BUY20/120shares/SGD3,000 cash. Only t
 receives fault locks/session termination. This combined process/session fault is not a database
 failover, shipped-image business test, live source qualification or production capacity result.
 
+`make test-image-financial-runtime` repeats the USD/EUR construction and wave HTTP cases against
+the unchanged built application image, resolved by immutable ID. OCI and `/version` revisions
+must match the expected Git SHA; no source is mounted and all three cases must execute without
+skips. The PR/Main Docker lane owns a separate PostgreSQL service and runs this before uploading
+its image evidence. This clears bounded synthetic image-workflow acceptance only: actual sources,
+live IAM, representative method/restriction envelopes and target-tier capacity remain open.
+
 API and in-memory repository regression tests additionally prove admission replay/conflict behavior,
 selector/nested-portfolio identity binding, returned-association refusal, supported
 status/result/retry/cancel surfaces, persisted wave reconciliation, and foreign-tenant

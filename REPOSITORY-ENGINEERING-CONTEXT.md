@@ -342,6 +342,16 @@ removes only its UUID database. Never point this lane at production. API listene
 localhost ports; a killed API process must be joined without signalling its potentially abandoned
 shared Event lock. This proves bounded USD/FX durability, not Core authority, production IAM or capacity.
 
+The PR/Main Docker job repeats these cases against the built image with
+`make test-image-financial-runtime` from this repository root (Windows or POSIX).
+Use an isolated loopback PostgreSQL test DSN with `CREATEDB`; containers reach its published port
+through `host.docker.internal` (`host-gateway` on Linux). On Linux the isolated test port must be
+reachable from that gateway; a host-only loopback listener is insufficient. Never expose a production
+database for this proof. The runner resolves an immutable image ID, checks OCI and `/version` Git
+revision, mounts no source, and fails on missing/skipped cases.
+Only its exact application-container IDs and per-case UUID databases are removed. This command
+does not start, reserve or certify the canonical front-office runtime.
+
 ## Validation And CI Expectations
 
 `lotus-manage` uses explicit CI lanes:

@@ -558,6 +558,13 @@ image inspect, SBOM status, vulnerability scan status, signature status, and pro
 files. The Dockerfile sets non-secret OCI labels for Git SHA, branch, build timestamp, repo URL,
 image digest, CI run id, and app version. `/version` exposes the same runtime metadata.
 
+From the repository root, run `make test-image-financial-runtime` after building the image.
+Set `DPM_POSTGRES_INTEGRATION_DSN` to an isolated loopback PostgreSQL test server with `CREATEDB`.
+The PR/Main Docker lane runs the same command: immutable image ID and OCI/`/version` revision
+checks, no source mounts, USD/EUR financial recovery and durable wave recovery. It requires all
+three cases to pass without skips; receipts are under `output/docker-image-evidence/financial-runtime`.
+This is synthetic image acceptance, not actual-source, live IAM or production-capacity certification.
+
 Operationally important truths:
 
 1. readiness and migration posture matter because supportability flows depend on persistence truth
