@@ -1,6 +1,7 @@
 """HTTP recovery after API death and an aborted, lock-blocked publication session.
 
-Synthetic source-ready input; not upstream authority, deployed-image or capacity proof.
+Synthetic source-ready input; not upstream authority or capacity proof. The default
+runtime is source-installed; the image acceptance runner repeats this case by image ID.
 All financial writes use the unmodified native API. Fault locks/backend termination
 are confined to this case's disposable database, never a shared runtime.
 """

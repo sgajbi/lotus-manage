@@ -203,10 +203,31 @@ jobs:
     name: PR Merge Gate / Docker Image Evidence
     needs: [coverage-gate, idea-management-action-postgres]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: manage
+          POSTGRES_PASSWORD: manage
+          POSTGRES_DB: manage_image
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U manage -d manage_image"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - name: Install image acceptance runner
+        run: make install-ci
       - name: Build Docker image and write evidence
         env:
           GIT_SHA: ${{ github.sha }}
@@ -214,6 +235,11 @@ jobs:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           CI_PIPELINE_ID: ${{ github.run_id }}
         run: make docker-image-evidence
+      - name: Verify image financial recovery
+        env:
+          GIT_SHA: ${{ github.sha }}
+          DPM_POSTGRES_INTEGRATION_DSN: postgresql://manage:manage@127.0.0.1:5432/manage_image
+        run: make test-image-financial-runtime
       - name: Upload Docker image evidence
         uses: actions/upload-artifact@v7
         with:

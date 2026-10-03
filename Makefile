@@ -254,6 +254,10 @@ docker-image-evidence: docker-build
 		--repo-url $(REPO_URL) \
 		--ci-pipeline-id $(CI_PIPELINE_ID)
 
+.PHONY: test-image-financial-runtime
+test-image-financial-runtime:
+	python -m scripts.image_financial_runtime --image $(IMAGE_REF) --revision $(GIT_SHA)
+
 docker-up:
 	docker compose up -d --build
 

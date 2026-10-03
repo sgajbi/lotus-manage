@@ -3392,4 +3392,5 @@ def test_workflow_policy_gate_rejects_build_only_docker_lane(tmp_path: Path) -> 
         f"{workflow.as_posix()}: blocking Docker workflow must run make docker-image-evidence",
         f"{workflow.as_posix()}: blocking Docker workflow must not stop at build-only validation",
         f"{workflow.as_posix()}: Docker workflow must upload image evidence artifacts",
+        f"{workflow.as_posix()}: Docker workflow must execute image financial recovery",
     ]

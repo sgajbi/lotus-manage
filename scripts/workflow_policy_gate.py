@@ -1045,6 +1045,15 @@ def docker_image_evidence_violations(workflow_path: Path) -> list[str]:
         violations.append(
             f"{workflow_path.as_posix()}: Docker workflow must upload image evidence artifacts"
         )
+    financial_step = _step_block(text, "Verify image financial recovery")
+    if "run: make test-image-financial-runtime" not in financial_step:
+        violations.append(
+            f"{workflow_path.as_posix()}: Docker workflow must execute image financial recovery"
+        )
+    elif "continue-on-error: true" in financial_step:
+        violations.append(
+            f"{workflow_path.as_posix()}: image financial recovery must remain blocking"
+        )
     return violations
 
 

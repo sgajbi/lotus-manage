@@ -1,4 +1,4 @@
-"""Owned disposable PostgreSQL and unmodified native HTTP API test runtime."""
+"""Owned disposable PostgreSQL and native HTTP API (source-installed or image) runtime."""
 
 from __future__ import annotations
 
@@ -77,6 +77,12 @@ def _serve(dsn, pipe, stop):
 
 @contextmanager
 def native_api(dsn):
+    if os.environ.get("DPM_NETWORK_IMAGE_ID"):
+        from tests.integration.dpm.image_runtime import image_api
+
+        with image_api(dsn) as runtime:
+            yield runtime
+        return
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe(duplex=False)
     stop = context.Event()
