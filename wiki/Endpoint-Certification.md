@@ -385,6 +385,12 @@ independent USD economics and exact replay after forced API-process replacement 
 The stateful producer serves controlled Core contracts; missing method authority remains qualified.
 This does not certify live Core ingestion, downstream instruction release, bank IAM or capacity.
 
+Construction run artifacts retain the shared hard-policy decision, source scope/hash and versioned
+rule references. Mechanical comparison and no-action semantics are unchanged; old artifacts are not
+backfilled. The [restriction evidence](https://github.com/sgajbi/lotus-manage/blob/main/docs/evidence/issue-739-restriction-policy/README.md)
+describes native side/date/selector and unavailable-authority checks. A policy-qualified artifact
+alone is not proof of suitability, approval or instruction release.
+
 ```mermaid
 flowchart LR
     Caller[Gateway, operator, or certification probe] --> Generate[POST generate]
