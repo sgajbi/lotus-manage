@@ -9,6 +9,7 @@ from src.api.services.wave_item_selection_transition import (
 )
 from src.core.proof_packs.models import DpmPreTradeProofPack
 from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveItem, DpmWaveTrigger
+from tests.unit.dpm.waves.test_wave_selection_item import _construction_repository
 
 
 def _item(
@@ -60,7 +61,7 @@ def _build(
         comment="Selected by PM desk.",
         correlation_id="corr-selection-event",
         generate_proof_pack=generate_proof_pack,
-        construction_repository=object(),  # type: ignore[arg-type]
+        construction_repository=_construction_repository(),
         proof_pack_repository=object(),  # type: ignore[arg-type]
         mandate_repository=object(),  # type: ignore[arg-type]
         run_service=object(),  # type: ignore[arg-type]

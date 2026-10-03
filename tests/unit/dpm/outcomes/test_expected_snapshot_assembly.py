@@ -21,6 +21,7 @@ from src.core.outcomes.snapshots import (
     _highest_construction_outcome_state,
     _proof_pack_state,
     _validate_handoff_linkage,
+    _validate_proof_pack_linkage,
     _wave_item_lookup_required,
     assemble_expected_outcome_snapshot,
     build_expected_snapshot_calculation_trace,
@@ -41,6 +42,26 @@ from src.core.waves.models import (
     DpmWaveHandoffRef,
     DpmWaveTrigger,
 )
+
+
+def test_no_action_expected_snapshot_refuses_borrowed_heuristic_proof_run() -> None:
+    alternative_set = _alternative_set()
+    baseline = alternative_set.alternatives[0].model_copy(
+        update={"method": ConstructionMethod.DO_NOTHING_BASELINE, "rebalance_run_id": None}
+    )
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="no-action proof pack"):
+        _validate_proof_pack_linkage(
+            alternative_set=alternative_set,
+            selection=_selection(),
+            selected_alternative=baseline,
+            proof_pack=_proof_pack(),
+        )
+    _validate_proof_pack_linkage(
+        alternative_set=alternative_set,
+        selection=_selection(),
+        selected_alternative=baseline,
+        proof_pack=_proof_pack(rebalance_run_id=None),
+    )
 
 
 def _alternative_set(

@@ -1,10 +1,20 @@
 """Proof-pack supportability aggregation helpers."""
 
 from src.core.proof_packs.models import (
+    DpmPreTradeProofPack,
     DpmProofPackSection,
     DpmProofPackSupportability,
     ProofPackStatus,
 )
+from src.core.construction.vocabulary import ConstructionMethod
+
+
+def is_no_action_proof_pack(proof_pack: DpmPreTradeProofPack) -> bool:
+    return any(
+        section.section_type == "selected_alternative"
+        and section.facts.get("method") == ConstructionMethod.DO_NOTHING_BASELINE
+        for section in proof_pack.sections
+    )
 
 
 def supportability(sections: list[DpmProofPackSection]) -> DpmProofPackSupportability:

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-02T12:12:27.313982+00:00",
+  "generatedAt": "2026-10-03T01:42:16.448708+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5160,6 +5160,20 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.evaluation_context",
+      "canonicalTerm": "evaluation_context",
+      "preferredName": "evaluation_context",
+      "description": "Audit-only calculation context, never a trade proposal or release authority.",
+      "example": "evaluation_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -16246,6 +16260,20 @@
         "string",
         "MandateHealthState",
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.state_basis",
+      "canonicalTerm": "state_basis",
+      "preferredName": "state_basis",
+      "description": "Only the evaluation run's before-state describes no action.",
+      "example": "sample_state_basis",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -75555,6 +75583,30 @@
             "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
           },
           {
+            "name": "alternatives[].evaluation_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.evaluation_context",
+            "attributeRef": "#/attributeCatalog/lotus.evaluation_context"
+          },
+          {
+            "name": "alternatives[].evaluation_context.rebalance_run_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.rebalance_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "alternatives[].evaluation_context.state_basis",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.state_basis",
+            "attributeRef": "#/attributeCatalog/lotus.state_basis"
+          },
+          {
             "name": "alternatives[].objective_trace",
             "location": "body",
             "required": true,
@@ -75896,6 +75948,30 @@
             "type": "object",
             "semanticId": "lotus.rebalance_run_id",
             "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "alternatives[].evaluation_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.evaluation_context",
+            "attributeRef": "#/attributeCatalog/lotus.evaluation_context"
+          },
+          {
+            "name": "alternatives[].evaluation_context.rebalance_run_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.rebalance_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "alternatives[].evaluation_context.state_basis",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.state_basis",
+            "attributeRef": "#/attributeCatalog/lotus.state_basis"
           },
           {
             "name": "alternatives[].objective_trace",

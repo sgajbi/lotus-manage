@@ -6,6 +6,7 @@ from src.api.services.proof_pack_selected_source import resolve_selected_alterna
 from src.core.construction import (
     ConstructionAlternativeSelection,
     build_alternative_set,
+    build_do_nothing_baseline,
     build_rebalance_result_alternative,
 )
 from src.core.proof_packs import ProofPackSourceValidationError
@@ -94,6 +95,31 @@ def test_resolve_selected_alternative_source_returns_selection_run_and_decisions
     assert source.selection.alternative_id == selected_alternative_id
     assert source.run == run_service.run
     assert source.workflow_decisions == run_service.decisions
+
+
+def test_no_action_resolution_never_loads_borrowed_run_or_approval() -> None:
+    baseline = build_do_nothing_baseline(result=_ready_rebalance_result())
+    repository = InMemoryConstructionRepository()
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_no_action",
+        portfolio_id="pf_selected_source_1",
+        as_of="2026-05-03",
+        alternatives=[baseline],
+    ).model_copy(update={"tenant_id": "tenant-test"})
+    # Deliberately bypass validation after assembly to exercise the resolver's defense in depth.
+    alternative_set = alternative_set.model_copy(
+        update={"alternatives": [baseline.model_copy(update={"rebalance_run_id": "rr_heuristic"})]}
+    )
+    repository.save_alternative_set(alternative_set=alternative_set, idempotency_key=None)
+    source = resolve_selected_alternative_source(
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=baseline.alternative_id,
+        construction_repository=repository,
+        run_service=_RunService(),
+        tenant_id="tenant-test",
+    )
+    assert source.run is None
+    assert source.workflow_decisions == []
 
 
 def test_resolve_selected_alternative_source_degrades_when_linked_run_is_missing() -> None:

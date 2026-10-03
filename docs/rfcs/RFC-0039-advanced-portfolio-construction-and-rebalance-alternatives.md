@@ -274,6 +274,12 @@ Required output:
 4. drift reduction equal to zero,
 5. reason code `baseline_no_action`.
 
+Current no-action contract: the comparator has no economic `rebalance_run_id` or proposed changes.
+Its typed `evaluation_context` references the source run's `BEFORE` state for audit only. This
+reference cannot authorize trades or supply post-trade proof/outcome economics. Historical borrowed
+references are interpreted on read without rewriting retained source rows. No-action proof packs
+remain blocked for trade release; heuristic alternatives continue to reference their own runs.
+
 #### HEURISTIC_EXPLAINABLE
 
 Purpose:

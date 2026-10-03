@@ -270,6 +270,14 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   require caller-asserted `X-Tenant-Id`. Their PostgreSQL identity is tenant scoped, including
   idempotency keys; another tenant receives `404` for an owned set or selection and may use the
   same idempotency key for an independent request.
+- no-action construction
+  Construction `DO_NOTHING_BASELINE` has no economic `rebalance_run_id`, intents or proposed
+  changes. Its typed `evaluation_context` references only the source run's `BEFORE` state for
+  audit; it is not an executable proposal. Selection projects only the chosen alternative's
+  proposals. No-action proof packs have no economic run and remain blocked for trade release.
+  Historical borrowed references are interpreted as evaluation context without rewriting stored
+  records; inconsistent historical proof packs cannot be replayed or released as trade authority.
+
 - rebalance waves
   `/api/v1/rebalance/waves`, `/api/v1/rebalance/waves/preview`,
   `/api/v1/rebalance/waves/{wave_id}`, `/api/v1/rebalance/waves/{wave_id}/items`,

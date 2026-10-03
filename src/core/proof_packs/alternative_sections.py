@@ -72,6 +72,11 @@ def selected_alternative_facts(
         "method": selected_alternative.method,
         "method_status": selected_alternative.method_status,
         "summary": selected_alternative.summary,
+        "evaluation_context": (
+            selected_alternative.evaluation_context.model_dump(mode="json")
+            if selected_alternative.evaluation_context is not None
+            else None
+        ),
         "objective_trace": [
             item.model_dump(mode="json") for item in selected_alternative.objective_trace
         ],

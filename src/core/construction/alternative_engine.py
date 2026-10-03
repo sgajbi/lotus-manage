@@ -8,6 +8,7 @@ from src.core.construction.models import (
     ConstructionAlternativeSet,
     ConstructionComparisonMetrics,
     ConstructionConstraintTrace,
+    ConstructionEvaluationContext,
     ConstructionObjectiveTerm,
 )
 from src.core.construction.status import lowest_construction_status
@@ -35,12 +36,12 @@ def build_do_nothing_baseline(
         method=ConstructionMethod.DO_NOTHING_BASELINE,
         method_status=_method_status_from_run_status(result.status),
         summary="No-action baseline keeps current holdings unchanged for comparison.",
-        rebalance_run_id=result.rebalance_run_id,
+        evaluation_context=ConstructionEvaluationContext(rebalance_run_id=result.rebalance_run_id),
         objective_trace=_objective_trace(metrics),
         constraint_trace=_constraint_trace(result),
         comparison_metrics=metrics,
         intent_ids=[],
-        diagnostics=_diagnostic_summary(result),
+        diagnostics={**_diagnostic_summary(result), "proposed_changes": []},
     )
 
 

@@ -1,4 +1,5 @@
 from src.api.services import proof_pack_service
+from src.api.services.wave_construction_diagnostics import proposed_changes_from_alternative_set
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs import ProofPackSourceValidationError
@@ -28,8 +29,17 @@ def with_selection_and_proof_pack(
     mandate_repository: DpmMandateRepository,
     run_service: DpmRunSupportService,
 ) -> DpmRebalanceWaveItem:
+    alternative_set = construction_repository.get_alternative_set(
+        alternative_set_id=str(item.alternative_set_id), tenant_id=tenant_id
+    )
+    if alternative_set is None:
+        raise ProofPackSourceValidationError("DPM_ALTERNATIVE_SET_NOT_FOUND")
+    item = item.model_copy(update={"proof_pack_id": None}, deep=True)
     diagnostics = {
         **item.diagnostics,
+        "proposed_changes": proposed_changes_from_alternative_set(
+            alternative_set, selected_alternative_id=alternative_id
+        ),
         "selection_actor_id": actor_id,
         "selection_reason_code": reason_code,
     }

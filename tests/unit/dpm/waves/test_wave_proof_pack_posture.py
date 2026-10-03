@@ -6,6 +6,23 @@ from src.api.services.wave_proof_pack_posture import (
     proof_pack_posture_for_wave,
 )
 from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveItem, DpmWaveHandoffRef
+import pytest
+
+
+@pytest.mark.parametrize("state", [None, "BLOCKED", "PENDING_REVIEW", "DEGRADED", "UNKNOWN"])
+def test_linked_non_ready_proof_never_counts_as_ready(state: str | None) -> None:
+    wave = DpmRebalanceWave.model_construct(
+        items=[
+            DpmRebalanceWaveItem(
+                wave_item_id="dwi_no_action",
+                portfolio_id="pf_no_action",
+                state="PROOF_PACK_READY",
+                proof_pack_id="dpp_no_action",
+                diagnostics={"proof_pack_state": state},
+            )
+        ]
+    )
+    assert _ready_proof_pack_count(wave) == 0
 
 
 def test_proof_pack_posture_counts_refs_and_preserves_boundaries() -> None:

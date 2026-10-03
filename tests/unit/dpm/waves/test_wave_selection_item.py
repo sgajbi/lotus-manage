@@ -6,6 +6,27 @@ from src.api.services.wave_selection_item import with_selection_and_proof_pack
 from src.core.proof_packs import ProofPackSourceValidationError
 from src.core.proof_packs.models import DpmPreTradeProofPack
 from src.core.waves import DpmRebalanceWaveItem
+from src.core.construction import (
+    build_alternative_set,
+    build_rebalance_result_alternative,
+    build_do_nothing_baseline,
+)
+from src.infrastructure.construction import InMemoryConstructionRepository
+from tests.unit.dpm.construction.test_alternative_engine import _ready_rebalance_result
+
+
+def _construction_repository() -> InMemoryConstructionRepository:
+    repository = InMemoryConstructionRepository()
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result, alternative_id="alt_selected")
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_select",
+        portfolio_id="PB_SG_SELECT",
+        as_of="2026-05-03",
+        alternatives=[alternative, build_do_nothing_baseline(result=result)],
+    ).model_copy(update={"tenant_id": "tenant-test"})
+    repository.save_alternative_set(alternative_set=alternative_set, idempotency_key=None)
+    return repository
 
 
 def _item() -> DpmRebalanceWaveItem:
@@ -28,7 +49,7 @@ def _select(*, generate_proof_pack: bool = True) -> DpmRebalanceWaveItem:
         comment="Selected by PM desk.",
         correlation_id="corr-select",
         generate_proof_pack=generate_proof_pack,
-        construction_repository=object(),  # type: ignore[arg-type]
+        construction_repository=_construction_repository(),
         proof_pack_repository=object(),  # type: ignore[arg-type]
         mandate_repository=object(),  # type: ignore[arg-type]
         run_service=object(),  # type: ignore[arg-type]
@@ -44,12 +65,43 @@ def test_selection_without_proof_pack_records_degraded_proof_pack_state() -> Non
     assert updated.reason_codes == ["CONSTRUCTION_ALTERNATIVE_SELECTED"]
     assert updated.diagnostics == {
         "existing": "value",
+        "proposed_changes": _construction_repository()
+        .get_alternative_set(alternative_set_id="cas_select", tenant_id="tenant-test")
+        .alternatives[0]
+        .diagnostics["proposed_changes"],
         "selection_actor_id": "pm_001",
         "selection_reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
         "selection_comment": "Selected by PM desk.",
         "proof_pack_state": "DEGRADED",
         "proof_pack_reason_code": "PROOF_PACK_GENERATION_NOT_REQUESTED",
     }
+
+
+def test_no_action_selection_clears_heuristic_proposals_and_prior_proof() -> None:
+    item = _item().model_copy(
+        update={
+            "proof_pack_id": "dpp_heuristic",
+            "diagnostics": {"proposed_changes": [{"action": "BUY"}], "proof_pack_state": "READY"},
+        }
+    )
+    updated = with_selection_and_proof_pack(
+        item=item,
+        alternative_id="alt_do_nothing_baseline",
+        actor_id="pm-test",
+        reason_code="NO_ACTION",
+        comment=None,
+        correlation_id="corr-no-action",
+        tenant_id="tenant-test",
+        generate_proof_pack=False,
+        construction_repository=_construction_repository(),
+        proof_pack_repository=object(),
+        mandate_repository=object(),
+        run_service=object(),
+    )
+    assert updated.selected_alternative_id == "alt_do_nothing_baseline"
+    assert updated.diagnostics["proposed_changes"] == []
+    assert updated.proof_pack_id is None
+    assert updated.diagnostics["proof_pack_state"] == "DEGRADED"
 
 
 def test_selection_links_generated_proof_pack(monkeypatch: MonkeyPatch) -> None:

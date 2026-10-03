@@ -118,6 +118,31 @@ def _section(section_id: str, section_type: str) -> DpmProofPackSection:
     )
 
 
+def test_no_action_proof_cannot_authorize_instruction_preview_or_release() -> None:
+    from dataclasses import replace
+    from unittest.mock import Mock
+
+    service, command = _service_and_command()
+    pack = _proof_pack(run_id=command.rebalance_run_id)
+    selected = _section("selected", "selected_alternative").model_copy(
+        update={"facts": {"method": "DO_NOTHING_BASELINE"}}
+    )
+    pack = pack.model_copy(update={"sections": [*pack.sections, selected]})
+    service = replace(service, proof_pack_repository=Mock(get_proof_pack=Mock(return_value=pack)))
+    for operation in (service.preview_release, service.release):
+        with pytest.raises(
+            DpmInstructionPackageReleaseRefusedError,
+            match="INSTRUCTION_PACKAGE_NO_ACTION_SELECTION",
+        ):
+            operation(command=command)
+    assert (
+        service.repository.list_packages(
+            tenant_id=_TENANT, created_before=_NOW, limit=10, offset=0
+        )[1]
+        == 0
+    )
+
+
 def _proof_pack(*, run_id: str) -> DpmPreTradeProofPack:
     approval = _section("approval", "approval_requirements")
     operations = _section("operations", "operations_handoff")

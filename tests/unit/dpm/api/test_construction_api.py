@@ -65,7 +65,11 @@ def test_generated_construction_runs_are_readable_only_by_admitted_tenant() -> N
             )
             assert response.status_code == 200
             alternatives = {item["method"]: item for item in response.json()["alternatives"]}
-            run_ids = {item["rebalance_run_id"] for item in alternatives.values()}
+            run_ids = {
+                item["rebalance_run_id"]
+                for item in alternatives.values()
+                if item["rebalance_run_id"] is not None
+            }
             assert len(alternatives) == len(ConstructionMethod)
             assert len(run_ids) >= 2
             heuristic = run_repository.get_run(

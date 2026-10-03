@@ -29,6 +29,7 @@ from src.core.mandate_models import DpmMandateDigitalTwin
 from src.core.models import RebalanceResult, SecurityTradeIntent
 from src.core.proof_packs.models import DpmPreTradeProofPack
 from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.proof_packs.supportability import is_no_action_proof_pack
 from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
 from src.core.waves.models import DpmRebalanceWave, DpmRebalanceWaveItem
 from src.core.waves.repository import DpmWaveRepository
@@ -364,6 +365,10 @@ class DpmInstructionPackageApplicationService:
         if proof_pack is None:
             raise DpmInstructionPackageReleaseRefusedError(
                 "INSTRUCTION_PACKAGE_PROOF_PACK_NOT_FOUND"
+            )
+        if is_no_action_proof_pack(proof_pack):
+            raise DpmInstructionPackageReleaseRefusedError(
+                "INSTRUCTION_PACKAGE_NO_ACTION_SELECTION"
             )
         if proof_pack.status != "READY":
             raise DpmInstructionPackageReleaseRefusedError(
