@@ -344,6 +344,10 @@ shared Event lock. This proves bounded USD/FX durability, not Core authority, pr
 
 The PR/Main Docker job repeats these cases against the built image with
 `make test-image-financial-runtime` from this repository root (Windows or POSIX).
+`make workflow-policy-gate` parses PR/Main workflow structure and protects the image proof's
+ordered steps and transitive prerequisites against skipping, failure waivers and execution overrides.
+Complete step sequences are pinned in `contracts/ci/image-financial-execution-policy.v1.json`;
+intentional lane changes must update that policy and its positive/negative regressions together.
 Use an isolated loopback PostgreSQL test DSN with `CREATEDB`; containers reach its published port
 through `host.docker.internal` (`host-gateway` on Linux). On Linux the isolated test port must be
 reachable from that gateway; a host-only loopback listener is insufficient. Never expose a production

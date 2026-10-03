@@ -1,0 +1,393 @@
+{
+  "schemaVersion": "v1",
+  "sourceRevision": "f706bbfdf5f165cd9b10aa89aaea810b23cb9bba",
+  "sourceWorkflowBlobs": {
+    "pr-merge-gate.yml": "cfee828e559a0a7bc3fedfcb0f7ab9c1d68b1321",
+    "main-releasability.yml": "9aab2ac26dd2dd26cadf4ba590cd8cca14573602"
+  },
+  "workflows": {
+    "pr-merge-gate.yml": {
+      "lint-typecheck-security": "lint-typecheck-security",
+      "test-suites": "test-suites",
+      "idea-management-action-postgres": "idea-management-action-postgres",
+      "coverage-gate": "coverage-gate",
+      "docker-build": "docker-build"
+    },
+    "main-releasability.yml": {
+      "lint-typecheck-security": "lint-typecheck-security-main",
+      "test-suites": "test-suites",
+      "idea-management-action-postgres": "idea-management-action-postgres",
+      "coverage-gate": "coverage-gate-main",
+      "docker-build": "docker-build-main",
+      "exact-revision-assertion": "exact-revision-assertion"
+    }
+  },
+  "stepSequences": {
+    "lint-typecheck-security": [
+      {
+        "uses": "actions/checkout@v6",
+        "with": {
+          "fetch-depth": 0
+        }
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "run": "python -m pip check"
+      },
+      {
+        "run": "make lint"
+      },
+      {
+        "run": "make typecheck"
+      },
+      {
+        "run": "make typecheck-tests-critical"
+      },
+      {
+        "run": "make no-alias-gate"
+      },
+      {
+        "run": "make openapi-gate"
+      },
+      {
+        "run": "make api-vocabulary-gate"
+      },
+      {
+        "run": "make service-boundary-gate"
+      },
+      {
+        "run": "make router-infrastructure-gate"
+      },
+      {
+        "run": "make migration-smoke"
+      },
+      {
+        "run": "make architecture-gate"
+      },
+      {
+        "run": "make complexity-gate"
+      },
+      {
+        "run": "make duplicate-implementation-gate"
+      },
+      {
+        "run": "make dependency-hygiene-gate"
+      },
+      {
+        "run": "make dead-code-gate"
+      },
+      {
+        "run": "make workflow-policy-gate"
+      },
+      {
+        "run": "make test-family-inventory"
+      },
+      {
+        "run": "make security-audit"
+      }
+    ],
+    "test-suites": [
+      {
+        "uses": "actions/checkout@v6"
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "env": {
+          "COVERAGE_FILE": ".coverage.${{ matrix.suite }}"
+        },
+        "run": "make test-${{ matrix.suite }}-coverage"
+      },
+      {
+        "uses": "actions/upload-artifact@v7",
+        "with": {
+          "name": "coverage-data-${{ matrix.suite }}",
+          "path": ".coverage.${{ matrix.suite }}",
+          "include-hidden-files": true,
+          "if-no-files-found": "error"
+        }
+      }
+    ],
+    "idea-management-action-postgres": [
+      {
+        "uses": "actions/checkout@v6"
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "env": {
+          "COVERAGE_FILE": ".coverage.idea-postgres",
+          "DPM_POSTGRES_INTEGRATION_DSN": "postgresql://manage:manage@127.0.0.1:5432/manage_actions",
+          "DPM_POSTGRES_INTEGRATION_REQUIRED": "1"
+        },
+        "run": "make test-idea-management-action-postgres-coverage"
+      },
+      {
+        "uses": "actions/upload-artifact@v7",
+        "with": {
+          "name": "coverage-data-idea-postgres",
+          "path": ".coverage.idea-postgres",
+          "include-hidden-files": true,
+          "if-no-files-found": "error"
+        }
+      }
+    ],
+    "coverage-gate": [
+      {
+        "uses": "actions/checkout@v6"
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "uses": "actions/download-artifact@v8",
+        "with": {
+          "pattern": "coverage-data-*",
+          "merge-multiple": true,
+          "path": "coverage-data"
+        }
+      },
+      {
+        "run": "python scripts/coverage_gate.py --coverage-dir coverage-data --fail-under ${{ env.COVERAGE_FAIL_UNDER }}"
+      }
+    ],
+    "docker-build": [
+      {
+        "uses": "actions/checkout@v6",
+        "with": {
+          "fetch-depth": 0
+        }
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "env": {
+          "GIT_SHA": "${{ github.sha }}",
+          "GIT_BRANCH": "${{ github.head_ref || github.ref_name }}",
+          "REPO_URL": "${{ github.server_url }}/${{ github.repository }}",
+          "CI_PIPELINE_ID": "${{ github.run_id }}"
+        },
+        "run": "make docker-image-evidence"
+      },
+      {
+        "env": {
+          "GIT_SHA": "${{ github.sha }}",
+          "DPM_POSTGRES_INTEGRATION_DSN": "postgresql://manage:manage@127.0.0.1:5432/manage_image"
+        },
+        "run": "make test-image-financial-runtime"
+      },
+      {
+        "uses": "actions/upload-artifact@v7",
+        "with": {
+          "name": "pr-merge-docker-image-evidence",
+          "path": "output/docker-image-evidence",
+          "if-no-files-found": "error"
+        }
+      }
+    ],
+    "lint-typecheck-security-main": [
+      {
+        "uses": "actions/checkout@v6",
+        "with": {
+          "fetch-depth": 0
+        }
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "run": "python -m pip check"
+      },
+      {
+        "run": "make lint"
+      },
+      {
+        "run": "make typecheck"
+      },
+      {
+        "run": "make typecheck-tests-critical"
+      },
+      {
+        "run": "make no-alias-gate"
+      },
+      {
+        "run": "make openapi-gate"
+      },
+      {
+        "run": "make api-vocabulary-gate"
+      },
+      {
+        "run": "make service-boundary-gate"
+      },
+      {
+        "run": "make router-infrastructure-gate"
+      },
+      {
+        "run": "make migration-smoke"
+      },
+      {
+        "run": "make architecture-gate"
+      },
+      {
+        "run": "make complexity-gate"
+      },
+      {
+        "run": "make duplicate-implementation-gate"
+      },
+      {
+        "run": "make dependency-hygiene-gate"
+      },
+      {
+        "run": "make dead-code-gate"
+      },
+      {
+        "run": "make workflow-policy-gate"
+      },
+      {
+        "run": "make quality-report-gate"
+      },
+      {
+        "run": "make test-family-inventory"
+      },
+      {
+        "run": "make security-audit"
+      }
+    ],
+    "coverage-gate-main": [
+      {
+        "uses": "actions/checkout@v6"
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "uses": "actions/download-artifact@v8",
+        "with": {
+          "pattern": "coverage-data-*",
+          "merge-multiple": true,
+          "path": "coverage-data"
+        }
+      },
+      {
+        "run": "python scripts/coverage_gate.py --coverage-dir coverage-data --fail-under ${{ env.COVERAGE_FAIL_UNDER }}"
+      },
+      {
+        "uses": "actions/upload-artifact@v7",
+        "with": {
+          "name": "main-releasability-coverage-data",
+          "path": ".coverage\ncoverage-data\n",
+          "include-hidden-files": true,
+          "if-no-files-found": "error"
+        }
+      }
+    ],
+    "docker-build-main": [
+      {
+        "uses": "actions/checkout@v6",
+        "with": {
+          "fetch-depth": 0
+        }
+      },
+      {
+        "uses": "actions/setup-python@v6",
+        "with": {
+          "python-version": "${{ env.PYTHON_VERSION }}",
+          "cache": "pip"
+        }
+      },
+      {
+        "run": "make install-ci"
+      },
+      {
+        "env": {
+          "GIT_SHA": "${{ github.sha }}",
+          "GIT_BRANCH": "${{ env.LOTUS_RELEASE_GIT_REF }}",
+          "REPO_URL": "${{ github.server_url }}/${{ github.repository }}",
+          "CI_PIPELINE_ID": "${{ github.run_id }}"
+        },
+        "run": "make docker-image-evidence"
+      },
+      {
+        "env": {
+          "GIT_SHA": "${{ github.sha }}",
+          "DPM_POSTGRES_INTEGRATION_DSN": "postgresql://manage:manage@127.0.0.1:5432/manage_image"
+        },
+        "run": "make test-image-financial-runtime"
+      },
+      {
+        "uses": "actions/upload-artifact@v7",
+        "with": {
+          "name": "main-releasability-docker-image-evidence",
+          "path": "output/docker-image-evidence",
+          "if-no-files-found": "error"
+        }
+      }
+    ],
+    "exact-revision-assertion": [
+      {
+        "uses": "actions/checkout@v6"
+      },
+      {
+        "env": {
+          "EXPECTED_SHA": "${{ inputs.expected_sha }}",
+          "TRIGGERING_PR": "${{ inputs.triggering_pr }}"
+        },
+        "run": "actual_sha=\"$(git rev-parse HEAD)\"\nif [ -z \"$EXPECTED_SHA\" ]; then\n  echo \"No expected_sha input supplied; treating this as an operator-dispatched main releasability run.\"\n  exit 0\nfi\nif [ \"$actual_sha\" != \"$EXPECTED_SHA\" ]; then\n  echo \"::error::Main releasability checkout SHA $actual_sha does not match expected merged PR SHA $EXPECTED_SHA for PR ${TRIGGERING_PR:-unknown}.\"\n  exit 1\nfi\necho \"Validated exact merged PR SHA $EXPECTED_SHA for PR ${TRIGGERING_PR:-unknown}.\"\n"
+      }
+    ]
+  }
+}

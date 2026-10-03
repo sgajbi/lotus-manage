@@ -224,6 +224,10 @@ image through `make test-image-financial-runtime`, after image build. OCI and `/
 must match; source mounts, skipped cases and failed financial assertions cannot produce acceptance.
 Receipts live under `output/docker-image-evidence/financial-runtime`. This synthetic image proof
 does not clear actual-source, production IAM, database failover or capacity acceptance.
+`make workflow-policy-gate` rejects skipped prerequisites, failure waivers and shell/environment
+overrides that could bypass this proof; install the repository's quality dependencies before running it.
+The [versioned execution policy](https://github.com/sgajbi/lotus-manage/blob/main/contracts/ci/image-financial-execution-policy.v1.json)
+pins complete prerequisite sequences; changing the lane requires reviewed policy updates and regression proof.
 Run `make test-idea-management-action-postgres` from the repository root with the supported environment
 activated, `DPM_POSTGRES_INTEGRATION_DSN` set to an isolated test server and
 `DPM_POSTGRES_INTEGRATION_REQUIRED=1`. The test account needs `CREATEDB` for disposable UUID databases;

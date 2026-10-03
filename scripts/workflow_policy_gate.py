@@ -1029,32 +1029,12 @@ def repo_native_test_target_violations(workflow_path: Path) -> list[str]:
 def docker_image_evidence_violations(workflow_path: Path) -> list[str]:
     if workflow_path.name not in COVERAGE_WORKFLOW_NAMES:
         return []
-    text = workflow_path.read_text(encoding="utf-8")
-    violations: list[str] = []
-    if "make docker-image-evidence" not in text:
-        violations.append(
-            f"{workflow_path.as_posix()}: blocking Docker workflow must run "
-            "make docker-image-evidence"
-        )
-    if "run: make docker-build" in text:
-        violations.append(
-            f"{workflow_path.as_posix()}: blocking Docker workflow must not stop at "
-            "build-only validation"
-        )
-    if "output/docker-image-evidence" not in text or "actions/upload-artifact@v7" not in text:
-        violations.append(
-            f"{workflow_path.as_posix()}: Docker workflow must upload image evidence artifacts"
-        )
-    financial_step = _step_block(text, "Verify image financial recovery")
-    if "run: make test-image-financial-runtime" not in financial_step:
-        violations.append(
-            f"{workflow_path.as_posix()}: Docker workflow must execute image financial recovery"
-        )
-    elif "continue-on-error: true" in financial_step:
-        violations.append(
-            f"{workflow_path.as_posix()}: image financial recovery must remain blocking"
-        )
-    return violations
+    if __package__:
+        from .image_workflow_policy import image_workflow_violations
+    else:
+        from image_workflow_policy import image_workflow_violations
+
+    return image_workflow_violations(workflow_path)
 
 
 def auto_merge_workflow_violations(workflow_path: Path) -> list[str]:
