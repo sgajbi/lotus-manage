@@ -330,7 +330,11 @@ Use these commands as the primary local contract:
 ## Repo-Scoped Testing Practice
 
 The construction network recovery test uses actual Uvicorn/HTTP and PostgreSQL, with no dependency
-overrides. The required PostgreSQL lane runs it through `make test-idea-management-action-postgres`
+overrides. The wave network recovery test uses the same owned runtime helper and aborts only an
+observed, lock-blocked publication session after killing its API process. PostgreSQL queries can
+outlive client death; verify the exact financial-commit/checkpoint boundary rather than assuming
+process termination cancels database work. All fault locks and backend termination are confined
+to the test's disposable database. The required PostgreSQL lane runs these tests through `make test-idea-management-action-postgres`
 from this repository root, on Windows or POSIX with the supported environment activated.
 Set `DPM_POSTGRES_INTEGRATION_DSN` to an isolated test server and
 `DPM_POSTGRES_INTEGRATION_REQUIRED=1`. Its test account needs `CREATEDB`: each case creates and

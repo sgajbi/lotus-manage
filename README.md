@@ -279,7 +279,8 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   Historical borrowed references are interpreted as evaluation context without rewriting stored
   records; inconsistent historical proof packs cannot be replayed or released as trade authority.
   Native network recovery checks cover USD/FX readback and idempotent replay after API-process
-  replacement; see the [operations runbook](wiki/Operations-Runbook.md) for scope and prerequisites.
+  replacement and wave-worker recovery at the financial-commit/checkpoint boundary;
+  see the [operations runbook](wiki/Operations-Runbook.md) for scope and prerequisites.
 
 - rebalance waves
   `/api/v1/rebalance/waves`, `/api/v1/rebalance/waves/preview`,

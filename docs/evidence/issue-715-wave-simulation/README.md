@@ -63,6 +63,15 @@ one retained run, stale-owner refusal, tenant-scoped status/results and the inde
 example: SGD 15,000 NAV, 120 shares and SGD 3,000 cash. All stores are PostgreSQL; inputs are synthetic
 and manually source-ready. This is not positive upstream/downstream, approval or capacity proof.
 
+`tests/integration/dpm/waves/test_wave_network_recovery.py` extends recovery to unmodified
+Uvicorn/HTTP with enabled caller-asserted authorization and real PostgreSQL. Database locks force
+the financial-commit/checkpoint gap; an observed blocked publisher is aborted after the API is
+killed. A fresh API recovers the same artifact after actual lease expiry, publishes one disposition
+and retains immutable input/source identities. Supported status/results/artifact APIs verify
+tenant refusal, exact replay and NAV15,000/BUY20/120shares/SGD3,000 cash. Only the UUID test database
+receives fault locks/session termination. This combined process/session fault is not a database
+failover, shipped-image business test, live source qualification or production capacity result.
+
 API and in-memory repository regression tests additionally prove admission replay/conflict behavior,
 selector/nested-portfolio identity binding, returned-association refusal, supported
 status/result/retry/cancel surfaces, persisted wave reconciliation, and foreign-tenant
