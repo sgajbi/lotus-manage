@@ -26,9 +26,10 @@ Runbook for forward-only schema migration rollout for:
 ## Profile Modes
 
 Only `LOCAL` and `PRODUCTION` are accepted (case-insensitive, surrounding whitespace ignored).
-An unset `APP_PERSISTENCE_PROFILE` defaults to `LOCAL`; an explicitly blank or unknown value
-refuses startup and readiness with `PERSISTENCE_PROFILE_UNSUPPORTED`. Correct the configured
-value rather than disabling production checks.
+Native unset `APP_PERSISTENCE_PROFILE` defaults to `LOCAL`; Compose defaults to `PRODUCTION`
+only when unset and preserves explicit blanks. Blank or unknown values raise
+`PERSISTENCE_PROFILE_UNSUPPORTED` before migration database access or API startup; readiness
+returns HTTP `500`. Correct the profile rather than disabling production checks.
 
 - `APP_PERSISTENCE_PROFILE=LOCAL`:
   - Intended for local development workflows.
@@ -42,31 +43,30 @@ value rather than disabling production checks.
 
 ## Migration Command
 
-Use the shared migration tool before switching traffic:
+From the `lotus-manage` repository root with the project environment active, use this command
+in PowerShell or a POSIX shell before switching traffic:
 
 ```bash
 python scripts/postgres_migrate.py --target dpm
 ```
 
-Production contract check (profile/env/migration readiness):
-
-```bash
-python scripts/production_cutover_check.py --check-migrations
-```
+Application startup validates profile configuration. `GET /health/ready` additionally validates
+required applied migrations in the production profile; require HTTP `200` before traffic admission.
 
 ## Startup Sequencing
 
-1. Start/verify Postgres instance health.
-2. Apply migrations (`scripts/postgres_migrate.py`).
-3. Validate production contract (`scripts/production_cutover_check.py --check-migrations`).
+1. Configure a supported profile and the required persistence/authorization settings.
+2. Start/verify Postgres instance health.
+3. Apply migrations (`scripts/postgres_migrate.py --target dpm`).
 4. Start API services with Postgres backends enabled and production persistence profile:
    - `APP_PERSISTENCE_PROFILE=PRODUCTION`
    - `DPM_SUPPORTABILITY_STORE_BACKEND=POSTGRES`
    - `DPM_POLICY_PACK_CATALOG_BACKEND=POSTGRES` (when policy packs/admin APIs are enabled)
-5. Run smoke API checks for lotus-manage.
+5. Require `GET /health/ready` HTTP `200`, then run supported API smoke checks.
 6. Shift traffic.
 
-Do not start app replicas with Postgres backend enabled before migrations have completed.
+Do not admit app replicas before migrations and readiness checks have completed. Compose applies
+migrations before Uvicorn; the migration command rejects unsupported profiles before database I/O.
 
 ## Safety Controls
 
@@ -97,29 +97,11 @@ Do not start app replicas with Postgres backend enabled before migrations have c
 
 ## CI Smoke Checks
 
-CI executes:
-
-1. `python scripts/postgres_migrate.py --target dpm`
-2. Live Postgres integration tests:
-   - `tests/integration/dpm/supportability/test_dpm_postgres_repository_integration.py`
-   - `tests/integration/dpm/supportability/test_dpm_policy_pack_postgres_repository_integration.py`
-3. Production-profile startup smoke:
-   - starts API with `APP_PERSISTENCE_PROFILE=PRODUCTION` and Postgres backends.
-4. Production-profile guardrail negatives:
-  - validates startup fails with:
-    - `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES`
-    - `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN`
-    - `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES`
-    - `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN`
-    - `POSTGRES_ACCESS_POLICY_INVALID:{env_name}`
-    - `POSTGRES_ACCESS_POLICY_OUT_OF_RANGE:{env_name}:{minimum}:{maximum}`
-5. Production cutover contract check:
-   - `python scripts/production_cutover_check.py --check-migrations`
-6. Optional nightly/manual deep validation:
-   - `.github/workflows/nightly-postgres-full.yml`
-   - runs integration repositories plus live API demo pack in production profile on Postgres.
-
-This validates both migration application and repository contract parity on real Postgres.
+The PR and main gates execute `make migration-smoke` for migration/readiness contract tests.
+The required PostgreSQL job executes `make test-idea-management-action-postgres-coverage`
+against PostgreSQL `17.6`, including real migrations, persistence and recovery tests.
+The unit suite also covers profile rejection, startup refusal and registered readiness behavior.
+Docker image evidence is a separate required job, not production operation or bank acceptance.
 
 ## Rollback Guidance
 
@@ -130,10 +112,10 @@ This validates both migration application and repository contract parity on real
   - fix forward in a new migration.
 - If startup fails due profile guardrails:
   - correct backend/profile/DSN env configuration,
-  - rerun `scripts/production_cutover_check.py --check-migrations`,
-  - restart services.
+  - restart services and require `GET /health/ready` HTTP `200` before traffic admission.
 
 ## Completion Evidence
 
-- Cutover acceptance checklist:
-  - `docs/demo/postgres-cutover-checklist-2026-02-20.md`
+Record the exact revision, migration outcome, readiness response, supported API smoke results,
+CI run and rollout owner. Use [operations](../../wiki/Operations-Runbook.md) and
+[validation](../../wiki/Validation-and-CI.md) for current evidence boundaries.

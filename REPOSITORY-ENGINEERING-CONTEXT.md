@@ -350,8 +350,9 @@ Important validation expectations:
 
 1. no-alias, OpenAPI, API vocabulary, migration smoke, and security audit are active,
 2. profile admission accepts only normalized `LOCAL` or `PRODUCTION`; an unset variable defaults
-   to `LOCAL`, but explicit blank or unknown values raise value-safe `PERSISTENCE_PROFILE_UNSUPPORTED`
-   before persistence or migration checks. Production profile readiness requires explicit write authorization enforcement, enterprise
+   to `LOCAL` natively (`PRODUCTION` in Compose only when unset). Compose preserves explicit blanks;
+   blank or unknown values raise value-safe `PERSISTENCE_PROFILE_UNSUPPORTED` before migration
+   database access or API startup. Production profile readiness requires explicit write authorization enforcement, enterprise
    primary key id, a non-empty capability policy, and a valid bounded Postgres access policy in
    addition to Postgres persistence guardrails; PM-quality read/write routes require trusted actor,
    tenant, and role headers, reject body/header actor or tenant mismatches, and persist/list policy,

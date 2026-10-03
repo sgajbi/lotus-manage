@@ -3,6 +3,24 @@ from pathlib import Path
 from scripts.ci_local_compose_project import compose_project_name
 
 
+def test_compose_profile_default_preserves_explicit_blank() -> None:
+    compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
+    assert "APP_PERSISTENCE_PROFILE=${APP_PERSISTENCE_PROFILE-PRODUCTION}" in compose_text
+    assert "APP_PERSISTENCE_PROFILE=${APP_PERSISTENCE_PROFILE:-" not in compose_text
+
+
+def test_migration_rollout_runbook_uses_supported_admission_and_ci_paths() -> None:
+    runbook = Path("docs/documentation/postgres-migration-rollout-runbook.md").read_text(
+        encoding="utf-8"
+    )
+    assert "production_cutover_check.py" not in runbook
+    assert "nightly-postgres-full.yml" not in runbook
+    assert "postgres-cutover-checklist-2026-02-20.md" not in runbook
+    assert "GET /health/ready" in runbook
+    assert "make migration-smoke" in runbook
+    assert "make test-idea-management-action-postgres-coverage" in runbook
+
+
 def test_local_docker_compose_does_not_publish_internal_postgres_port() -> None:
     compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
 

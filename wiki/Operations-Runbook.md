@@ -36,8 +36,9 @@ scope unless a future source-owning service publishes and certifies that capabil
 - local Docker keeps PostgreSQL internal to the Compose network by default
 - Docker startup applies PostgreSQL migrations before serving traffic
 - `APP_PERSISTENCE_PROFILE` accepts only `LOCAL` or `PRODUCTION` (case-insensitive, trimmed).
-  Unset defaults to `LOCAL`; explicit blank or unknown values refuse startup and readiness with
-  `PERSISTENCE_PROFILE_UNSUPPORTED`. Correct the profile; never bypass production checks.
+  Native unset defaults to `LOCAL`; Compose defaults to `PRODUCTION` only when unset and preserves
+  explicit blanks. Blank or unknown values raise `PERSISTENCE_PROFILE_UNSUPPORTED` before migration
+  database access or API startup; readiness returns HTTP `500`. Correct the profile, not the checks.
 - `/health/ready` validates production persistence guardrails, trusted write authorization posture,
   bounded Postgres access policy, and applied migrations in production profile, so container
   health is tied to supportability backing-store and authz readiness instead of `/docs`
