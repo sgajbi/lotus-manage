@@ -286,6 +286,9 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   Native network recovery checks cover USD/FX readback and idempotent replay after API-process
   replacement and wave-worker recovery at the financial-commit/checkpoint boundary;
   see the [operations runbook](wiki/Operations-Runbook.md) for scope and prerequisites.
+  [All-method construction tests](tests/integration/dpm/supportability/test_construction_method_network.py)
+  cover stateless/stateful ownership, policy-blocked artifacts and forced API replacement with
+  independent USD calculations. Controlled Core contracts do not qualify live source authority.
 
 - rebalance waves
   `/api/v1/rebalance/waves`, `/api/v1/rebalance/waves/preview`,

@@ -342,6 +342,12 @@ removes only its UUID database. Never point this lane at production. API listene
 localhost ports; a killed API process must be joined without signalling its potentially abandoned
 shared Event lock. This proves bounded USD/FX durability, not Core authority, production IAM or capacity.
 
+`test_construction_method_network.py` covers the complete construction-method vocabulary in
+stateless and controlled-source stateful modes, including hard-policy-blocked candidates. It checks
+independent economics, tenant-fenced run/artifact/support-bundle reads, selection refusal, retained
+PostgreSQL owner/lineage and exact replay after API-process death. Source-aware methods retain
+missing-authority qualifications; this is not live Core, downstream release or bank identity proof.
+
 The PR/Main Docker job repeats these cases against the built image with
 `make test-image-financial-runtime` from this repository root (Windows or POSIX).
 `make workflow-policy-gate` parses PR/Main workflow structure and protects the image proof's
