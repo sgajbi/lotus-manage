@@ -181,3 +181,115 @@ def test_institutional_reference_representation_preserves_business_hash_without_
     assert decoded.definition_payload_digest == original["definition_payload_digest"]
     assert decoded.content_hash != original["content_hash"]
     assert decoded.authority_approval.official_activation == "UNAVAILABLE"
+
+
+@pytest.mark.parametrize(
+    "case,reason",
+    [
+        ("scope", "COMPOSITE_AUTHORITY_SCOPE_MISMATCH"),
+        ("inception", "COMPOSITE_AUTHORITY_DEFINITION_WINDOW_MISMATCH"),
+        ("termination", "COMPOSITE_AUTHORITY_DEFINITION_WINDOW_MISMATCH"),
+        ("approval_time", "COMPOSITE_AUTHORITY_APPROVAL_BEFORE_CREATION"),
+        ("self_approval", "COMPOSITE_AUTHORITY_SELF_APPROVAL_FORBIDDEN"),
+        ("business_digest", "COMPOSITE_DEFINITION_PAYLOAD_DIGEST_MISMATCH"),
+        ("wire_digest", "COMPOSITE_DEFINITION_WIRE_DIGEST_MISMATCH"),
+    ],
+)
+def test_definition_rejects_invalid_scope_window_and_immutable_approval_material(
+    case: str, reason: str
+) -> None:
+    wire, _ = ending_assets_example()
+    if case == "scope":
+        wire["composite_id"] = "another-composite"
+    elif case == "inception":
+        wire["inception_date"] = "2026-09-02"
+    elif case == "termination":
+        wire["termination_date"] = "2026-09-29"
+    elif case == "approval_time":
+        wire["authority_approval"]["claims"]["approved_at"] = "2020-01-01T00:00:00.000000Z"
+    elif case == "self_approval":
+        wire["authority_approval"]["claims"]["approving_identity"] = wire["created_by"]
+    elif case == "business_digest":
+        wire["display_name"] = "Unapproved material change"
+    else:
+        wire["correlation_id"] = "changed-correlation"
+        wire = rebind_definition(wire, refresh_approval=True)
+        wire["content_hash"] = "sha256:" + "0" * 64
+    with pytest.raises(ValueError, match=reason):
+        decode_composite_definition(wire)
+
+
+def test_valid_closed_definition_window_round_trips_but_invalid_calendar_date_refuses() -> None:
+    wire, _ = ending_assets_example()
+    wire["termination_date"] = "2026-09-30"
+    wire = rebind_definition(wire, refresh_approval=True)
+    assert decode_composite_definition(wire).model_dump(mode="json") == wire
+    wire["termination_date"] = "2026-09-31"
+    with pytest.raises(ValueError, match="day is out of range"):
+        decode_composite_definition(rebind_definition(wire, refresh_approval=True))
+
+
+@pytest.mark.parametrize(
+    "case,reason",
+    [
+        ("reversed_window", "COMPOSITE_AUTHORITY_WINDOW_INVALID"),
+        ("duplicate_member", "COMPOSITE_AUTHORITY_MEMBERS_NONCANONICAL"),
+        ("unknown_member_provider", "COMPOSITE_AUTHORITY_MEMBER_PROVIDER_UNKNOWN"),
+        ("member_kind", "COMPOSITE_AUTHORITY_MEMBER_KIND_MISMATCH"),
+        ("unknown_selected_member", "COMPOSITE_AUTHORITY_MEMBER_UNKNOWN"),
+        ("nonreturn_method", "COMPOSITE_AUTHORITY_METHOD_BINDING_UNEXPECTED"),
+    ],
+)
+def test_recomputed_digests_do_not_admit_ambiguous_identity_or_fact_authority(
+    case: str, reason: str
+) -> None:
+    wire, _ = ending_assets_example()
+    profile = wire["source_authority"]["payload"]
+    if case == "reversed_window":
+        profile["effective_to"] = "2026-08-31"
+    elif case == "duplicate_member":
+        profile["member_identities"].append(copy.deepcopy(profile["member_identities"][0]))
+    elif case == "unknown_member_provider":
+        profile["member_identities"][0]["provider_id"] = "unregistered-provider"
+    elif case == "member_kind":
+        profile["member_identities"][0]["identity_kind"] = "CORE_PORTFOLIO"
+    elif case == "unknown_selected_member":
+        profile["selections"][0]["member_ids"] = ["unknown-member"]
+    else:
+        profile["selections"][0]["method_profile_binding"] = copy.deepcopy(
+            profile["return_method_binding"]
+        )
+    with pytest.raises(ValueError, match=reason):
+        decode_composite_definition(rebind_definition(wire, refresh_approval=True))
+
+
+@pytest.mark.parametrize(
+    "raw,reason",
+    [
+        ("[]", "COMPOSITE_DEFINITION_JSON_OBJECT_REQUIRED"),
+        ("null", "COMPOSITE_DEFINITION_JSON_OBJECT_REQUIRED"),
+        ('{"product_version":', "COMPOSITE_DEFINITION_RAW_JSON_INVALID"),
+        ('{"product_version":"v3"}', "COMPOSITE_DEFINITION_PRODUCT_VERSION_UNSUPPORTED"),
+    ],
+)
+def test_version_dispatch_refuses_nonobjects_malformed_json_and_unknown_versions(
+    raw: str, reason: str
+) -> None:
+    with pytest.raises(ValueError, match=reason):
+        decode_composite_definition(raw)
+
+
+def test_absent_version_preserves_the_legacy_v1_default_and_wire() -> None:
+    pack = json.loads(FIXTURES.read_text(encoding="utf-8"))
+    expected = pack["v1_compatibility"]["raw_definition"]
+    wire = copy.deepcopy(expected)
+    del wire["product_version"]
+    assert decode_composite_definition(json.dumps(wire)).model_dump(mode="json") == expected
+
+
+def test_valid_authority_payload_with_a_substituted_profile_digest_refuses() -> None:
+    wire, _ = ending_assets_example()
+    assert decode_composite_definition(wire).model_dump(mode="json") == wire
+    wire["source_authority"]["profile_digest"] = "sha256:" + "0" * 64
+    with pytest.raises(ValueError, match="COMPOSITE_PROFILE_DIGEST_MISMATCH"):
+        decode_composite_definition(wire)
