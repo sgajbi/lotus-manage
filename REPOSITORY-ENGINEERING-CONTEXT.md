@@ -45,7 +45,9 @@ This repository owns:
    provenance and complete member/horizon coverage. Consumers must not infer absent ending assets.
    The shared immutable fixture and registered-route tests are documented in
    `docs/guides/composite-source-authority.md`;
-   PostgreSQL/actual consumer acceptance remains separately required.
+   Populated upgrade and actual consumer qualification remain separately required.
+   Controlled PostgreSQL producer tests retain exact v1/v2 JSONB generations and publications across
+   fresh reader processes; this is synthetic durability proof, not actual consumer/approval proof.
 5. immutable composite-universe attestations scoped to a pinned membership revision, inclusive
    business-date range, exact portfolio set, policy and named source-product cuts/watermarks, with
    exactly one source product declared as authoritative for the universe. `COMPLETE`
