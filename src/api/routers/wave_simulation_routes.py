@@ -13,7 +13,7 @@ from src.api.routers.wave_request_models import DpmWaveSimulationRequest
 from src.api.routers.wave_response_contracts import DpmWaveResponse
 from src.api.routers.wave_route_parameters import WaveCorrelationIdHeader, WaveIdPath
 from src.api.routers.wave_simulation_http import simulate_wave_response
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmWaveRepository

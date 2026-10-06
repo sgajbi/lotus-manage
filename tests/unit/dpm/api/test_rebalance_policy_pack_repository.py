@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.api.services import rebalance_policy_pack_repository as policy_pack_repository
+from src.api.composition import rebalance_policy_pack_repository as policy_pack_repository
 
 
 def test_policy_pack_repository_builds_only_from_postgres_dsn(monkeypatch):

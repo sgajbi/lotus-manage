@@ -21,7 +21,7 @@ from src.api.routers.wave_source_dependency_http import (
     upstream_unavailable_http_exception,
 )
 from src.api.services import wave_service
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )

@@ -14,7 +14,7 @@ from src.api.services import wave_supportability_payload as wave_supportability_
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
 )
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository

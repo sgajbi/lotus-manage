@@ -24,7 +24,7 @@ from src.api.services.mandate_health_result import (
     DpmMandateHealthCalculationResult as DpmMandateHealthCalculationResult,
     calculate_mandate_health_result,
 )
-from src.api.services.core_resolver_service import CoreResolverClient
+from src.core.integration_ports import CoreResolverClient
 from src.api.services.mandate_health_persistence import persist_mandate_health_evidence
 from src.api.services import mandate_monitoring_support
 from src.api.services.mandate_monitoring_run import (

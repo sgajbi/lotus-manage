@@ -2,7 +2,7 @@ from datetime import date
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_request_dates import construction_as_of_date
-from src.api.services.authority_client_service import (
+from src.core.integration_ports import (
     RiskAuthorityClient,
     RiskAuthorityUnavailableError,
 )

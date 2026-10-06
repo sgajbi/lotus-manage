@@ -60,6 +60,35 @@ owned by `lotus-advise`.
 
 ## Current-State Summary
 
+### Monthly Composite Eligibility Practice
+
+`src/core/composite_eligibility/` owns bounded Decimal monthly ABS_NET, cash and readiness rules,
+resolved policy inheritance, exact input/evaluation hashes and independent approval. Application
+services admit pinned owner-scoped observations; the default source is unavailable. Additive
+policy/evaluation custody shares the existing membership/publication ledger under one transaction
+and tenant publication lock. Configuration proposal revision is not definition policy identity:
+published membership/universe retain `eligibility_policy_version` from the immutable definition.
+Keep all-rule evidence, missing-member pending semantics, closed historical intervals and exact
+replay. Unknown discretionary facts cannot be projected into the legacy boolean wire. Bank IAM,
+qualified population, institutional applicability and v2 eligibility-approval lifecycle remain
+separate; synthetic controls do not activate official eligibility. Use the
+[monthly eligibility guide](docs/guides/composite-monthly-eligibility.md) for APIs and owning tests.
+
+### Application composition practice
+
+Concrete integration and repository factories belong in `src/api/composition`, bound by
+`src/api/dependencies`. Business services consume domain-owned ports and stable errors from
+`src/core/integration_ports.py`; they must not import concrete infrastructure or transport.
+Rebalance routes inject `RebalanceRuntime` through `get_rebalance_runtime`; tests replace that
+dependency rather than patching `src.api.main`. Preserve tenant forwarding, idempotency and
+worker recovery when changing bindings. Application metric recorders live in
+`src/observability/metrics.py`; HTTP transport reexports the same collectors, never new instances.
+
+`make architecture-gate` invokes the supported import-linter entrypoint and rejects a missing or
+empty application tree. Only routers use the documented direct-infrastructure prohibition;
+business infrastructure/router/framework prohibitions remain transitive. The owning native
+fixture tests cover valid composition, forbidden direct/indirect imports and absent source trees.
+
 ### Scope and truth ownership
 
 This section records durable `lotus-manage` architecture, supported behavior, and integration

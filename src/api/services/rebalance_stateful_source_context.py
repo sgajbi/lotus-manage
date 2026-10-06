@@ -3,7 +3,7 @@ from typing import Any, Optional, Protocol
 
 from pydantic import ValidationError
 
-from src.api.observability import (
+from src.observability.metrics import (
     DPM_CORE_RESOLVER_OPERATION,
     record_core_resolver_call,
 )
@@ -16,7 +16,7 @@ from src.api.services.rebalance_simulation_errors import (
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.dpm_source_context import DpmCoreContextIncompleteError, DpmResolvedSourceContext
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )

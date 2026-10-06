@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.api.services import rebalance_run_support_repository as run_support_repository
+from src.api.composition import rebalance_run_support_repository as run_support_repository
 
 
 def test_run_support_repository_builds_with_postgres_dsn(monkeypatch):

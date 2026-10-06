@@ -13,7 +13,7 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverClient,
     CoreResolverError,
 )

@@ -17,8 +17,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 import src.api.routers.rebalance_runs as dpm_runs_router
-import src.api.services.core_resolver_service as core_resolver_service
+import src.api.composition.core_resolver_service as core_resolver_service
 from src.api.main import app, get_db_session
+from tests.conftest import patch_rebalance_runtime
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
@@ -1647,7 +1648,7 @@ def test_dpm_support_repository_backend_init_errors_return_503(client, monkeypat
         "postgresql://user:pass@localhost:5432/dpm",
     )
     monkeypatch.setattr(
-        "src.api.services.rebalance_run_support_repository.PostgresDpmRunRepository",
+        "src.api.composition.rebalance_run_support_repository.PostgresDpmRunRepository",
         lambda *args, **kwargs: (_ for _ in ()).throw(ConnectionError("boom")),
     )
     reset_dpm_run_support_service_for_tests()
@@ -2447,8 +2448,8 @@ def test_simulate_returns_503_when_idempotency_lookup_points_to_missing_run(clie
             "src.api.services.rebalance_simulation_service.hash_canonical_payload",
             return_value="sha256:matches",
         ),
-        patch(
-            "src.api.services.rebalance_simulation_service.get_dpm_run_support_service",
+        patch_rebalance_runtime(
+            "support_service_factory",
             return_value=_InconsistentIdempotencyService(),
         ),
     ):
@@ -2516,7 +2517,7 @@ def test_simulate_blocked_logs_warning(client):
     payload["market_data_snapshot"]["prices"] = []
 
     headers = {"Idempotency-Key": "test-key-block"}
-    with patch("src.api.main.logger") as mock_logger:
+    with patch_rebalance_runtime("logger") as mock_logger:
         response = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
         assert response.status_code == 200
         assert response.json()["status"] == "BLOCKED"
@@ -2535,7 +2536,7 @@ def test_simulate_logs_do_not_embed_request_identifiers(client):
         "X-Correlation-Id": "corr-log-redaction",
     }
 
-    with patch("src.api.main.logger") as mock_logger:
+    with patch_rebalance_runtime("logger") as mock_logger:
         response = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
 
     assert response.status_code == 200
@@ -2706,7 +2707,7 @@ def test_analyze_async_failure_is_captured_in_operation_status(client):
     payload.pop("options")
     payload["scenarios"] = {"baseline": {"options": {}}}
 
-    with patch("src.api.main._execute_batch_analysis", side_effect=RuntimeError("boom")):
+    with patch_rebalance_runtime("execute_batch", side_effect=RuntimeError("boom")):
         accepted = client.post(
             "/api/v1/rebalance/analyze/async",
             json=payload,
@@ -2789,7 +2790,7 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
         request_hash="seed-policy-pack",
     )
 
-    with patch("src.api.main.run_simulation") as mock_run:
+    with patch_rebalance_runtime("run_simulation") as mock_run:
         mock_run.return_value = real_result
 
         simulate = client.post(
@@ -3064,7 +3065,7 @@ def test_dpm_policy_pack_catalog_overrides_options_using_tenant_resolver(client,
         request_hash="seed-policy-pack-tenant",
     )
 
-    with patch("src.api.main.run_simulation") as mock_run:
+    with patch_rebalance_runtime("run_simulation") as mock_run:
         mock_run.return_value = real_result
 
         simulate = client.post(
@@ -3111,7 +3112,7 @@ def test_simulate_policy_pack_explicit_tenant_header_precedence_over_resolver(cl
         request_hash="seed-policy-pack-tenant-header",
     )
 
-    with patch("src.api.main.run_simulation") as mock_run:
+    with patch_rebalance_runtime("run_simulation") as mock_run:
         mock_run.return_value = real_result
 
         simulate = client.post(
@@ -3162,7 +3163,7 @@ def test_analyze_policy_pack_explicit_tenant_header_precedence_over_resolver(cli
         request_hash="seed-policy-pack-analyze-tenant-header",
     )
 
-    with patch("src.api.main.run_simulation") as mock_run:
+    with patch_rebalance_runtime("run_simulation") as mock_run:
         mock_run.return_value = real_result
 
         analyze = client.post(
@@ -3290,7 +3291,7 @@ def test_analyze_async_accept_only_manual_execute_captures_failure(client, monke
     assert accepted.status_code == 202
     operation_id = accepted.json()["operation_id"]
 
-    with patch("src.api.main._execute_batch_analysis", side_effect=RuntimeError("boom")):
+    with patch_rebalance_runtime("execute_batch", side_effect=RuntimeError("boom")):
         executed = client.post(
             f"/api/v1/rebalance/operations/{operation_id}/execute",
             headers={"X-Tenant-Id": "tenant-test"},
@@ -3357,7 +3358,7 @@ def test_analyze_async_accept_only_manual_execute_preserves_tenant_policy_contex
     assert accepted.status_code == 202
     operation_id = accepted.json()["operation_id"]
 
-    with patch("src.api.main.run_simulation") as mock_run:
+    with patch_rebalance_runtime("run_simulation") as mock_run:
         mock_run.return_value = real_result
         executed = client.post(
             f"/api/v1/rebalance/operations/{operation_id}/execute",
@@ -3652,7 +3653,7 @@ def test_analyze_scenarios_are_processed_in_sorted_name_order(client):
         request_hash="seed",
     )
 
-    with patch("src.api.main.run_simulation") as mock_run:
+    with patch_rebalance_runtime("run_simulation") as mock_run:
         mock_run.return_value = real_result
 
         response = client.post("/api/v1/rebalance/analyze", json=payload)
@@ -3674,7 +3675,7 @@ def test_analyze_runtime_error_is_isolated_to_failing_scenario(client):
             raise RuntimeError("boom")
         return real_run(*args, **kwargs)
 
-    with patch("src.api.main.run_simulation", side_effect=_side_effect):
+    with patch_rebalance_runtime("run_simulation", side_effect=_side_effect):
         response = client.post("/api/v1/rebalance/analyze", json=payload)
 
     assert response.status_code == 200

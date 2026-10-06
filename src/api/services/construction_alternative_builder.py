@@ -16,7 +16,7 @@ from src.core.construction.alternative_engine import (
     build_do_nothing_baseline,
     build_rebalance_result_alternative,
 )
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import ConstructionAlternative, ConstructionAuthorityContext
 from src.core.dpm_source_context import DpmResolvedSourceContext

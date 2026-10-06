@@ -15,6 +15,11 @@ from src.core.composite_publication import (
     DpmCompositePublicationReceipt,
 )
 from src.core.composite_universe import DpmCompositeUniverseAttestation
+from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.evaluation_control import (
+    MonthlyEvaluationApproval,
+    MonthlyEvaluationProposal,
+)
 
 
 class DpmCompositeConflictError(ValueError):
@@ -33,6 +38,59 @@ class DpmCompositeResultPage(Generic[ItemT]):
 
 
 class DpmCompositeRepository(Protocol):
+    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
+        """Retain reproducible evaluation against the current published parent and pinned policy/universe."""
+
+    def get_monthly_evaluation_proposal(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+    ) -> MonthlyEvaluationProposal | None:
+        """Read immutable evaluated inputs and complete rule evidence within tenant scope."""
+
+    def save_monthly_evaluation_approval(self, *, approval: MonthlyEvaluationApproval) -> None:
+        """Atomically retain approval, canonical membership/universe and the existing publication record."""
+
+    def get_monthly_evaluation_approval(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+    ) -> MonthlyEvaluationApproval | None:
+        """Return approval only with matching durable canonical publication and universe evidence."""
+
+    def save_monthly_policy_proposal(self, *, proposal: MonthlyPolicyProposal) -> None:
+        """Retain immutable configuration evidence, not membership decisions."""
+
+    def get_monthly_policy_proposal(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        month: str,
+        proposal_revision: str,
+    ) -> MonthlyPolicyProposal | None:
+        """Read one scoped proposal without resolving mutable latest configuration."""
+
+    def save_monthly_policy_approval(self, *, approval: MonthlyPolicyApproval) -> None:
+        """Atomically admit one active configuration per composite/month; exact proposal required."""
+
+    def get_monthly_policy_approval(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        month: str,
+    ) -> MonthlyPolicyApproval | None:
+        """Read retained synthetic control evidence; no bank IAM or official activation claim."""
+
     def save_definition(self, *, definition: CompositeDefinition) -> None:
         """Persist an immutable tenant-scoped definition revision."""
 

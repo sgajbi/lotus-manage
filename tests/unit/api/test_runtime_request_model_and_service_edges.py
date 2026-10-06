@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-import src.api.services.core_resolver_service as core_resolver_service
+import src.api.composition.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
 import src.api.services.rebalance_async_manual_execution as async_manual_execution
 import src.api.services.rebalance_async_operation_completion as async_completion
@@ -20,7 +20,8 @@ import src.api.services.rebalance_batch_scenario_execution as batch_scenario_exe
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_policy_pack_execution as policy_pack_execution
 import src.api.services.rebalance_request_envelope_resolution as envelope_resolution
-import src.api.services.rebalance_runtime_overrides as runtime_overrides
+from dataclasses import replace
+from tests.conftest import build_test_rebalance_runtime
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 import src.api.services.rebalance_stateful_source_context as stateful_source_context
@@ -150,18 +151,11 @@ def test_runtime_utils_feature_and_backend_guards(monkeypatch) -> None:
     assert ConnectionError in postgres_connection_exception_types()
 
 
-def test_rebalance_runtime_overrides_fall_back_for_missing_main_exports() -> None:
-    def _default_callable() -> str:
-        return "default"
-
-    assert (
-        runtime_overrides.resolve_callable_override(
-            "__missing_lotus_manage_override__",
-            _default_callable,
-        )
-        is _default_callable
-    )
-    assert runtime_overrides.resolve_main_override("__missing_lotus_manage_override__") is None
+def test_rebalance_runtime_is_explicit_not_a_main_override(monkeypatch) -> None:
+    runtime = build_test_rebalance_runtime()
+    monkeypatch.setattr(api_main, "run_simulation", lambda **kwargs: None)
+    assert service._runtime(runtime) is runtime
+    assert runtime.run_simulation is not api_main.run_simulation
 
 
 def test_main_does_not_export_unused_async_runner_override() -> None:
@@ -172,7 +166,7 @@ def test_main_does_not_export_unused_async_runner_override() -> None:
 def test_rebalance_run_support_provider_raises_application_error(monkeypatch) -> None:
     run_support_service.reset_dpm_run_support_service_for_tests()
 
-    def _raise_missing_dsn():
+    def _raise_missing_dsn(**_kwargs):
         raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED")
 
     monkeypatch.setattr(
@@ -215,7 +209,10 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
     )
     with pytest.raises(service.DpmRebalanceCoreResolverUnavailableError) as unavailable:
         service._resolve_stateful_source_context(
-            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+            runtime=build_test_rebalance_runtime(),
+            envelope=envelope,
+            correlation_id="corr",
+            admitted_tenant_id="tenant_001",
         )
     assert rebalance_envelope_http_exception(unavailable.value).status_code == 503
 
@@ -228,7 +225,10 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
     )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as incomplete:
         service._resolve_stateful_source_context(
-            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+            runtime=build_test_rebalance_runtime(),
+            envelope=envelope,
+            correlation_id="corr",
+            admitted_tenant_id="tenant_001",
         )
     assert incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
     assert rebalance_envelope_http_exception(incomplete.value).status_code == 424
@@ -242,7 +242,10 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
     )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as derived_incomplete:
         service._resolve_stateful_source_context(
-            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+            runtime=build_test_rebalance_runtime(),
+            envelope=envelope,
+            correlation_id="corr",
+            admitted_tenant_id="tenant_001",
         )
     assert derived_incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
     assert rebalance_envelope_http_exception(derived_incomplete.value).status_code == 424
@@ -256,7 +259,10 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
     )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as invalid:
         service._resolve_stateful_source_context(
-            envelope=envelope, correlation_id="corr", admitted_tenant_id="tenant_001"
+            runtime=build_test_rebalance_runtime(),
+            envelope=envelope,
+            correlation_id="corr",
+            admitted_tenant_id="tenant_001",
         )
     assert rebalance_envelope_http_exception(invalid.value).status_code == 424
 
@@ -270,7 +276,9 @@ def test_stateful_source_context_rejects_missing_payload_and_disabled_feature(mo
     )
 
     with pytest.raises(service.DpmRebalanceEnvelopeValidationError) as missing:
-        service._resolve_stateful_source_context(envelope=missing_payload, correlation_id="corr")
+        service._resolve_stateful_source_context(
+            runtime=build_test_rebalance_runtime(), envelope=missing_payload, correlation_id="corr"
+        )
     assert missing.value.detail == "DPM_STATEFUL_INPUT_REQUIRED"
     assert rebalance_envelope_http_exception(missing.value).status_code == 422
 
@@ -283,7 +291,9 @@ def test_stateful_source_context_rejects_missing_payload_and_disabled_feature(mo
     )
 
     with pytest.raises(service.DpmRebalanceStatefulInputDisabledError) as disabled:
-        service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
+        service._resolve_stateful_source_context(
+            runtime=build_test_rebalance_runtime(), envelope=envelope, correlation_id="corr"
+        )
     assert disabled.value.detail == "DPM_STATEFUL_INPUT_DISABLED"
     assert rebalance_envelope_http_exception(disabled.value).status_code == 409
 
@@ -435,6 +445,7 @@ def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> No
 
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as rebalance_error:
         service.resolve_rebalance_request_envelope(
+            runtime=build_test_rebalance_runtime(),
             envelope=RebalanceExecutionRequestEnvelope(
                 input_mode="stateful",
                 stateful_input=_stateful_input(),
@@ -450,6 +461,7 @@ def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> No
     )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as batch_error:
         service.resolve_batch_request_envelope(
+            runtime=build_test_rebalance_runtime(),
             envelope=BatchExecutionRequestEnvelope(
                 input_mode="stateful",
                 stateful_input=_stateful_input(),
@@ -463,6 +475,7 @@ def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> No
 def test_stateless_envelope_resolution_rejects_missing_constructed_payloads() -> None:
     with pytest.raises(service.DpmRebalanceEnvelopeValidationError) as rebalance_error:
         service.resolve_rebalance_request_envelope(
+            runtime=build_test_rebalance_runtime(),
             envelope=RebalanceExecutionRequestEnvelope.model_construct(
                 input_mode="stateless",
                 stateless_input=None,
@@ -476,6 +489,7 @@ def test_stateless_envelope_resolution_rejects_missing_constructed_payloads() ->
 
     with pytest.raises(service.DpmRebalanceEnvelopeValidationError) as batch_error:
         service.resolve_batch_request_envelope(
+            runtime=build_test_rebalance_runtime(),
             envelope=BatchExecutionRequestEnvelope.model_construct(
                 input_mode="stateless",
                 stateless_input=None,
@@ -570,18 +584,10 @@ def test_service_modules_route_risk_authority_types_via_service_boundary() -> No
         )
 
 
-def test_service_modules_do_not_import_infrastructure_directly_except_boundary_adapters() -> None:
-    allowed_infra_import_modules = {
-        "src/api/services/authority_client_service.py",
-        "src/api/services/core_resolver_service.py",
-        "src/api/services/rebalance_policy_pack_repository.py",
-        "src/api/services/rebalance_run_support_repository.py",
-    }
+def test_service_modules_do_not_import_infrastructure_directly() -> None:
     service_dir = Path("src/api/services")
     for path in sorted(service_dir.glob("*.py")):
         module_path = str(path).replace("\\", "/")
-        if module_path in allowed_infra_import_modules:
-            continue
         source = path.read_text(encoding="utf-8")
         assert "from src.infrastructure" not in source, (
             f"{module_path} should not import directly from src.infrastructure"
@@ -1524,10 +1530,10 @@ def test_run_analyze_async_operation_accepts_legacy_request_payload(monkeypatch)
             "failed_scenarios": {},
         }
     )
-    monkeypatch.setattr(api_main, "_execute_batch_analysis", lambda **_kwargs: expected)
+    runtime = replace(build_test_rebalance_runtime(), execute_batch=lambda **_kwargs: expected)
 
     service.run_analyze_async_operation(
-        tenant_id="tenant-test", operation_id="op_legacy", service=fake_service
+        runtime=runtime, tenant_id="tenant-test", operation_id="op_legacy", service=fake_service
     )
 
     assert fake_service.completed is not None
@@ -1545,7 +1551,7 @@ def test_analyze_scenarios_translates_envelope_resolution_errors(monkeypatch) ->
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        analyze_scenarios(request=object())  # type: ignore[arg-type]
+        analyze_scenarios(runtime=build_test_rebalance_runtime(), request=object())  # type: ignore[arg-type]
 
     assert exc_info.value.status_code == 422
     assert exc_info.value.detail == "BATCH_ENVELOPE_INVALID"
@@ -1566,7 +1572,7 @@ def test_analyze_scenarios_translates_batch_execution_errors(monkeypatch) -> Non
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        analyze_scenarios(request=object())  # type: ignore[arg-type]
+        analyze_scenarios(runtime=build_test_rebalance_runtime(), request=object())  # type: ignore[arg-type]
 
     assert exc_info.value.status_code == 409
     assert exc_info.value.detail == "BATCH_EXECUTION_CONFLICT"

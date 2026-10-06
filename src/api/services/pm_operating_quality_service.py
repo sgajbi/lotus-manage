@@ -6,8 +6,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Protocol, TypeVar
 
-from src.api.services.core_resolver_service import CoreResolverError, CoreResolverUnavailableError
-from src.api.services.core_resolver_service import build_core_resolver_client
+from src.core.integration_ports import CoreResolverError, CoreResolverUnavailableError
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
 from src.core.outcomes import DpmOutcomeSourceRef
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
@@ -39,6 +38,10 @@ from src.core.pm_quality.book_scope_refs import pm_book_member_source_refs
 
 
 RepositoryT = TypeVar("RepositoryT")
+
+
+def _unconfigured_core_resolver() -> CoreResolverProtocol:
+    raise CoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
 
 
 class CoreResolverProtocol(Protocol):
@@ -73,7 +76,7 @@ class DpmPmOperatingQualityApplicationService:
     fairness_repository: DpmPmQualityFairnessAnalysisRepository | None = None
     review_action_repository: DpmPmQualityReviewActionRepository | None = None
     summary_invocation_repository: DpmPmQualitySummaryInvocationRepository | None = None
-    core_resolver_factory: Callable[[], CoreResolverProtocol] = build_core_resolver_client
+    core_resolver_factory: Callable[[], CoreResolverProtocol] = _unconfigured_core_resolver
     review_action_builder: Callable[..., DpmPmQualityReviewAction] = build_pm_quality_review_action
 
     def save_policy(
@@ -643,7 +646,7 @@ def build_pm_quality_score_run_from_command(
     command: DpmPmQualityScoreRunCommand,
     outcome_review_repository: DpmOutcomeReviewRepository,
     policy_repository: DpmPmQualityPolicyRepository,
-    core_resolver_factory: Callable[[], CoreResolverProtocol] = build_core_resolver_client,
+    core_resolver_factory: Callable[[], CoreResolverProtocol] = _unconfigured_core_resolver,
 ) -> DpmPmOperatingQualityScoreRun:
     policy = resolve_pm_quality_policy_from_command(
         tenant_id=command.tenant_id,

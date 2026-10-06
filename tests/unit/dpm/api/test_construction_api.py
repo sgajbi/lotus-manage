@@ -16,7 +16,7 @@ from src.api.main import app
 from src.api.request_models import RebalanceRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 import src.api.services.construction_service as construction_service
-import src.api.services.core_resolver_service as core_resolver_service
+import src.api.composition.core_resolver_service as core_resolver_service
 from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
 )

@@ -24,7 +24,7 @@ from src.core.pm_quality import (
 )
 from src.core.pm_quality.book_scope_refs import pm_book_member_source_refs
 from src.core.pm_quality.temporal import canonical_pm_quality_business_date
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )

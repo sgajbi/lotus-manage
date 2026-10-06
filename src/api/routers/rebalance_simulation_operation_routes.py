@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from src.api.dependencies import get_rebalance_runtime
+
+from src.core.rebalance.runtime_ports import RebalanceRuntime
+
 from typing import Annotated
 
 from fastapi import Depends, Path, status
@@ -41,6 +45,7 @@ from src.core.rebalance_runs import (
     },
 )
 def execute_dpm_async_operation(
+    runtime: Annotated[RebalanceRuntime, Depends(get_rebalance_runtime)],
     operation_id: Annotated[
         str,
         Path(description="Asynchronous operation identifier.", examples=["dop_001"]),
@@ -50,6 +55,7 @@ def execute_dpm_async_operation(
 ) -> DpmAsyncOperationStatusResponse:
     try:
         return service.execute_dpm_async_operation(
+            runtime=runtime,
             tenant_id=tenant_id,
             operation_id=operation_id,
             service=service_instance,

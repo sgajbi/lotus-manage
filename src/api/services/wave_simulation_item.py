@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service
 from src.api.services.wave_construction_diagnostics import proposed_changes_from_alternative_set
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import (
     ConstructionIdempotencyConflictError,
     ConstructionRepository,

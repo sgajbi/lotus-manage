@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-import src.api.services.core_resolver_service as core_resolver_service
+import src.api.composition.core_resolver_service as core_resolver_service
 from src.api.dependencies import get_construction_repository, get_db_session
 from src.api.main import app
 

@@ -2,6 +2,26 @@
 
 This ledger records cleanup and structural review evidence for RFC-0036.
 
+## Issue #781: Executable Architecture Boundaries
+
+- Finding: the architecture recipe imported a CLI module without executing its command. The real
+  checker exposed concrete factories inside business services, a service-to-main override backedge
+  and framework-coupled metric recording. The documented router prohibition is direct; business
+  infrastructure/router/framework independence is transitive.
+- Repair: invoke the supported checker, reject absent/empty source trees, move factories to API
+  composition, share domain-owned typed ports/errors, inject rebalance runtime through existing DI,
+  and share framework-free metric collectors with HTTP transport. Retire reflection and factory
+  aliases; retain routes, error identity, tenant forwarding, durable worker and financial semantics.
+- Proof: native gate fixtures exercise valid composition, forbidden direct/transitive imports and
+  missing/empty roots. DI/client/error regressions, monthly calculation/publication regressions and
+  wave source/custody tests pass. Candidate-wide checks, governed review/CI and exact-main validation
+  remain required; no capacity or live source qualification follows from these tests.
+- Documentation: repository context and Validation/CI wiki source describe the enforced boundary.
+  Publish wiki only after merge and verify strict parity. No shared skill/AGENTS update is needed:
+  existing gate-liveness and backend-delivery guidance already require this behavior.
+- Draft disposition: B16 classification and B17 repair envelope informed this repair; the prior
+  no-op gate claim and service-factory exceptions are superseded, not accepted as waivers.
+
 ## Issue #733: Reserve Authority Consumption
 
 - Wave slice: explicit stateful item mode, server-derived scope, shared envelope resolution,

@@ -13,7 +13,7 @@ from src.api.services import rebalance_run_support_config
 from src.api.services.rebalance_run_support_service import (
     DpmRunSupportServiceUnavailableError,
 )
-from src.api.services.rebalance_run_support_service import (
+from src.api.dependencies import (
     get_dpm_run_support_service as get_dpm_run_support_application_service,
 )
 from src.api.services.rebalance_run_support_service import (

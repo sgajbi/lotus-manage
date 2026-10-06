@@ -1,6 +1,6 @@
 from typing import Optional
 
-from src.api.observability import record_async_operation, record_execution_call
+from src.observability.metrics import record_async_operation, record_execution_call
 from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceAsyncOperationConflictError,
 )

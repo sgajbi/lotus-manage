@@ -18,6 +18,21 @@ to `main`.
 | Did docs or wiki truth change? | Repo docs tests; `Sync-RepoWikis.ps1 -CheckOnly -AllowUnpublishedSourceChanges` before merge when the branch intentionally changes `wiki/`; publish after merge; rerun strict `Sync-RepoWikis.ps1 -CheckOnly` after publication | Repo-local `wiki/` is source truth; GitHub wiki is a publication target. |
 | Is live source integration claimed? | `make live-api-validate-core`, `make demo-certify` where applicable | Live proof is required before claiming stateful Core-backed readiness or demo certification. |
 
+## Architecture gate
+
+From the repository root (PowerShell or Bash with Make and the project Python environment), run
+`make architecture-gate`. It executes import-linter rather
+than importing its CLI module without invoking a command, and rejects missing/empty source trees.
+
+Routers may use dependency injection but may not directly import concrete infrastructure.
+Business-service infrastructure, router and FastAPI/Starlette prohibitions are transitive.
+Factories belong in `src/api/composition`, runtime bindings in `src/api/dependencies`, and shared
+metric collectors in framework-free `src/observability/metrics.py`.
+
+`python -m pytest tests/unit/shared/dependencies/test_architecture_gate_contract.py -q` verifies valid
+composition, forbidden graphs, missing/empty roots and shared collector identity through the
+actual gate entrypoint. Local proof does not replace required GitHub checks on candidate and main.
+
 ## Lane model
 
 `lotus-manage` uses:

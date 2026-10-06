@@ -5,21 +5,7 @@ from pathlib import Path
 
 
 SERVICE_DIR = Path("src/api/services")
-ALLOWED_INFRASTRUCTURE_IMPORTS: dict[str, set[str]] = {
-    "src/api/services/authority_client_service.py": {
-        "src.infrastructure.advise_authority",
-        "src.infrastructure.risk_authority",
-    },
-    "src/api/services/core_resolver_service.py": {
-        "src.infrastructure.core_sourcing",
-    },
-    "src/api/services/rebalance_policy_pack_repository.py": {
-        "src.infrastructure.dpm_policy_packs",
-    },
-    "src/api/services/rebalance_run_support_repository.py": {
-        "src.infrastructure.rebalance_runs",
-    },
-}
+ALLOWED_INFRASTRUCTURE_IMPORTS: dict[str, set[str]] = {}
 
 
 def _iter_service_files() -> list[Path]:

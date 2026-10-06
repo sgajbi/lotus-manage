@@ -11,7 +11,7 @@ from src.api.services import wave_service
 from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import DpmWaveRepository
-from src.api.services.authority_client_service import (
+from src.core.integration_ports import (
     AdviseAuthorityClient,
     RiskAuthorityClient,
 )

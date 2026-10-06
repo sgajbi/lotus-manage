@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import HTTPException, status
 
 from src.api.services.mandate_service import DpmMandateSourceIncompleteError
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )

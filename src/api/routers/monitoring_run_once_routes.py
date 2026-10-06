@@ -21,7 +21,7 @@ from src.api.services.mandate_service import (
     mandate_ids_from_pm_book_membership,
     run_mandate_monitoring_once,
 )
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )

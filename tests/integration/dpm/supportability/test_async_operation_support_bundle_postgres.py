@@ -13,7 +13,7 @@ from psycopg.errors import NotNullViolation
 from fastapi.testclient import TestClient
 
 from src.api.main import app, get_db_session
-from src.api.services import rebalance_run_support_repository
+from src.api.composition import rebalance_run_support_repository
 from src.api.services.rebalance_run_support_service import reset_dpm_run_support_service_for_tests
 from src.core.rebalance_runs.models import DpmLineageEdgeRecord, DpmRunRecord
 from src.core.rebalance_runs.repository import DpmRunRepositoryConflictError
@@ -45,17 +45,21 @@ def _batch(scenarios: dict[str, dict[str, object]]) -> dict[str, object]:
 
 def _kill_after_first_persisted_scenario(dsn: str, operation_id: str) -> None:
     """Die after the real support-record call, before terminal operation publication."""
-    import src.api.main as api_main
+    from dataclasses import replace
+    from src.api.dependencies import get_rebalance_runtime
 
     os.environ["DPM_SUPPORTABILITY_POSTGRES_DSN"] = dsn
     reset_dpm_run_support_service_for_tests()
-    original = api_main.record_dpm_run_for_support
+    runtime = get_rebalance_runtime()
+    original = runtime.record_for_support
 
     def persist_then_die(**kwargs):
         original(**kwargs)
         os._exit(0)
 
-    api_main.record_dpm_run_for_support = persist_then_die
+    app.dependency_overrides[get_rebalance_runtime] = lambda: replace(
+        runtime, record_for_support=persist_then_die
+    )
     app.dependency_overrides[get_db_session] = _no_db_session
     with TestClient(app) as client:
         client.post(

@@ -17,7 +17,7 @@ from src.api.services.construction_selection import build_construction_selection
 from src.api.services.construction_source_product_context import (
     authority_context_with_source_products,
 )
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.common.capabilities import has_solver_dependencies as has_solver_dependencies
 from src.core.construction.models import (
     ConstructionAlternativeSelection,

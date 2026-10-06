@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from src.api.dependencies import get_rebalance_runtime
+
+from src.core.rebalance.runtime_ports import RebalanceRuntime
+
 from typing import Annotated, Optional
 
 from fastapi import Depends, Header, status
@@ -20,7 +24,7 @@ from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_ex
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service
 from src.api.services import rebalance_simulation_service
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.models import ConstructionAlternativeSet
 from src.core.construction.repository import (
     ConstructionIdempotencyConflictError,
@@ -51,6 +55,7 @@ from src.core.rebalance_runs.service import DpmRunSupportService
     },
 )
 def generate_alternative_set(
+    runtime: Annotated[RebalanceRuntime, Depends(get_rebalance_runtime)],
     request: ConstructionAlternativeSetGenerateRequest,
     idempotency_key: Annotated[
         str,
@@ -90,6 +95,7 @@ def generate_alternative_set(
             rebalance_request,
             source_context,
         ) = rebalance_simulation_service.resolve_rebalance_request_envelope(
+            runtime=runtime,
             envelope=request.to_execution_envelope(),
             correlation_id=x_correlation_id,
             admitted_tenant_id=admitted_tenant_id,

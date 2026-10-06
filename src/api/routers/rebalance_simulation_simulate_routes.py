@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 from fastapi import Depends, Header, status
 
-from src.api.dependencies import get_db_session
+from src.api.dependencies import get_db_session, get_rebalance_runtime
 from src.api.request_models import RebalanceExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation import router
 from src.api.routers.mandate_tenant_query import require_mandate_tenant
@@ -20,6 +20,7 @@ from src.api.simulation_examples import (
     SIMULATE_READY_EXAMPLE,
 )
 from src.core.models import RebalanceResult
+from src.core.rebalance.runtime_ports import RebalanceRuntime
 
 
 @router.post(
@@ -68,6 +69,7 @@ from src.core.models import RebalanceResult
     },
 )
 def simulate_rebalance(
+    runtime: Annotated[RebalanceRuntime, Depends(get_rebalance_runtime)],
     request: RebalanceExecutionRequestEnvelope,
     idempotency_key: Annotated[
         str,
@@ -123,6 +125,7 @@ def simulate_rebalance(
     admitted_tenant_id = require_mandate_tenant(x_tenant_id)
     try:
         rebalance_request, source_context = service.resolve_rebalance_request_envelope(
+            runtime=runtime,
             envelope=request,
             correlation_id=x_correlation_id,
             admitted_tenant_id=admitted_tenant_id,
@@ -131,6 +134,7 @@ def simulate_rebalance(
         raise rebalance_envelope_http_exception(exc) from exc
     try:
         return service.simulate_rebalance(
+            runtime=runtime,
             request=rebalance_request,
             idempotency_key=idempotency_key,
             correlation_id=x_correlation_id,

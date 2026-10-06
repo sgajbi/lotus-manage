@@ -6,8 +6,9 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 
 from src.api.request_models import RebalanceRequest
-from src.api.observability import record_async_operation
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.rebalance.runtime_ports import RebalanceRuntime
+from src.observability.metrics import record_async_operation
+from src.core.integration_ports import RiskAuthorityClient
 from src.api.services.wave_aggregate_metrics import aggregate_wave_items, simulation_result_state
 from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
 from src.api.services.wave_event_evidence import build_wave_event
@@ -44,6 +45,7 @@ from src.core.waves.simulation_repository import (
 
 def admit_wave_simulation_operation(
     *,
+    runtime: RebalanceRuntime | None = None,
     wave_id: str,
     tenant_id: str,
     actor_id: str,
@@ -58,6 +60,7 @@ def admit_wave_simulation_operation(
     key_hash = wave_simulation_idempotency_key(tenant_id=tenant_id, idempotency_key=idempotency_key)
     with repository.simulation_admission_guard(tenant_id=tenant_id, idempotency_key_hash=key_hash):
         return _admit_wave_simulation_operation(
+            runtime=runtime,
             wave_id=wave_id,
             tenant_id=tenant_id,
             actor_id=actor_id,
@@ -73,6 +76,7 @@ def admit_wave_simulation_operation(
 
 def _admit_wave_simulation_operation(
     *,
+    runtime: RebalanceRuntime | None = None,
     wave_id: str,
     tenant_id: str,
     actor_id: str,
@@ -117,6 +121,7 @@ def _admit_wave_simulation_operation(
             )
         }
     resolved_inputs = freeze_wave_inputs(
+        runtime=runtime,
         wave=wave,
         item_inputs=resolved_inputs,
         tenant_id=tenant_id,

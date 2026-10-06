@@ -5,6 +5,9 @@ Shared fixtures for lotus-manage tests.
 
 import os
 import sys
+from contextlib import contextmanager
+from dataclasses import replace
+from unittest.mock import MagicMock
 from decimal import Decimal
 from pathlib import Path
 
@@ -106,10 +109,47 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
     policy_repo = _TestPolicyPackRepository()
 
     monkeypatch.setattr(
-        "src.api.services.rebalance_run_support_repository.PostgresDpmRunRepository",
+        "src.api.composition.rebalance_run_support_repository.PostgresDpmRunRepository",
         lambda **_kwargs: InMemoryDpmRunRepository(),
     )
     monkeypatch.setattr(
-        "src.api.services.rebalance_policy_pack_repository.PostgresDpmPolicyPackRepository",
+        "src.api.composition.rebalance_policy_pack_repository.PostgresDpmPolicyPackRepository",
         lambda **_kwargs: policy_repo,
     )
+
+    from src.api.dependencies import get_rebalance_runtime
+    from src.api.main import app
+
+    original = dict(app.dependency_overrides)
+    app.dependency_overrides[get_rebalance_runtime] = build_test_rebalance_runtime
+    yield
+    app.dependency_overrides.clear()
+    app.dependency_overrides.update(original)
+
+
+def build_test_rebalance_runtime():
+    """Test composition follows explicit DI, including tests replacing the Core factory."""
+    from src.api.composition import core_resolver_service
+    from src.api.dependencies import get_rebalance_runtime
+
+    return replace(
+        get_rebalance_runtime(), resolver_factory=core_resolver_service.build_core_resolver_client
+    )
+
+
+@contextmanager
+def patch_rebalance_runtime(field: str, **mock_options):
+    from src.api.dependencies import get_rebalance_runtime
+    from src.api.main import app
+
+    mock = MagicMock(**mock_options)
+    previous = app.dependency_overrides.get(get_rebalance_runtime)
+    runtime = build_test_rebalance_runtime()
+    app.dependency_overrides[get_rebalance_runtime] = lambda: replace(runtime, **{field: mock})
+    try:
+        yield mock
+    finally:
+        if previous is None:
+            app.dependency_overrides.pop(get_rebalance_runtime, None)
+        else:
+            app.dependency_overrides[get_rebalance_runtime] = previous

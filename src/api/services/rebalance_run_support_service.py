@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from collections.abc import Callable
 
 from src.api.services import rebalance_run_support_config
 from src.core.models import RebalanceResult
@@ -23,16 +24,20 @@ def _backend_init_error_detail(detail: str) -> str:
     return "DPM_SUPPORTABILITY_POSTGRES_CONNECTION_FAILED"
 
 
-def _build_repository() -> DpmRunRepository:
-    return rebalance_run_support_config.build_repository()
+def _build_repository(
+    repository_factory: Callable[..., DpmRunRepository] | None = None,
+) -> DpmRunRepository:
+    return rebalance_run_support_config.build_repository(repository_factory=repository_factory)
 
 
-def get_dpm_run_support_service() -> DpmRunSupportService:
+def get_dpm_run_support_service(
+    *, repository_factory: Callable[..., DpmRunRepository] | None = None
+) -> DpmRunSupportService:
     global _REPOSITORY
     global _SERVICE
     if _REPOSITORY is None:
         try:
-            _REPOSITORY = _build_repository()
+            _REPOSITORY = _build_repository(repository_factory)
         except RuntimeError as exc:
             raise DpmRunSupportServiceUnavailableError(
                 _backend_init_error_detail(str(exc))
@@ -70,8 +75,9 @@ def record_dpm_run_for_support(
     idempotency_key: Optional[str],
     operation_claim: Optional[DpmAsyncExecutionClaim] = None,
     scenario_key: Optional[str] = None,
+    support_service_factory: Callable[[], DpmRunSupportService] | None = None,
 ) -> None:
-    service = get_dpm_run_support_service()
+    service = (support_service_factory or get_dpm_run_support_service)()
     service.record_run(
         result=result,
         request_hash=request_hash,

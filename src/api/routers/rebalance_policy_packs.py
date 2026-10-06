@@ -9,11 +9,11 @@ from src.api.routers.route_registration import register_route_modules
 from src.api.services.rebalance_policy_pack_service import (
     DpmPolicyPackCatalogUnavailableError,
 )
-from src.api.services.rebalance_policy_pack_service import (
+from src.api.dependencies import (
     get_policy_pack_repository as get_policy_pack_application_repository,
 )
+from src.api.dependencies import load_dpm_policy_pack_catalog
 from src.api.services.rebalance_policy_pack_service import (
-    load_dpm_policy_pack_catalog,
     policy_pack_catalog_backend_name,
     policy_pack_postgres_dsn,
     postgres_connection_exception_types,

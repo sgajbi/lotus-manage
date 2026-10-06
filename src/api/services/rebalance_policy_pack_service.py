@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Optional
+from collections.abc import Callable
 
 from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
 from src.core.rebalance.policy_packs import (
@@ -10,7 +11,7 @@ from src.core.rebalance.policy_packs import (
     resolve_effective_policy_pack,
 )
 from src.core.rebalance.tenant_policy_packs import build_tenant_policy_pack_resolver
-from src.api.services import rebalance_policy_pack_repository
+from src.core.common.postgres_errors import postgres_connection_exception_types
 from src.api.services.service_config import env_flag as _env_flag
 
 
@@ -47,8 +48,10 @@ def resolve_dpm_policy_pack(
     )
 
 
-def load_dpm_policy_pack_catalog() -> dict[str, DpmPolicyPackDefinition]:
-    repository = get_policy_pack_repository()
+def load_dpm_policy_pack_catalog(
+    *, repository_factory: Callable[[], DpmPolicyPackRepository] | None = None
+) -> dict[str, DpmPolicyPackDefinition]:
+    repository = get_policy_pack_repository(repository_factory=repository_factory)
     items = repository.list_policy_packs()
     return {item.policy_pack_id: item for item in items}
 
@@ -67,18 +70,18 @@ def policy_pack_postgres_dsn() -> str:
     ).strip()
 
 
-def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
-    return rebalance_policy_pack_repository.postgres_connection_exception_types()
-
-
-def build_policy_pack_repository() -> DpmPolicyPackRepository:
+def build_policy_pack_repository(
+    *, repository_factory: Callable[[], DpmPolicyPackRepository] | None = None
+) -> DpmPolicyPackRepository:
     dsn = policy_pack_postgres_dsn()
     _ = policy_pack_catalog_backend_name()
     if not dsn:
         raise RuntimeError("DPM_POLICY_PACK_POSTGRES_DSN_REQUIRED")
+    if repository_factory is None:
+        raise RuntimeError("DPM_POLICY_PACK_POSTGRES_CONNECTION_FAILED")
     try:
-        return rebalance_policy_pack_repository.build_policy_pack_repository()
-    except rebalance_policy_pack_repository.postgres_connection_exception_types() as exc:
+        return repository_factory()
+    except postgres_connection_exception_types() as exc:
         raise RuntimeError("DPM_POLICY_PACK_POSTGRES_CONNECTION_FAILED") from exc
 
 
@@ -88,9 +91,11 @@ def policy_pack_catalog_error_detail(detail: str) -> str:
     return "DPM_POLICY_PACK_POSTGRES_CONNECTION_FAILED"
 
 
-def get_policy_pack_repository() -> DpmPolicyPackRepository:
+def get_policy_pack_repository(
+    *, repository_factory: Callable[[], DpmPolicyPackRepository] | None = None
+) -> DpmPolicyPackRepository:
     try:
-        return build_policy_pack_repository()
+        return build_policy_pack_repository(repository_factory=repository_factory)
     except RuntimeError as exc:
         raise DpmPolicyPackCatalogUnavailableError(
             policy_pack_catalog_error_detail(str(exc))

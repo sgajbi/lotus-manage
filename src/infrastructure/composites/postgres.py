@@ -26,6 +26,17 @@ from src.core.composite_publication import (
     DpmCompositePublicationReceipt,
 )
 from src.core.composite_universe import DpmCompositeUniverseAttestation
+from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.evaluation_control import (
+    MonthlyEvaluationApproval,
+    MonthlyEvaluationProposal,
+)
+from src.infrastructure.composites import (
+    policy_control,
+    membership_store,
+    universe_store,
+    evaluation_control,
+)
 from src.infrastructure.composites import publication as publication_sql
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_access import connect_postgres
@@ -42,6 +53,79 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
             raise RuntimeError("DPM_COMPOSITE_POSTGRES_DRIVER_MISSING")
         self._dsn = dsn
         self._init_db()
+
+    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
+        with closing(self._connect()) as connection:
+            evaluation_control.save_proposal(connection, proposal)
+            connection.commit()
+
+    def get_monthly_evaluation_proposal(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+    ) -> MonthlyEvaluationProposal | None:
+        with closing(self._connect()) as connection:
+            return evaluation_control.get_proposal(
+                connection, (tenant_id, composite_id, definition_version, evaluation_revision)
+            )
+
+    def save_monthly_evaluation_approval(self, *, approval: MonthlyEvaluationApproval) -> None:
+        with closing(self._connect()) as connection:
+            evaluation_control.save_approval(connection, approval)
+            connection.commit()
+
+    def get_monthly_evaluation_approval(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+    ) -> MonthlyEvaluationApproval | None:
+        with closing(self._connect()) as connection:
+            return evaluation_control.get_approval(
+                connection, (tenant_id, composite_id, definition_version, evaluation_revision)
+            )
+
+    def save_monthly_policy_proposal(self, *, proposal: MonthlyPolicyProposal) -> None:
+        with closing(self._connect()) as connection:
+            policy_control.save_proposal(connection, proposal)
+            connection.commit()
+
+    def get_monthly_policy_proposal(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        month: str,
+        proposal_revision: str,
+    ) -> MonthlyPolicyProposal | None:
+        with closing(self._connect()) as connection:
+            return policy_control.get_proposal(
+                connection, (tenant_id, composite_id, definition_version, month, proposal_revision)
+            )
+
+    def save_monthly_policy_approval(self, *, approval: MonthlyPolicyApproval) -> None:
+        with closing(self._connect()) as connection:
+            policy_control.save_approval(connection, approval)
+            connection.commit()
+
+    def get_monthly_policy_approval(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        month: str,
+    ) -> MonthlyPolicyApproval | None:
+        with closing(self._connect()) as connection:
+            return policy_control.get_approval(
+                connection, (tenant_id, composite_id, definition_version, month)
+            )
 
     def save_definition(self, *, definition: CompositeDefinition) -> None:
         definition = validated_definition_snapshot(definition)
@@ -109,64 +193,11 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         return DpmCompositeResultPage(items=[_load_definition(row) for row in rows], count=count)
 
     def save_membership_revision(self, *, revision: DpmCompositeMembershipRevision) -> None:
-        key = (revision.tenant_id, revision.composite_id, revision.definition_version)
         with closing(self._connect()) as connection:
             publication_sql.lock_tenant_publication_order(
                 connection=connection, tenant_id=revision.tenant_id
             )
-            definition = connection.execute(
-                """
-                SELECT 1 FROM dpm_composite_definitions
-                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
-                """,
-                key,
-            ).fetchone()
-            if definition is None:
-                connection.rollback()
-                raise DpmCompositeConflictError("COMPOSITE_MEMBERSHIP_DEFINITION_NOT_FOUND")
-            if revision.supersedes_membership_revision is not None:
-                parent = connection.execute(
-                    """
-                    SELECT 1 FROM dpm_composite_membership_revisions
-                    WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
-                        AND membership_revision = %s
-                    """,
-                    (*key, revision.supersedes_membership_revision),
-                ).fetchone()
-                if parent is None:
-                    connection.rollback()
-                    raise DpmCompositeConflictError(
-                        "COMPOSITE_MEMBERSHIP_SUPERSEDED_REVISION_NOT_FOUND"
-                    )
-            connection.execute(
-                """
-                INSERT INTO dpm_composite_membership_revisions (
-                    tenant_id, composite_id, definition_version, membership_revision, decided_at,
-                    content_hash, payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
-                ON CONFLICT (tenant_id, composite_id, definition_version, membership_revision)
-                DO NOTHING
-                """,
-                (
-                    *key,
-                    revision.membership_revision,
-                    revision.decided_at,
-                    revision.content_hash,
-                    dump_model_json(revision),
-                ),
-            )
-            persisted = connection.execute(
-                """
-                SELECT content_hash FROM dpm_composite_membership_revisions
-                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
-                    AND membership_revision = %s
-                """,
-                (*key, revision.membership_revision),
-            ).fetchone()
-            if persisted is None or persisted["content_hash"] != revision.content_hash:
-                connection.rollback()
-                raise DpmCompositeConflictError("COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT")
-            publication_sql.publish_revision(connection=connection, revision=revision)
+            membership_store.store_membership_revision(connection=connection, revision=revision)
             connection.commit()
 
     def get_membership_revision(
@@ -259,61 +290,10 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
             )
 
     def save_universe_attestation(self, *, attestation: DpmCompositeUniverseAttestation) -> None:
-        key = (
-            attestation.tenant_id,
-            attestation.composite_id,
-            attestation.definition_version,
-            attestation.membership_revision,
-        )
         with closing(self._connect()) as connection:
-            revision = connection.execute(
-                """
-                SELECT content_hash FROM dpm_composite_membership_revisions
-                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
-                    AND membership_revision = %s
-                """,
-                key,
-            ).fetchone()
-            if revision is None:
-                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_MEMBERSHIP_NOT_FOUND")
-            if revision["content_hash"] != attestation.membership_content_hash:
-                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_MEMBERSHIP_HASH_MISMATCH")
-            connection.execute(
-                """
-                INSERT INTO dpm_composite_universe_attestations (
-                    tenant_id, composite_id, definition_version, membership_revision,
-                    membership_content_hash, attestation_version, attested_at, content_hash,
-                    payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
-                ON CONFLICT (
-                    tenant_id, composite_id, definition_version, membership_revision,
-                    attestation_version
-                ) DO NOTHING
-                """,
-                (
-                    *key,
-                    attestation.membership_content_hash,
-                    attestation.attestation_version,
-                    attestation.attested_at,
-                    attestation.content_hash,
-                    dump_model_json(attestation),
-                ),
+            universe_store.store_universe_attestation(
+                connection=connection, attestation=attestation
             )
-            persisted = connection.execute(
-                """
-                SELECT content_hash, membership_content_hash
-                FROM dpm_composite_universe_attestations
-                WHERE tenant_id = %s AND composite_id = %s AND definition_version = %s
-                    AND membership_revision = %s AND attestation_version = %s
-                """,
-                (*key, attestation.attestation_version),
-            ).fetchone()
-            if persisted is None or (
-                persisted["content_hash"],
-                persisted["membership_content_hash"],
-            ) != (attestation.content_hash, attestation.membership_content_hash):
-                connection.rollback()
-                raise DpmCompositeConflictError("COMPOSITE_UNIVERSE_ATTESTATION_IMMUTABLE_CONFLICT")
             connection.commit()
 
     def get_universe_attestation(

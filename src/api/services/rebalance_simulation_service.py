@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Optional
+from typing import Optional
+from functools import partial
 
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
@@ -54,10 +55,8 @@ from src.api.services.rebalance_run_support_service import (
     get_dpm_run_support_service,
     record_dpm_run_for_support,
 )
-from src.api.services.rebalance_runtime_overrides import (
-    resolve_callable_override,
-    resolve_logger,
-)
+from src.core.rebalance.runtime_ports import RebalanceRuntime
+from src.core.integration_ports import CoreResolverClient, CoreResolverUnavailableError
 from src.api.services.rebalance_stateful_source_context import (
     resolve_stateful_source_context,
 )
@@ -87,20 +86,29 @@ from src.core.models import (
 logger = logging.getLogger(__name__)
 
 
-def _resolved_logger() -> logging.Logger | Any:
-    return resolve_logger(logger)
+def _unconfigured_resolver() -> CoreResolverClient:
+    raise CoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
+
+
+def _runtime(runtime: RebalanceRuntime | None) -> RebalanceRuntime:
+    return runtime or RebalanceRuntime(
+        resolver_factory=_unconfigured_resolver,
+        run_simulation=_run_simulation,
+        record_for_support=record_dpm_run_for_support,
+        support_service_factory=get_dpm_run_support_service,
+        catalog_loader=load_dpm_policy_pack_catalog,
+        logger=logger,
+    )
 
 
 def _resolve_stateful_source_context(
     *,
+    runtime: RebalanceRuntime | None = None,
     envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
     admitted_tenant_id: Optional[str] = None,
 ) -> DpmResolvedSourceContext:
-    resolver_factory = resolve_callable_override(
-        "build_core_resolver_client",
-        core_resolver_service.build_core_resolver_client,
-    )
+    resolver_factory = _runtime(runtime).resolver_factory
     return resolve_stateful_source_context(
         envelope=envelope,
         correlation_id=correlation_id,
@@ -112,6 +120,7 @@ def _resolve_stateful_source_context(
 
 def resolve_rebalance_request_envelope(
     *,
+    runtime: RebalanceRuntime | None = None,
     envelope: RebalanceExecutionRequestEnvelope,
     correlation_id: Optional[str],
     admitted_tenant_id: Optional[str] = None,
@@ -120,13 +129,14 @@ def resolve_rebalance_request_envelope(
         envelope=envelope,
         correlation_id=correlation_id,
         admitted_tenant_id=admitted_tenant_id,
-        stateful_context_resolver=_resolve_stateful_source_context,
+        stateful_context_resolver=partial(_resolve_stateful_source_context, runtime=runtime),
         rebalance_request_builder=build_rebalance_request_from_core_context,
     )
 
 
 def resolve_batch_request_envelope(
     *,
+    runtime: RebalanceRuntime | None = None,
     envelope: BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
     admitted_tenant_id: Optional[str] = None,
@@ -135,13 +145,14 @@ def resolve_batch_request_envelope(
         envelope=envelope,
         correlation_id=correlation_id,
         admitted_tenant_id=admitted_tenant_id,
-        stateful_context_resolver=_resolve_stateful_source_context,
+        stateful_context_resolver=partial(_resolve_stateful_source_context, runtime=runtime),
         batch_request_builder=build_batch_rebalance_request_from_core_context,
     )
 
 
 def simulate_rebalance(
     *,
+    runtime: RebalanceRuntime | None = None,
     request: RebalanceRequest,
     idempotency_key: str,
     correlation_id: Optional[str],
@@ -150,7 +161,7 @@ def simulate_rebalance(
     tenant_id: str,
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> RebalanceResult:
-    current_logger = _resolved_logger()
+    current_logger = _runtime(runtime).logger
     current_logger.info("Simulating rebalance request")
     execution_context = build_simulation_execution_context(
         request=request,
@@ -160,7 +171,7 @@ def simulate_rebalance(
         tenant_id=tenant_id,
         source_context=source_context,
         request_hasher=hash_canonical_payload,
-        catalog_loader=load_dpm_policy_pack_catalog,
+        catalog_loader=_runtime(runtime).catalog_loader,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for simulate. enabled=%s source=%s policy_pack_id=%s",
@@ -178,18 +189,16 @@ def simulate_rebalance(
         replay_enabled=execution_context.replay_enabled,
         source_context=source_context,
         tenant_id=tenant_id,
-        support_service_factory=get_dpm_run_support_service,
-        run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),
-        record_for_support=resolve_callable_override(
-            "record_dpm_run_for_support",
-            record_dpm_run_for_support,
-        ),
+        support_service_factory=_runtime(runtime).support_service_factory,
+        run_simulation_fn=_runtime(runtime).run_simulation,
+        record_for_support=_runtime(runtime).record_for_support,
         current_logger=current_logger,
     )
 
 
 def execute_batch_analysis(
     *,
+    runtime: RebalanceRuntime | None = None,
     request: BatchRebalanceRequest,
     correlation_id: Optional[str],
     operation_claim: Optional[DpmAsyncExecutionClaim] = None,
@@ -198,13 +207,13 @@ def execute_batch_analysis(
     tenant_id: Optional[str] = None,
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> BatchRebalanceResult:
-    current_logger = _resolved_logger()
+    current_logger = _runtime(runtime).logger
     current_logger.info("Analyzing scenario batch")
     execution_context = build_batch_execution_context(
         request_policy_pack_id=request_policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
-        catalog_loader=load_dpm_policy_pack_catalog,
+        catalog_loader=_runtime(runtime).catalog_loader,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for analyze. enabled=%s source=%s policy_pack_id=%s",
@@ -220,17 +229,15 @@ def execute_batch_analysis(
         operation_claim=operation_claim,
         policy_definition=execution_context.policy_pack_definition,
         source_context=source_context,
-        run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),
-        record_for_support=resolve_callable_override(
-            "record_dpm_run_for_support",
-            record_dpm_run_for_support,
-        ),
+        run_simulation_fn=_runtime(runtime).run_simulation,
+        record_for_support=_runtime(runtime).record_for_support,
         current_logger=current_logger,
     )
 
 
 def run_analyze_async_operation(
     *,
+    runtime: RebalanceRuntime | None = None,
     operation_id: str,
     tenant_id: str,
     service: DpmRunSupportService,
@@ -241,16 +248,15 @@ def run_analyze_async_operation(
         tenant_id=tenant_id,
         service=service,
         execution_mode=execution_mode,
-        execute_batch_fn=resolve_callable_override(
-            "_execute_batch_analysis",
-            execute_batch_analysis,
-        ),
-        current_logger=_resolved_logger(),
+        execute_batch_fn=_runtime(runtime).execute_batch
+        or partial(execute_batch_analysis, runtime=runtime),
+        current_logger=_runtime(runtime).logger,
     )
 
 
 def submit_and_optionally_execute_async_analysis(
     *,
+    runtime: RebalanceRuntime | None = None,
     request: BatchRebalanceRequest,
     correlation_id: Optional[str],
     policy_pack_id: Optional[str],
@@ -258,7 +264,7 @@ def submit_and_optionally_execute_async_analysis(
     tenant_id: Optional[str] = None,
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> DpmAsyncAcceptedResponse:
-    current_logger = _resolved_logger()
+    current_logger = _runtime(runtime).logger
     if not rebalance_async_config.async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     submission_context = build_async_submission_context(
@@ -267,8 +273,8 @@ def submit_and_optionally_execute_async_analysis(
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
         source_context=source_context,
-        support_service_factory=get_dpm_run_support_service,
-        catalog_loader=load_dpm_policy_pack_catalog,
+        support_service_factory=_runtime(runtime).support_service_factory,
+        catalog_loader=_runtime(runtime).catalog_loader,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for analyze async. enabled=%s source=%s policy_pack_id=%s",
@@ -287,6 +293,7 @@ def submit_and_optionally_execute_async_analysis(
     if submission_context.execution_mode == "ACCEPT_ONLY":
         return accepted
     run_analyze_async_operation(
+        runtime=runtime,
         operation_id=accepted.operation_id,
         tenant_id=tenant_id or "",
         service=submission_context.service,
@@ -296,7 +303,11 @@ def submit_and_optionally_execute_async_analysis(
 
 
 def execute_dpm_async_operation(
-    *, tenant_id: str, operation_id: str, service: DpmRunSupportService
+    *,
+    runtime: RebalanceRuntime | None = None,
+    tenant_id: str,
+    operation_id: str,
+    service: DpmRunSupportService,
 ) -> DpmAsyncOperationStatusResponse:
     if not rebalance_async_config.async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
@@ -306,7 +317,7 @@ def execute_dpm_async_operation(
         operation_id=operation_id,
         tenant_id=tenant_id,
         service=service,
-        runner=run_analyze_async_operation,
+        runner=partial(run_analyze_async_operation, runtime=runtime),
     )
 
 

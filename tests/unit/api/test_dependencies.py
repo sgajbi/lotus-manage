@@ -1,5 +1,5 @@
 from src.api import dependencies
-from src.api.services import core_resolver_service
+from src.api.composition import core_resolver_service
 from src.infrastructure.advise_authority import LotusAdviseAuthorityClient
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository

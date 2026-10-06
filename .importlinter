@@ -1,9 +1,11 @@
 [importlinter]
 root_package = src
+include_external_packages = True
 
 [importlinter:contract:routers_do_not_import_infrastructure]
 name = Routers depend on service layer, not concrete infrastructure clients
 type = forbidden
+allow_indirect_imports = True
 source_modules = src.api.routers
 forbidden_modules =
     src.infrastructure

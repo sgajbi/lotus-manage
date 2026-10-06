@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from src.api.observability import record_async_operation
+from src.observability.metrics import record_async_operation
 from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceAsyncOperationConflictError,
     DpmRebalanceAsyncOperationNotExecutableError,

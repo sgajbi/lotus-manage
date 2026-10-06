@@ -5,7 +5,7 @@ from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-from src.api.observability import record_execution_call
+from src.observability.metrics import record_execution_call
 from src.api.request_models import RebalanceRequest
 from src.api.services.rebalance_client_restriction_policy import apply_client_restriction_policy
 from src.api.services.rebalance_run_support_service import DpmRunSupportServiceUnavailableError

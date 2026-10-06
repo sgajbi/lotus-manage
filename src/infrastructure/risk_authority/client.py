@@ -13,8 +13,12 @@ from src.core.models import RebalanceResult
 from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
 
 
-class LotusRiskAuthorityUnavailableError(RuntimeError):
-    pass
+from src.core.integration_ports import (
+    LotusRiskAuthorityUnavailableError as LotusRiskAuthorityUnavailableError,
+    RiskEventAffectedPortfolio as RiskEventAffectedPortfolio,
+    RiskEventExcludedPortfolio as RiskEventExcludedPortfolio,
+    RiskEventAffectedCohort as RiskEventAffectedCohort,
+)
 
 
 @dataclass(frozen=True)
@@ -34,41 +38,6 @@ class LotusRiskAuthorityConfig:
 
     def risk_event_cohort_url(self) -> str:
         return f"{self.base_url.rstrip('/')}/{self.risk_event_cohort_path.lstrip('/')}"
-
-
-@dataclass(frozen=True)
-class RiskEventAffectedPortfolio:
-    portfolio_id: str
-    mandate_id: str | None
-    source_ref: str
-    reason_codes: tuple[str, ...]
-    impact_score: Decimal
-    dominant_bucket: str
-
-
-@dataclass(frozen=True)
-class RiskEventExcludedPortfolio:
-    portfolio_id: str
-    mandate_id: str | None
-    source_ref: str
-    impact_score: Decimal
-    dominant_bucket: str
-
-
-@dataclass(frozen=True)
-class RiskEventAffectedCohort:
-    cohort_id: str
-    risk_event_id: str
-    as_of_date: date
-    display_name: str
-    product_name: str
-    product_version: str
-    source_service: str
-    request_fingerprint: str
-    calculation_supportability: str
-    reason_codes: tuple[str, ...]
-    affected_portfolios: tuple[RiskEventAffectedPortfolio, ...]
-    excluded_portfolios: tuple[RiskEventExcludedPortfolio, ...] = ()
 
 
 @dataclass(frozen=True)
