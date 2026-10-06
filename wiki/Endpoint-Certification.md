@@ -1819,6 +1819,13 @@ python scripts/openapi_quality_gate.py
 
 ## Certified endpoint family: composite definition and membership source records
 
+The existing v1 evidence below does not certify the v2 producer extension. v2 has strict typed
+authority/digest models and controlled registered-route tests; production registration defaults to
+HTTP 503, and institutional-attestation references refuse even with synthetic test registration.
+Eligibility approval, method approval, live universe and actual consumer acceptance remain separate.
+See the [versioned authority guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-source-authority.md)
+for compatibility, examples, refusal codes and cutover boundaries.
+
 Routes:
 
 - `PUT /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}`

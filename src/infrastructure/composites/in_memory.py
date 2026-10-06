@@ -8,8 +8,11 @@ from threading import Lock
 from typing import TypeVar
 
 from src.core.composite_membership import (
-    DpmCompositeDefinition,
     DpmCompositeMembershipRevision,
+)
+from src.core.composite_definition_versions import (
+    CompositeDefinition,
+    validated_definition_snapshot,
 )
 from src.core.composite_repository import (
     DpmCompositeConflictError,
@@ -32,7 +35,7 @@ ValueT = TypeVar("ValueT")
 class InMemoryDpmCompositeRepository(DpmCompositeRepository):
     def __init__(self) -> None:
         self._lock = Lock()
-        self._definitions: dict[tuple[str, str, str], DpmCompositeDefinition] = {}
+        self._definitions: dict[tuple[str, str, str], CompositeDefinition] = {}
         self._membership_revisions: dict[
             tuple[str, str, str, str], DpmCompositeMembershipRevision
         ] = {}
@@ -43,7 +46,8 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         ] = {}
         self._last_sequence = 0
 
-    def save_definition(self, *, definition: DpmCompositeDefinition) -> None:
+    def save_definition(self, *, definition: CompositeDefinition) -> None:
+        definition = validated_definition_snapshot(definition)
         key = (definition.tenant_id, definition.composite_id, definition.definition_version)
         with self._lock:
             _save_immutable(
@@ -55,14 +59,14 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
 
     def get_definition(
         self, *, tenant_id: str, composite_id: str, definition_version: str
-    ) -> DpmCompositeDefinition | None:
+    ) -> CompositeDefinition | None:
         with self._lock:
             definition = self._definitions.get((tenant_id, composite_id, definition_version))
             return deepcopy(definition) if definition is not None else None
 
     def list_definitions(
         self, *, tenant_id: str, limit: int, offset: int
-    ) -> DpmCompositeResultPage[DpmCompositeDefinition]:
+    ) -> DpmCompositeResultPage[CompositeDefinition]:
         with self._lock:
             definitions = sorted(
                 (

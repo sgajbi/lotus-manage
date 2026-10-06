@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
 from src.core.composite_membership import (
-    DpmCompositeDefinition,
     DpmCompositeMembershipRevision,
 )
+from src.core.composite_definition_versions import CompositeDefinition
 from src.core.composite_publication import (
     DpmCompositeMembershipPublication,
     DpmCompositePublicationPage,
@@ -33,17 +33,17 @@ class DpmCompositeResultPage(Generic[ItemT]):
 
 
 class DpmCompositeRepository(Protocol):
-    def save_definition(self, *, definition: DpmCompositeDefinition) -> None:
+    def save_definition(self, *, definition: CompositeDefinition) -> None:
         """Persist an immutable tenant-scoped definition revision."""
 
     def get_definition(
         self, *, tenant_id: str, composite_id: str, definition_version: str
-    ) -> DpmCompositeDefinition | None:
+    ) -> CompositeDefinition | None:
         """Read one exact definition revision within its admitted tenant."""
 
     def list_definitions(
         self, *, tenant_id: str, limit: int, offset: int
-    ) -> DpmCompositeResultPage[DpmCompositeDefinition]:
+    ) -> DpmCompositeResultPage[CompositeDefinition]:
         """List definitions and total tenant count in one read snapshot."""
 
     def save_membership_revision(self, *, revision: DpmCompositeMembershipRevision) -> None:

@@ -1,5 +1,19 @@
 # Architecture
 
+## Scope And Reader Paths
+
+This page maps implemented service boundaries, not production certification. For composite
+onboarding, use the [source-authority guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-source-authority.md).
+Manage's v2 schema separates economic authority from publishing; provider trust defaults unavailable
+and institutional-attestation references refuse until a qualified verifier exists. Frozen synthetic
+fixtures do not establish bank approval, live population or consumer acceptance.
+
+| Reader | Start Here |
+| --- | --- |
+| Engineering | Runtime and source boundaries below |
+| Operations | [Operations Runbook](Operations-Runbook) |
+| Integration reviewers | [Endpoint Certification](Endpoint-Certification) and its explicit evidence limits |
+
 ## Runtime model
 
 - FastAPI service

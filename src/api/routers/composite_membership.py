@@ -6,7 +6,14 @@ from dataclasses import dataclass
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+
+from src.api.composite_definition_requests import CompositeDefinitionV2Request
+from src.core.composite_definition_versions import (
+    CompositeDefinition,
+    DpmCompositeDefinitionV2,
+    parse_composite_definition_json,
+)
 
 from src.api.dependencies import get_composite_membership_application_service
 from src.api.services.composite_membership_application import (
@@ -18,7 +25,6 @@ from src.api.services.composite_membership_application import (
     DpmCompositeNotFoundError,
 )
 from src.core.composite_membership import (
-    DpmCompositeDefinition,
     DpmCompositeMembershipDecision,
     DpmCompositeMembershipRevision,
     DpmCompositeSourceAuthority,
@@ -50,6 +56,7 @@ class CompositeTrustedIdentity:
 
 
 class CompositeDefinitionRequest(BaseModel):
+    product_version: Literal["v1"] = "v1"
     display_name: str = Field(min_length=1, examples=["Private Banking Global Balanced Composite"])
     strategy_code: str = Field(min_length=1, examples=["GLOBAL_BALANCED"])
     reporting_currency: str = Field(examples=["USD"])
@@ -58,6 +65,15 @@ class CompositeDefinitionRequest(BaseModel):
     eligibility_policy_version: str = Field(examples=["composite-eligibility.v1"])
     source_authority: DpmCompositeSourceAuthority
     correlation_id: str = Field(min_length=1, examples=["corr-composite-definition-001"])
+
+    @model_validator(mode="before")
+    @classmethod
+    def forbid_silent_version_downgrade(cls, value: object) -> object:
+        if isinstance(value, dict) and any(
+            key in value for key in ("definition_payload_digest", "authority_approval")
+        ):
+            raise ValueError("COMPOSITE_DEFINITION_EXPLICIT_V2_REQUIRED")
+        return value
 
 
 class CompositeMembershipRevisionRequest(BaseModel):
@@ -71,7 +87,7 @@ class CompositeMembershipRevisionRequest(BaseModel):
 
 
 class CompositeDefinitionPage(BaseModel):
-    items: list[DpmCompositeDefinition]
+    items: list[CompositeDefinition]
     count: int = Field(
         ge=0, description="Total tenant-scoped definitions at this page's read snapshot."
     )
@@ -175,30 +191,59 @@ def _universe_attester_identity_required(
     return identity
 
 
+async def _raw_definition_json_required(request: Request) -> None:
+    try:
+        parse_composite_definition_json((await request.body()).decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        code = (
+            str(exc)
+            if str(exc).startswith("COMPOSITE_DEFINITION_")
+            else "COMPOSITE_DEFINITION_RAW_JSON_INVALID"
+        )
+        raise _problem(status.HTTP_422_UNPROCESSABLE_CONTENT, code) from exc
+
+
 @router.put(
     "/{composite_id}/definitions/{definition_version}",
-    response_model=DpmCompositeDefinition,
+    response_model=CompositeDefinition,
     summary="Persist an immutable composite definition version",
 )
 def put_definition(
     composite_id: str,
     definition_version: str,
-    request: CompositeDefinitionRequest,
+    request: CompositeDefinitionRequest | CompositeDefinitionV2Request,
     identity: CompositeTrustedIdentity = Depends(_write_identity_required),
     service: DpmCompositeMembershipApplicationService = Depends(
         get_composite_membership_application_service
     ),
-) -> DpmCompositeDefinition:
+    _raw_json: None = Depends(_raw_definition_json_required),
+) -> CompositeDefinition:
     try:
+        if isinstance(request, CompositeDefinitionV2Request):
+            definition = DpmCompositeDefinitionV2.model_validate(
+                {
+                    **request.model_dump(mode="json"),
+                    "product_name": "CompositeDefinition",
+                    "tenant_id": identity.tenant_id,
+                    "composite_id": composite_id,
+                    "definition_version": definition_version,
+                    "created_by": identity.actor_id,
+                }
+            )
+            return service.save_versioned_definition(definition=definition)
         return service.save_definition(
             command=DpmCompositeDefinitionCommand(
                 tenant_id=identity.tenant_id,
                 composite_id=composite_id,
                 definition_version=definition_version,
                 actor_id=identity.actor_id,
-                **request.model_dump(),
+                **request.model_dump(exclude={"product_version"}),
             )
         )
+    except ValidationError as exc:
+        raise _problem(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "COMPOSITE_DEFINITION_V2_INVALID"
+        ) from exc
     except (DpmCompositeConflictError, ValueError) as exc:
         raise _from_domain_error(exc) from exc
 
@@ -218,9 +263,7 @@ def list_definitions(
     return CompositeDefinitionPage(items=page.items, count=page.count, limit=limit, offset=offset)
 
 
-@router.get(
-    "/{composite_id}/definitions/{definition_version}", response_model=DpmCompositeDefinition
-)
+@router.get("/{composite_id}/definitions/{definition_version}", response_model=CompositeDefinition)
 def get_definition(
     composite_id: str,
     definition_version: str,
@@ -228,7 +271,7 @@ def get_definition(
     service: DpmCompositeMembershipApplicationService = Depends(
         get_composite_membership_application_service
     ),
-) -> DpmCompositeDefinition:
+) -> CompositeDefinition:
     try:
         return service.get_definition(
             tenant_id=identity.tenant_id,
@@ -538,6 +581,11 @@ def acknowledge_publication(
 
 def _from_domain_error(exc: ValueError) -> HTTPException:
     code = str(exc)
+    if code in {
+        "COMPOSITE_PROVIDER_TRUST_UNAVAILABLE",
+        "COMPOSITE_AUTHORITY_ATTESTATION_VERIFIER_UNAVAILABLE",
+    }:
+        return _problem(status.HTTP_503_SERVICE_UNAVAILABLE, code)
     status_code = (
         status.HTTP_404_NOT_FOUND
         if code.endswith("NOT_FOUND")

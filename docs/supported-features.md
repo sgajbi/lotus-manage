@@ -19,6 +19,11 @@ explicitly excluded.
 
 ## Explicitly unsupported in `lotus-manage`
 
+- Composite v2 provider registration, institutional-attestation verification and official activation
+  are unavailable by default. Typed authority schemas, immutable version decoding and controlled
+  producer tests are implemented, not live cross-repository certification. See the
+  [source-authority guide](guides/composite-source-authority.md).
+
 - The `lotus-idea` management-review realization is not yet a supported feature. It durably creates
   scoped `PENDING_REVIEW` actions and records append-only, version-fenced Manage review outcomes.
   Production IdP claim binding and live consumer certification remain outstanding. A review

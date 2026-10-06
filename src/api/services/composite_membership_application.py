@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from typing import Literal
 
@@ -11,6 +11,15 @@ from src.core.composite_membership import (
     DpmCompositeMembershipDecision,
     DpmCompositeMembershipRevision,
     DpmCompositeSourceAuthority,
+)
+from src.core.composite_definition_versions import (
+    CompositeDefinition,
+    DpmCompositeDefinitionV2,
+)
+from src.core.composite_provider_trust import (
+    CompositeProviderTrustPort,
+    CompositeProviderTrustRequest,
+    UnavailableCompositeProviderTrust,
 )
 from src.core.composite_repository import (
     DpmCompositeConflictError,
@@ -100,6 +109,41 @@ class DpmCompositeUniverseAttestationCommand:
 @dataclass(frozen=True)
 class DpmCompositeMembershipApplicationService:
     repository: DpmCompositeRepository
+    provider_trust: CompositeProviderTrustPort = field(
+        default_factory=UnavailableCompositeProviderTrust
+    )
+
+    def save_versioned_definition(
+        self, *, definition: DpmCompositeDefinitionV2
+    ) -> DpmCompositeDefinitionV2:
+        """Persist only a scoped profile with an explicitly injected test-only resolver.
+
+        The default remains unavailable. No caller flag or unsigned approval creates
+        production trust, and this path never asserts official activation.
+        """
+        definition = DpmCompositeDefinitionV2.model_validate(definition.model_dump(mode="json"))
+        if definition.authority_approval.evidence_kind == "INSTITUTIONAL_ATTESTATION_REFERENCE":
+            raise ValueError("COMPOSITE_AUTHORITY_ATTESTATION_VERIFIER_UNAVAILABLE")
+        profile = definition.source_authority.payload
+        providers = {provider.provider_id: provider for provider in profile.providers}
+        for selection in profile.selections:
+            provider = providers[selection.provider_id]
+            request = CompositeProviderTrustRequest(
+                tenant_id=definition.tenant_id,
+                provider_id=provider.provider_id,
+                registry_revision=provider.registry_revision,
+                registry_digest=provider.registry_digest,
+                source_product=selection.source_product,
+                effective_from=selection.effective_from,
+                effective_to=selection.effective_to,
+            )
+            resolution = self.provider_trust.resolve(request)
+            if resolution.posture != "SYNTHETIC_TEST_ONLY":
+                raise ValueError("COMPOSITE_PROVIDER_TRUST_UNAVAILABLE")
+            if resolution.registration_digest != provider.registry_digest:
+                raise ValueError("COMPOSITE_PROVIDER_REGISTRATION_DIGEST_MISMATCH")
+        self.repository.save_definition(definition=definition)
+        return definition
 
     def save_definition(self, *, command: DpmCompositeDefinitionCommand) -> DpmCompositeDefinition:
         definition = DpmCompositeDefinition(
@@ -126,7 +170,9 @@ class DpmCompositeMembershipApplicationService:
                 composite_id=command.composite_id,
                 definition_version=command.definition_version,
             )
-            if original is None or not _same_command_except_server_time(
+            if not isinstance(
+                original, DpmCompositeDefinition
+            ) or not _same_command_except_server_time(
                 original, definition, server_time_field="created_at"
             ):
                 raise
@@ -135,7 +181,7 @@ class DpmCompositeMembershipApplicationService:
 
     def get_definition(
         self, *, tenant_id: str, composite_id: str, definition_version: str
-    ) -> DpmCompositeDefinition:
+    ) -> CompositeDefinition:
         definition = self.repository.get_definition(
             tenant_id=tenant_id,
             composite_id=composite_id,
@@ -147,7 +193,7 @@ class DpmCompositeMembershipApplicationService:
 
     def list_definitions(
         self, *, tenant_id: str, limit: int, offset: int
-    ) -> DpmCompositeResultPage[DpmCompositeDefinition]:
+    ) -> DpmCompositeResultPage[CompositeDefinition]:
         return self.repository.list_definitions(tenant_id=tenant_id, limit=limit, offset=offset)
 
     def save_membership_revision(
