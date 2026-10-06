@@ -18,6 +18,7 @@ from src.api.services.wave_simulation_operations import _resolve_item_payloads
 from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
+from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository
 
 
@@ -27,6 +28,7 @@ def build_wave_simulation_item_inputs(
     *,
     tenant_id: str | None = None,
     correlation_id: str = "",
+    runtime: RebalanceRuntime | None = None,
 ) -> dict[str, RebalanceRequest | wave_service.DpmWaveSimulationInput]:
     if wave is not None:
         if wave.state != "SOURCE_CHECKED":
@@ -36,6 +38,7 @@ def build_wave_simulation_item_inputs(
             item_payloads=[item.model_dump(mode="json") for item in request.item_inputs],
         )
         payloads = freeze_wave_inputs(
+            runtime=runtime,
             wave=wave,
             item_inputs=payloads,
             tenant_id=tenant_id or "",
@@ -72,6 +75,7 @@ def simulate_wave_response(
     wave_repository: DpmWaveRepository,
     tenant_id: str,
     risk_authority_client: RiskAuthorityClient | None,
+    runtime: RebalanceRuntime | None = None,
 ) -> DpmWaveResponse:
     try:
         wave = wave_repository.get_wave(wave_id=wave_id, tenant_id=tenant_id)
@@ -81,7 +85,11 @@ def simulate_wave_response(
             correlation_id=correlation_id,
             item_inputs=(
                 build_wave_simulation_item_inputs(
-                    request, wave=wave, tenant_id=tenant_id, correlation_id=correlation_id
+                    request,
+                    wave=wave,
+                    tenant_id=tenant_id,
+                    correlation_id=correlation_id,
+                    runtime=runtime,
                 )
                 if wave is not None
                 else {}

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, status
 
 from src.api.routers.wave_route_parameters import WaveTenantIdHeader
 from src.api.dependencies import (
     get_construction_repository,
+    get_rebalance_runtime,
     get_risk_authority_client,
     get_wave_repository,
 )
@@ -16,6 +19,7 @@ from src.api.routers.wave_simulation_http import simulate_wave_response
 from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
+from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.core.waves import DpmWaveRepository
 
 
@@ -47,6 +51,7 @@ router = APIRouter()
     },
 )
 def simulate_wave(
+    runtime: Annotated[RebalanceRuntime, Depends(get_rebalance_runtime)],
     wave_id: WaveIdPath,
     request: DpmWaveSimulationRequest,
     x_tenant_id: WaveTenantIdHeader,
@@ -57,6 +62,7 @@ def simulate_wave(
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
     return simulate_wave_response(
+        runtime=runtime,
         wave_id=wave_id,
         request=request,
         correlation_id=x_correlation_id or f"corr_wave_simulate_{wave_id}",

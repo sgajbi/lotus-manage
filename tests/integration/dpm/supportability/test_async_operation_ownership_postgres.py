@@ -238,7 +238,8 @@ def test_registered_http_competition_runs_one_financial_calculation(
     dsn: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import src.api.main as api_main
+    from dataclasses import replace
+    from src.api.dependencies import get_rebalance_runtime
 
     monkeypatch.setenv("DPM_SUPPORTABILITY_STORE_BACKEND", "POSTGRES")
     monkeypatch.setenv("DPM_SUPPORTABILITY_POSTGRES_DSN", dsn)
@@ -252,7 +253,8 @@ def test_registered_http_competition_runs_one_financial_calculation(
         yield None
 
     app.dependency_overrides[get_db_session] = override_db_session
-    real_run_simulation = api_main.run_simulation
+    runtime = get_rebalance_runtime()
+    real_run_simulation = runtime.run_simulation
     engine_started = Event()
     release_engine = Event()
     count_lock = Lock()
@@ -266,7 +268,9 @@ def test_registered_http_competition_runs_one_financial_calculation(
         assert release_engine.wait(timeout=10)
         return real_run_simulation(*args, **kwargs)
 
-    monkeypatch.setattr(api_main, "run_simulation", counted_run_simulation)
+    app.dependency_overrides[get_rebalance_runtime] = lambda: replace(
+        runtime, run_simulation=counted_run_simulation
+    )
     payload = valid_api_payload()
     payload.pop("options")
     payload["portfolio_snapshot"]["base_currency"] = "USD"
