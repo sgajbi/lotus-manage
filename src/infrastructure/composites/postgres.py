@@ -8,8 +8,12 @@ from typing import Any
 
 from src.core.common.capabilities import has_psycopg
 from src.core.composite_membership import (
-    DpmCompositeDefinition,
     DpmCompositeMembershipRevision,
+)
+from src.core.composite_definition_versions import (
+    CompositeDefinition,
+    decode_composite_definition,
+    validated_definition_snapshot,
 )
 from src.core.composite_repository import (
     DpmCompositeConflictError,
@@ -39,7 +43,8 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         self._dsn = dsn
         self._init_db()
 
-    def save_definition(self, *, definition: DpmCompositeDefinition) -> None:
+    def save_definition(self, *, definition: CompositeDefinition) -> None:
+        definition = validated_definition_snapshot(definition)
         with closing(self._connect()) as connection:
             connection.execute(
                 """
@@ -72,7 +77,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
 
     def get_definition(
         self, *, tenant_id: str, composite_id: str, definition_version: str
-    ) -> DpmCompositeDefinition | None:
+    ) -> CompositeDefinition | None:
         with closing(self._connect()) as connection:
             row = connection.execute(
                 """
@@ -85,7 +90,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
 
     def list_definitions(
         self, *, tenant_id: str, limit: int, offset: int
-    ) -> DpmCompositeResultPage[DpmCompositeDefinition]:
+    ) -> DpmCompositeResultPage[CompositeDefinition]:
         with closing(self._connect()) as connection:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             count = connection.execute(
@@ -388,8 +393,8 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         )
 
 
-def _load_definition(row: Any) -> DpmCompositeDefinition:
-    return load_model_json(DpmCompositeDefinition, _payload(row))
+def _load_definition(row: Any) -> CompositeDefinition:
+    return decode_composite_definition(_payload(row))
 
 
 def _load_membership_revision(row: Any) -> DpmCompositeMembershipRevision:

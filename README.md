@@ -39,6 +39,10 @@ a trusted ingress; they are not standalone production authentication. The API pr
 historical revisions and correction impact windows. It does not calculate composite returns, infer
 eligibility from current book membership, or publish Performance member-return facts; those remain
 explicit consumer and source-owner responsibilities.
+Versioned v2 economic-authority profiles distinguish internal, external and hybrid inputs from
+publisher ownership while preserving v1 history. Production provider trust and institutional
+attestation verification fail closed; controlled fixtures are not official approval. See the
+[authority and onboarding guide](docs/guides/composite-source-authority.md).
 Definition and membership-revision list `count` values are total tenant/scoped record counts from
 the same read snapshot as their bounded `items`, not page lengths. Offset pages can shift if new
 revisions arrive between requests; consumers needing an ordered handoff should use the publication

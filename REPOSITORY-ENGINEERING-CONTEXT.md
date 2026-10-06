@@ -35,6 +35,17 @@ This repository owns:
    snapshot, but cross-request offset pages are not stable under writes; consumers use the
    publication cursor for handoff. The caller-asserted identity headers require trusted ingress
    before production use.
+   Definition decoding now dispatches v1/v2 through `src/core/composite_definition_versions.py`.
+   v2 authority models/policy bind separate profile/business/wire digests; existing JSONB keys and
+   all membership/publication wires are unchanged. `CompositeProviderTrustPort` defaults unavailable;
+   synthetic registration is constructor-injected by owning tests only. Institutional attestation
+   references are represented but refuse persistence until a separately qualified verifier exists.
+   No affirmative production trust or official activation is implemented.
+   Beginning-assets-only profiles remain valid; optional `ENDING_ASSETS` requires separate declared
+   provenance and complete member/horizon coverage. Consumers must not infer absent ending assets.
+   The shared immutable fixture and registered-route tests are documented in
+   `docs/guides/composite-source-authority.md`;
+   PostgreSQL/actual consumer acceptance remains separately required.
 5. immutable composite-universe attestations scoped to a pinned membership revision, inclusive
    business-date range, exact portfolio set, policy and named source-product cuts/watermarks, with
    exactly one source product declared as authoritative for the universe. `COMPLETE`
