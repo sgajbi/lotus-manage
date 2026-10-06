@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from src.core.rebalance.runtime_ports import RebalanceRuntime
+
 from typing import Annotated, Optional
 
 from fastapi import Depends, Header, Response, status
 from pydantic import Field
 
-from src.api.dependencies import get_db_session
+from src.api.dependencies import get_db_session, get_rebalance_runtime
 from src.api.request_models import BatchExecutionRequestEnvelope
 from src.api.routers.mandate_tenant_query import require_mandate_tenant
 from src.api.routers.rebalance_simulation import router
@@ -70,6 +72,7 @@ from src.core.rebalance_runs import DpmAsyncAcceptedResponse
     },
 )
 def analyze_scenarios_async(
+    runtime: Annotated[RebalanceRuntime, Depends(get_rebalance_runtime)],
     request: Annotated[
         BatchExecutionRequestEnvelope,
         Field(
@@ -122,6 +125,7 @@ def analyze_scenarios_async(
     admitted_tenant_id = require_mandate_tenant(x_tenant_id)
     try:
         batch_request, source_context = service.resolve_batch_request_envelope(
+            runtime=runtime,
             envelope=request,
             correlation_id=x_correlation_id,
             admitted_tenant_id=admitted_tenant_id,
@@ -130,6 +134,7 @@ def analyze_scenarios_async(
         raise rebalance_envelope_http_exception(exc) from exc
     try:
         accepted = service.submit_and_optionally_execute_async_analysis(
+            runtime=runtime,
             request=batch_request,
             correlation_id=x_correlation_id,
             policy_pack_id=x_policy_pack_id,

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Optional
 
 from fastapi import Header, HTTPException, Path, Request, status
+from src.api.dependencies import load_dpm_policy_pack_catalog
 
 from src.api.routers.rebalance_policy_pack_docs import (
     POLICY_CATALOG_DESCRIPTION,
@@ -18,7 +19,6 @@ from src.api.routers.rebalance_policy_packs import (
 )
 from src.api.services.rebalance_policy_pack_service import (
     DpmPolicyPackCatalogUnavailableError,
-    load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
 )
 from src.core.rebalance.policy_packs import (

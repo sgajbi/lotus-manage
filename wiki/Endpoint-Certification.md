@@ -32,6 +32,40 @@ Command examples use these variables:
 - `LOTUS_MANAGE_AUTHORITY_BASE_URL`: local manage authority-proof API on port `8020`
 - `LOTUS_MANAGE_PROOF_BASE_URL`: local manage proof-pack API on port `8024`
 
+## Bounded Validation: Monthly Composite Eligibility
+
+These registered routes have synthetic financial and PostgreSQL custody proof, not live-source,
+institutional or deployment certification. The default source and official activation remain
+unavailable. Configuration/evaluation checking is independent and content-bound; publication
+uses the existing membership ledger. See the
+[monthly eligibility guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md)
+for input dictionaries, temporal controls, worked examples and refusal/recovery guidance.
+
+| Operation | Path |
+| --- | --- |
+| POST validate | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/validate` |
+| POST simulate | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/simulate` |
+| POST diff | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/diff` |
+| PUT/GET policy proposal | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}` |
+| PUT policy check | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}/approval` |
+| GET policy approval | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/approval` |
+| PUT/GET evaluation | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}` |
+| PUT/GET evaluation check | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}/approval` |
+
+Owning tests cover exact replay, tenant/role admission, stale content/parent, full rollback,
+observed competing database writers, all-rule evidence, missing members, unknown discretionary
+refusal and monthly re-entry without rewriting earlier intervals. Tests use explicit synthetic
+source facts, not a qualified Core integration. Execute from the repository root:
+
+```text
+python -m pytest tests/unit/api/test_composite_monthly_eligibility_routes.py tests/unit/api/test_composite_monthly_evaluation_routes.py -q
+python -m pytest tests/integration/dpm/composites/test_composite_monthly_policy_postgres.py tests/integration/dpm/composites/test_composite_monthly_evaluation_postgres.py tests/integration/dpm/composites/test_composite_monthly_upgrade_postgres.py -q
+```
+
+The second command requires an isolated `DPM_POSTGRES_INTEGRATION_DSN` and
+`DPM_POSTGRES_INTEGRATION_REQUIRED=1`. Performance contract admission of controlled v1 publication
+does not establish v2 independent-approval lifecycle, qualified return materialization or capacity.
+
 ## Certified endpoint family: service health probes
 
 Routes:

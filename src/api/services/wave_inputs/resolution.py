@@ -15,6 +15,7 @@ from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import ConstructionAuthorityContext
 from src.core.dpm_source_context import DpmResolvedSourceContext, DpmStatefulInput
 from src.core.models import EngineOptions
+from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveItem
 
 
@@ -29,6 +30,7 @@ def freeze_wave_inputs(
     tenant_id: str,
     correlation_id: str,
     retained_inputs: dict[str, dict[str, object]] | None = None,
+    runtime: RebalanceRuntime | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Legacy stateless payloads remain unchanged; stateful retries reuse admitted evidence."""
     by_id = {item.wave_item_id: item for item in wave.items}
@@ -75,6 +77,7 @@ def freeze_wave_inputs(
             options_override=payload.get("options_override", {}),
         )
         request, source = rebalance_simulation_service.resolve_rebalance_request_envelope(
+            runtime=runtime,
             envelope=envelope,
             correlation_id=correlation_id,
             admitted_tenant_id=tenant_id,

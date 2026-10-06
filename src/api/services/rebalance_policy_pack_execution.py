@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Optional
 
-from src.api.observability import record_policy_pack_resolution
+from src.observability.metrics import record_policy_pack_resolution
 from src.api.services.rebalance_policy_pack_service import (
     DpmPolicyPackCatalogUnavailableError,
     resolve_dpm_policy_pack,

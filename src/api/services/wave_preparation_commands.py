@@ -6,7 +6,7 @@ from src.api.services.wave_transition_execution import (
     persist_transitioned_wave,
     prepare_wave_transition,
 )
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository

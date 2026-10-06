@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from src.api.observability import correlation_id_var, record_pm_quality_http_result
 from src.api.response_headers import apply_observability_headers
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )

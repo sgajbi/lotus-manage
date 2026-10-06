@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, status
 
 from src.api.dependencies import (
+    get_rebalance_runtime,
     get_construction_repository,
     get_risk_authority_client,
     get_wave_repository,
@@ -40,7 +41,8 @@ from src.api.routers.wave_simulation_operation_http import (
     simulation_results_response,
 )
 from src.api.services import wave_simulation_operations
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
+from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.core.construction.repository import ConstructionRepository
 from src.core.common.derived_identity import derived_identity
 from src.core.rebalance_runs.service import DpmRunSupportService
@@ -90,6 +92,7 @@ ResultsOffsetQuery = Annotated[int, Query(ge=0)]
     },
 )
 def admit_simulation_operation(
+    runtime: Annotated[RebalanceRuntime, Depends(get_rebalance_runtime)],
     wave_id: WaveIdPath,
     request: DpmWaveSimulationOperationRequest,
     idempotency_key: WaveSimulationIdempotencyKeyHeader,
@@ -99,6 +102,7 @@ def admit_simulation_operation(
 ) -> DpmWaveSimulationOperationResponse:
     try:
         operation, replayed = wave_simulation_operations.admit_wave_simulation_operation(
+            runtime=runtime,
             wave_id=wave_id,
             tenant_id=x_tenant_id,
             actor_id=request.actor_id,

@@ -47,7 +47,7 @@ from src.api.routers.wave_tactical_candidate_selection import (
 )
 from src.api.services import wave_service
 from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
-from src.api.services.authority_client_service import (
+from src.core.integration_ports import (
     AdviseAuthorityClient,
     AdviseAuthorityUnavailableError,
     RiskAuthorityClient,

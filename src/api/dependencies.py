@@ -1,7 +1,20 @@
 import os
+import logging
+from functools import partial
 from typing import AsyncIterator
 
 from fastapi import Depends
+
+from src.api.composition.core_resolver_service import (
+    build_core_resolver_client as build_core_resolver_client,
+)
+from src.api.composition import rebalance_policy_pack_repository, rebalance_run_support_repository
+from src.api.services import rebalance_policy_pack_service, rebalance_run_support_service
+from src.core.rebalance.engine import run_simulation
+from src.core.rebalance.runtime_ports import RebalanceRuntime
+from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
+from src.core.rebalance_runs import DpmRunSupportService
 
 from src.infrastructure.postgres_access import PostgresAccessError
 from src.infrastructure.advise_authority import (
@@ -14,6 +27,12 @@ from src.api.services.pm_operating_quality_service import (
 from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
+)
+from src.api.services.composite_monthly_eligibility import (
+    CompositeMonthlyEligibilityApplicationService,
+)
+from src.api.services.composite_monthly_evaluation import (
+    CompositeMonthlyEvaluationApplicationService,
 )
 from src.core.composite_repository import DpmCompositeRepository
 from src.core.construction.repository import ConstructionRepository
@@ -134,6 +153,39 @@ _POSTGRES_INSTRUCTION_PACKAGE_REPOSITORY: PostgresDpmInstructionPackageRepositor
 async def get_db_session() -> AsyncIterator[None]:
     """Stub for Database Session (RFC-0005). To be replaced with actual AsyncPG session."""
     yield None
+
+
+def get_dpm_run_support_service() -> DpmRunSupportService:
+    return rebalance_run_support_service.get_dpm_run_support_service(
+        repository_factory=rebalance_run_support_repository.build_repository,
+    )
+
+
+def get_policy_pack_repository() -> DpmPolicyPackRepository:
+    return rebalance_policy_pack_service.get_policy_pack_repository(
+        repository_factory=rebalance_policy_pack_repository.build_policy_pack_repository,
+    )
+
+
+def load_dpm_policy_pack_catalog() -> dict[str, DpmPolicyPackDefinition]:
+    return rebalance_policy_pack_service.load_dpm_policy_pack_catalog(
+        repository_factory=rebalance_policy_pack_repository.build_policy_pack_repository,
+    )
+
+
+def get_rebalance_runtime() -> RebalanceRuntime:
+    """Bind concrete providers without connecting until a use case needs them."""
+    return RebalanceRuntime(
+        resolver_factory=build_core_resolver_client,
+        run_simulation=run_simulation,
+        record_for_support=partial(
+            rebalance_run_support_service.record_dpm_run_for_support,
+            support_service_factory=get_dpm_run_support_service,
+        ),
+        support_service_factory=get_dpm_run_support_service,
+        catalog_loader=load_dpm_policy_pack_catalog,
+        logger=logging.getLogger("src.api.services.rebalance_simulation_service"),
+    )
 
 
 def get_mandate_repository() -> DpmMandateRepository:
@@ -301,6 +353,7 @@ def get_pm_operating_quality_application_service(
     """Return the PM operating quality application use-case service."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         outcome_review_repository=outcome_review_repository,
         policy_repository=policy_repository,
         score_run_repository=score_run_repository,
@@ -316,6 +369,7 @@ def get_pm_quality_policy_application_service(
     """Return PM-quality policy administration use cases."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         policy_repository=policy_repository,
     )
 
@@ -330,6 +384,7 @@ def get_pm_quality_score_run_application_service(
     """Return PM-quality score-run use cases without unrelated adapter initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         outcome_review_repository=outcome_review_repository,
         policy_repository=policy_repository,
         score_run_repository=score_run_repository,
@@ -343,6 +398,7 @@ def get_pm_quality_score_run_preview_application_service(
     """Return score-run preview use cases without score-run persistence initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         outcome_review_repository=outcome_review_repository,
         policy_repository=policy_repository,
     )
@@ -359,6 +415,7 @@ def get_pm_quality_fairness_application_service(
     """Return PM-quality fairness use cases without unrelated adapter initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         score_run_repository=score_run_repository,
         fairness_repository=fairness_repository,
     )
@@ -372,6 +429,7 @@ def get_pm_quality_fairness_preview_application_service(
     """Return fairness preview use cases without fairness persistence initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         score_run_repository=score_run_repository,
     )
 
@@ -390,6 +448,7 @@ def get_pm_quality_review_action_application_service(
     """Return PM-quality review-action use cases without unrelated adapter initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         score_run_repository=score_run_repository,
         fairness_repository=fairness_repository,
         review_action_repository=review_action_repository,
@@ -407,6 +466,7 @@ def get_pm_quality_review_action_preview_application_service(
     """Return review-action preview use cases without action persistence initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         score_run_repository=score_run_repository,
         fairness_repository=fairness_repository,
     )
@@ -426,6 +486,7 @@ def get_pm_quality_summary_invocation_application_service(
     """Return PM-quality summary use cases without unrelated adapter initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         score_run_repository=score_run_repository,
         review_action_repository=review_action_repository,
         summary_invocation_repository=summary_invocation_repository,
@@ -443,6 +504,7 @@ def get_pm_quality_summary_invocation_preview_application_service(
     """Return summary preview use cases without summary persistence initialization."""
 
     return DpmPmOperatingQualityApplicationService(
+        core_resolver_factory=build_core_resolver_client,
         score_run_repository=score_run_repository,
         review_action_repository=review_action_repository,
     )
@@ -508,6 +570,21 @@ def get_composite_membership_application_service(
     repository: DpmCompositeRepository = Depends(get_composite_repository),
 ) -> DpmCompositeMembershipApplicationService:
     return DpmCompositeMembershipApplicationService(repository=repository)
+
+
+def get_composite_monthly_eligibility_service(
+    repository: DpmCompositeRepository = Depends(get_composite_repository),
+) -> CompositeMonthlyEligibilityApplicationService:
+    """No configured source adapter means fail-closed simulation, not request-owned facts."""
+    return CompositeMonthlyEligibilityApplicationService(repository=repository)
+
+
+def get_composite_monthly_evaluation_service(
+    configuration: CompositeMonthlyEligibilityApplicationService = Depends(
+        get_composite_monthly_eligibility_service
+    ),
+) -> CompositeMonthlyEvaluationApplicationService:
+    return CompositeMonthlyEvaluationApplicationService(configuration=configuration)
 
 
 def get_wave_campaign_application_service(

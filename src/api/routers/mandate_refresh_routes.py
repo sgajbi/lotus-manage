@@ -18,7 +18,7 @@ from src.api.routers.mandate_models import (
 )
 from src.api.routers.mandate_tenant_query import MandateTenantIdHeader
 from src.api.routers.mandates import get_core_resolver_client, router
-from src.api.services.core_resolver_service import CoreResolverClient
+from src.core.integration_ports import CoreResolverClient
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
     DpmMandateSourceUnavailableError,

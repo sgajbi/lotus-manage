@@ -10,7 +10,7 @@ from src.api.services.wave_errors import (
     DpmWaveDependencyFailedError,
     DpmWaveDependencyUnavailableError,
 )
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )

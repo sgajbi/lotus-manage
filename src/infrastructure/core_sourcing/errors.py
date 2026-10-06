@@ -1,6 +1,4 @@
-class DpmCoreResolverError(RuntimeError):
-    pass
-
-
-class DpmCoreResolverUnavailableError(DpmCoreResolverError):
-    pass
+from src.core.integration_ports import (
+    DpmCoreResolverError as DpmCoreResolverError,
+    DpmCoreResolverUnavailableError as DpmCoreResolverUnavailableError,
+)

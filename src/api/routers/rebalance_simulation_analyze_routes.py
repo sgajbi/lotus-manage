@@ -5,7 +5,7 @@ from typing import Annotated, Optional
 from fastapi import Depends, Header, status
 from pydantic import Field
 
-from src.api.dependencies import get_db_session
+from src.api.dependencies import get_db_session, get_rebalance_runtime
 from src.api.request_models import BatchExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation import router
 from src.api.routers.rebalance_simulation_http import (
@@ -15,6 +15,7 @@ from src.api.routers.rebalance_simulation_http import (
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import ANALYZE_RESPONSE_EXAMPLE
 from src.core.models import BatchRebalanceResult
+from src.core.rebalance.runtime_ports import RebalanceRuntime
 
 
 @router.post(
@@ -46,6 +47,7 @@ from src.core.models import BatchRebalanceResult
     },
 )
 def analyze_scenarios(
+    runtime: Annotated[RebalanceRuntime, Depends(get_rebalance_runtime)],
     request: Annotated[
         BatchExecutionRequestEnvelope,
         Field(
@@ -98,6 +100,7 @@ def analyze_scenarios(
 ) -> BatchRebalanceResult:
     try:
         batch_request, source_context = service.resolve_batch_request_envelope(
+            runtime=runtime,
             envelope=request,
             correlation_id=x_correlation_id,
             admitted_tenant_id=x_tenant_id,
@@ -106,6 +109,7 @@ def analyze_scenarios(
         raise rebalance_envelope_http_exception(exc) from exc
     try:
         return service.execute_batch_analysis(
+            runtime=runtime,
             request=batch_request,
             correlation_id=x_correlation_id,
             request_policy_pack_id=x_policy_pack_id,

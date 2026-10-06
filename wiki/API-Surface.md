@@ -582,6 +582,19 @@ previously described the state before that change.
 
 Endpoint certification details are tracked in [Endpoint Certification](Endpoint-Certification).
 
+## Monthly Composite Eligibility
+
+The composite `monthly-eligibility` family supports policy validation/simulation/diff, immutable
+prospective policy proposals, independent checking, retained monthly evaluations and atomic
+approved membership publication. Its default source is unavailable; synthetic controls do not
+establish bank IAM, institutional approval or official activation. Start with the
+[monthly eligibility guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md)
+for request fields, financial examples, historical preservation and re-entry rules.
+
+Only the exact retained proposal can be checked. Replay does not reread mutable source facts;
+wrong owner/cut, incomplete universe, unknown discretionary status and stale parents fail closed.
+Performance admission and authoritative source qualification remain separate acceptance boundaries.
+
 ## Platform surfaces
 
 - `/health`

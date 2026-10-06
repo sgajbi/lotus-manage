@@ -5,7 +5,7 @@ from src.api.services.wave_aggregate_metrics import (
 )
 from src.api.services.wave_event_evidence import build_wave_event
 from src.api.services.wave_simulation_item import DpmWaveSimulationInput, simulate_item
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.repository import require_construction_tenant_id
 from src.core.construction.vocabulary import ConstructionMethod

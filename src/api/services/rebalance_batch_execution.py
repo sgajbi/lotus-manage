@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 from pydantic import ValidationError
 
-from src.api.observability import record_execution_call
+from src.observability.metrics import record_execution_call
 from src.api.services.rebalance_batch_analysis import (
     resolve_base_snapshot_ids,
     to_invalid_options_error,

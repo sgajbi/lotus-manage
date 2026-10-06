@@ -26,6 +26,13 @@ from src.core.composite_publication import (
     publication_from_revision,
 )
 from src.core.composite_universe import DpmCompositeUniverseAttestation
+from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.evaluation_control import (
+    MonthlyEvaluationApproval,
+    MonthlyEvaluationProposal,
+    evaluation_key as _evaluation_key,
+)
+from src.core.composite_eligibility.publication import build_monthly_publication
 
 
 KeyT = TypeVar("KeyT")
@@ -36,6 +43,12 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
     def __init__(self) -> None:
         self._lock = Lock()
         self._definitions: dict[tuple[str, str, str], CompositeDefinition] = {}
+        self._monthly_proposals: dict[tuple[str, str, str, str, str], MonthlyPolicyProposal] = {}
+        self._monthly_approvals: dict[tuple[str, str, str], MonthlyPolicyApproval] = {}
+        self._monthly_evaluations: dict[tuple[str, str, str, str], MonthlyEvaluationProposal] = {}
+        self._monthly_evaluation_approvals: dict[
+            tuple[str, str, str], MonthlyEvaluationApproval
+        ] = {}
         self._membership_revisions: dict[
             tuple[str, str, str, str], DpmCompositeMembershipRevision
         ] = {}
@@ -45,6 +58,249 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             tuple[str, str, str, str, str], DpmCompositeUniverseAttestation
         ] = {}
         self._last_sequence = 0
+
+    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
+        proposal = MonthlyEvaluationProposal.model_validate(proposal.model_dump(mode="json"))
+        key = _evaluation_key(proposal)
+        with self._lock:
+            self._require_monthly_inputs(proposal)
+            self._require_current_monthly_parent(proposal)
+            _save_immutable(
+                values=self._monthly_evaluations,
+                key=key,
+                value=proposal,
+                conflict_code="COMPOSITE_ELIGIBILITY_EVALUATION_PROPOSAL_IMMUTABLE_CONFLICT",
+            )
+
+    def get_monthly_evaluation_proposal(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+    ) -> MonthlyEvaluationProposal | None:
+        with self._lock:
+            result = self._monthly_evaluations.get(
+                (tenant_id, composite_id, definition_version, evaluation_revision)
+            )
+            return (
+                MonthlyEvaluationProposal.model_validate(result.model_dump(mode="json"))
+                if result is not None
+                else None
+            )
+
+    def save_monthly_evaluation_approval(self, *, approval: MonthlyEvaluationApproval) -> None:
+        approval = MonthlyEvaluationApproval.model_validate(approval.model_dump(mode="json"))
+        proposal = approval.proposal
+        key = _evaluation_key(proposal)
+        approval_key = (*key[:2], proposal.evaluation.month)
+        with self._lock:
+            existing = self._monthly_evaluation_approvals.get(approval_key)
+            if existing is not None:
+                if existing.content_hash != approval.content_hash:
+                    raise DpmCompositeConflictError(
+                        "COMPOSITE_ELIGIBILITY_ACTIVE_EVALUATION_CONFLICT"
+                    )
+                self._assert_monthly_publication(existing)
+                return
+            retained = self._monthly_evaluations.get(key)
+            if retained is None or retained.content_hash != proposal.content_hash:
+                raise DpmCompositeConflictError(
+                    "COMPOSITE_ELIGIBILITY_EVALUATION_APPROVAL_PROPOSAL_MISMATCH"
+                )
+            self._require_monthly_inputs(proposal)
+            self._require_current_monthly_parent(proposal)
+            parent = self._membership_revisions[(*key[:3], proposal.parent_membership_revision)]
+            expected, revision, universe = build_monthly_publication(
+                proposal,
+                parent,
+                approved_by=approval.approved_by,
+                approved_at=approval.approved_at,
+            )
+            if expected != approval:
+                raise DpmCompositeConflictError(
+                    "COMPOSITE_ELIGIBILITY_APPROVED_PUBLICATION_MISMATCH"
+                )
+            revision_key = (*key[:3], revision.membership_revision)
+            universe_key = (*revision_key, universe.attestation_version)
+            if (
+                revision_key in self._membership_revisions
+                or universe_key in self._universe_attestations
+            ):
+                raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_TARGET_REVISION_EXISTS")
+            published = publication_from_revision(
+                revision=revision,
+                sequence=self._last_sequence + 1,
+                published_at=datetime.now(timezone.utc),
+            )
+            revision, universe, approval = deepcopy((revision, universe, approval))
+            self._membership_revisions[revision_key] = revision
+            self._universe_attestations[universe_key] = universe
+            self._monthly_evaluation_approvals[approval_key] = approval
+            self._publications[published.sequence] = published
+            self._last_sequence = published.sequence
+
+    def get_monthly_evaluation_approval(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+    ) -> MonthlyEvaluationApproval | None:
+        with self._lock:
+            result = next(
+                (
+                    item
+                    for item in self._monthly_evaluation_approvals.values()
+                    if _evaluation_key(item.proposal)
+                    == (tenant_id, composite_id, definition_version, evaluation_revision)
+                ),
+                None,
+            )
+            if result is None:
+                return None
+            result = MonthlyEvaluationApproval.model_validate(result.model_dump(mode="json"))
+            self._assert_monthly_publication(result)
+            return result
+
+    def _require_monthly_inputs(self, proposal: MonthlyEvaluationProposal) -> None:
+        key = _evaluation_key(proposal)
+        policy = self._monthly_approvals.get((*key[:2], proposal.evaluation.month))
+        if policy is None or policy.content_hash != proposal.policy_approval.content_hash:
+            raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_APPROVED_POLICY_MISMATCH")
+        universe = self._universe_attestations.get(
+            (*key[:3], proposal.parent_membership_revision, proposal.universe.attestation_version)
+        )
+        if universe != proposal.universe:
+            raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_RETAINED_UNIVERSE_MISMATCH")
+
+    def _require_current_monthly_parent(self, proposal: MonthlyEvaluationProposal) -> None:
+        key = _evaluation_key(proposal)
+        current = next(
+            (
+                item
+                for item in reversed(self._publications.values())
+                if (item.tenant_id, item.composite_id, item.definition_version) == key[:3]
+            ),
+            None,
+        )
+        if current is None or (current.membership_revision, current.membership_content_hash) != (
+            proposal.parent_membership_revision,
+            proposal.parent_membership_content_hash,
+        ):
+            raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_STALE_MEMBERSHIP")
+        self._assert_publication_integrity(current)
+
+    def _assert_monthly_publication(self, approval: MonthlyEvaluationApproval) -> None:
+        key = _evaluation_key(approval.proposal)
+        target = approval.proposal.target_membership_revision
+        revision = self._membership_revisions.get((*key[:3], target))
+        universe = self._universe_attestations.get((*key[:3], target, key[3]))
+        publication = next(
+            (
+                item
+                for item in self._publications.values()
+                if (
+                    item.tenant_id,
+                    item.composite_id,
+                    item.definition_version,
+                    item.membership_revision,
+                )
+                == (*key[:3], target)
+            ),
+            None,
+        )
+        if revision is None or revision.content_hash != approval.membership_content_hash:
+            raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_APPROVED_PUBLICATION_MISMATCH")
+        if (
+            universe is None
+            or universe.content_hash != approval.published_universe_content_hash
+            or publication is None
+        ):
+            raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_APPROVED_PUBLICATION_MISMATCH")
+        self._assert_publication_integrity(publication)
+
+    def save_monthly_policy_proposal(self, *, proposal: MonthlyPolicyProposal) -> None:
+        proposal = MonthlyPolicyProposal.model_validate(proposal.model_dump(mode="json"))
+        scope = proposal.policy.scope
+        key = (
+            scope.tenant_id,
+            scope.composite_id,
+            scope.definition_version,
+            proposal.policy.month,
+            proposal.proposal_revision,
+        )
+        with self._lock:
+            if key[:3] not in self._definitions:
+                raise ValueError("COMPOSITE_DEFINITION_NOT_FOUND")
+            definition = self._definitions[key[:3]]
+            if (definition.eligibility_policy_version, definition.strategy_code) != (
+                proposal.eligibility_policy_version,
+                proposal.policy.scope.strategy_code,
+            ):
+                raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_DEFINITION_POLICY_MISMATCH")
+            _save_immutable(
+                values=self._monthly_proposals,
+                key=key,
+                value=proposal,
+                conflict_code="COMPOSITE_ELIGIBILITY_PROPOSAL_IMMUTABLE_CONFLICT",
+            )
+
+    def get_monthly_policy_proposal(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        month: str,
+        proposal_revision: str,
+    ) -> MonthlyPolicyProposal | None:
+        with self._lock:
+            result = self._monthly_proposals.get(
+                (tenant_id, composite_id, definition_version, month, proposal_revision)
+            )
+            return deepcopy(result) if result is not None else None
+
+    def save_monthly_policy_approval(self, *, approval: MonthlyPolicyApproval) -> None:
+        approval = MonthlyPolicyApproval.model_validate(approval.model_dump(mode="json"))
+        proposal = approval.proposal
+        scope = proposal.policy.scope
+        proposal_key = (
+            scope.tenant_id,
+            scope.composite_id,
+            scope.definition_version,
+            proposal.policy.month,
+            proposal.proposal_revision,
+        )
+        with self._lock:
+            retained = self._monthly_proposals.get(proposal_key)
+            if retained is None or retained.content_hash != proposal.content_hash:
+                raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_APPROVAL_PROPOSAL_MISMATCH")
+            _save_immutable(
+                values=self._monthly_approvals,
+                key=(scope.tenant_id, scope.composite_id, proposal.policy.month),
+                value=approval,
+                conflict_code="COMPOSITE_ELIGIBILITY_ACTIVE_POLICY_CONFLICT",
+            )
+
+    def get_monthly_policy_approval(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        month: str,
+    ) -> MonthlyPolicyApproval | None:
+        with self._lock:
+            result = self._monthly_approvals.get((tenant_id, composite_id, month))
+            if (
+                result is None
+                or result.proposal.policy.scope.definition_version != definition_version
+            ):
+                return None
+            return deepcopy(result)
 
     def save_definition(self, *, definition: CompositeDefinition) -> None:
         definition = validated_definition_snapshot(definition)

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from src.api.composite_identity import (
+    CompositeTrustedIdentity,
+    composite_trusted_identity_required,
+    composite_write_identity_required,
+)
 from src.api.composite_definition_requests import CompositeDefinitionV2Request
 from src.core.composite_definition_versions import (
     CompositeDefinition,
@@ -46,13 +50,6 @@ router = APIRouter(
     prefix="/rebalance/composites",
     tags=["lotus-manage Composite Membership"],
 )
-
-
-@dataclass(frozen=True)
-class CompositeTrustedIdentity:
-    tenant_id: str
-    actor_id: str
-    role: str
 
 
 class CompositeDefinitionRequest(BaseModel):
@@ -148,25 +145,6 @@ class CompositeUniverseAttestationPage(BaseModel):
     offset: int
 
 
-def composite_trusted_identity_required(request: Request) -> CompositeTrustedIdentity:
-    identity = CompositeTrustedIdentity(
-        tenant_id=request.headers.get("X-Tenant-Id", "").strip(),
-        actor_id=request.headers.get("X-Actor-Id", "").strip(),
-        role=request.headers.get("X-Role", "").strip(),
-    )
-    if not all((identity.tenant_id, identity.actor_id, identity.role)):
-        raise _problem(status.HTTP_403_FORBIDDEN, "COMPOSITE_TRUSTED_IDENTITY_REQUIRED")
-    return identity
-
-
-def _write_identity_required(
-    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
-) -> CompositeTrustedIdentity:
-    if identity.role not in {"DPM_COMPOSITE_ADMIN", "DPM_PORTFOLIO_MANAGER"}:
-        raise _problem(status.HTTP_403_FORBIDDEN, "COMPOSITE_WRITE_ROLE_FORBIDDEN")
-    return identity
-
-
 def _publication_consumer_identity_required(
     request: Request,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
@@ -212,7 +190,7 @@ def put_definition(
     composite_id: str,
     definition_version: str,
     request: CompositeDefinitionRequest | CompositeDefinitionV2Request,
-    identity: CompositeTrustedIdentity = Depends(_write_identity_required),
+    identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
     service: DpmCompositeMembershipApplicationService = Depends(
         get_composite_membership_application_service
     ),
@@ -292,7 +270,7 @@ def put_membership_revision(
     definition_version: str,
     membership_revision: str,
     request: CompositeMembershipRevisionRequest,
-    identity: CompositeTrustedIdentity = Depends(_write_identity_required),
+    identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
     service: DpmCompositeMembershipApplicationService = Depends(
         get_composite_membership_application_service
     ),

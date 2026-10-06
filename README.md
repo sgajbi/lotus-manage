@@ -43,6 +43,9 @@ Versioned v2 economic-authority profiles distinguish internal, external and hybr
 publisher ownership while preserving v1 history. Production provider trust and institutional
 attestation verification fail closed; controlled fixtures are not official approval. See the
 [authority and onboarding guide](docs/guides/composite-source-authority.md).
+Monthly synthetic eligibility adds typed policy resolution, all-rule evidence and independent
+approval with atomic existing-ledger publication. Official activation and the default source
+remain unavailable. See the [monthly eligibility guide](docs/guides/composite-monthly-eligibility.md).
 Definition and membership-revision list `count` values are total tenant/scoped record counts from
 the same read snapshot as their bounded `items`, not page lengths. Offset pages can shift if new
 revisions arrive between requests; consumers needing an ordered handoff should use the publication

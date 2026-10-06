@@ -15,7 +15,7 @@ from src.api.services.wave_inputs.resolution import (
 from src.api.services.rebalance_simulation_errors import DpmRebalanceEnvelopeError
 from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.services.wave_simulation_operations import _resolve_item_payloads
-from src.api.services.authority_client_service import RiskAuthorityClient
+from src.core.integration_ports import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository

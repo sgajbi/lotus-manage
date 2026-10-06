@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from src.api.observability import record_async_operation
+from src.observability.metrics import record_async_operation
 from src.core.models import BatchRebalanceResult
 from src.core.rebalance_runs import DpmAsyncExecutionClaim, DpmRunSupportService
 

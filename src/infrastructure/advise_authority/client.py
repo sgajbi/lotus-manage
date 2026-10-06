@@ -9,8 +9,11 @@ import httpx
 from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
 
 
-class LotusAdviseAuthorityUnavailableError(RuntimeError):
-    pass
+from src.core.integration_ports import (
+    LotusAdviseAuthorityUnavailableError as LotusAdviseAuthorityUnavailableError,
+    TacticalHouseViewAffectedPortfolio as TacticalHouseViewAffectedPortfolio,
+    TacticalHouseViewAffectedCohort as TacticalHouseViewAffectedCohort,
+)
 
 
 @dataclass(frozen=True)
@@ -22,32 +25,6 @@ class LotusAdviseAuthorityConfig:
 
     def tactical_house_view_cohort_url(self) -> str:
         return f"{self.base_url.rstrip('/')}/{self.tactical_house_view_cohort_path.lstrip('/')}"
-
-
-@dataclass(frozen=True)
-class TacticalHouseViewAffectedPortfolio:
-    portfolio_id: str
-    mandate_id: str | None
-    inclusion_reason_codes: tuple[str, ...]
-    source_refs: tuple[dict[str, Any], ...]
-
-
-@dataclass(frozen=True)
-class TacticalHouseViewAffectedCohort:
-    cohort_id: str
-    tactical_view_id: str
-    tactical_view_version: str
-    theme_id: str
-    as_of_date: str
-    target_action: str
-    product_name: str
-    product_version: str
-    source_service: str
-    content_hash: str
-    supportability_state: str
-    supportability_reason_codes: tuple[str, ...]
-    affected_portfolios: tuple[TacticalHouseViewAffectedPortfolio, ...]
-    source_refs: tuple[dict[str, Any], ...]
 
 
 class LotusAdviseAuthorityClient:

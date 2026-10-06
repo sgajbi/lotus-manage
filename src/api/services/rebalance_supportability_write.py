@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable
 from typing import Any, Optional
 
-from src.api.observability import record_execution_call
+from src.observability.metrics import record_execution_call
 from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceIdempotencyStoreWriteFailedError,
 )

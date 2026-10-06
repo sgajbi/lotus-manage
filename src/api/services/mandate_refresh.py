@@ -10,7 +10,7 @@ from src.api.services.mandate_errors import (
     DpmMandateSourceIncompleteError,
     DpmMandateSourceUnavailableError,
 )
-from src.api.services.core_resolver_service import (
+from src.core.integration_ports import (
     CoreResolverClient,
     CoreResolverError,
     CoreResolverUnavailableError,

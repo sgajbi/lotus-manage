@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import get_type_hints
 
-from src.api.services import authority_client_service, construction_service
+from src.api.services import construction_service
+from src.core import integration_ports
 
 
 def test_construction_service_exposes_authority_client_aliases() -> None:
-    assert construction_service.RiskAuthorityClient is authority_client_service.RiskAuthorityClient
+    assert construction_service.RiskAuthorityClient is integration_ports.RiskAuthorityClient
     assert "RiskAuthorityClient" in construction_service.__all__
 
 

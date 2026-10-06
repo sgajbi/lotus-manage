@@ -20,8 +20,8 @@ from src.api.routers.wave_route_parameters import (
     WaveCreateIdempotencyKeyHeader,
     WaveTenantIdHeader,
 )
-from src.api.services.core_resolver_service import build_core_resolver_client
-from src.api.services.authority_client_service import (
+from src.api.dependencies import build_core_resolver_client
+from src.core.integration_ports import (
     AdviseAuthorityClient,
     RiskAuthorityClient,
 )
