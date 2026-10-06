@@ -98,6 +98,11 @@ evidence before claiming durable cross-service acceptance. Cross-definition corr
 v1 membership supersession; the consumer must retain and reconcile the distinct pinned generations.
 `RECEIVED` acknowledges retrieval; publication stays `UNVERIFIED`.
 
+Controlled real-PostgreSQL tests retain exact v1/v2 JSONB generations, registered retrieval/replay,
+publication cursors, conflicts and tenant fences across a fresh interpreter. They use test-injected
+synthetic registration, not real providers. PostgreSQL sequence gaps after replay are valid: a
+publication high watermark is a cursor, not the number of membership revisions.
+
 ## Validation And Remaining Gates
 
 From the repository root, with the pinned development environment (PowerShell or POSIX):
@@ -106,6 +111,13 @@ From the repository root, with the pinned development environment (PowerShell or
 make test-unit UNIT_TESTS="tests/unit/dpm/composites tests/unit/api/test_composite_membership_routes.py tests/unit/api/test_composite_definition_versions_routes.py"
 make typecheck
 make openapi-gate domain-product-validate migration-smoke
+```
+
+For the controlled PostgreSQL lane, set `DPM_POSTGRES_INTEGRATION_DSN` to an isolated test server
+with `CREATEDB` permission and `DPM_POSTGRES_INTEGRATION_REQUIRED=1`, then run from the same root:
+
+```text
+python -m pytest tests/integration/dpm/composites/test_composite_definition_versions_postgres.py
 ```
 
 Fixtures bind to the code-owned request helper and registered routes; schema success is not official

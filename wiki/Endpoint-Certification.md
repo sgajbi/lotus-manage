@@ -1823,6 +1823,8 @@ The existing v1 evidence below does not certify the v2 producer extension. v2 ha
 authority/digest models and controlled registered-route tests; production registration defaults to
 HTTP 503, and institutional-attestation references refuse even with synthetic test registration.
 Eligibility approval, method approval, live universe and actual consumer acceptance remain separate.
+Controlled real-PostgreSQL tests cover retained v1/v2 JSONB and fresh-process producer retrieval;
+they do not certify actual providers, institutional approval or Performance admission.
 See the [versioned authority guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-source-authority.md)
 for compatibility, examples, refusal codes and cutover boundaries.
 
