@@ -17,6 +17,9 @@ from src.api.services.composite_monthly_eligibility import (
     CompositeMonthlyEligibilityApplicationService,
 )
 from src.core.composite_eligibility.source import MonthlyEligibilitySourceResolution
+from src.core.composite_repository import DpmCompositeConflictError
+from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from pydantic import ValidationError
 
 
 @pytest.fixture
@@ -233,6 +236,192 @@ def test_retrospective_policy_and_unauthorized_checker_refuse(api):
     assert (
         expired.json()["detail"]["code"] == "COMPOSITE_ELIGIBILITY_RETROSPECTIVE_POLICY_FORBIDDEN"
     )
+
+
+@pytest.mark.parametrize("stage", ["proposal", "approval"])
+@pytest.mark.parametrize("winner", ["same", "different", "absent"])
+def test_policy_conflict_reconciles_exact_immutable_winner(api, monkeypatch, stage, winner):
+    client, repository, _, attestation, _ = api
+    url = BASE + "/policies/2026-11/proposals/race-r1"
+    body = prospective_proposal_body(attestation)
+    checker = HEADERS | {"X-Actor-Id": "synthetic-checker"}
+    if stage == "approval":
+        proposed = client.put(url, headers=HEADERS, json=body)
+        assert proposed.status_code == 200
+        body = {"expected_proposal_content_hash": proposed.json()["content_hash"]}
+    original = getattr(repository, "save_monthly_policy_" + stage)
+
+    def competing_save(**kwargs):
+        material = kwargs[stage]
+        if winner == "different":
+            wire = material.model_dump(mode="json")
+            wire["content_hash"] = ""
+            wire["proposed_by" if stage == "proposal" else "approved_by"] = "other-agent"
+            model = MonthlyPolicyProposal if stage == "proposal" else MonthlyPolicyApproval
+            material = model.model_validate(wire)
+        if winner != "absent":
+            original(**{stage: material})
+        raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_PROPOSAL_IMMUTABLE_CONFLICT")
+
+    monkeypatch.setattr(repository, "save_monthly_policy_" + stage, competing_save)
+    response = client.put(
+        url + ("/approval" if stage == "approval" else ""),
+        headers=checker if stage == "approval" else HEADERS,
+        json=body,
+    )
+    assert response.status_code == (200 if winner == "same" else 409), response.text
+    assert (
+        len(
+            repository.list_publications(
+                tenant_id="synthetic-tenant", after_sequence=0, limit=10
+            ).items
+        )
+        == 1
+    )
+    if winner == "same":
+        retained = client.get(
+            BASE + "/policies/2026-11/approval" if stage == "approval" else url,
+            headers=HEADERS,
+        )
+        assert response.json() == retained.json()
+
+
+@pytest.mark.parametrize("material", ["attachments", "proposal_hash", "early", "approval_hash"])
+def test_policy_material_and_approval_clock_cannot_be_rebound(api, material):
+    client, _, _, attestation, _ = api
+    url = BASE + "/policies/2026-11/proposals/clock-r1"
+    proposed = client.put(url, headers=HEADERS, json=prospective_proposal_body(attestation))
+    assert proposed.status_code == 200
+    wire = proposed.json()
+    if material in ("attachments", "proposal_hash"):
+        wire["content_hash"] = ""
+        if material == "attachments":
+            wire["attachments"] *= 2
+            code = "COMPOSITE_ELIGIBILITY_ATTACHMENTS_NONCANONICAL"
+        else:
+            wire["content_hash"] = "sha256:" + "0" * 64
+            code = "COMPOSITE_ELIGIBILITY_PROPOSAL_CONTENT_MISMATCH"
+        model = MonthlyPolicyProposal
+    else:
+        approved = client.put(
+            url + "/approval",
+            headers=HEADERS | {"X-Actor-Id": "synthetic-checker"},
+            json={"expected_proposal_content_hash": wire["content_hash"]},
+        )
+        assert approved.status_code == 200
+        wire = approved.json()
+        wire["content_hash"] = ""
+        if material == "early":
+            wire["approved_at"] = "2026-09-30T00:00:00.000000Z"
+            code = "COMPOSITE_ELIGIBILITY_APPROVAL_BEFORE_PROPOSAL"
+        else:
+            wire["content_hash"] = "sha256:" + "0" * 64
+            code = "COMPOSITE_ELIGIBILITY_APPROVAL_CONTENT_MISMATCH"
+        model = MonthlyPolicyApproval
+    with pytest.raises(ValidationError, match=code):
+        model.model_validate(wire)
+
+
+@pytest.mark.parametrize(
+    "field,value,code",
+    [
+        ("attestation_version", "missing", "COMPOSITE_UNIVERSE_ATTESTATION_NOT_FOUND"),
+        (
+            "universe_content_hash",
+            "sha256:" + "0" * 64,
+            "COMPOSITE_ELIGIBILITY_UNIVERSE_CONTENT_MISMATCH",
+        ),
+    ],
+)
+def test_source_admission_requires_exact_retained_universe(api, field, value, code):
+    client, repository, _, attestation, resolved = api
+    response = client.post(
+        BASE + "/simulate", headers=HEADERS, json=command(attestation) | {field: value}
+    )
+    assert response.status_code == (404 if field == "attestation_version" else 422), response.text
+    assert response.json()["detail"]["code"] == code
+    assert not resolved
+    assert (
+        len(
+            repository.list_publications(
+                tenant_id="synthetic-tenant", after_sequence=0, limit=10
+            ).items
+        )
+        == 1
+    )
+
+
+@pytest.mark.parametrize(
+    "lost,code,status",
+    [
+        ("monthly_reference", "COMPOSITE_ELIGIBILITY_SOURCE_REFERENCE_UNAVAILABLE", 503),
+        ("membership", "COMPOSITE_ELIGIBILITY_UNIVERSE_MEMBERSHIP_MISMATCH", 422),
+    ],
+)
+def test_source_refuses_missing_monthly_reference_or_membership(api, lost, code, status):
+    client, repository, _, attestation, resolved = api
+    body = command(attestation)
+    if lost == "membership":
+        repository._membership_revisions.clear()
+    else:
+        from src.core.composite_universe import DpmCompositeUniverseAttestation
+
+        wire = attestation.model_dump(mode="json")
+        wire["content_hash"] = ""
+        for product in wire["source_products"]:
+            if product["authority_scope"] == "POLICY_INPUT":
+                product["product_name"] = "OtherPolicyObservations"
+        replacement = DpmCompositeUniverseAttestation.model_validate(wire)
+        key = (
+            replacement.tenant_id,
+            replacement.composite_id,
+            replacement.definition_version,
+            replacement.membership_revision,
+            replacement.attestation_version,
+        )
+        repository._universe_attestations[key] = replacement
+        body["universe_content_hash"] = replacement.content_hash
+    response = client.post(BASE + "/simulate", headers=HEADERS, json=body)
+    assert response.status_code == status, response.text
+    assert response.json()["detail"]["code"] == code
+    assert not resolved
+
+
+def test_missing_policy_proposal_cannot_be_approved(api):
+    response = api[0].put(
+        BASE + "/policies/2026-11/proposals/missing/approval",
+        headers=HEADERS | {"X-Actor-Id": "synthetic-checker"},
+        json={"expected_proposal_content_hash": "sha256:" + "0" * 64},
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "COMPOSITE_ELIGIBILITY_PROPOSAL_NOT_FOUND"
+
+
+@pytest.mark.parametrize(
+    "field,value,code",
+    [
+        ("reporting_currency", "EUR", "COMPOSITE_ELIGIBILITY_SOURCE_CURRENCY_MISMATCH"),
+        (
+            "expected_portfolio_ids",
+            ("other-member",),
+            "COMPOSITE_ELIGIBILITY_SOURCE_UNIVERSE_MISMATCH",
+        ),
+    ],
+)
+def test_source_port_refuses_cross_currency_or_population_request(api, field, value, code):
+    from dataclasses import replace
+    from src.core.composite_eligibility.source import admitted_source_snapshot
+
+    client, _, snapshot, attestation, resolved = api
+    assert (
+        client.post(BASE + "/simulate", headers=HEADERS, json=command(attestation)).status_code
+        == 200
+    )
+    request = replace(resolved[0], **{field: value})
+    with pytest.raises(ValueError, match=code):
+        admitted_source_snapshot(
+            request, MonthlyEligibilitySourceResolution(snapshot, owner_service="synthetic-source")
+        )
 
 
 @pytest.mark.parametrize(

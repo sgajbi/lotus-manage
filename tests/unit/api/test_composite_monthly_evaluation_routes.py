@@ -12,6 +12,8 @@ from src.core.composite_eligibility.source import MonthlyEligibilitySourceResolu
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.core.composite_eligibility.evaluation_control import MonthlyEvaluationProposal
+from src.core.composite_eligibility.evaluation_control import MonthlyEvaluationApproval
+from src.core.composite_repository import DpmCompositeConflictError
 from pydantic import ValidationError
 from tests.composite_monthly_eligibility_helpers import (
     BASE,
@@ -23,6 +25,198 @@ from tests.composite_monthly_eligibility_helpers import (
 
 CHECKER = HEADERS | {"X-Actor-Id": "synthetic-checker"}
 URL = BASE + "/evaluations/synthetic-evaluation-r1"
+
+
+@pytest.mark.parametrize("stage", ["proposal", "approval"])
+@pytest.mark.parametrize("winner", ["same", "different", "absent"])
+def test_evaluation_conflict_reconciles_only_exact_retained_winner(
+    evaluation_api, monkeypatch, stage, winner
+):
+    api = evaluation_api
+    repository = api[1]
+    proposal = propose(api) if stage == "approval" else None
+    method = "save_monthly_evaluation_" + stage
+    original = getattr(repository, method)
+
+    def competing_save(**kwargs):
+        material = kwargs[stage]
+        if winner == "different":
+            if stage == "approval":
+                # A different valid checker publishes its own bound claims and membership.
+                from src.core.composite_eligibility.publication import build_monthly_publication
+
+                parent = repository.get_membership_revision(
+                    tenant_id="synthetic-tenant",
+                    composite_id="synthetic-composite",
+                    definition_version="synthetic-definition",
+                    membership_revision="synthetic-membership",
+                )
+                material = build_monthly_publication(
+                    material.proposal,
+                    parent,
+                    approved_by="other-agent",
+                    approved_at=material.approved_at,
+                )[0]
+            else:
+                wire = material.model_dump(mode="json")
+                wire.update(content_hash="", proposed_by="other-agent")
+                material = MonthlyEvaluationProposal.model_validate(wire)
+        if winner != "absent":
+            original(**{stage: material})
+        raise DpmCompositeConflictError(
+            "COMPOSITE_ELIGIBILITY_EVALUATION_PROPOSAL_IMMUTABLE_CONFLICT"
+        )
+
+    monkeypatch.setattr(repository, method, competing_save)
+    response = (
+        approve(api, proposal)
+        if stage == "approval"
+        else api[0].put(URL, headers=HEADERS, json=api[5])
+    )
+    assert response.status_code == (200 if winner == "same" else 409), response.text
+    assert len(publications(api)) == (2 if stage == "approval" and winner != "absent" else 1)
+    assert len(api[6]) == 1
+    if winner == "same":
+        retained = api[0].get(URL + ("/approval" if stage == "approval" else ""), headers=HEADERS)
+        assert response.json() == retained.json()
+
+
+@pytest.mark.parametrize(
+    "field,value,code",
+    [
+        ("month", "2026-08", "COMPOSITE_ELIGIBILITY_APPROVED_POLICY_NOT_FOUND"),
+        (
+            "policy_approval_content_hash",
+            "sha256:" + "0" * 64,
+            "COMPOSITE_ELIGIBILITY_APPROVED_POLICY_MISMATCH",
+        ),
+        ("parent_membership_revision", "missing", "COMPOSITE_ELIGIBILITY_STALE_MEMBERSHIP"),
+        (
+            "parent_membership_content_hash",
+            "sha256:" + "0" * 64,
+            "COMPOSITE_ELIGIBILITY_STALE_MEMBERSHIP",
+        ),
+    ],
+)
+def test_evaluation_missing_or_mismatched_parent_policy_refuses_without_source(
+    evaluation_api, field, value, code
+):
+    api = evaluation_api
+    response = api[0].put(URL, headers=HEADERS, json=api[5] | {field: value})
+    expected_status = {
+        "month": 404,
+        "policy_approval_content_hash": 422,
+        "parent_membership_revision": 409,
+        "parent_membership_content_hash": 409,
+    }
+    assert response.status_code == expected_status[field], response.text
+    assert response.json()["detail"]["code"] == code
+    assert not api[6]
+    assert len(publications(api)) == 1
+
+
+@pytest.mark.parametrize(
+    "field,value,code",
+    [
+        (
+            "proposed_at",
+            "2026-10-02T01:00:00.000000Z",
+            "COMPOSITE_ELIGIBILITY_PROPOSAL_CLOCK_MISMATCH",
+        ),
+        (
+            "target_membership_revision",
+            "synthetic-membership",
+            "COMPOSITE_ELIGIBILITY_TARGET_REVISION_REUSED",
+        ),
+        (
+            "content_hash",
+            "sha256:" + "0" * 64,
+            "COMPOSITE_ELIGIBILITY_EVALUATION_PROPOSAL_CONTENT_MISMATCH",
+        ),
+        (
+            "parent_membership_content_hash",
+            "sha256:" + "0" * 64,
+            "COMPOSITE_ELIGIBILITY_EVALUATION_UNIVERSE_BINDING_MISMATCH",
+        ),
+    ],
+)
+def test_evaluation_proposal_exact_binding_refuses_tampering(evaluation_api, field, value, code):
+    wire = propose(evaluation_api)
+    wire["content_hash"] = ""
+    wire[field] = value
+    with pytest.raises(ValidationError, match=code):
+        MonthlyEvaluationProposal.model_validate(wire)
+    assert len(publications(evaluation_api)) == 1
+
+
+@pytest.mark.parametrize(
+    "field,value,code",
+    [
+        ("approved_by", "synthetic-maker", "COMPOSITE_ELIGIBILITY_SELF_APPROVAL_FORBIDDEN"),
+        (
+            "approved_at",
+            "2026-09-30T01:00:00.000000Z",
+            "COMPOSITE_ELIGIBILITY_APPROVAL_BEFORE_PROPOSAL",
+        ),
+        (
+            "claims_digest",
+            "sha256:" + "0" * 64,
+            "COMPOSITE_ELIGIBILITY_EVALUATION_APPROVAL_CLAIMS_MISMATCH",
+        ),
+        (
+            "content_hash",
+            "sha256:" + "0" * 64,
+            "COMPOSITE_ELIGIBILITY_EVALUATION_APPROVAL_CONTENT_MISMATCH",
+        ),
+    ],
+)
+def test_evaluation_approval_checker_clock_claims_and_digest_are_bound(
+    evaluation_api, field, value, code
+):
+    proposal = propose(evaluation_api)
+    response = approve(evaluation_api, proposal)
+    assert response.status_code == 200
+    wire = response.json()
+    wire["content_hash"] = ""
+    wire[field] = value
+    with pytest.raises(ValidationError, match=code):
+        MonthlyEvaluationApproval.model_validate(wire)
+    assert approve(evaluation_api, proposal).json() == response.json()
+    assert len(publications(evaluation_api)) == 2
+
+
+@pytest.mark.parametrize("lost", ["membership", "universe", "publication"])
+def test_approval_read_refuses_missing_published_custody(evaluation_api, lost):
+    api = evaluation_api
+    proposal = propose(api)
+    assert approve(api, proposal).status_code == 200
+    repository = api[1]
+    if lost == "membership":
+        repository._membership_revisions.pop(
+            (
+                "synthetic-tenant",
+                "synthetic-composite",
+                "synthetic-definition",
+                "synthetic-evaluated-membership",
+            )
+        )
+    elif lost == "universe":
+        repository._universe_attestations.pop(
+            (
+                "synthetic-tenant",
+                "synthetic-composite",
+                "synthetic-definition",
+                "synthetic-evaluated-membership",
+                "synthetic-evaluation-r1",
+            )
+        )
+    else:
+        repository._publications.pop(max(repository._publications))
+    response = api[0].get(URL + "/approval", headers=HEADERS)
+    assert response.status_code == 422, response.text
+    assert (
+        response.json()["detail"]["code"] == "COMPOSITE_ELIGIBILITY_APPROVED_PUBLICATION_MISMATCH"
+    )
 
 
 @pytest.fixture
