@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 import src.api.main as main_module
 import src.api.observability as observability_module
+from src.observability import metrics as metrics_module
 from src.api.main import app
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -163,7 +164,7 @@ def test_action_register_supportability_metric_labels_are_bounded(monkeypatch):
         def inc(self):
             return None
 
-    monkeypatch.setattr(observability_module, "MANAGE_SUPPORTABILITY_TOTAL", _Counter())
+    monkeypatch.setattr(metrics_module, "MANAGE_SUPPORTABILITY_TOTAL", _Counter())
 
     observability_module.record_action_register_supportability(
         surface="rebalance/supportability/summary/PB_SG_GLOBAL_BAL_001",
@@ -193,7 +194,7 @@ def test_core_resolver_metric_labels_are_bounded(monkeypatch):
         def inc(self):
             return None
 
-    monkeypatch.setattr(observability_module, "DPM_CORE_RESOLVER_TOTAL", _Counter())
+    monkeypatch.setattr(metrics_module, "DPM_CORE_RESOLVER_TOTAL", _Counter())
 
     observability_module.record_core_resolver_call(
         operation="dpm_execution_context/PB_SG_GLOBAL_BAL_001",
@@ -223,7 +224,7 @@ def test_execution_metric_labels_are_bounded(monkeypatch):
         def inc(self):
             return None
 
-    monkeypatch.setattr(observability_module, "DPM_EXECUTION_TOTAL", _Counter())
+    monkeypatch.setattr(metrics_module, "DPM_EXECUTION_TOTAL", _Counter())
 
     observability_module.record_execution_call(
         operation="simulate/PB_SG_GLOBAL_BAL_001",
@@ -255,54 +256,54 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         def inc(self):
             return None
 
-    monkeypatch.setattr(observability_module, "DPM_ASYNC_OPERATION_TOTAL", _Counter("async"))
+    monkeypatch.setattr(metrics_module, "DPM_ASYNC_OPERATION_TOTAL", _Counter("async"))
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "DPM_POLICY_PACK_RESOLUTION_TOTAL",
         _Counter("policy"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "DPM_WORKFLOW_DECISION_TOTAL",
         _Counter("workflow"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "POSTGRES_ACCESS_TOTAL",
         _Counter("postgres"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "PM_QUALITY_LIFECYCLE_TOTAL",
         _Counter("pm_quality"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "CAMPAIGN_WORKFLOW_TOTAL",
         _Counter("campaign_workflow"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "CAMPAIGN_READ_MODEL_SCAN_TOTAL",
         _Counter("campaign_read_model_scan"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "WAVE_SUPPORTABILITY_TOTAL",
         _Counter("wave"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "OUTCOME_REVIEW_SUPPORTABILITY_TOTAL",
         _Counter("outcome"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "SOURCE_HTTP_REQUEST_TOTAL",
         _Counter("source_http_request"),
     )
     monkeypatch.setattr(
-        observability_module,
+        metrics_module,
         "SOURCE_HTTP_RETRY_TOTAL",
         _Counter("source_http_retry"),
     )
@@ -440,7 +441,7 @@ def test_pm_quality_http_metric_uses_bounded_route_family(monkeypatch):
         def inc(self):
             return None
 
-    monkeypatch.setattr(observability_module, "PM_QUALITY_LIFECYCLE_TOTAL", _Counter())
+    monkeypatch.setattr(metrics_module, "PM_QUALITY_LIFECYCLE_TOTAL", _Counter())
 
     observability_module.record_pm_quality_http_result(
         path="/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}",

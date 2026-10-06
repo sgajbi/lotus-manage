@@ -4,7 +4,7 @@ from decimal import Decimal
 import httpx
 import pytest
 
-import src.api.observability as observability_module
+import src.observability.metrics as observability_module
 from src.infrastructure.core_sourcing.client import (
     DpmCoreResolverClient,
     DpmCoreResolverConfig,

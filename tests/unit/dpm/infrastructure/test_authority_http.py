@@ -3,7 +3,7 @@ import json
 import httpx
 import pytest
 
-import src.api.observability as observability_module
+import src.observability.metrics as observability_module
 from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
 
 

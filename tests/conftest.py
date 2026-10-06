@@ -96,7 +96,7 @@ class _TestPolicyPackRepository:
 
 
 @pytest.fixture(autouse=True)
-def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
+def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
     monkeypatch.setenv("DPM_SUPPORTABILITY_STORE_BACKEND", "POSTGRES")
     monkeypatch.setenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES")
     monkeypatch.setenv(
@@ -121,7 +121,8 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
     from src.api.main import app
 
     original = dict(app.dependency_overrides)
-    app.dependency_overrides[get_rebalance_runtime] = build_test_rebalance_runtime
+    if _has_marker(request.node, "unit"):
+        app.dependency_overrides[get_rebalance_runtime] = build_test_rebalance_runtime
     yield
     app.dependency_overrides.clear()
     app.dependency_overrides.update(original)
