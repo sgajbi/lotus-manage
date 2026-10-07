@@ -14,6 +14,7 @@ from src.core.waves import DpmRebalanceWaveItem
 from src.core.waves.source_analytics import build_source_analytics_from_alternative_set
 from src.core.construction.models import ConstructionAlternativeSet, ConstructionAuthorityContext
 from src.core.dpm_source_context import DpmResolvedSourceContext
+from src.core.risk_authority.context import RiskAuthorityContext
 
 _PORTFOLIO_IDENTITY_CONFLICT = "DPM_WAVE_SIMULATION_INPUT_IDENTITY_CONFLICT"
 
@@ -58,6 +59,7 @@ def simulate_item(
     run_service: DpmRunSupportService,
     risk_authority_client: RiskAuthorityClient | None,
     construction_idempotency_key: str | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> DpmRebalanceWaveItem:
     if item.state != "SOURCE_READY":
         return item
@@ -85,6 +87,7 @@ def simulate_item(
             risk_authority_client=risk_authority_client,
             run_service=run_service,
             admitted_tenant_id=tenant_id,
+            risk_authority_context=risk_authority_context,
         )
     except _CONSTRUCTION_SIMULATION_BLOCKING_ERRORS as exc:
         return _construction_generation_failed_item(item=item, exc=exc)

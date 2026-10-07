@@ -130,8 +130,11 @@ Protected Risk calls use immutable per-request context admitted by existing ente
 the pooled transport remains identity-neutral. The explicit local/dev header-trust pilot requires
 deployment-owned operation/capability mapping and consumer identity. Durable simulation admissions
 retain credential-free context and its hash; workers use that admission, not replacement worker
-claims. Missing context or changed deployment policy refuses protected calls. Verified principal,
-portfolio grant, expiry/revocation and production acceptance remain unsupported. See
+claims. Missing context or changed deployment policy refuses protected calls.
+Risk-method construction hashes bind admitted authority but exclude diagnostic correlation;
+changed authority conflicts before calculation. Durable child construction uses original custody.
+Completed synchronous-wave replay reads historical results, not a fresh authorization decision.
+Verified principal, portfolio grant, expiry/revocation and production acceptance remain unsupported. See
 [Risk consumer pilot](docs/operations/risk-authority-consumer-proof.md).
 The concentration adapter requires `ConcentrationRiskReport:v1` and `lotus-risk` source identity;
 do not substitute a nonexistent methodology field. Actual HTTP/restart proof is opt-in and source-

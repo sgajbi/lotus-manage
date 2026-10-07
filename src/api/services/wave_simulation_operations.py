@@ -299,6 +299,7 @@ def execute_wave_simulation_work(
             run_service=run_service,
             risk_authority_client=risk_authority_client,
             methods=methods,
+            risk_authority_context=admitted_operation.risk_authority_context,
         ):
             completed_count += 1
         else:
@@ -519,6 +520,7 @@ def _execute_claim(
     run_service: DpmRunSupportService,
     risk_authority_client: RiskAuthorityClient | None,
     methods: list[ConstructionMethod] | None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> bool:
     completed_at = datetime.now(UTC)
     if claim.recovery_exhausted:
@@ -576,6 +578,7 @@ def _execute_claim(
             construction_idempotency_key=(
                 f"wave-operation:{claim.operation_id}:{claim.wave_item_id}:simulate"
             ),
+            risk_authority_context=risk_authority_context,
         )
     except DpmWaveFrozenInputIntegrityError as exc:
         repository.publish_simulation_item_failure(

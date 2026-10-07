@@ -9,6 +9,7 @@ from src.api.dependencies import (
     get_construction_repository,
     get_rebalance_runtime,
     get_risk_authority_client,
+    get_risk_authority_context,
     get_wave_repository,
 )
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
@@ -21,6 +22,7 @@ from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.core.waves import DpmWaveRepository
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 router = APIRouter()
@@ -58,6 +60,7 @@ def simulate_wave(
     x_correlation_id: WaveCorrelationIdHeader = None,
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
+    risk_authority_context: RiskAuthorityContext | None = Depends(get_risk_authority_context),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
@@ -71,4 +74,5 @@ def simulate_wave(
         wave_repository=wave_repository,
         tenant_id=x_tenant_id,
         risk_authority_client=risk_authority_client,
+        risk_authority_context=risk_authority_context,
     )

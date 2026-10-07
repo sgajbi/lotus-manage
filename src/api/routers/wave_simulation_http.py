@@ -20,6 +20,7 @@ from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 def build_wave_simulation_item_inputs(
@@ -76,6 +77,7 @@ def simulate_wave_response(
     tenant_id: str,
     risk_authority_client: RiskAuthorityClient | None,
     runtime: RebalanceRuntime | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> DpmWaveResponse:
     try:
         wave = wave_repository.get_wave(wave_id=wave_id, tenant_id=tenant_id)
@@ -100,6 +102,7 @@ def simulate_wave_response(
             wave_repository=wave_repository,
             tenant_id=tenant_id,
             risk_authority_client=risk_authority_client,
+            risk_authority_context=risk_authority_context,
         )
     except wave_service.DpmWaveLookupError as exc:
         raise wave_lookup_http_exception(exc) from exc
