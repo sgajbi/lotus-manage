@@ -840,6 +840,68 @@ def _run_service() -> DpmRunSupportService:
     return DpmRunSupportService(repository=InMemoryDpmRunRepository())
 
 
+@pytest.mark.parametrize("route", ["preview", "create", "simulate"])
+def test_risk_wave_command_rejects_different_admitted_actor(monkeypatch, route):
+    for name, value in {
+        "ENTERPRISE_ENFORCE_AUTHZ": "true",
+        "ENTERPRISE_POLICY_VERSION": "synthetic-owner-v1",
+        "PRINCIPAL_RESOLUTION_POSTURE": "header-trust",
+        "ENVIRONMENT": "local",
+        "APP_PERSISTENCE_PROFILE": "LOCAL",
+        "DPM_RISK_CONSUMER_SERVICE_IDENTITY": "manage-owner-test",
+        "DPM_RISK_REQUIRED_CAPABILITIES_JSON": json.dumps(
+            {
+                "concentration": "risk.concentration",
+                "regime_scenario": "risk.regime",
+                "risk_event_cohort": "risk.cohort",
+            }
+        ),
+        "ENTERPRISE_CAPABILITY_RULES_JSON": json.dumps({"POST /api/v1": "manage.write"}),
+    }.items():
+        monkeypatch.setenv(name, value)
+    repository = InMemoryDpmWaveRepository()
+    authority = _RiskEventAuthority()
+    headers = {
+        "X-Actor-Id": "admitted-A",
+        "X-Role": "PM",
+        "X-Service-Identity": "caller",
+        "X-Capabilities": "manage.write,risk.cohort,risk.concentration",
+        "X-Correlation-Id": "owner-trace",
+        "Idempotency-Key": "owner-command",
+    }
+    path = "/api/v1/rebalance/waves"
+    body = _risk_event_request()
+    body["actor_id"] = "body-B"
+    if route == "preview":
+        path += "/preview"
+    elif route == "simulate":
+        path += "/absent-wave/simulate"
+        body = {"actor_id": "body-B", "methods": ["RISK_AWARE"], "item_inputs": []}
+    try:
+        with _client(
+            InMemoryDpmMandateRepository(),
+            repository,
+            construction_repository=InMemoryConstructionRepository(),
+            run_service=_run_service(),
+            risk_authority_client=authority,
+        ) as client:
+            response = client.post(path, headers=headers, json=body)
+            assert response.status_code == 422, response.text
+            assert response.json()["detail"]["code"] == "DPM_WAVE_RISK_AUTHORITY_CONTEXT_CONFLICT"
+            assert repository.list_waves(tenant_id="tenant-sg") == []
+            assert authority.calls == []
+            matching = client.post(path, headers=headers, json={**body, "actor_id": "admitted-A"})
+            assert matching.status_code == {"preview": 200, "create": 201, "simulate": 404}[route]
+            if route != "simulate":
+                assert matching.json()["wave"]["created_by"] == "admitted-A"
+                assert all(
+                    event["actor_id"] == "admitted-A" for event in matching.json()["wave"]["events"]
+                )
+                assert len(authority.calls) == 1
+    finally:
+        app.dependency_overrides.clear()
+
+
 def _wave_item(
     *,
     wave_item_id: str,

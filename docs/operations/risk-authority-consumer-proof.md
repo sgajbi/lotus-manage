@@ -52,6 +52,8 @@ readable. Non-Risk construction hashes are unchanged. No credentials enter the f
 Synchronous waves pass admission context to child construction; completed-wave replay reads the
 original transition, not a new calculation or renewed grant. Use a new command for changed inputs.
 Risk-event creation evaluates the protected producer before persistence or replay.
+Risk-event preview/create and synchronous simulation require body actor and tenant to match
+admitted context before source resolution or publication; mismatches return typed `422`.
 
 ## Durable operations
 

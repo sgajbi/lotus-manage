@@ -15,6 +15,7 @@ from src.core.integration_ports import (
     AdviseAuthorityClient,
     RiskAuthorityClient,
 )
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 def preview_wave_response(
@@ -27,8 +28,13 @@ def preview_wave_response(
     risk_authority_client: RiskAuthorityClient | None,
     campaign_application_service: DpmWaveCampaignApplicationService,
     core_resolver_factory: Callable[[], object],
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> DpmWaveResponse:
     try:
+        if request.trigger_type == "RISK_EVENT":
+            wave_service.require_risk_command_owner(
+                context=risk_authority_context, actor_id=request.actor_id, tenant_id=tenant_id
+            )
         portfolios = resolve_portfolio_inputs_for_request(
             request=request,
             tenant_id=tenant_id,
@@ -66,8 +72,13 @@ def create_wave_response(
     risk_authority_client: RiskAuthorityClient | None,
     campaign_application_service: DpmWaveCampaignApplicationService,
     core_resolver_factory: Callable[[], object],
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> DpmWaveResponse:
     try:
+        if request.trigger_type == "RISK_EVENT":
+            wave_service.require_risk_command_owner(
+                context=risk_authority_context, actor_id=request.actor_id, tenant_id=tenant_id
+            )
         portfolios = resolve_portfolio_inputs_for_request(
             request=request,
             tenant_id=tenant_id,

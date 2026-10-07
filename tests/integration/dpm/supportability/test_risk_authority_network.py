@@ -570,6 +570,54 @@ def test_registered_construction_risk_authority_replay_boundary(method, initial_
         _construction_replay_boundary(method, initial_grants, unavailable.getsockname()[1])
 
 
+def test_registered_risk_wave_actor_ownership_before_source_or_publication():
+    with socket.socket() as unavailable:
+        unavailable.bind(("127.0.0.1", 0))
+        config = RiskRuntimeConfiguration(
+            base_url=f"http://127.0.0.1:{unavailable.getsockname()[1]}",
+            capabilities_json=json.dumps(CAPABILITIES),
+            consumer_identity="manage-actor-consumer",
+            policy_version="synthetic-actor-policy-v1",
+        )
+        tenant = "actor-" + uuid.uuid4().hex
+        headers = _headers(tenant)
+        with disposable_database() as dsn, native_api(dsn, risk_config=config) as (client, _):
+            event = {**_event_request("actor-pf"), "actor_id": "body-impostor"}
+            for path in (WAVES + "/preview", WAVES):
+                refused = _call(client, "POST", path, headers, event, expected=422)
+                assert refused["detail"]["code"] == "DPM_WAVE_RISK_AUTHORITY_CONTEXT_CONFLICT"
+            with psycopg.connect(dsn) as observer:
+                observer.execute("SET TRANSACTION READ ONLY")
+                assert observer.execute("SELECT count(*) FROM dpm_rebalance_waves").fetchone() == (
+                    0,
+                )
+            wave = _synthetic_checked_wave(client, tenant, "actor-pf", headers)
+            path = f"{WAVES}/{wave['wave_id']}/simulate"
+            body = {
+                "actor_id": "body-impostor",
+                "methods": ["RISK_AWARE"],
+                "item_inputs": [
+                    {
+                        "wave_item_id": wave["items"][0]["wave_item_id"],
+                        "input_mode": "stateless",
+                        "stateless_input": _financial_request("actor-pf"),
+                    }
+                ],
+            }
+            refused = _call(client, "POST", path, headers, body, expected=422)
+            assert refused["detail"]["code"] == "DPM_WAVE_RISK_AUTHORITY_CONTEXT_CONFLICT"
+            assert _call(client, "GET", f"{WAVES}/{wave['wave_id']}", headers)["wave"] == wave
+            accepted = _call(
+                client, "POST", path, headers, {**body, "actor_id": headers["X-Actor-Id"]}
+            )
+            assert accepted["wave"]["events"][-1]["actor_id"] == headers["X-Actor-Id"]
+            assert accepted["wave"]["state"] in {
+                "SIMULATED",
+                "PARTIALLY_SIMULATED",
+                "SIMULATION_FAILED",
+            }
+
+
 def _construction_replay_boundary(method, initial_grants, unavailable_port):
     """Real Manage HTTP/PG replay proof; unavailable Risk is an expected qualified fault."""
     config = RiskRuntimeConfiguration(

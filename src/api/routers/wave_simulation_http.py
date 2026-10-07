@@ -80,6 +80,9 @@ def simulate_wave_response(
     risk_authority_context: RiskAuthorityContext | None = None,
 ) -> DpmWaveResponse:
     try:
+        wave_service.require_risk_command_owner(
+            context=risk_authority_context, actor_id=request.actor_id, tenant_id=tenant_id
+        )
         wave = wave_repository.get_wave(wave_id=wave_id, tenant_id=tenant_id)
         wave, replayed = wave_service.simulate_wave(
             wave_id=wave_id,
