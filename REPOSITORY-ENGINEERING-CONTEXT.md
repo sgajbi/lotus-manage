@@ -134,6 +134,8 @@ claims. Missing context or changed deployment policy refuses protected calls.
 Risk-method construction hashes bind admitted authority but exclude diagnostic correlation;
 changed authority conflicts before calculation. Durable child construction uses original custody.
 Completed synchronous-wave replay reads historical results, not a fresh authorization decision.
+Risk-event preview/create and synchronous simulation reject mismatched command actor/tenant
+before source resolution or publication; body claims cannot replace admitted ownership.
 Verified principal, portfolio grant, expiry/revocation and production acceptance remain unsupported. See
 [Risk consumer pilot](docs/operations/risk-authority-consumer-proof.md).
 The concentration adapter requires `ConcentrationRiskReport:v1` and `lotus-risk` source identity;

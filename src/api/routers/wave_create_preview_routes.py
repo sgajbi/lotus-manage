@@ -8,6 +8,7 @@ from src.api.dependencies import (
     get_advise_authority_client,
     get_mandate_repository,
     get_risk_authority_client,
+    get_risk_authority_context,
     get_wave_campaign_application_service,
     get_wave_repository,
 )
@@ -29,6 +30,7 @@ from src.api.services.wave_campaign_application import DpmWaveCampaignApplicatio
 from src.api.services.wave_creation import create_wave_correlation_id
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import DpmWaveRepository
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 def register_wave_create_preview_routes(
@@ -94,6 +96,7 @@ def register_wave_create_preview_routes(
             get_advise_authority_client
         ),
         risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
+        risk_authority_context: RiskAuthorityContext | None = Depends(get_risk_authority_context),
         campaign_application_service: DpmWaveCampaignApplicationService = Depends(
             get_wave_campaign_application_service
         ),
@@ -106,6 +109,7 @@ def register_wave_create_preview_routes(
             mandate_repository=mandate_repository,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
+            risk_authority_context=risk_authority_context,
             campaign_application_service=campaign_application_service,
             core_resolver_factory=core_resolver_factory_provider(),
         )
@@ -188,6 +192,7 @@ def register_wave_create_preview_routes(
             get_advise_authority_client
         ),
         risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
+        risk_authority_context: RiskAuthorityContext | None = Depends(get_risk_authority_context),
         campaign_application_service: DpmWaveCampaignApplicationService = Depends(
             get_wave_campaign_application_service
         ),
@@ -205,6 +210,7 @@ def register_wave_create_preview_routes(
             wave_repository=wave_repository,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
+            risk_authority_context=risk_authority_context,
             campaign_application_service=campaign_application_service,
             core_resolver_factory=core_resolver_factory_provider(),
         )

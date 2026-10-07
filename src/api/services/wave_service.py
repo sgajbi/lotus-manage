@@ -29,6 +29,16 @@ from src.core.waves import (
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 
 
+def require_risk_command_owner(
+    *, context: RiskAuthorityContext | None, actor_id: str, tenant_id: str | None
+) -> None:
+    if context is not None and (context.actor_id != actor_id or context.tenant_id != tenant_id):
+        raise DpmWaveValidationError(
+            "DPM_WAVE_RISK_AUTHORITY_CONTEXT_CONFLICT",
+            "Admitted actor and tenant must match Risk command ownership.",
+        )
+
+
 def preview_wave(
     *,
     trigger_type: str,

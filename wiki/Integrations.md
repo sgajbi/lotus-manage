@@ -76,6 +76,8 @@ evidence limits: [Risk consumer pilot](https://github.com/sgajbi/lotus-manage/bl
 Risk-method construction replay binds actor, tenant, role, policy, consumer and mapped grants;
 changed authority returns `409` before calculation. Diagnostic correlation remains replay-stable.
 Durable workers use original custody. Completed synchronous waves replay historical results.
+Risk-event preview/create and synchronous simulation reject body ownership that differs from
+admitted actor/tenant before source resolution or publication.
 
 1. `lotus-manage` may execute deterministic rebalance decisions from governed inputs
 2. inline bundles do not transfer source-data authority to `lotus-manage`
