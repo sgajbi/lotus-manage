@@ -381,6 +381,13 @@ Use these commands as the primary local contract:
 
 ## Repo-Scoped Testing Practice
 
+The opt-in [Core cohort consumer proof](docs/operations/core-cohort-consumer-proof.md) runs actual
+Core cohort selection through registered Manage wave preview/create and PostgreSQL persistence.
+Use the pinned archive, owned runtime and mandatory prerequisite flags documented there; never
+borrow a dirty Core checkout or shared database. Match every source selector before comparing
+snapshot identities. This verifies bounded cohort consumption and retained lineage, not composite
+universe authority, enterprise IAM, trade execution or capacity.
+
 The construction network recovery test uses actual Uvicorn/HTTP and PostgreSQL, with no dependency
 overrides. The wave network recovery test uses the same owned runtime helper and aborts only an
 observed, lock-blocked publication session after killing its API process. PostgreSQL queries can
