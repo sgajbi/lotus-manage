@@ -1,4 +1,5 @@
 from src.api.request_models import RebalanceRequest
+from src.core.risk_authority.context import RiskAuthorityContext
 from src.api.services import wave_create_command
 from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
@@ -113,6 +114,7 @@ def simulate_wave(
     wave_repository: DpmWaveRepository,
     tenant_id: str,
     risk_authority_client: RiskAuthorityClient | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_preparation_commands.simulate_persisted_wave(
         wave_id=wave_id,
@@ -125,6 +127,7 @@ def simulate_wave(
         wave_repository=wave_repository,
         tenant_id=tenant_id,
         risk_authority_client=risk_authority_client,
+        risk_authority_context=risk_authority_context,
     )
 
 

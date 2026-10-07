@@ -9,6 +9,7 @@ from src.core.construction.repository import (
 )
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.dpm_source_context import DpmResolvedSourceContext
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 def construction_request_hash(
@@ -17,6 +18,7 @@ def construction_request_hash(
     methods: Sequence[ConstructionMethod],
     source_context: DpmResolvedSourceContext | None,
     admitted_tenant_id: str | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> str:
     return hash_canonical_payload(
         construction_request_hash_payload(
@@ -24,6 +26,7 @@ def construction_request_hash(
             methods=methods,
             source_context=source_context,
             admitted_tenant_id=admitted_tenant_id,
+            risk_authority_context=risk_authority_context,
         )
     )
 
@@ -34,6 +37,7 @@ def construction_request_hash_payload(
     methods: Sequence[ConstructionMethod],
     source_context: DpmResolvedSourceContext | None,
     admitted_tenant_id: str | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "request": request.model_dump(mode="json"),
@@ -44,6 +48,17 @@ def construction_request_hash_payload(
     }
     if admitted_tenant_id is not None:
         payload["admitted_tenant_id"] = admitted_tenant_id
+    if any(
+        method in {ConstructionMethod.RISK_AWARE, ConstructionMethod.REGIME_STRESS_AWARE}
+        for method in methods
+    ):
+        # Explicit null distinguishes unknown authority from historical unbound hashes.
+        # Neither a new trace nor an unchanged non-Risk command changes business identity.
+        payload["risk_authority_fingerprint"] = (
+            risk_authority_context.authority_fingerprint()
+            if risk_authority_context is not None
+            else None
+        )
     return payload
 
 

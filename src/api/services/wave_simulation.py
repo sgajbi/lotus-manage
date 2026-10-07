@@ -11,6 +11,7 @@ from src.core.construction.repository import require_construction_tenant_id
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, apply_wave_transition
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 def build_simulated_wave(
@@ -23,6 +24,7 @@ def build_simulated_wave(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     risk_authority_client: RiskAuthorityClient | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> DpmRebalanceWave:
     simulating = apply_wave_transition(
         wave=wave,
@@ -48,6 +50,7 @@ def build_simulated_wave(
             construction_repository=construction_repository,
             run_service=run_service,
             risk_authority_client=risk_authority_client,
+            risk_authority_context=risk_authority_context,
         )
         for item in simulating.items
     ]

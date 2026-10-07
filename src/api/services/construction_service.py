@@ -39,6 +39,7 @@ from src.core.dpm_source_context import (
 )
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
+from src.core.risk_authority.context import RiskAuthorityContext
 
 __all__ = [
     "generate_construction_alternative_set",
@@ -60,14 +61,18 @@ def generate_construction_alternative_set(
     risk_authority_client: RiskAuthorityClient | None = None,
     run_service: DpmRunSupportService | None = None,
     admitted_tenant_id: str | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> ConstructionAlternativeSet:
     tenant_id = require_construction_tenant_id(admitted_tenant_id)
+    if risk_authority_context is not None and risk_authority_context.tenant_id != tenant_id:
+        raise ConstructionIdempotencyConflictError("CONSTRUCTION_RISK_AUTHORITY_SCOPE_CONFLICT")
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
     request_hash = construction_request_hash(
         request=request,
         methods=method_set,
         source_context=source_context,
         admitted_tenant_id=tenant_id,
+        risk_authority_context=risk_authority_context,
     )
     with repository.idempotency_guard(tenant_id=tenant_id, idempotency_key=idempotency_key):
         existing = resolve_existing_construction_alternative_set(

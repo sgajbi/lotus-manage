@@ -53,6 +53,14 @@ class RiskAuthorityContext(BaseModel):
     def fingerprint(self) -> str:
         return hash_canonical_payload(self.model_dump(mode="json"))
 
+    def authority_fingerprint(self) -> str:
+        """Bind calculation authority, excluding diagnostic request correlation."""
+        payload = self.model_dump(mode="json", exclude={"correlation_id"})
+        payload["grants"] = sorted(
+            payload["grants"], key=lambda grant: (grant["operation"], grant["capability"])
+        )
+        return hash_canonical_payload(payload)
+
 
 class RiskAuthorityPolicy(BaseModel):
     """Deployment-owned operation mapping; no default capabilities or identity."""

@@ -267,6 +267,30 @@ def test_async_risk_context_is_admitted_immutable_and_not_replaced_by_worker(mon
         outgoing = adapter._authority_headers("concentration", "corr-worker-attempt")
         assert outgoing["X-Actor-Id"] == "pm_001"
         assert outgoing["X-Capabilities"] == "risk.concentration"
+        from src.api.services import construction_service
+
+        seen_contexts = []
+        generate = construction_service.generate_construction_alternative_set
+
+        def capture_generation(**arguments):
+            seen_contexts.append(arguments["risk_authority_context"])
+            return generate(**arguments)
+
+        monkeypatch.setattr(
+            construction_service, "generate_construction_alternative_set", capture_generation
+        )
+        worked = client.post(
+            f"{BASE_PATH}/simulation-operations/{operation_id}/work",
+            headers={
+                **headers,
+                "X-Actor-Id": "worker-B",
+                "X-Capabilities": "manage.write",
+                "X-Correlation-Id": "worker-trace",
+            },
+            json={"worker_id": "worker-B", "max_items": 1},
+        )
+        assert worked.status_code == 200 and worked.json()["completed_count"] == 1, worked.text
+        assert seen_contexts == [stored.risk_authority_context]
         worker.state.risk_authority_context = stored.risk_authority_context.model_copy(
             update={"tenant_id": "foreign"}
         )

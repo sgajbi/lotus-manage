@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import socket
 import subprocess
 import tarfile
 import time
@@ -559,3 +560,76 @@ def test_registered_risk_unconfigured_and_verified_postures_refuse(actual_risk, 
         json.loads(line).get("correlation_id") == headers["X-Correlation-Id"]
         for line in audit.read_text(encoding="utf-8").splitlines()
     )
+
+
+@pytest.mark.parametrize("method", ["RISK_AWARE", "REGIME_STRESS_AWARE"])
+@pytest.mark.parametrize("initial_grants", [False, True])
+def test_registered_construction_risk_authority_replay_boundary(method, initial_grants):
+    with socket.socket() as unavailable:
+        unavailable.bind(("127.0.0.1", 0))
+        _construction_replay_boundary(method, initial_grants, unavailable.getsockname()[1])
+
+
+def _construction_replay_boundary(method, initial_grants, unavailable_port):
+    """Real Manage HTTP/PG replay proof; unavailable Risk is an expected qualified fault."""
+    config = RiskRuntimeConfiguration(
+        base_url=f"http://127.0.0.1:{unavailable_port}",
+        capabilities_json=json.dumps(CAPABILITIES),
+        consumer_identity="manage-replay-consumer",
+        policy_version="synthetic-replay-policy-v1",
+    )
+    tenant, portfolio = "replay-" + uuid.uuid4().hex, "replay-pf-" + uuid.uuid4().hex
+    headers = _headers(tenant, grants=initial_grants)
+    body = _construction_request(portfolio)
+    body["methods"] = [method]
+    with disposable_database() as dsn:
+        with native_api(dsn, risk_config=config) as (client, _):
+            first = _call(client, "POST", GENERATE, headers, body)
+            assert first["alternatives"][0]["method_status"] != "READY"
+            assert (
+                _call(
+                    client,
+                    "POST",
+                    GENERATE,
+                    {**headers, "X-Correlation-Id": uuid.uuid4().hex},
+                    body,
+                )
+                == first
+            )
+            changes = [
+                {
+                    **headers,
+                    "X-Capabilities": "manage.write"
+                    if initial_grants
+                    else "manage.write,risk.concentration,risk.regime,risk.cohort",
+                },
+                {**headers, "X-Actor-Id": "changed-actor"},
+                {**headers, "X-Role": "CIO"},
+            ]
+            for changed in changes:
+                refused = _call(client, "POST", GENERATE, changed, body, expected=409)
+                assert refused["detail"] == "CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT"
+            _call(
+                client,
+                "GET",
+                "/api/v1/construction/alternative-sets/" + first["alternative_set_id"],
+                {**headers, "X-Tenant-Id": "foreign"},
+                expected=404,
+            )
+        # API restart plus changed deployment policy cannot replay the original command.
+        with native_api(
+            dsn, risk_config=replace(config, policy_version="synthetic-replay-policy-v2")
+        ) as (client, _):
+            _call(client, "POST", GENERATE, headers, body, expected=409)
+        with native_api(
+            dsn, risk_config=replace(config, consumer_identity="changed-replay-consumer")
+        ) as (client, _):
+            _call(client, "POST", GENERATE, headers, body, expected=409)
+        with psycopg.connect(dsn, row_factory=dict_row) as observer:
+            observer.execute("SET TRANSACTION READ ONLY")
+            rows = observer.execute(
+                "SELECT payload_json FROM dpm_construction_alternative_sets WHERE tenant_id=%s",
+                (tenant,),
+            ).fetchall()
+            assert len(rows) == 1
+            assert rows[0]["payload_json"] == first

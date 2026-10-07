@@ -12,6 +12,7 @@ from src.api.dependencies import (
     get_construction_repository,
     get_db_session,
     get_risk_authority_client,
+    get_risk_authority_context,
 )
 from src.api.routers.construction import router
 from src.api.routers.construction_models import (
@@ -31,6 +32,7 @@ from src.core.construction.repository import (
     ConstructionRepository,
 )
 from src.core.rebalance_runs.service import DpmRunSupportService
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 @router.post(
@@ -89,6 +91,7 @@ def generate_alternative_set(
     ] = None,
     repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
+    risk_authority_context: RiskAuthorityContext | None = Depends(get_risk_authority_context),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> ConstructionAlternativeSet:
@@ -117,6 +120,7 @@ def generate_alternative_set(
             risk_authority_client=risk_authority_client,
             run_service=run_service,
             admitted_tenant_id=admitted_tenant_id,
+            risk_authority_context=risk_authority_context,
         )
     except ConstructionIdempotencyConflictError as exc:
         raise construction_http_exception(exc) from exc

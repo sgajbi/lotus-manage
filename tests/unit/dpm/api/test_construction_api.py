@@ -1,4 +1,5 @@
 from decimal import Decimal
+import json
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -2418,3 +2419,106 @@ def test_construction_set_read_and_selection_require_tenant_scope(
             is None
         )
     app.dependency_overrides = {}
+
+
+@pytest.mark.parametrize("input_mode", ["stateless", "stateful"])
+@pytest.mark.parametrize("method", ["RISK_AWARE", "REGIME_STRESS_AWARE"])
+@pytest.mark.parametrize(
+    "change", ["add_grant", "remove_grant", "actor", "role", "policy", "consumer"]
+)
+def test_construction_risk_authority_replay_binding(monkeypatch, input_mode, method, change):
+    for name, value in {
+        "ENTERPRISE_ENFORCE_AUTHZ": "true",
+        "ENTERPRISE_CAPABILITY_RULES_JSON": json.dumps({"POST /api/v1": "manage.write"}),
+        "PRINCIPAL_RESOLUTION_POSTURE": "header-trust",
+        "ENVIRONMENT": "local",
+        "APP_PERSISTENCE_PROFILE": "LOCAL",
+        "ENTERPRISE_POLICY_VERSION": "synthetic-policy-v1",
+        "DPM_RISK_CONSUMER_SERVICE_IDENTITY": "manage-local-consumer",
+        "DPM_RISK_REQUIRED_CAPABILITIES_JSON": json.dumps(
+            {
+                "concentration": "risk.concentration",
+                "regime_scenario": "risk.regime",
+                "risk_event_cohort": "risk.cohort",
+            }
+        ),
+        "DPM_STATEFUL_CORE_SOURCING_ENABLED": "true",
+        "DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED": "true",
+    }.items():
+        monkeypatch.setenv(name, value)
+    repository = InMemoryConstructionRepository()
+    run_repository = InMemoryDpmRunRepository()
+    app.dependency_overrides[get_dpm_run_support_service] = lambda: DpmRunSupportService(
+        repository=run_repository
+    )
+    # This tests admission/replay, not producer integration. Any changed-authority replay
+    # must refuse before baseline engine or protected downstream enrichment is invoked.
+    app.dependency_overrides[get_risk_authority_client] = lambda: None
+    monkeypatch.setattr(
+        core_resolver_service,
+        "build_core_resolver_client",
+        lambda: _FakeCoreResolver(_core_execution_context(supportability_state="READY")),
+    )
+    payload = (
+        _payload()
+        if input_mode == "stateless"
+        else {"input_mode": "stateful", "stateful_input": _stateful_input_payload()}
+    )
+    payload["methods"] = [method]
+    capability = "risk.concentration" if method == "RISK_AWARE" else "risk.regime"
+    headers = {
+        "X-Tenant-Id": "tenant_001",
+        "X-Actor-Id": "pm-A",
+        "X-Role": "PM",
+        "X-Service-Identity": "synthetic-caller",
+        "X-Correlation-Id": "first-admission",
+        "Idempotency-Key": f"risk-replay-{input_mode}-{method}-{change}",
+        "X-Capabilities": "manage.write" + ("" if change == "add_grant" else "," + capability),
+    }
+    path = "/api/v1/construction/alternative-sets/generate"
+    try:
+        with _client(repository) as client:
+            first = client.post(path, headers=headers, json=payload)
+            assert first.status_code == 200, first.text
+            replay = client.post(
+                path,
+                headers={**headers, "X-Correlation-Id": "new-diagnostic-correlation"},
+                json=payload,
+            )
+            assert replay.status_code == 200 and replay.json() == first.json()
+            changed = {**headers, "X-Correlation-Id": "changed-authority-diagnostic"}
+            if change == "add_grant":
+                changed["X-Capabilities"] += "," + capability
+            elif change == "remove_grant":
+                changed["X-Capabilities"] = "manage.write"
+            elif change == "actor":
+                changed["X-Actor-Id"] = "pm-B"
+            elif change == "role":
+                changed["X-Role"] = "CIO"
+            elif change == "policy":
+                monkeypatch.setenv("ENTERPRISE_POLICY_VERSION", "synthetic-policy-v2")
+            else:
+                monkeypatch.setenv("DPM_RISK_CONSUMER_SERVICE_IDENTITY", "changed-consumer")
+            monkeypatch.setattr(
+                construction_service,
+                "run_construction_method",
+                lambda **_: pytest.fail("changed authority reached engine"),
+            )
+            refused = client.post(path, headers=changed, json=payload)
+            assert refused.status_code == 409, refused.text
+            assert refused.json()["detail"] == "CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT"
+            assert (
+                repository.get_alternative_set_by_idempotency(
+                    idempotency_key=headers["Idempotency-Key"], tenant_id="tenant_001"
+                ).model_dump(mode="json")
+                == first.json()
+            )
+            assert (
+                client.get(
+                    "/api/v1/construction/alternative-sets/" + first.json()["alternative_set_id"],
+                    headers={**headers, "X-Tenant-Id": "foreign"},
+                ).status_code
+                == 404
+            )
+    finally:
+        app.dependency_overrides = {}

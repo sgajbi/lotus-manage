@@ -12,6 +12,7 @@ from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository
+from src.core.risk_authority.context import RiskAuthorityContext
 
 
 def source_check_persisted_wave(
@@ -63,6 +64,7 @@ def simulate_persisted_wave(
     wave_repository: DpmWaveRepository,
     tenant_id: str,
     risk_authority_client: RiskAuthorityClient | None = None,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     prepared = prepare_wave_transition(
         wave_id=wave_id,
@@ -85,6 +87,7 @@ def simulate_persisted_wave(
         construction_repository=construction_repository,
         run_service=run_service,
         risk_authority_client=risk_authority_client,
+        risk_authority_context=risk_authority_context,
     )
     persist_transitioned_wave(
         wave_repository=wave_repository,

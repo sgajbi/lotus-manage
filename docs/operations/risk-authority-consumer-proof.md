@@ -41,6 +41,18 @@ tenant, role, correlation and the subset of explicitly mapped caller capabilitie
 headers use that context and the deployment-owned service identity. Shared HTTP-pool headers
 remain identity-neutral. `Authorization` is never forwarded or persisted.
 
+## Construction replay
+
+`RISK_AWARE` and `REGIME_STRESS_AWARE` commands bind idempotency to admitted actor, tenant,
+role, consumer identity, policy and mapped grants. Diagnostic correlation and grant ordering do
+not change business identity. Changed authority under the same key returns `409` before engine
+or downstream execution. Historical unbound command hashes conflict; historical GET remains
+readable. Non-Risk construction hashes are unchanged. No credentials enter the fingerprint.
+
+Synchronous waves pass admission context to child construction; completed-wave replay reads the
+original transition, not a new calculation or renewed grant. Use a new command for changed inputs.
+Risk-event creation evaluates the protected producer before persistence or replay.
+
 ## Durable operations
 
 Migration `0043` adds nullable context and hash columns without rewriting historical admissions.
@@ -69,6 +81,8 @@ registered HTTP proof exercises all three operations, API-process termination, l
 PostgreSQL restart, retained custody and independent numeric controls against an immutable Risk
 export. A skipped optional proof is not successful integration evidence.
 Neither unit results nor this pilot certify ingress, IAM, live bank integration or capacity.
+The separate construction-replay HTTP/PostgreSQL matrix uses an owned unavailable endpoint;
+it verifies custody and conflicts across API restarts, not Risk calculation correctness.
 
 ### Reproduce the isolated proof
 
