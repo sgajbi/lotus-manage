@@ -23,6 +23,10 @@ scope unless a future source-owning service publishes and certifies that capabil
 
 ## Important operational checks
 
+- use the [Core cohort consumer proof](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations/core-cohort-consumer-proof.md)
+  for isolated actual-source wave acceptance; require both prerequisite flags, exact source pins,
+  identical selectors and verified owned-resource teardown. Missing producer digests remain an
+  explicit limitation, not affirmative hash proof.
 - verify readiness and migration posture before trusting supportability endpoints
 - confirm canonical host runtime uses port `8001` and ingress identity `manage.dev.lotus`
 - treat run-support or workflow lookup failures as persistence or migration issues first

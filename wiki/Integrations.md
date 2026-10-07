@@ -91,6 +91,12 @@ support, and [Security and Governance](Security-and-Governance) for authority bo
 
 ## Core Sourcing Target
 
+The [Core cohort consumer proof](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations/core-cohort-consumer-proof.md)
+exercises registered wave preview/create against actual Core SQL selection: active MODEL_A,
+suspended/empty, then reassigned MODEL_B. It checks tenant/date refusal, replay and frozen
+source/binding lineage across a Manage API restart. This bounded diagnostic proof does not certify
+composite-universe authority, complete ingestion, enterprise IAM, trade execution or capacity.
+
 ```mermaid
 sequenceDiagram
     participant Gateway as lotus-gateway
