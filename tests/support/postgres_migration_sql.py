@@ -13,8 +13,8 @@ loud about DML it genuinely does not handle.
 
 from __future__ import annotations
 
-# The migration runner splits each file on `;`, so a statement is matched on
-# its own rather than inheriting a keyword from earlier in its file - an index
+# The migration runner yields individual SQL statements, so each is matched
+# on its own rather than inheriting a keyword from earlier in its file - an index
 # statement needs its own entry even when its migration also creates a table.
 # `CREATE UNIQUE INDEX` does not contain the substring `CREATE INDEX`, and
 # `DROP INDEX` shares no keyword with any of the others.
@@ -37,7 +37,16 @@ def is_migration_ddl(sql: str) -> bool:
     keyword never matches - the keyword is looked for anywhere in the text.
     """
 
-    return any(keyword in sql for keyword in MIGRATION_DDL_KEYWORDS)
+    # Acknowledge the exact deferred finalization DDL, not arbitrary constraint
+    # triggers. These CRUD fakes do not simulate deferred PostgreSQL custody.
+    deferred_finalization = (
+        "CREATE CONSTRAINT TRIGGER dpm_composite_reserved_definition_finalization "
+        "AFTER INSERT ON dpm_composite_definitions DEFERRABLE INITIALLY DEFERRED "
+        "FOR EACH ROW EXECUTE FUNCTION dpm_require_composite_eligibility_finalization()"
+    )
+    return " ".join(sql.split()) == deferred_finalization or any(
+        keyword in sql for keyword in MIGRATION_DDL_KEYWORDS
+    )
 
 
 def is_composite_publication_backfill(sql: str) -> bool:
