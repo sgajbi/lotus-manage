@@ -33,6 +33,15 @@ from src.core.composite_eligibility.evaluation_control import (
     evaluation_key as _evaluation_key,
 )
 from src.core.composite_eligibility.publication import build_monthly_publication
+from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
+from src.core.composite_eligibility.staged_controls import StagedControl
+from src.core.composite_eligibility.staged_subject import EligibilitySubject
+from src.core.composite_eligibility.staged_publication import (
+    SubjectFinalization,
+    SubjectFinalizationReceipt,
+)
+from src.infrastructure.composites.staged_memory import StagedMemoryCustody
+from src.core.composite_eligibility.staged_custody import require_finalized_custody
 
 
 KeyT = TypeVar("KeyT")
@@ -58,6 +67,98 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             tuple[str, str, str, str, str], DpmCompositeUniverseAttestation
         ] = {}
         self._last_sequence = 0
+        self._staged = StagedMemoryCustody(
+            definitions=self._definitions,
+            policies=self._monthly_proposals,
+            policy_approvals=self._monthly_approvals,
+            evaluations=self._monthly_evaluations,
+            evaluation_approvals=self._monthly_evaluation_approvals,
+        )
+
+    def save_eligibility_subject(self, *, subject: EligibilitySubject) -> None:
+        with self._lock:
+            self._staged.save_subject(subject)
+
+    def get_eligibility_subject(self, *, key: SubjectKey) -> EligibilitySubject | None:
+        with self._lock:
+            return self._staged.get_subject(key)
+
+    def save_subject_control(self, *, control: StagedControl) -> None:
+        with self._lock:
+            self._staged.save_control(control)
+
+    def get_subject_control(
+        self, *, key: SubjectKey, kind: ControlKind, revision: str
+    ) -> StagedControl | None:
+        with self._lock:
+            return self._staged.get_control(key, kind, revision)
+
+    def finalize_eligibility_subject(
+        self, *, finalization: SubjectFinalization
+    ) -> SubjectFinalizationReceipt:
+        with self._lock:
+            receipt = self._staged.finalize(
+                finalization,
+                memberships=self._membership_revisions,
+                universes=self._universe_attestations,
+                publications=self._publications,
+                last_sequence=self._last_sequence,
+            )
+            self._last_sequence = max(self._last_sequence, receipt.publication_sequence)
+            return receipt
+
+    def get_eligibility_finalization(self, *, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+        with self._lock:
+            return self._finalization_receipt(key)
+
+    def _finalization_receipt(self, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+        receipt = self._staged.receipts.get(key)
+        if receipt is None:
+            return None
+        receipt = SubjectFinalizationReceipt.model_validate(receipt.model_dump(mode="json"))
+        approval = receipt.finalization.evaluation_approval
+        target = approval.proposal.target_membership_revision
+        require_finalized_custody(
+            receipt,
+            subject=self._staged.get_subject(key),
+            approval=self._staged.get_control(
+                key, approval.product_name, approval.proposal.evaluation_revision
+            ),
+            definition=self._definitions.get(key[:3]),
+            membership=self._membership_revisions.get((*key[:3], target)),
+            universe=self._universe_attestations.get(
+                (*key[:3], target, approval.proposal.evaluation_revision)
+            ),
+            publication=self._publications.get(receipt.publication_sequence),
+        )
+        return receipt
+
+    def resolve_eligibility_evidence(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+        approval_content_hash: str,
+    ) -> SubjectFinalizationReceipt | None:
+        with self._lock:
+            keys = [
+                key
+                for key, receipt in self._staged.receipts.items()
+                if key[:3] == (tenant_id, composite_id, definition_version)
+                and receipt.finalization.evaluation_approval.proposal.evaluation_revision
+                == evaluation_revision
+            ]
+            if not keys:
+                return None
+            receipt = self._finalization_receipt(keys[0])
+            if (
+                receipt is None
+                or receipt.finalization.evaluation_approval.content_hash != approval_content_hash
+            ):
+                raise DpmCompositeConflictError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
+            return receipt
 
     def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
         proposal = MonthlyEvaluationProposal.model_validate(proposal.model_dump(mode="json"))
@@ -84,6 +185,8 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             result = self._monthly_evaluations.get(
                 (tenant_id, composite_id, definition_version, evaluation_revision)
             )
+            if result is not None and not isinstance(result, MonthlyEvaluationProposal):
+                return None
             return (
                 MonthlyEvaluationProposal.model_validate(result.model_dump(mode="json"))
                 if result is not None
@@ -98,6 +201,10 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         with self._lock:
             existing = self._monthly_evaluation_approvals.get(approval_key)
             if existing is not None:
+                if not isinstance(existing, MonthlyEvaluationApproval):
+                    raise DpmCompositeConflictError(
+                        "COMPOSITE_ELIGIBILITY_ACTIVE_EVALUATION_CONFLICT"
+                    )
                 if existing.content_hash != approval.content_hash:
                     raise DpmCompositeConflictError(
                         "COMPOSITE_ELIGIBILITY_ACTIVE_EVALUATION_CONFLICT"
@@ -154,7 +261,8 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 (
                     item
                     for item in self._monthly_evaluation_approvals.values()
-                    if _evaluation_key(item.proposal)
+                    if isinstance(item, MonthlyEvaluationApproval)
+                    and _evaluation_key(item.proposal)
                     == (tenant_id, composite_id, definition_version, evaluation_revision)
                 ),
                 None,
@@ -261,6 +369,8 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             result = self._monthly_proposals.get(
                 (tenant_id, composite_id, definition_version, month, proposal_revision)
             )
+            if result is not None and not isinstance(result, MonthlyPolicyProposal):
+                return None
             return deepcopy(result) if result is not None else None
 
     def save_monthly_policy_approval(self, *, approval: MonthlyPolicyApproval) -> None:
@@ -297,6 +407,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             result = self._monthly_approvals.get((tenant_id, composite_id, month))
             if (
                 result is None
+                or not isinstance(result, MonthlyPolicyApproval)
                 or result.proposal.policy.scope.definition_version != definition_version
             ):
                 return None
@@ -306,6 +417,12 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         definition = validated_definition_snapshot(definition)
         key = (definition.tenant_id, definition.composite_id, definition.definition_version)
         with self._lock:
+            if self._staged.reserved(key):
+                if self._definitions.get(key) != definition:
+                    raise DpmCompositeConflictError(
+                        "COMPOSITE_SUBJECT_DEFINITION_RESERVED_CONFLICT"
+                    )
+                return
             _save_immutable(
                 values=self._definitions,
                 key=key,

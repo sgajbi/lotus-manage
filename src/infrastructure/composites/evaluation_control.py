@@ -52,7 +52,7 @@ def get_proposal(
 ) -> MonthlyEvaluationProposal | None:
     row = connection.execute(
         """SELECT content_hash, payload_json FROM dpm_composite_monthly_evaluation_proposals
-        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND evaluation_revision=%s""",
+        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND evaluation_revision=%s AND subject_revision IS NULL""",
         key,
     ).fetchone()
     if row is None:
@@ -174,7 +174,7 @@ def get_approval(
 ) -> MonthlyEvaluationApproval | None:
     row = connection.execute(
         """SELECT content_hash, payload_json FROM dpm_composite_monthly_evaluation_approvals
-        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND evaluation_revision=%s""",
+        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND evaluation_revision=%s AND subject_revision IS NULL""",
         key,
     ).fetchone()
     if row is None:

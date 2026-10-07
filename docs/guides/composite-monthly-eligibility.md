@@ -67,6 +67,46 @@ boolean. No fabricated boolean or v1 wire change is used.
 
 ## API Tutorial
 
+### First Definition: Staged V2 Lifecycle
+
+For a new definition, `S = /api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}`.
+This is an unpublished reservation, not a provisional definition or invented parent membership.
+
+| Phase | Operation | Exact Material |
+| --- | --- | --- |
+| Before M | `PUT S` | Business fields, month and source-owned candidate registry binding; server supplies scope, actor and time |
+| Before M | `PUT S/policies/{proposal_revision}` then `/approval` | Subject hash, ordered layers, attachments; independent checker and retained verification |
+| After M closes | `PUT S/evaluations/{evaluation_revision}` then `/approval` | Approved policy hash, actual observation cut/revision/hash, target first membership revision |
+| Finalize | `PUT S/finalization` | Evaluation revision/hash and existing v2 definition request, exact authority/method/provider receipts |
+| Retrieve | Corresponding exact `GET` operations | Retained subject and controls; final receipt joins canonical publication |
+
+The prospective candidate registry does not embed future month-end observations. Evaluation freezes
+the separately admitted owner/cut/revision/content, currency, complete logical member population
+and all-rule results. The approval digest is retained before the final economic-authority profile
+and definition hashes; no hash depends on its own future definition. Authority, eligibility,
+method/calendar and provider-registration verification are distinct purposes.
+
+Finalization atomically retains the v2 definition, first membership, universe, existing publication
+cursor and final receipt. Identical retry returns the original graph; changed content conflicts.
+The approval remains `NOT_PUBLISHED` as immutable historical evidence. The final receipt remains
+`UNVERIFIED`; it is not financial-fact admission, institutional activation or authoritative booking.
+
+Consumers submit the existing strict `EvidenceBinding` to
+`POST /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/eligibility-evidence/resolve`:
+product `CompositeSubjectEvaluationApproval`, version `v1`, exact evaluation revision and approval
+digest. Tenant is admitted transport scope. The response contains the exact subject locator and
+final receipt only after joining retained definition, approval, membership, universe and publication
+hashes/sequence. No latest or correlation lookup exists. Staged-only/missing scope returns 404;
+wrong product/digest refuses with 422; missing publication refuses with 409. Unsupported versions
+are rejected by the existing binding schema.
+
+Default candidate, observation and independent-verifier adapters are unavailable. A typed qualified
+receipt is not qualification by itself: only an independently configured verifier can establish its
+issuer/artifact/purpose authority. Test fixtures are explicitly synthetic; their assets/returns
+labels do not supply actual financial products. Performance owns downstream admission/calculation.
+
+### Existing Published Definition
+
 Prefix `P = /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility`.
 All calls require unambiguous `X-Tenant-Id`, `X-Actor-Id` and `X-Role`. Administrators or portfolio
 managers propose; only an independent `DPM_COMPOSITE_ADMIN` checks. These headers require trusted
@@ -117,6 +157,8 @@ From the `lotus-manage` root, using the project Python 3.12 environment (PowerSh
 ```text
 python -m pytest tests/unit/dpm/composites/test_composite_monthly_eligibility.py tests/unit/api/test_composite_monthly_eligibility_routes.py tests/unit/api/test_composite_monthly_evaluation_routes.py -q
 python -m pytest tests/integration/dpm/composites/test_composite_monthly_policy_postgres.py tests/integration/dpm/composites/test_composite_monthly_evaluation_postgres.py -q
+python -m pytest tests/unit/dpm/composites/test_composite_staged_bindings.py tests/unit/dpm/composites/test_composite_staged_custody.py tests/unit/dpm/composites/test_composite_staged_postgres_queries.py tests/unit/api/test_composite_subject_lifecycle_routes.py tests/unit/api/test_composite_subject_resolver_routes.py -q
+python -m pytest tests/integration/dpm/composites/test_composite_staged_postgres.py tests/integration/dpm/composites/test_composite_staged_upgrade_postgres.py -q
 ```
 
 The database command requires an approved isolated `DPM_POSTGRES_INTEGRATION_DSN` and
@@ -124,6 +166,8 @@ The database command requires an approved isolated `DPM_POSTGRES_INTEGRATION_DSN
 The proofs cover real PostgreSQL, fresh-process default read/check/replay, post-write rollback
 and observed conflicting writer locks. Synthetic source injection is explicit and does not
 certify a live supplier, capacity or institutional approval.
+The staged pack additionally checks populated `0041`→`0042` replay, cross-mode foreign-key
+refusals, atomic first publication and an authenticated resolver in a fresh API process.
 
 ## Operations And Remaining Boundaries
 
@@ -138,6 +182,10 @@ certify a live supplier, capacity or institutional approval.
 
 Migrations `0040`/`0041` add immutable policy/evaluation custody; membership authority stays in the
 existing ledger. Manage does not mark receipt as materialization, fills or authoritative Core booking.
+Forward migration `0042` preserves legacy payloads and historical migration checksums. Apply before
+switching traffic; existing writers retain their original definition/parent/membership requirements.
+Staged branches use strict subject/hash custody and non-null legacy/staged discriminator FKs.
+Do not downgrade readers, delete approvals or hand-create a reserved definition for rollback.
 Performance owns return-fact admission and calculation. Existing v2 definitions independently bind
 eligibility approval digests: publishing monthly v1 wires alone does not create or reapprove a v2
 definition, provider registration or institutional approval.
@@ -145,3 +193,9 @@ definition, provider registration or institutional approval.
 Drift threshold alternatives, accreditation, additional institutional rules, qualified historical
 Core readiness/cash and bank IAM remain separate, unapproved scope. No GIPS compliance, live
 capacity or production-readiness claim follows from this synthetic profile.
+
+Review disposition: the reviewed `V2-LIFECYCLE-DESIGN-20261007.md` and staged-custody addendum are
+adopted for the first-definition lifecycle. The Performance staged consumer plan's missing exact
+lookup is addressed by the resolver above; its independent publication/financial qualification
+requirements remain acceptance dependencies. Earlier source-preparation drafts are superseded only
+where the implemented lifecycle differs; no historical evidence is promoted into certification.

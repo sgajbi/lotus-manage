@@ -70,9 +70,19 @@ and tenant publication lock. Configuration proposal revision is not definition p
 published membership/universe retain `eligibility_policy_version` from the immutable definition.
 Keep all-rule evidence, missing-member pending semantics, closed historical intervals and exact
 replay. Unknown discretionary facts cannot be projected into the legacy boolean wire. Bank IAM,
-qualified population, institutional applicability and v2 eligibility-approval lifecycle remain
-separate; synthetic controls do not activate official eligibility. Use the
+qualified population and institutional applicability remain separate; synthetic controls do not
+activate official eligibility. Use the
 [monthly eligibility guide](docs/guides/composite-monthly-eligibility.md) for APIs and owning tests.
+
+Staged v2 finalization reserves an immutable subject before any definition or membership exists.
+`staged_*` core modules reuse the monthly engine; adapters reuse all four policy/evaluation stores.
+Migration `0042` adds subject/finalization custody and non-null mode/exact-hash predecessor FKs;
+never rewrite `0040`/`0041` or insert fake parents. Approval hashes are retained before final
+authority approval, avoiding digest cycles. The exact `eligibility-evidence/resolve` POST consumes
+existing `EvidenceBinding` and joins canonical publication under one read snapshot. Never infer a
+subject from latest/correlation or treat `UNVERIFIED` receipt labels as financial authority.
+Default candidate, observation and verifier ports are unavailable. Test-only injected adapters
+remain non-certifying; PostgreSQL upgrade, rollback and cross-mode proofs require their owning lane.
 
 ### Application composition practice
 

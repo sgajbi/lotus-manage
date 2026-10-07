@@ -8,6 +8,8 @@ from src.core.composite_eligibility.evaluation_control import (
     monthly_evaluation_approval_claims_hash,
 )
 from src.core.composite_eligibility.policy import month_window
+from src.core.composite_eligibility.evaluation import MonthlyEligibilityEvaluation
+from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.composite_membership import (
     DpmCompositeMembershipDecision,
     DpmCompositeMembershipRevision,
@@ -34,7 +36,9 @@ def build_monthly_publication(
         proposal, approved_by=approved_by, approved_at=approved_at
     )
     decisions = _retain_outside_month(parent.decisions, first, last)
-    decisions.extend(_monthly_decisions(proposal, claims, first_text, last_text))
+    decisions.extend(
+        monthly_decisions(proposal.evaluation, proposal.observations, claims, first_text, last_text)
+    )
     decisions.sort(key=lambda item: (item.portfolio_id, item.effective_from))
     scope = proposal.policy_approval.proposal.policy.scope
     revision = DpmCompositeMembershipRevision(
@@ -117,15 +121,16 @@ def _retain_outside_month(
     return retained
 
 
-def _monthly_decisions(
-    proposal: MonthlyEvaluationProposal,
+def monthly_decisions(
+    evaluation: MonthlyEligibilityEvaluation,
+    snapshot: MonthlyEligibilityObservations,
     claims_digest: str,
     first: str,
     last: str,
 ) -> list[DpmCompositeMembershipDecision]:
-    observations = {item.portfolio_id: item for item in proposal.observations.portfolios}
+    observations = {item.portfolio_id: item for item in snapshot.portfolios}
     decisions = []
-    for result in proposal.evaluation.portfolios:
+    for result in evaluation.portfolios:
         observation = observations[result.portfolio_id]
         if observation.discretionary is None:
             # Legacy wire cannot represent unknown discretionary status. Never manufacture a bool.
@@ -148,7 +153,7 @@ def _monthly_decisions(
                 reason_code=None if result.status == "INCLUDED" else reasons[0],
                 discretionary=observation.discretionary,
                 approval_ref=claims_digest,
-                source_snapshot_id=proposal.evaluation.content_hash,
+                source_snapshot_id=evaluation.content_hash,
             )
         )
     return decisions

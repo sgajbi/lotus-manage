@@ -26,6 +26,7 @@ from src.api.routers.composite_membership import router as composite_membership_
 from src.api.routers.composite_monthly_eligibility import (
     router as composite_monthly_eligibility_router,
 )
+from src.api.routers.composite_subjects import router as composite_subjects_router
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
     router as rebalance_run_support_router,
@@ -243,6 +244,7 @@ app.include_router(monitoring_router, prefix="/api/v1")
 app.include_router(construction_router, prefix="/api/v1")
 app.include_router(composite_membership_router, prefix="/api/v1")
 app.include_router(composite_monthly_eligibility_router, prefix="/api/v1")
+app.include_router(composite_subjects_router, prefix="/api/v1")
 app.include_router(instruction_package_router, prefix="/api/v1")
 app.include_router(proof_pack_router, prefix="/api/v1")
 app.include_router(waves_router, prefix="/api/v1")

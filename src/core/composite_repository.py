@@ -20,6 +20,7 @@ from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApproval,
     MonthlyEvaluationProposal,
 )
+from src.core.composite_eligibility.staged_ports import StagedCompositeRepository
 
 
 class DpmCompositeConflictError(ValueError):
@@ -37,7 +38,7 @@ class DpmCompositeResultPage(Generic[ItemT]):
     count: int
 
 
-class DpmCompositeRepository(Protocol):
+class DpmCompositeRepository(StagedCompositeRepository, Protocol):
     def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
         """Retain reproducible evaluation against the current published parent and pinned policy/universe."""
 
