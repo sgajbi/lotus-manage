@@ -51,7 +51,8 @@ def get_proposal(
 ) -> MonthlyPolicyProposal | None:
     row = connection.execute(
         """SELECT content_hash, payload_json FROM dpm_composite_monthly_policy_proposals
-        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND month=%s AND proposal_revision=%s""",
+        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND month=%s AND proposal_revision=%s
+        AND subject_revision IS NULL""",
         key,
     ).fetchone()
     if row is None:
@@ -84,7 +85,7 @@ def save_approval(connection: Any, approval: MonthlyPolicyApproval) -> None:
 def get_approval(connection: Any, key: tuple[str, str, str, str]) -> MonthlyPolicyApproval | None:
     row = connection.execute(
         """SELECT content_hash, proposal_content_hash, payload_json FROM dpm_composite_monthly_policy_approvals
-        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND month=%s""",
+        WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND month=%s AND subject_revision IS NULL""",
         key,
     ).fetchone()
     if row is None:

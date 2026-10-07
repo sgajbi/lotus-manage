@@ -1,5 +1,24 @@
 # Endpoint Certification
 
+## Staged Composite Eligibility: Bounded Proof
+
+The following registered paths have source-owned synthetic lifecycle/refusal tests. They are not
+bank certification: default source/verifier adapters are unavailable; PostgreSQL upgrade/custody,
+independent Performance admission and qualified source evidence are separate acceptance gates.
+
+| Route | Behavior |
+| --- | --- |
+| `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}` | Reserve/read exact unpublished subject |
+| `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/policies/{proposal_revision}` | Retain/read prospective policy |
+| `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/policies/{proposal_revision}/approval` | Independent exact policy check/read |
+| `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/evaluations/{evaluation_revision}` | Freeze actual observations and evaluate/read |
+| `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/evaluations/{evaluation_revision}/approval` | Independently check/read immutable unpublished approval |
+| `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/finalization` | Atomic first canonical publication/read joined custody |
+| `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/eligibility-evidence/resolve` | Read-only exact binding resolution against retained publication |
+
+See the [monthly eligibility guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md)
+and [registered lifecycle tests](https://github.com/sgajbi/lotus-manage/blob/main/tests/unit/api/test_composite_subject_lifecycle_routes.py).
+
 This page records endpoint-by-endpoint certification evidence for `lotus-manage`. It is scoped to
 implementation-backed API readiness before broader Gateway or Workbench integration is treated as
 demo proof.

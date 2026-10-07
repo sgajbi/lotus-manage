@@ -595,6 +595,18 @@ Only the exact retained proposal can be checked. Replay does not reread mutable 
 wrong owner/cut, incomplete universe, unknown discretionary status and stale parents fail closed.
 Performance admission and authoritative source qualification remain separate acceptance boundaries.
 
+For first v2 definitions, the `eligibility-subjects` family reserves unpublished immutable business
+and candidate-population identity. Prospective policy approval precedes actual month-end evaluation;
+independent evaluation and purpose verification precede atomic canonical finalization. It reuses
+the monthly engine and existing publication ledger, not provisional membership.
+
+`POST /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/eligibility-evidence/resolve`
+accepts the existing exact approval `EvidenceBinding`. Admitted tenant scope and retained canonical
+definition/membership/universe/publication joins determine success, never latest/correlation.
+Default sources and verification are unavailable; receipt completeness stays `UNVERIFIED` and
+official activation stays `UNAVAILABLE`. See the guide above for timing, request fields, refusal
+semantics and migration `0042`; synthetic fixtures do not qualify providers or financial facts.
+
 ## Platform surfaces
 
 - `/health`

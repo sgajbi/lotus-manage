@@ -36,6 +36,14 @@ from src.infrastructure.composites import (
     membership_store,
     universe_store,
     evaluation_control,
+    staged_postgres,
+)
+from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
+from src.core.composite_eligibility.staged_controls import StagedControl
+from src.core.composite_eligibility.staged_subject import EligibilitySubject
+from src.core.composite_eligibility.staged_publication import (
+    SubjectFinalization,
+    SubjectFinalizationReceipt,
 )
 from src.infrastructure.composites import publication as publication_sql
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
@@ -53,6 +61,68 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
             raise RuntimeError("DPM_COMPOSITE_POSTGRES_DRIVER_MISSING")
         self._dsn = dsn
         self._init_db()
+
+    def save_eligibility_subject(self, *, subject: EligibilitySubject) -> None:
+        with closing(self._connect()) as connection:
+            staged_postgres.save_subject(connection, subject)
+            connection.commit()
+
+    def get_eligibility_subject(self, *, key: SubjectKey) -> EligibilitySubject | None:
+        with closing(self._connect()) as connection:
+            return staged_postgres.get_subject(connection, key)
+
+    def save_subject_control(self, *, control: StagedControl) -> None:
+        with closing(self._connect()) as connection:
+            staged_postgres.save_control(connection, control)
+            connection.commit()
+
+    def get_subject_control(
+        self, *, key: SubjectKey, kind: ControlKind, revision: str
+    ) -> StagedControl | None:
+        with closing(self._connect()) as connection:
+            return staged_postgres.get_control(connection, key, kind, revision)
+
+    def finalize_eligibility_subject(
+        self, *, finalization: SubjectFinalization
+    ) -> SubjectFinalizationReceipt:
+        with closing(self._connect()) as connection:
+            receipt = staged_postgres.finalize(connection, finalization)
+            connection.commit()
+            return receipt
+
+    def get_eligibility_finalization(self, *, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+        with closing(self._connect()) as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            return staged_postgres.get_finalization(connection, key)
+
+    def resolve_eligibility_evidence(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+        approval_content_hash: str,
+    ) -> SubjectFinalizationReceipt | None:
+        with closing(self._connect()) as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            row = connection.execute(
+                """SELECT subject_revision FROM dpm_composite_monthly_evaluation_approvals
+                WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND evaluation_revision=%s
+                AND custody_mode='STAGED'""",
+                (tenant_id, composite_id, definition_version, evaluation_revision),
+            ).fetchone()
+            if row is None:
+                return None
+            receipt = staged_postgres.get_finalization(
+                connection, (tenant_id, composite_id, definition_version, row["subject_revision"])
+            )
+            if (
+                receipt is not None
+                and receipt.finalization.evaluation_approval.content_hash != approval_content_hash
+            ):
+                raise DpmCompositeConflictError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
+            return receipt
 
     def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
         with closing(self._connect()) as connection:
@@ -130,6 +200,29 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
     def save_definition(self, *, definition: CompositeDefinition) -> None:
         definition = validated_definition_snapshot(definition)
         with closing(self._connect()) as connection:
+            publication_sql.lock_tenant_publication_order(
+                connection=connection, tenant_id=definition.tenant_id
+            )
+            reserved = connection.execute(
+                """SELECT subject_revision FROM dpm_composite_eligibility_subjects
+                WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s""",
+                (definition.tenant_id, definition.composite_id, definition.definition_version),
+            ).fetchone()
+            if reserved is not None:
+                receipt = staged_postgres.get_finalization(
+                    connection,
+                    (
+                        definition.tenant_id,
+                        definition.composite_id,
+                        definition.definition_version,
+                        reserved["subject_revision"],
+                    ),
+                )
+                if receipt is None or receipt.finalization.definition != definition:
+                    raise DpmCompositeConflictError(
+                        "COMPOSITE_SUBJECT_DEFINITION_RESERVED_CONFLICT"
+                    )
+                return
             connection.execute(
                 """
                 INSERT INTO dpm_composite_definitions (

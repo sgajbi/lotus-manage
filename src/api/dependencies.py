@@ -28,6 +28,7 @@ from src.api.services.wave_campaign_application import DpmWaveCampaignApplicatio
 from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
 )
+from src.api.services.composite_subject_application import CompositeSubjectApplicationService
 from src.api.services.composite_monthly_eligibility import (
     CompositeMonthlyEligibilityApplicationService,
 )
@@ -577,6 +578,13 @@ def get_composite_monthly_eligibility_service(
 ) -> CompositeMonthlyEligibilityApplicationService:
     """No configured source adapter means fail-closed simulation, not request-owned facts."""
     return CompositeMonthlyEligibilityApplicationService(repository=repository)
+
+
+def get_composite_subject_service(
+    repository: DpmCompositeRepository = Depends(get_composite_repository),
+) -> CompositeSubjectApplicationService:
+    """No deployed source/verifier adapter has been qualified for staged eligibility."""
+    return CompositeSubjectApplicationService(repository=repository)
 
 
 def get_composite_monthly_evaluation_service(
