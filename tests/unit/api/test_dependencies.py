@@ -1,3 +1,4 @@
+from fastapi import Request
 from src.api import dependencies
 from src.api.composition import core_resolver_service
 from src.infrastructure.advise_authority import LotusAdviseAuthorityClient
@@ -269,7 +270,7 @@ def test_risk_authority_dependency_is_configured_from_environment(monkeypatch) -
     monkeypatch.setenv("DPM_RISK_AUTHORITY_TIMEOUT_SECONDS", "1.5")
     monkeypatch.setenv("DPM_RISK_AUTHORITY_MAX_ATTEMPTS", "3")
 
-    client = dependencies.get_risk_authority_client()
+    client = dependencies.get_risk_authority_client(Request({"type": "http"}))
 
     assert isinstance(client, LotusRiskAuthorityClient)
     assert client._config.timeout_seconds == 1.5
@@ -285,7 +286,7 @@ def test_risk_authority_invalid_tuning_uses_bounded_defaults(monkeypatch) -> Non
     monkeypatch.setenv("DPM_RISK_AUTHORITY_TIMEOUT_SECONDS", "not-a-number")
     monkeypatch.setenv("DPM_RISK_AUTHORITY_MAX_ATTEMPTS", "not-an-integer")
 
-    client = dependencies.get_risk_authority_client()
+    client = dependencies.get_risk_authority_client(Request({"type": "http"}))
 
     assert client._config.timeout_seconds == 2.0
     assert client._config.max_attempts == 2
@@ -321,8 +322,8 @@ def test_source_adapter_dependencies_reuse_shared_bounded_http_clients(monkeypat
 
     core_first = core_resolver_service.build_core_resolver_client()
     core_second = core_resolver_service.build_core_resolver_client()
-    risk_first = dependencies.get_risk_authority_client()
-    risk_second = dependencies.get_risk_authority_client()
+    risk_first = dependencies.get_risk_authority_client(Request({"type": "http"}))
+    risk_second = dependencies.get_risk_authority_client(Request({"type": "http"}))
     advise_first = dependencies.get_advise_authority_client()
     advise_second = dependencies.get_advise_authority_client()
 

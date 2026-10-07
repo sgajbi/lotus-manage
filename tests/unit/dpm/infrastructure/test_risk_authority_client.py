@@ -1,6 +1,7 @@
 import json
 from datetime import date
 from decimal import Decimal
+from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 import pytest
@@ -35,8 +36,123 @@ from src.infrastructure.risk_authority.client import (
     _scenario_status_from_supportability,
     _required_text,
 )
+from src.core.risk_authority.context import (
+    RiskAuthorityContext,
+    RiskAuthorityGrant,
+    RiskAuthorityPolicy,
+)
 from src.core.rebalance.engine import run_simulation
 from tests.shared.factories import valid_api_payload
+
+
+def _pilot_policy() -> RiskAuthorityPolicy:
+    return RiskAuthorityPolicy(
+        service_identity="manage-local-consumer",
+        policy_version="synthetic-local-policy-v1",
+        grants=(
+            RiskAuthorityGrant(operation="concentration", capability="risk.concentration"),
+            RiskAuthorityGrant(operation="regime_scenario", capability="risk.regime"),
+            RiskAuthorityGrant(operation="risk_event_cohort", capability="risk.cohort"),
+        ),
+    )
+
+
+def _pilot_context(
+    *, actor_id: str = "actor-A", tenant_id: str = "tenant-A"
+) -> RiskAuthorityContext:
+    policy = _pilot_policy()
+    return RiskAuthorityContext(
+        actor_id=actor_id,
+        tenant_id=tenant_id,
+        role="operator",
+        correlation_id="corr-risk-test",
+        service_identity=policy.service_identity,
+        policy_fingerprint=policy.fingerprint(),
+        grants=policy.grants,
+    )
+
+
+def _admitted_client(*, config, client=None):
+    return LotusRiskAuthorityClient(
+        config=config,
+        client=client,
+        authority_context=_pilot_context(),
+        authority_policy=_pilot_policy(),
+    )
+
+
+@pytest.mark.parametrize("operation", ["concentration", "regime_scenario", "risk_event_cohort"])
+@pytest.mark.parametrize(
+    "failure", ["missing_context", "missing_policy", "missing_grant", "policy_change"]
+)
+def test_protected_risk_calls_refuse_before_transport(operation, failure):
+    calls = []
+    context, policy = _pilot_context(), _pilot_policy()
+    if failure == "missing_context":
+        context = None
+    elif failure == "missing_policy":
+        policy = None
+    elif failure == "missing_grant":
+        context = context.model_copy(update={"grants": ()})
+    else:
+        policy = policy.model_copy(update={"policy_version": "changed-policy"})
+    with httpx.Client(
+        transport=httpx.MockTransport(lambda request: calls.append(request))
+    ) as pooled:
+        client = LotusRiskAuthorityClient(
+            config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
+            client=pooled,
+            authority_context=context,
+            authority_policy=policy,
+        )
+        with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_AUTHORITY_"):
+            if operation == "concentration":
+                client.concentration_context(result=_result(), correlation_id="corr-test")
+            elif operation == "regime_scenario":
+                client.regime_scenario_context(
+                    result=_result(),
+                    portfolio_id="pf_test",
+                    as_of_date=date(2026, 5, 6),
+                    correlation_id="corr-test",
+                )
+            else:
+                client.risk_event_affected_cohort(
+                    risk_event_id="event-test",
+                    as_of_date=date(2026, 5, 6),
+                    portfolios=[],
+                    minimum_impact_score=Decimal("0.05"),
+                    correlation_id="corr-test",
+                )
+        assert calls == []
+
+
+def test_risk_context_concurrency_never_mutates_shared_transport_headers():
+    def handler(request):
+        actor = request.headers["x-correlation-id"]
+        assert request.headers["x-actor-id"] == actor
+        assert request.headers["x-tenant-id"] == "tenant-" + actor
+        assert request.headers["x-capabilities"] == "risk.concentration"
+        assert request.headers["x-service-identity"] == "manage-local-consumer"
+        assert "authorization" not in request.headers
+        return httpx.Response(200, json=_risk_response())
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as pooled:
+        original_headers = dict(pooled.headers)
+
+        def evaluate(actor):
+            client = LotusRiskAuthorityClient(
+                config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
+                client=pooled,
+                authority_context=_pilot_context(actor_id=actor, tenant_id="tenant-" + actor),
+                authority_policy=_pilot_policy(),
+            )
+            client.concentration_context(result=_result(), correlation_id=actor)
+            client.close()
+            assert not pooled.is_closed
+
+        with ThreadPoolExecutor(max_workers=8) as workers:
+            list(workers.map(evaluate, ["A", "B"] * 32))
+        assert dict(pooled.headers) == original_headers
 
 
 def _result():
@@ -84,8 +200,8 @@ def _risk_response(
             "coverage_status": coverage_status,
         },
         "metadata": {
-            "product_name": "ConcentrationAnalysis",
-            "methodology_version": "concentration.v1",
+            "product_name": "ConcentrationRiskReport",
+            "product_version": "v1",
             "source_service": "lotus-risk",
             "request_fingerprint": "sha256:concentration-request",
             "calculation_supportability": {
@@ -182,7 +298,7 @@ def test_lotus_risk_authority_client_maps_concentration_supportability() -> None
             json=_risk_response(),
         )
 
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -217,12 +333,13 @@ def test_concentration_response_sections_preserve_source_metadata() -> None:
     response = _risk_response(coverage_status="partial")
     metadata = response["metadata"]
     assert isinstance(metadata, dict)
-    metadata["methodology_version"] = "concentration.v3"
+    metadata["product_version"] = "v1"
     metadata["request_fingerprint"] = "sha256:concentration-request"
 
     sections = _concentration_response_sections(response)
 
-    assert sections.metadata["methodology_version"] == "concentration.v3"
+    assert sections.metadata["product_name"] == "ConcentrationRiskReport"
+    assert sections.metadata["product_version"] == "v1"
     assert sections.request_fingerprint == "sha256:concentration-request"
     assert sections.supportability_state == "ready"
     assert sections.supportability_reason == "calculation_complete"
@@ -250,14 +367,24 @@ def test_concentration_response_sections_reject_missing_source_contract_fields()
 def test_concentration_source_identity_helpers_require_source_metadata() -> None:
     with pytest.raises(KeyError, match="source_service"):
         _concentration_source_system({})
-    assert _concentration_source_system({"source_service": " lotus-risk-authority "}) == (
-        "lotus-risk-authority"
-    )
-    with pytest.raises(KeyError, match="methodology_version"):
+    assert _concentration_source_system({"source_service": " lotus-risk "}) == "lotus-risk"
+    with pytest.raises(ValueError, match="Unexpected Risk concentration source"):
+        _concentration_source_system({"source_service": "lotus-risk-authority"})
+    with pytest.raises(KeyError, match="product_name"):
         _concentration_source_product_version({})
-    assert _concentration_source_product_version({"methodology_version": " concentration.v3 "}) == (
-        "concentration.v3"
+    with pytest.raises(KeyError, match="product_version"):
+        _concentration_source_product_version({"product_name": "ConcentrationRiskReport"})
+    assert (
+        _concentration_source_product_version(
+            {"product_name": "ConcentrationRiskReport", "product_version": "v1"}
+        )
+        == "v1"
     )
+    for name, version in [("ConcentrationAnalysis", "v1"), ("ConcentrationRiskReport", "v2")]:
+        with pytest.raises(ValueError, match="Unsupported Risk concentration"):
+            _concentration_source_product_version(
+                {"product_name": name, "product_version": version}
+            )
 
 
 def test_concentration_metric_helpers_preserve_valid_zero_and_source_values() -> None:
@@ -296,7 +423,7 @@ def test_lotus_risk_authority_client_maps_regime_scenario_pack_evaluation() -> N
         captured["payload"] = json.loads(request.read().decode("utf-8"))
         return httpx.Response(200, json=_regime_scenario_response())
 
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -347,7 +474,7 @@ def test_lotus_risk_authority_client_maps_risk_event_affected_cohort() -> None:
         captured["payload"] = request.read()
         return httpx.Response(200, json=_risk_event_cohort_response())
 
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -500,7 +627,7 @@ def test_lotus_risk_authority_client_rejects_invalid_risk_event_response() -> No
 
 
 def test_lotus_risk_authority_client_maps_regime_scenario_pending_review() -> None:
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
         client=httpx.Client(
             transport=httpx.MockTransport(
@@ -524,7 +651,7 @@ def test_lotus_risk_authority_client_maps_regime_scenario_pending_review() -> No
         result=_result(),
         portfolio_id="pf_test",
         as_of_date=date(2026, 5, 6),
-        correlation_id=None,
+        correlation_id="corr-risk-test",
     )
 
     assert context.supportability_status == ConstructionMethodStatus.PENDING_REVIEW
@@ -533,7 +660,7 @@ def test_lotus_risk_authority_client_maps_regime_scenario_pending_review() -> No
 
 
 def test_lotus_risk_authority_client_fails_closed_on_unavailable_risk() -> None:
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test", max_attempts=1),
         client=httpx.Client(
             transport=httpx.MockTransport(lambda request: httpx.Response(503, json={}))
@@ -541,7 +668,7 @@ def test_lotus_risk_authority_client_fails_closed_on_unavailable_risk() -> None:
     )
 
     try:
-        client.concentration_context(result=_result(), correlation_id=None)
+        client.concentration_context(result=_result(), correlation_id="corr-risk-test")
     except LotusRiskAuthorityUnavailableError as exc:
         assert str(exc) == "LOTUS_RISK_UNAVAILABLE"
     else:
@@ -558,7 +685,7 @@ def test_lotus_risk_authority_client_retries_transient_transport_failure() -> No
             raise httpx.ReadTimeout("risk timeout")
         return httpx.Response(200, json=_risk_response())
 
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test", max_attempts=2),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -570,7 +697,7 @@ def test_lotus_risk_authority_client_retries_transient_transport_failure() -> No
 
 
 def test_lotus_risk_authority_client_fails_closed_after_transport_retries() -> None:
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test", max_attempts=2),
         client=httpx.Client(
             transport=httpx.MockTransport(
@@ -580,7 +707,7 @@ def test_lotus_risk_authority_client_fails_closed_after_transport_retries() -> N
     )
 
     with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_UNAVAILABLE"):
-        client.concentration_context(result=_result(), correlation_id=None)
+        client.concentration_context(result=_result(), correlation_id="corr-risk-test")
 
 
 def test_lotus_risk_authority_client_retries_transient_503_then_maps_breaches() -> None:
@@ -597,12 +724,12 @@ def test_lotus_risk_authority_client_retries_transient_503_then_maps_breaches() 
         ),
     ]
 
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test", max_attempts=2),
         client=httpx.Client(transport=httpx.MockTransport(lambda request: responses.pop(0))),
     )
 
-    context = client.concentration_context(result=_result(), correlation_id=None)
+    context = client.concentration_context(result=_result(), correlation_id="corr-risk-test")
 
     assert context.concentration_breaches == 3
     assert context.issuer_coverage_status == "partial"
@@ -622,7 +749,7 @@ def test_lotus_risk_authority_client_fails_closed_on_rejected_or_failed_response
     status_code: int,
     expected_message: str,
 ) -> None:
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test", max_attempts=1),
         client=httpx.Client(
             transport=httpx.MockTransport(lambda request: httpx.Response(status_code, json={}))
@@ -630,11 +757,11 @@ def test_lotus_risk_authority_client_fails_closed_on_rejected_or_failed_response
     )
 
     with pytest.raises(LotusRiskAuthorityUnavailableError, match=expected_message):
-        client.concentration_context(result=_result(), correlation_id=None)
+        client.concentration_context(result=_result(), correlation_id="corr-risk-test")
 
 
 def test_lotus_risk_authority_client_fails_closed_on_invalid_response_shape() -> None:
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
         client=httpx.Client(
             transport=httpx.MockTransport(lambda request: httpx.Response(200, json=[]))
@@ -642,7 +769,7 @@ def test_lotus_risk_authority_client_fails_closed_on_invalid_response_shape() ->
     )
 
     with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
-        client.concentration_context(result=_result(), correlation_id=None)
+        client.concentration_context(result=_result(), correlation_id="corr-risk-test")
 
 
 @pytest.mark.parametrize(
@@ -658,7 +785,7 @@ def test_lotus_risk_authority_client_maps_non_ready_supportability_states(
     state: str,
     expected_status: ConstructionMethodStatus,
 ) -> None:
-    client = LotusRiskAuthorityClient(
+    client = _admitted_client(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
         client=httpx.Client(
             transport=httpx.MockTransport(
@@ -667,7 +794,7 @@ def test_lotus_risk_authority_client_maps_non_ready_supportability_states(
         ),
     )
 
-    context = client.concentration_context(result=_result(), correlation_id=None)
+    context = client.concentration_context(result=_result(), correlation_id="corr-risk-test")
 
     assert context.supportability_status == expected_status
 
@@ -680,7 +807,7 @@ def test_lotus_risk_authority_client_closes_owned_client() -> None:
             self.closed = True
 
     owned_client = _OwnedClient()
-    client = LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
+    client = _admitted_client(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
     client._client = owned_client
 
     client.close()
@@ -702,9 +829,9 @@ def test_lotus_risk_authority_client_closes_owned_runtime_client(monkeypatch) ->
             closed["value"] = True
 
     monkeypatch.setattr(httpx, "Client", _OwnedClient)
-    client = LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
+    client = _admitted_client(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
 
-    context = client.concentration_context(result=_result(), correlation_id=None)
+    context = client.concentration_context(result=_result(), correlation_id="corr-risk-test")
 
     assert context.supportability_status == ConstructionMethodStatus.READY
     assert closed["value"] is True
@@ -724,13 +851,13 @@ def test_lotus_risk_authority_client_closes_owned_regime_runtime_client(monkeypa
             closed["value"] = True
 
     monkeypatch.setattr(httpx, "Client", _OwnedClient)
-    client = LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
+    client = _admitted_client(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
 
     context = client.regime_scenario_context(
         result=_result(),
         portfolio_id="pf_test",
         as_of_date=date(2026, 5, 6),
-        correlation_id=None,
+        correlation_id="corr-risk-test",
     )
 
     assert context.supportability_status == ConstructionMethodStatus.READY

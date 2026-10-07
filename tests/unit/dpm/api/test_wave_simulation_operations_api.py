@@ -4,6 +4,9 @@ from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
+import json
+
+from fastapi import Request
 
 from fastapi.testclient import TestClient
 import pytest
@@ -12,6 +15,7 @@ from src.api.dependencies import (
     get_construction_repository,
     get_risk_authority_client,
     get_wave_repository,
+    get_operation_risk_authority_client,
 )
 from src.api.main import app
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
@@ -28,6 +32,7 @@ from src.core.waves import (
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
+from src.core.integration_ports import LotusRiskAuthorityUnavailableError
 
 TENANT_ID = "tenant-sg"
 WAVE_ID = "dwv_async_simulation"
@@ -169,6 +174,110 @@ def _admit(client: TestClient, *, idempotency_key: str = "async-wave-001") -> An
 def teardown_function() -> None:
     app.dependency_overrides.clear()
     app.openapi_schema = None
+
+
+def test_async_risk_context_is_admitted_immutable_and_not_replaced_by_worker(monkeypatch):
+    for name, value in {
+        "ENTERPRISE_ENFORCE_AUTHZ": "true",
+        "ENTERPRISE_POLICY_VERSION": "synthetic-policy-v1",
+        "PRINCIPAL_RESOLUTION_POSTURE": "header-trust",
+        "ENVIRONMENT": "local",
+        "APP_PERSISTENCE_PROFILE": "LOCAL",
+        "DPM_RISK_CONSUMER_SERVICE_IDENTITY": "manage-local-consumer",
+        "DPM_RISK_BASE_URL": "http://risk.test",
+        "DPM_RISK_REQUIRED_CAPABILITIES_JSON": json.dumps(
+            {
+                "concentration": "risk.concentration",
+                "regime_scenario": "risk.regime",
+                "risk_event_cohort": "risk.cohort",
+            }
+        ),
+        "ENTERPRISE_CAPABILITY_RULES_JSON": json.dumps({"POST /api/v1": "manage.write"}),
+    }.items():
+        monkeypatch.setenv(name, value)
+    repository = InMemoryDpmWaveRepository()
+    repository.save_wave(
+        wave=_source_checked_wave(), idempotency_key=None, request_hash=None, tenant_id=TENANT_ID
+    )
+    headers = {
+        "X-Actor-Id": "pm_001",
+        "X-Role": "PM",
+        "X-Correlation-Id": "corr-admission",
+        "X-Service-Identity": "caller",
+        "X-Capabilities": "manage.write,risk.concentration",
+        "Idempotency-Key": "risk-custody-admission",
+    }
+    with _client(repository) as client:
+        accepted = client.post(
+            f"{BASE_PATH}/{WAVE_ID}/simulation-operations",
+            headers=headers,
+            json=_admission_payload(),
+        )
+        assert accepted.status_code == 202, accepted.text
+        operation_id = accepted.json()["operation_id"]
+        stored = repository.get_simulation_operation(tenant_id=TENANT_ID, operation_id=operation_id)
+        assert stored.risk_authority_context.actor_id == "pm_001"
+        assert stored.risk_authority_context_hash == stored.risk_authority_context.fingerprint()
+        assert "risk_authority_context" not in accepted.json()
+        assert "risk_authority_context_hash" not in accepted.json()
+        from pydantic import ValidationError
+
+        for changes in (
+            {"risk_authority_context_hash": "sha256:altered"},
+            {"risk_authority_context": None},
+            {"actor_id": "impostor"},
+            {"tenant_id": "foreign"},
+            {"correlation_id": "different-admission"},
+        ):
+            with pytest.raises(ValidationError):
+                type(stored).model_validate({**stored.model_dump(mode="json"), **changes})
+        with pytest.raises(ValidationError):
+            stored.risk_authority_context = None
+        with pytest.raises(ValidationError):
+            stored.risk_authority_context.actor_id = "impostor"
+        replay = client.post(
+            f"{BASE_PATH}/{WAVE_ID}/simulation-operations",
+            headers=headers,
+            json=_admission_payload(),
+        )
+        assert replay.status_code == 202
+        assert replay.json()["idempotent_replay"]
+        conflict = client.post(
+            f"{BASE_PATH}/{WAVE_ID}/simulation-operations",
+            headers={**headers, "X-Capabilities": "manage.write,risk.regime"},
+            json=_admission_payload(),
+        )
+        assert conflict.status_code == 409
+        body = {**_admission_payload(), "actor_id": "body-impostor"}
+        assert (
+            client.post(
+                f"{BASE_PATH}/{WAVE_ID}/simulation-operations",
+                headers={**headers, "Idempotency-Key": "actor-conflict"},
+                json=body,
+            ).status_code
+            == 422
+        )
+
+        worker = Request({"type": "http"})
+        worker.state.risk_authority_context = stored.risk_authority_context.model_copy(
+            update={"actor_id": "worker-B", "grants": ()}
+        )
+        adapter = get_operation_risk_authority_client(worker, operation_id, repository)
+        assert adapter._authority_context == stored.risk_authority_context
+        outgoing = adapter._authority_headers("concentration", "corr-worker-attempt")
+        assert outgoing["X-Actor-Id"] == "pm_001"
+        assert outgoing["X-Capabilities"] == "risk.concentration"
+        worker.state.risk_authority_context = stored.risk_authority_context.model_copy(
+            update={"tenant_id": "foreign"}
+        )
+        refused = get_operation_risk_authority_client(worker, operation_id, repository)
+        with pytest.raises(LotusRiskAuthorityUnavailableError):
+            refused._authority_headers("concentration", "corr-worker-attempt")
+        monkeypatch.setenv("ENTERPRISE_POLICY_VERSION", "changed-policy")
+        worker.state.risk_authority_context = stored.risk_authority_context
+        refused = get_operation_risk_authority_client(worker, operation_id, repository)
+        with pytest.raises(LotusRiskAuthorityUnavailableError):
+            refused._authority_headers("concentration", "corr-worker-attempt")
 
 
 def test_async_simulation_admission_is_durable_idempotent_and_conflict_safe() -> None:

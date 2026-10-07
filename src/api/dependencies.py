@@ -1,9 +1,12 @@
 import os
 import logging
 from functools import partial
-from typing import AsyncIterator
+from typing import Annotated, AsyncIterator
 
-from fastapi import Depends
+from fastapi import Depends, Path, Request
+
+from src.api.enterprise_readiness import risk_authority_policy
+from src.core.risk_authority.context import RiskAuthorityContext
 
 from src.api.composition.core_resolver_service import (
     build_core_resolver_client as build_core_resolver_client,
@@ -641,7 +644,48 @@ def get_portfolio_memory_source_repositories(
     )
 
 
-def get_risk_authority_client() -> LotusRiskAuthorityClient | None:
+def get_risk_authority_context(request: Request) -> RiskAuthorityContext | None:
+    context = getattr(request.state, "risk_authority_context", None)
+    return context if isinstance(context, RiskAuthorityContext) else None
+
+
+def get_risk_authority_client(request: Request) -> LotusRiskAuthorityClient | None:
+    return _build_risk_authority_client(get_risk_authority_context(request))
+
+
+def get_operation_risk_authority_client(
+    request: Request,
+    operation_id: Annotated[
+        str, Path(description="Durable asynchronous wave-simulation operation identifier.")
+    ],
+    repository: DpmWaveSimulationRepository = Depends(get_wave_repository),
+) -> LotusRiskAuthorityClient | None:
+    """Worker authority comes from immutable admission, never replacement worker claims."""
+    worker_context = get_risk_authority_context(request)
+    operation = (
+        repository.get_simulation_operation(
+            tenant_id=worker_context.tenant_id, operation_id=operation_id
+        )
+        if worker_context is not None
+        else None
+    )
+    retained = operation.risk_authority_context if operation is not None else None
+    if (
+        retained is not None
+        and operation is not None
+        and (
+            retained.tenant_id != operation.tenant_id
+            or retained.actor_id != operation.actor_id
+            or retained.fingerprint() != operation.risk_authority_context_hash
+        )
+    ):
+        retained = None
+    return _build_risk_authority_client(retained)
+
+
+def _build_risk_authority_client(
+    context: RiskAuthorityContext | None,
+) -> LotusRiskAuthorityClient | None:
     """Return a lotus-risk authority client when risk integration is configured."""
 
     base_url = os.getenv("DPM_RISK_BASE_URL", "").strip()
@@ -654,6 +698,8 @@ def get_risk_authority_client() -> LotusRiskAuthorityClient | None:
     )
     return LotusRiskAuthorityClient(
         config=config,
+        authority_context=context,
+        authority_policy=risk_authority_policy(),
         client=get_shared_source_http_client(
             "risk",
             policy=build_source_http_client_policy(

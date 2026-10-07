@@ -26,6 +26,10 @@ It does not own advisor-led proposal workflows. Those belong to `lotus-advise`.
 It also does not own canonical portfolio ledger data, market-data truth, risk methodology, or
 performance analytics authority.
 
+Protected Risk consumption requires an explicitly configured local/dev header-trust pilot;
+verified and production authority remain unavailable. Durable workers retain admitted context,
+not replacement worker claims. See the [Risk consumer guide](docs/operations/risk-authority-consumer-proof.md).
+
 Composite definitions and eligibility revisions are a tenant-scoped Manage source product at
 `/api/v1/rebalance/composites/*`. Writes require trusted tenant, actor, and a
 `DPM_COMPOSITE_ADMIN` or `DPM_PORTFOLIO_MANAGER` role; immutable replays are idempotent and changed

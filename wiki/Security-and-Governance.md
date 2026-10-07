@@ -8,6 +8,11 @@ the registered API/logger regression and the implementation in
 
 ## How authorization is actually gated
 
+The [protected Risk consumer pilot](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations/risk-authority-consumer-proof.md)
+uses only explicitly admitted local/dev header claims. It forwards no credentials, invents no grant
+expiry or provenance, and persists immutable context for durable worker recovery. Production,
+verified and missing-context calls refuse Risk authority. This is not institutional authentication.
+
 Two mechanisms decide whether a write is authorized, and reading only one of them gives the wrong
 answer.
 

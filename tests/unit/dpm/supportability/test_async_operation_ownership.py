@@ -1,5 +1,6 @@
 import sqlite3
 import tempfile
+from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -199,7 +200,7 @@ def test_current_owner_can_publish_failure_once(repository) -> None:
 
 def test_sqlite_upgrade_preserves_legacy_rows_as_quarantined(tmp_path: Path) -> None:
     database_path = tmp_path / "legacy.sqlite"
-    with sqlite3.connect(database_path) as connection:
+    with closing(sqlite3.connect(database_path)) as connection, connection:
         connection.executescript(
             """
             CREATE TABLE dpm_async_operations (

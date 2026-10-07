@@ -68,6 +68,11 @@ support, and [Security and Governance](Security-and-Governance) for authority bo
 
 ## Boundary rules
 
+Protected Risk requests use an explicit local/dev header-trust context and operation-specific
+capability mapping. Durable workers retain admission context; reused HTTP pools never carry caller
+defaults. Verified bank identity and production acceptance remain unavailable. Configuration and
+evidence limits: [Risk consumer pilot](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations/risk-authority-consumer-proof.md).
+
 1. `lotus-manage` may execute deterministic rebalance decisions from governed inputs
 2. inline bundles do not transfer source-data authority to `lotus-manage`
 3. `portfolio_id` and future stateful modes must stay grounded in governed `lotus-core` contracts

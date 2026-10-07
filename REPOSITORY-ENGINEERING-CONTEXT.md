@@ -126,6 +126,17 @@ repository, while Manage owns only its declared consumption and fail-closed beha
 
 ### Tenant and authority posture
 
+Protected Risk calls use immutable per-request context admitted by existing enterprise middleware;
+the pooled transport remains identity-neutral. The explicit local/dev header-trust pilot requires
+deployment-owned operation/capability mapping and consumer identity. Durable simulation admissions
+retain credential-free context and its hash; workers use that admission, not replacement worker
+claims. Missing context or changed deployment policy refuses protected calls. Verified principal,
+portfolio grant, expiry/revocation and production acceptance remain unsupported. See
+[Risk consumer pilot](docs/operations/risk-authority-consumer-proof.md).
+The concentration adapter requires `ConcentrationRiskReport:v1` and `lotus-risk` source identity;
+do not substitute a nonexistent methodology field. Actual HTTP/restart proof is opt-in and source-
+pinned; its skipped default is not producer integration evidence.
+
 1. Tenant-owned aggregates are fenced at their repository boundaries. NULL or contradictory owner
    records are matched by no tenant and remain quarantined until a separately governed attribution
    mechanism can prove an owner.

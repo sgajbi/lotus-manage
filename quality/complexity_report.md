@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-07T04:31:39+00:00`
+- Generated at: `2026-10-07T06:12:56+00:00`
 
-- Baseline source snapshot: `0789f96206ebcef7d7d01270fab94f74ea4c855a`
+- Baseline source snapshot: `1a5763be3c1544d1b04c4532e44c48fbb2ca653f`
 
-- Report source snapshot: `0789f962+worktree`
+- Report source snapshot: `1a5763be+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -38,12 +38,12 @@
 | 2 | _resolve_item_payloads | src/api/services/wave_simulation_operations.py | 19 | 67 |
 | 3 | _tax_budget_assessment | src/core/mandate_health_scoring.py | 19 | 59 |
 | 4 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
-| 5 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 16 | 76 |
-| 6 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
-| 7 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
-| 8 | cancel_simulation_operation | src/infrastructure/waves/in_memory.py | 13 | 55 |
-| 9 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
-| 10 | derive_wave_simulation_operation_status_from_counts | src/core/waves/simulation_operations.py | 13 | 26 |
+| 5 | _admit_wave_simulation_operation | src/api/services/wave_simulation_operations.py | 17 | 174 |
+| 6 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 17 | 79 |
+| 7 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
+| 8 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
+| 9 | cancel_simulation_operation | src/infrastructure/waves/in_memory.py | 13 | 55 |
+| 10 | _validate_postgres_summary_invocation_parents | src/infrastructure/pm_quality/postgres.py | 13 | 49 |
 
 ### Most Complex Current Test Functions
 

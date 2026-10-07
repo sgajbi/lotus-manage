@@ -79,7 +79,10 @@ class PostgresDpmWaveSimulationMixin(DpmWaveSimulationPublicationMixin):
                 idempotency_key_hash=operation.idempotency_key_hash,
             )
             if existing is not None:
-                if existing.request_hash != operation.request_hash:
+                if (
+                    existing.request_hash != operation.request_hash
+                    or existing.risk_authority_context_hash != operation.risk_authority_context_hash
+                ):
                     raise DpmWaveSimulationOperationConflictError(
                         "DPM_WAVE_SIMULATION_IDEMPOTENCY_CONFLICT"
                     )
@@ -509,9 +512,9 @@ def _insert_operation(*, connection: Any, operation: DpmWaveSimulationOperation)
             operation_id, tenant_id, wave_id, request_hash, idempotency_key_hash,
             correlation_id, actor_id, source_identity_hash, admitted_wave_version,
             methods_json, max_concurrency, max_attempts, status, cancel_reason_code,
-            created_at, updated_at
+            created_at, updated_at, risk_authority_context_json, risk_authority_context_hash
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
         """,
         (
@@ -531,6 +534,12 @@ def _insert_operation(*, connection: Any, operation: DpmWaveSimulationOperation)
             operation.cancel_reason_code,
             operation.created_at,
             operation.updated_at,
+            (
+                _json_dump(operation.risk_authority_context.model_dump(mode="json"))
+                if operation.risk_authority_context is not None
+                else None
+            ),
+            operation.risk_authority_context_hash,
         ),
     )
 
@@ -753,6 +762,8 @@ def _operation_from_row(row: Any) -> DpmWaveSimulationOperation:
         idempotency_key_hash=str(row["idempotency_key_hash"]),
         correlation_id=str(row["correlation_id"]),
         actor_id=str(row["actor_id"]),
+        risk_authority_context=row["risk_authority_context_json"],
+        risk_authority_context_hash=row["risk_authority_context_hash"],
         source_identity_hash=str(row["source_identity_hash"]),
         admitted_wave_version=int(row["admitted_wave_version"]),
         methods=cast(list[str], _json_load(row["methods_json"])),

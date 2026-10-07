@@ -12,6 +12,11 @@ import pytest
 
 from src.api.request_models import RebalanceRequest
 from src.core.common.canonical import hash_canonical_payload
+from src.core.risk_authority.context import (
+    RiskAuthorityContext,
+    RiskAuthorityGrant,
+    RiskAuthorityPolicy,
+)
 from src.api.services import wave_simulation_operations
 from src.api.services.wave_simulation_item import DpmWaveSimulationInput, simulate_item
 from src.core.construction.vocabulary import ConstructionMethod
@@ -57,6 +62,7 @@ def _admit(
     item_count: int = 4,
     max_concurrency: int = 2,
     max_attempts: int = 2,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> DpmWaveSimulationOperation:
     now = datetime(2026, 10, 1, tzinfo=UTC)
     wave = _wave(tenant_id=tenant_id, wave_id=wave_id, item_count=item_count)
@@ -69,6 +75,10 @@ def _admit(
         idempotency_key_hash=f"wsi-{operation_id}",
         correlation_id=f"corr-{operation_id}",
         actor_id="integration-test",
+        risk_authority_context=risk_authority_context,
+        risk_authority_context_hash=(
+            risk_authority_context.fingerprint() if risk_authority_context is not None else None
+        ),
         source_identity_hash=f"sha256:source-{wave_id}",
         admitted_wave_version=wave.version,
         methods=["HEURISTIC_EXPLAINABLE"],
@@ -100,6 +110,77 @@ def _admit(
     assert replayed is False
     assert stored == operation
     return operation
+
+
+def test_risk_authority_context_survives_repository_restart_and_expired_claim(dsn: str) -> None:
+    tenant_id, wave_id, operation_id = _ids()
+    policy = RiskAuthorityPolicy(
+        service_identity="manage-local-consumer",
+        policy_version="synthetic-local-v1",
+        grants=(
+            RiskAuthorityGrant(operation="concentration", capability="risk.concentration"),
+            RiskAuthorityGrant(operation="regime_scenario", capability="risk.regime"),
+            RiskAuthorityGrant(operation="risk_event_cohort", capability="risk.cohort"),
+        ),
+    )
+    context = RiskAuthorityContext(
+        actor_id="integration-test",
+        tenant_id=tenant_id,
+        role="PM",
+        correlation_id=f"corr-{operation_id}",
+        service_identity=policy.service_identity,
+        policy_fingerprint=policy.fingerprint(),
+        grants=policy.grants,
+    )
+    admitted = _admit(
+        repository=PostgresDpmWaveRepository(dsn=dsn),
+        tenant_id=tenant_id,
+        wave_id=wave_id,
+        operation_id=operation_id,
+        item_count=1,
+        risk_authority_context=context,
+    )
+    first = PostgresDpmWaveRepository(dsn=dsn)
+    now = datetime(2026, 10, 1, 1, tzinfo=UTC)
+    claims = first.claim_simulation_items(
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        worker_id="worker-A",
+        limit=1,
+        claimed_at=now,
+        lease_expires_at=now + timedelta(seconds=1),
+    )
+    assert len(claims) == 1
+    recovered = PostgresDpmWaveRepository(dsn=dsn)
+    assert (
+        recovered.get_simulation_operation(tenant_id="foreign", operation_id=operation_id) is None
+    )
+    retained = recovered.get_simulation_operation(tenant_id=tenant_id, operation_id=operation_id)
+    assert retained.status == "RUNNING"
+    assert retained.risk_authority_context == admitted.risk_authority_context
+    assert retained.risk_authority_context_hash == admitted.risk_authority_context_hash
+    assert retained.request_hash == admitted.request_hash
+    replacement = recovered.claim_simulation_items(
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        worker_id="worker-B",
+        limit=1,
+        claimed_at=now + timedelta(seconds=2),
+        lease_expires_at=now + timedelta(seconds=32),
+    )
+    assert len(replacement) == 1
+    assert replacement[0].claim_generation == claims[0].claim_generation + 1
+    retained = recovered.get_simulation_operation(tenant_id=tenant_id, operation_id=operation_id)
+    assert retained.risk_authority_context == context
+    assert retained.risk_authority_context_hash == context.fingerprint()
+    assert (
+        policy.headers(
+            context=retained.risk_authority_context,
+            operation="concentration",
+            correlation_id="worker-attempt",
+        )["X-Actor-Id"]
+        == "integration-test"
+    )
 
 
 def test_competing_repository_instances_respect_the_shared_concurrency_budget(
