@@ -10,6 +10,11 @@ import httpx
 from src.core.construction.models import AuthoritativeRegimeStressContext, AuthoritativeRiskContext
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import RebalanceResult
+from src.core.risk_authority.context import (
+    RiskAuthorityContext,
+    RiskAuthorityOperation,
+    RiskAuthorityPolicy,
+)
 from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
 
 
@@ -80,10 +85,28 @@ class LotusRiskAuthorityClient:
         *,
         config: LotusRiskAuthorityConfig,
         client: Optional[httpx.Client] = None,
+        authority_context: RiskAuthorityContext | None = None,
+        authority_policy: RiskAuthorityPolicy | None = None,
     ) -> None:
         self._config = config
         self._client = client
         self._owns_client = client is None
+        self._authority_context = authority_context
+        self._authority_policy = authority_policy
+
+    def _authority_headers(
+        self, operation: RiskAuthorityOperation, correlation_id: str | None
+    ) -> dict[str, str]:
+        if self._authority_policy is None:
+            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_AUTHORITY_CONTEXT_UNAVAILABLE")
+        try:
+            return self._authority_policy.headers(
+                context=self._authority_context,
+                operation=operation,
+                correlation_id=correlation_id,
+            )
+        except ValueError as exc:
+            raise LotusRiskAuthorityUnavailableError(str(exc)) from exc
 
     def close(self) -> None:
         if self._owns_client and self._client is not None:
@@ -96,7 +119,7 @@ class LotusRiskAuthorityClient:
         correlation_id: str | None,
     ) -> AuthoritativeRiskContext:
         payload = _concentration_payload(result=result)
-        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        headers = self._authority_headers("concentration", correlation_id)
         client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
         try:
             response_payload = _post_with_retries(
@@ -128,7 +151,7 @@ class LotusRiskAuthorityClient:
             scenario_pack_id=scenario_pack_id,
             maximum_allowed_loss_pct=maximum_allowed_loss_pct,
         )
-        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        headers = self._authority_headers("regime_scenario", correlation_id)
         client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
         try:
             response_payload = _post_with_retries(
@@ -159,7 +182,7 @@ class LotusRiskAuthorityClient:
             "portfolios": portfolios,
             "minimum_impact_score": float(minimum_impact_score),
         }
-        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        headers = self._authority_headers("risk_event_cohort", correlation_id)
         client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
         try:
             response_payload = _post_with_retries(
@@ -266,7 +289,7 @@ def _risk_context_from_concentration_response(body: dict[str, Any]) -> Authorita
         return AuthoritativeRiskContext(
             supportability_status=_risk_status_from_supportability(sections.supportability_state),
             source_system=_concentration_source_system(body),
-            source_product_name="ConcentrationAnalysis",
+            source_product_name="ConcentrationRiskReport",
             source_product_version=_concentration_source_product_version(sections.metadata),
             source_id=_optional_text(sections.request_fingerprint),
             content_hash=_optional_text(sections.request_fingerprint),
@@ -285,11 +308,18 @@ def _risk_context_from_concentration_response(body: dict[str, Any]) -> Authorita
 
 
 def _concentration_source_system(body: dict[str, Any]) -> str:
-    return _required_text(body=body, key="source_service")
+    source = _required_text(body=body, key="source_service")
+    if source != "lotus-risk":
+        raise ValueError("Unexpected Risk concentration source service")
+    return source
 
 
 def _concentration_source_product_version(metadata: dict[str, Any]) -> str:
-    return _required_text(body=metadata, key="methodology_version")
+    name = _required_text(body=metadata, key="product_name")
+    version = _required_text(body=metadata, key="product_version")
+    if name != "ConcentrationRiskReport" or version != "v1":
+        raise ValueError("Unsupported Risk concentration product contract")
+    return version
 
 
 def _concentration_hhi_delta(risk_proxy: dict[str, Any]) -> Decimal:

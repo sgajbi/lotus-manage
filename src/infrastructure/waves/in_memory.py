@@ -203,7 +203,10 @@ class InMemoryDpmWaveRepository(DpmWaveSimulationPublicationMixin, DpmWaveReposi
             existing_id = self._simulation_operation_idempotency.get(index_key)
             if existing_id is not None:
                 existing = self._simulation_operations[existing_id]
-                if existing.request_hash != operation.request_hash:
+                if (
+                    existing.request_hash != operation.request_hash
+                    or existing.risk_authority_context_hash != operation.risk_authority_context_hash
+                ):
                     raise DpmWaveSimulationOperationConflictError(
                         "DPM_WAVE_SIMULATION_IDEMPOTENCY_CONFLICT"
                     )

@@ -10,6 +10,7 @@ import threading
 import time
 import uuid
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 import httpx
 import psycopg
@@ -19,6 +20,27 @@ from psycopg.rows import dict_row
 
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
+
+
+@dataclass(frozen=True)
+class RiskRuntimeConfiguration:
+    """Explicit proof inputs, not inherited credentials or arbitrary environment passthrough."""
+
+    base_url: str
+    capabilities_json: str
+    consumer_identity: str
+    policy_version: str
+    posture: str = "header-trust"
+
+    def environment(self) -> dict[str, str]:
+        return {
+            "DPM_RISK_BASE_URL": self.base_url,
+            "DPM_RISK_REQUIRED_CAPABILITIES_JSON": self.capabilities_json,
+            "DPM_RISK_CONSUMER_SERVICE_IDENTITY": self.consumer_identity,
+            "ENTERPRISE_POLICY_VERSION": self.policy_version,
+            "PRINCIPAL_RESOLUTION_POSTURE": self.posture,
+            "ENVIRONMENT": "local",
+        }
 
 
 @contextmanager
@@ -41,7 +63,7 @@ def disposable_database():
             )
 
 
-def _serve(dsn, pipe, stop, core_url=None):
+def _serve(dsn, pipe, stop, core_url=None, risk_config=None):
     # Spawned interpreters do not inherit parent's in-process dependency overrides.
     for name in list(os.environ):
         if name.startswith(("DPM_", "ENTERPRISE_", "APP_")):
@@ -63,6 +85,8 @@ def _serve(dsn, pipe, stop, core_url=None):
             DPM_CORE_BASE_URL=core_url,
             DPM_CORE_RESOLVER_MAX_ATTEMPTS="1",
         )
+    if risk_config is not None:
+        os.environ.update(risk_config.environment())
     import uvicorn
     from src.api.main import app
 
@@ -83,9 +107,9 @@ def _serve(dsn, pipe, stop, core_url=None):
 
 
 @contextmanager
-def native_api(dsn, *, core_url=None):
+def native_api(dsn, *, core_url=None, risk_config: RiskRuntimeConfiguration | None = None):
     if os.environ.get("DPM_NETWORK_IMAGE_ID"):
-        if core_url is not None:
+        if core_url is not None or risk_config is not None:
             raise ValueError("Controlled source proof requires the native installed API.")
         from tests.integration.dpm.image_runtime import image_api
 
@@ -95,7 +119,7 @@ def native_api(dsn, *, core_url=None):
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe(duplex=False)
     stop = context.Event()
-    process = context.Process(target=_serve, args=(dsn, child, stop, core_url))
+    process = context.Process(target=_serve, args=(dsn, child, stop, core_url, risk_config))
     process.start()
     child.close()
     port = None

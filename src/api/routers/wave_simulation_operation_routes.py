@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from src.api.dependencies import (
     get_rebalance_runtime,
     get_construction_repository,
-    get_risk_authority_client,
+    get_operation_risk_authority_client,
+    get_risk_authority_context,
     get_wave_repository,
 )
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
@@ -42,6 +43,7 @@ from src.api.routers.wave_simulation_operation_http import (
 )
 from src.api.services import wave_simulation_operations
 from src.core.integration_ports import RiskAuthorityClient
+from src.core.risk_authority.context import RiskAuthorityContext
 from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.core.construction.repository import ConstructionRepository
 from src.core.common.derived_identity import derived_identity
@@ -79,7 +81,10 @@ ResultsOffsetQuery = Annotated[int, Query(ge=0)]
         "Stateful items derive scope from the checked wave, resolve Core-owned inputs and mandate "
         "policy once, then retain the effective financial request and source context. Workers and "
         "exact retries never refetch Core. Stateless items remain explicit counterfactual inputs; "
-        "neither mode approves, releases or books trades."
+        "neither mode approves, releases or books trades. Qualified local/dev Risk context is "
+        "retained immutably with actor/tenant/correlation custody. Worker claims do not replace "
+        "it; missing context or changed deployment policy refuses protected Risk enrichment. "
+        "Header-trust has no verified grant provenance, expiry or production identity."
     ),
     responses={
         404: _NOT_FOUND_RESPONSE,
@@ -99,6 +104,7 @@ def admit_simulation_operation(
     x_tenant_id: WaveTenantIdHeader,
     x_correlation_id: WaveCorrelationIdHeader = None,
     repository: DpmWaveSimulationRepository = Depends(get_wave_repository),
+    risk_authority_context: RiskAuthorityContext | None = Depends(get_risk_authority_context),
 ) -> DpmWaveSimulationOperationResponse:
     try:
         operation, replayed = wave_simulation_operations.admit_wave_simulation_operation(
@@ -114,6 +120,7 @@ def admit_simulation_operation(
             max_concurrency=request.max_concurrency,
             max_attempts=request.max_attempts,
             repository=repository,
+            risk_authority_context=risk_authority_context,
         )
     except DpmWaveLookupError as exc:
         raise wave_lookup_http_exception(exc) from exc
@@ -205,7 +212,9 @@ def execute_simulation_work(
     x_tenant_id: WaveTenantIdHeader,
     repository: DpmWaveSimulationRepository = Depends(get_wave_repository),
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
-    risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
+    risk_authority_client: RiskAuthorityClient | None = Depends(
+        get_operation_risk_authority_client
+    ),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
 ) -> DpmWaveSimulationWorkResponse:
     try:

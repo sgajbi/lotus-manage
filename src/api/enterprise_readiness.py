@@ -7,6 +7,13 @@ from typing import Any, Awaitable, Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+from src.core.risk_authority.context import (
+    RiskAuthorityContext,
+    RiskAuthorityGrant,
+    RiskAuthorityOperation,
+    RiskAuthorityPolicy,
+)
 
 from src.api.request_body_limit import (
     declared_content_length,
@@ -62,6 +69,63 @@ def _env_int(name: str, default: int) -> int:
 
 def enterprise_policy_version() -> str:
     return os.getenv("ENTERPRISE_POLICY_VERSION", "1.0.0")
+
+
+def risk_authority_policy() -> RiskAuthorityPolicy | None:
+    """Explicit local pilot only; missing configuration never supplies authority."""
+    if (
+        not _env_enabled("ENTERPRISE_ENFORCE_AUTHZ", "false")
+        or os.getenv("PRINCIPAL_RESOLUTION_POSTURE", "").strip() != "header-trust"
+        or os.getenv("ENVIRONMENT", "").strip().lower() not in {"local", "dev"}
+        or os.getenv("APP_PERSISTENCE_PROFILE", "LOCAL").strip().upper() != "LOCAL"
+    ):
+        return None
+    mapping = _load_json_map("DPM_RISK_REQUIRED_CAPABILITIES_JSON")
+    operations: tuple[RiskAuthorityOperation, ...] = (
+        "concentration",
+        "regime_scenario",
+        "risk_event_cohort",
+    )
+    if set(mapping) != set(operations) or any(
+        not isinstance(value, str) or not value.strip() or "," in value
+        for value in mapping.values()
+    ):
+        return None
+    identity = os.getenv("DPM_RISK_CONSUMER_SERVICE_IDENTITY", "").strip()
+    version = os.getenv("ENTERPRISE_POLICY_VERSION", "").strip()
+    if not identity or not version:
+        return None
+    try:
+        return RiskAuthorityPolicy(
+            service_identity=identity,
+            policy_version=version,
+            grants=tuple(
+                RiskAuthorityGrant(operation=operation, capability=mapping[operation])
+                for operation in operations
+            ),
+        )
+    except ValidationError:
+        return None
+
+
+def _admitted_risk_context(request: Request) -> RiskAuthorityContext | None:
+    policy = risk_authority_policy()
+    headers = _normalized_headers(dict(request.headers))
+    if policy is None or _missing_required_headers(headers):
+        return None
+    capabilities = _provided_capabilities(headers)
+    try:
+        return RiskAuthorityContext(
+            actor_id=headers["x-actor-id"],
+            tenant_id=headers["x-tenant-id"],
+            role=headers["x-role"],
+            correlation_id=headers["x-correlation-id"],
+            service_identity=policy.service_identity,
+            policy_fingerprint=policy.fingerprint(),
+            grants=tuple(grant for grant in policy.grants if grant.capability in capabilities),
+        )
+    except ValidationError:
+        return None
 
 
 def validate_enterprise_runtime_config() -> list[str]:
@@ -203,7 +267,7 @@ def write_authorization_required(method: str) -> bool:
 
 
 def _normalized_headers(headers: dict[str, str]) -> dict[str, str]:
-    return {str(key).lower(): str(value) for key, value in headers.items()}
+    return {str(key).lower(): str(value).strip() for key, value in headers.items()}
 
 
 def _missing_required_headers(headers: dict[str, str]) -> list[str]:
@@ -372,6 +436,12 @@ def build_enterprise_audit_middleware() -> MiddlewareCallable:
         if not authorized:
             _emit_denied_write_audit(request, reason=reason)
             return _authorization_denied_response(request, reason)
+
+        request.state.risk_authority_context = (
+            _admitted_risk_context(request)
+            if write_authorization_required(request.method)
+            else None
+        )
 
         if method_is_write:
             body = await read_limited_body(request, max_bytes=max_write_payload_bytes)

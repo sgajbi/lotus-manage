@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.models import DpmRebalanceWaveItem
+from src.core.risk_authority.context import RiskAuthorityContext
 
 WaveSimulationOperationStatus = Literal[
     "PENDING",
@@ -38,6 +39,8 @@ class DpmWaveSimulationOperation(BaseModel):
     idempotency_key_hash: str
     correlation_id: str
     actor_id: str
+    risk_authority_context: RiskAuthorityContext | None = Field(default=None, frozen=True)
+    risk_authority_context_hash: str | None = Field(default=None, frozen=True)
     source_identity_hash: str
     admitted_wave_version: int = Field(ge=1)
     methods: list[str] = Field(default_factory=list)
@@ -47,6 +50,22 @@ class DpmWaveSimulationOperation(BaseModel):
     cancel_reason_code: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="after")
+    def validate_risk_authority_custody(self) -> Self:
+        context = self.risk_authority_context
+        if context is None:
+            if self.risk_authority_context_hash is not None:
+                raise ValueError("Missing retained Risk authority context")
+            return self
+        if (
+            context.fingerprint() != self.risk_authority_context_hash
+            or context.actor_id != self.actor_id
+            or context.tenant_id != self.tenant_id
+            or context.correlation_id != self.correlation_id
+        ):
+            raise ValueError("Retained Risk authority context conflicts with operation custody")
+        return self
 
 
 class DpmWaveSimulationItemRecord(BaseModel):

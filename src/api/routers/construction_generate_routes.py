@@ -42,7 +42,10 @@ from src.core.rebalance_runs.service import DpmRunSupportService
         "Generates an auditable set of discretionary portfolio construction alternatives for a "
         "single mandate context. Use this endpoint when a PM, command center, or governed workflow "
         "needs a no-action baseline plus comparable rebalance alternatives before selecting a "
-        "preferred implementation path. Required header: `Idempotency-Key`."
+        "preferred implementation path. Required header: `Idempotency-Key`. Protected Risk "
+        "enrichment additionally requires admitted caller context and an explicit local/dev "
+        "operation-capability policy; missing authority remains non-ready. This pilot is not "
+        "verified production identity."
     ),
     responses={
         200: {

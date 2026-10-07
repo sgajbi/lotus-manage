@@ -9,6 +9,7 @@ from src.api.request_models import RebalanceRequest
 from src.core.rebalance.runtime_ports import RebalanceRuntime
 from src.observability.metrics import record_async_operation
 from src.core.integration_ports import RiskAuthorityClient
+from src.core.risk_authority.context import RiskAuthorityContext
 from src.api.services.wave_aggregate_metrics import aggregate_wave_items, simulation_result_state
 from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
 from src.api.services.wave_event_evidence import build_wave_event
@@ -56,6 +57,7 @@ def admit_wave_simulation_operation(
     max_concurrency: int,
     max_attempts: int,
     repository: DpmWaveSimulationRepository,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> tuple[DpmWaveSimulationOperation, bool]:
     key_hash = wave_simulation_idempotency_key(tenant_id=tenant_id, idempotency_key=idempotency_key)
     with repository.simulation_admission_guard(tenant_id=tenant_id, idempotency_key_hash=key_hash):
@@ -71,6 +73,7 @@ def admit_wave_simulation_operation(
             max_concurrency=max_concurrency,
             max_attempts=max_attempts,
             repository=repository,
+            risk_authority_context=risk_authority_context,
         )
 
 
@@ -87,7 +90,17 @@ def _admit_wave_simulation_operation(
     max_concurrency: int,
     max_attempts: int,
     repository: DpmWaveSimulationRepository,
+    risk_authority_context: RiskAuthorityContext | None = None,
 ) -> tuple[DpmWaveSimulationOperation, bool]:
+    if risk_authority_context is not None and (
+        risk_authority_context.tenant_id != tenant_id
+        or risk_authority_context.actor_id != actor_id
+        or risk_authority_context.correlation_id != correlation_id
+    ):
+        raise DpmWaveValidationError(
+            "DPM_WAVE_SIMULATION_AUTHORITY_CONTEXT_CONFLICT",
+            "Admitted actor and tenant must match immutable operation ownership.",
+        )
     wave = repository.get_wave(wave_id=wave_id, tenant_id=tenant_id)
     if wave is None:
         raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
@@ -173,7 +186,13 @@ def _admit_wave_simulation_operation(
         }
     )
     if existing is not None:
-        if existing.request_hash != request_hash:
+        context_hash = (
+            risk_authority_context.fingerprint() if risk_authority_context is not None else None
+        )
+        if (
+            existing.request_hash != request_hash
+            or existing.risk_authority_context_hash != context_hash
+        ):
             record_async_operation(event="submit", execution_mode="accept_only", outcome="conflict")
             raise DpmWaveValidationError(
                 "DPM_WAVE_SIMULATION_IDEMPOTENCY_CONFLICT",
@@ -189,6 +208,10 @@ def _admit_wave_simulation_operation(
         idempotency_key_hash=idempotency_hash,
         correlation_id=correlation_id,
         actor_id=actor_id,
+        risk_authority_context=risk_authority_context,
+        risk_authority_context_hash=(
+            risk_authority_context.fingerprint() if risk_authority_context is not None else None
+        ),
         source_identity_hash=source_identity_hash,
         admitted_wave_version=wave.version,
         methods=method_values,

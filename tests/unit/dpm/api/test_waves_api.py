@@ -35,6 +35,11 @@ from src.api.services.wave_aggregate_metrics import simulation_result_state
 from src.api.services.wave_event_append import append_same_state_event
 from src.api.services.wave_event_evidence import build_wave_event
 from src.core.construction.repository import ConstructionIdempotencyConflictError
+from src.core.risk_authority.context import (
+    RiskAuthorityContext,
+    RiskAuthorityGrant,
+    RiskAuthorityPolicy,
+)
 from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
@@ -1794,9 +1799,29 @@ def test_risk_event_wave_http_adapter_rejects_invalid_cohort_before_publication(
             payload["affected_portfolios"][0]["impact_score"] = "NaN"
         return httpx.Response(200, json=payload)
 
+    policy = RiskAuthorityPolicy(
+        service_identity="manage-synthetic-consumer",
+        policy_version="synthetic-response-validation-v1",
+        grants=(
+            RiskAuthorityGrant(operation="concentration", capability="risk.concentration"),
+            RiskAuthorityGrant(operation="regime_scenario", capability="risk.regime"),
+            RiskAuthorityGrant(operation="risk_event_cohort", capability="risk.cohort"),
+        ),
+    )
+    context = RiskAuthorityContext(
+        actor_id="synthetic-response-reviewer",
+        tenant_id="tenant-sg",
+        role="PM",
+        correlation_id="synthetic-response-validation",
+        service_identity=policy.service_identity,
+        policy_fingerprint=policy.fingerprint(),
+        grants=policy.grants,
+    )
     risk_authority = LotusRiskAuthorityClient(
         config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
+        authority_context=context,
+        authority_policy=policy,
     )
     wave_repository = InMemoryDpmWaveRepository()
     with _client(
