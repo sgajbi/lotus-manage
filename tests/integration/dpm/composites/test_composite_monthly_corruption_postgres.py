@@ -3,6 +3,7 @@
 import pytest
 import psycopg
 import json
+from contextlib import closing
 from psycopg import sql
 from src.core.composite_repository import DpmCompositeConflictError
 from src.api.services.composite_monthly_eligibility import MonthlyApprovalRequest
@@ -101,52 +102,13 @@ def test_real_stored_monthly_hash_and_identity_corruption_refuses_without_public
         )
     before = repository.list_publications(tenant_id=scope["tenant_id"], after_sequence=0, limit=10)
     table = "dpm_composite_monthly_" + stage + "s"
-    with psycopg.connect(dsn) as connection:
-        if corruption == "hash":
-            cursor = connection.execute(
-                sql.SQL(
-                    "UPDATE {} SET content_hash=%s WHERE tenant_id=%s RETURNING content_hash"
-                ).format(sql.Identifier(table)),
-                ("sha256:" + "0" * 64, scope["tenant_id"]),
-            )
-        else:
-            field = "proposal_revision" if stage.startswith("policy") else "evaluation_revision"
-            wire = connection.execute(
-                sql.SQL("SELECT payload_json FROM {} WHERE tenant_id=%s").format(
-                    sql.Identifier(table)
-                ),
-                (scope["tenant_id"],),
-            ).fetchone()[0]
-            proposal_wire = wire["proposal"] if stage.endswith("approval") else wire
-            proposal_wire.update(content_hash="", **{field: "foreign-revision"})
-            proposal_type = (
-                MonthlyPolicyProposal if stage.startswith("policy") else MonthlyEvaluationProposal
-            )
-            rebound = proposal_type.model_validate(proposal_wire)
-            if stage.endswith("approval"):
-                wire.update(proposal=rebound.model_dump(mode="json"), content_hash="")
-                if stage == "evaluation_approval":
-                    wire["claims_digest"] = monthly_evaluation_approval_claims_hash(
-                        rebound, approved_by=wire["approved_by"], approved_at=wire["approved_at"]
-                    )
-                approval_type = (
-                    MonthlyPolicyApproval
-                    if stage.startswith("policy")
-                    else MonthlyEvaluationApproval
-                )
-                rebound = approval_type.model_validate(wire)
-            cursor = connection.execute(
-                sql.SQL(
-                    "UPDATE {} SET payload_json=%s::jsonb, content_hash=%s WHERE tenant_id=%s RETURNING payload_json"
-                ).format(sql.Identifier(table)),
-                (
-                    json.dumps(rebound.model_dump(mode="json")),
-                    rebound.content_hash,
-                    scope["tenant_id"],
-                ),
-            )
-        assert cursor.fetchone() is not None
-        assert cursor.fetchone() is None
+    protected_constraint = {
+        ("policy_proposal", "hash"): "monthly_policy_approval_mode_fk",
+        ("policy_proposal", "identity"): "monthly_policy_approval_mode_fk",
+        ("policy_approval", "hash"): "monthly_evaluation_policy_mode_fk",
+        ("policy_approval", "identity"): "monthly_evaluation_policy_mode_fk",
+        ("evaluation_approval", "identity"): "monthly_evaluation_approval_mode_fk",
+    }.get((stage, corruption))
     getter = getattr(repository, "get_monthly_" + stage)
     selectors = (
         {"month": "2026-09"}
@@ -155,16 +117,96 @@ def test_real_stored_monthly_hash_and_identity_corruption_refuses_without_public
     )
     if stage == "policy_proposal":
         selectors["proposal_revision"] = "synthetic-config-r1"
-    prefix = "COMPOSITE_ELIGIBILITY_" + ("EVALUATION_" if stage.startswith("evaluation") else "")
-    code = (
-        prefix + ("APPROVAL" if stage.endswith("approval") else "PROPOSAL") + "_INTEGRITY_CONFLICT"
-    )
-    with pytest.raises(DpmCompositeConflictError, match=code):
-        getter(**scope, **selectors)
+    retained = getter(**scope, **selectors)
+    with closing(psycopg.connect(dsn)) as connection:
+        prior_controls = _monthly_control_rows(connection, scope["tenant_id"])
+        if protected_constraint is not None:
+            with pytest.raises(psycopg.errors.ForeignKeyViolation) as failure:
+                _corrupt_monthly_row(connection, table, stage, corruption, scope["tenant_id"])
+            assert failure.value.diag.constraint_name == protected_constraint
+            connection.rollback()
+            assert _monthly_control_rows(connection, scope["tenant_id"]) == prior_controls
+        else:
+            _corrupt_monthly_row(connection, table, stage, corruption, scope["tenant_id"])
+            connection.commit()
+    if protected_constraint is not None:
+        assert getter(**scope, **selectors) == retained
+    else:
+        prefix = "COMPOSITE_ELIGIBILITY_" + (
+            "EVALUATION_" if stage.startswith("evaluation") else ""
+        )
+        code = (
+            prefix
+            + ("APPROVAL" if stage.endswith("approval") else "PROPOSAL")
+            + "_INTEGRITY_CONFLICT"
+        )
+        with pytest.raises(DpmCompositeConflictError, match=code):
+            getter(**scope, **selectors)
     assert (
         repository.list_publications(tenant_id=scope["tenant_id"], after_sequence=0, limit=10)
         == before
     )
+
+
+def _monthly_control_rows(connection, tenant_id):
+    return {
+        stage: connection.execute(
+            sql.SQL(
+                "SELECT to_jsonb(t) FROM {} t WHERE tenant_id=%s ORDER BY to_jsonb(t)::text"
+            ).format(sql.Identifier("dpm_composite_monthly_" + stage + "s")),
+            (tenant_id,),
+        ).fetchall()
+        for stage in (
+            "policy_proposal",
+            "policy_approval",
+            "evaluation_proposal",
+            "evaluation_approval",
+        )
+    }
+
+
+def _corrupt_monthly_row(connection, table, stage, corruption, tenant_id):
+    if corruption == "hash":
+        cursor = connection.execute(
+            sql.SQL(
+                "UPDATE {} SET content_hash=%s WHERE tenant_id=%s RETURNING content_hash"
+            ).format(sql.Identifier(table)),
+            ("sha256:" + "0" * 64, tenant_id),
+        )
+    else:
+        field = "proposal_revision" if stage.startswith("policy") else "evaluation_revision"
+        wire = connection.execute(
+            sql.SQL("SELECT payload_json FROM {} WHERE tenant_id=%s").format(sql.Identifier(table)),
+            (tenant_id,),
+        ).fetchone()[0]
+        proposal_wire = wire["proposal"] if stage.endswith("approval") else wire
+        proposal_wire.update(content_hash="", **{field: "foreign-revision"})
+        proposal_type = (
+            MonthlyPolicyProposal if stage.startswith("policy") else MonthlyEvaluationProposal
+        )
+        rebound = proposal_type.model_validate(proposal_wire)
+        if stage.endswith("approval"):
+            wire.update(proposal=rebound.model_dump(mode="json"), content_hash="")
+            if stage == "evaluation_approval":
+                wire["claims_digest"] = monthly_evaluation_approval_claims_hash(
+                    rebound, approved_by=wire["approved_by"], approved_at=wire["approved_at"]
+                )
+            approval_type = (
+                MonthlyPolicyApproval if stage.startswith("policy") else MonthlyEvaluationApproval
+            )
+            rebound = approval_type.model_validate(wire)
+        cursor = connection.execute(
+            sql.SQL(
+                "UPDATE {} SET payload_json=%s::jsonb, content_hash=%s WHERE tenant_id=%s RETURNING payload_json"
+            ).format(sql.Identifier(table)),
+            (
+                json.dumps(rebound.model_dump(mode="json")),
+                rebound.content_hash,
+                tenant_id,
+            ),
+        )
+    assert cursor.fetchone() is not None
+    assert cursor.fetchone() is None
 
 
 @pytest.mark.parametrize("lost", ["universe", "publication"])
