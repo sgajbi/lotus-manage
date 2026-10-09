@@ -35,6 +35,11 @@ This repository owns:
    snapshot, but cross-request offset pages are not stable under writes; consumers use the
    publication cursor for handoff. The caller-asserted identity headers require trusted ingress
    before production use.
+   Correction writes compare all retained decision evidence outside the declared inclusive impact
+   window using `src/core/composite_corrections.py`, under each adapter's atomic write boundary.
+   Equivalent adjacent interval splits are accepted; changed status, scope, source/approval evidence
+   or removed history outside the window refuses before publication. Retained historical revisions
+   remain readable; the guard does not rewrite legacy rows.
    Definition decoding now dispatches v1/v2 through `src/core/composite_definition_versions.py`.
    v2 authority models/policy bind separate profile/business/wire digests; existing JSONB keys and
    all membership/publication wires are unchanged. `CompositeProviderTrustPort` defaults unavailable;

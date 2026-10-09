@@ -65,6 +65,14 @@ of live Core transport, member-return materialization, calculated composite perf
 IAM or capacity. Changed content under the same attestation version is an integrity conflict; issue
 a new governed version rather than overwriting history.
 
+Membership corrections must preserve every decision outside `affected_from` through `affected_to`
+(both inclusive). `COMPOSITE_MEMBERSHIP_CORRECTION_OUTSIDE_WINDOW` returns 409 before a revision
+or publication is written. Preserve unchanged intervals and source/approval references; include all
+changed dates in the declared impact window. Never retry with a falsely narrower window. Original
+and corrected revisions remain separately retrievable. See the
+[correction tutorial](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-membership-corrections.md)
+for executable examples and the synthetic HTTP/PostgreSQL/restart evidence boundary.
+
 ## Synchronous rebalance admission and recovery
 
 `POST /api/v1/rebalance/simulate` requires `X-Tenant-Id` and `Idempotency-Key`. PostgreSQL claims
