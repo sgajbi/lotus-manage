@@ -98,6 +98,18 @@ artifacts for downstream compatibility investigation. Synthetic publication stay
 The recurring native pack also covers 17 economic scenarios and three successive monthly
 publications proving exclusion history and full-rule re-entry after restart.
 
+Fresh recurring proposals carry server-owned `publication_evidence_version='v1'`; omission
+preserves earlier custody and explicit null/unknown versions refuse. Marked published universes
+replace only the output's prior monthly locator with the exact current approval digest. The same
+eligibility resolver accepts `CompositeMonthlyEvaluationApproval/v1` and returns the strict
+`CompositeMonthlyEligibilityPublicationReceipt/v1`. Its root hash retains nested hashes; memory
+uses one non-reentrant lock and PostgreSQL one repeatable-read read-only transaction to join
+independent policy/evaluation rows, parent/input universe and full projected publication. Do not
+replace these full comparisons with legacy universe hash equality: nested locator hashes are
+excluded by that older hash convention. Unmarked monthly proofs remain unresolved; no migration
+or new authority is inferred. Native tests cover actual current locators, all three months,
+restart/replay and rehashed independent-row/nested-locator refusal.
+
 Staged v2 finalization reserves an immutable subject before any definition or membership exists.
 `staged_*` core modules reuse the monthly engine; adapters reuse all four policy/evaluation stores.
 Migration `0042` adds subject/finalization custody and non-null mode/exact-hash predecessor FKs;

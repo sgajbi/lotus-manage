@@ -16,6 +16,15 @@ synthetic and non-certifying; qualified financial compatibility, bank identity/g
 activation remain outstanding. The repository guide `docs/guides/composite-configured-sources.md`
 owns the configuration, wire contract, negative cases and native API/PostgreSQL commands.
 
+Marked recurring monthly publications retain one current `CompositeMonthlyEvaluationApproval/v1`
+locator in their published universe. The existing eligibility evidence resolver returns the strict
+`CompositeMonthlyEligibilityPublicationReceipt/v1` with full definition, approval/source graph,
+membership/universe bindings, canonical sequence and `UNVERIFIED` posture. It joins independent
+policy/evaluation custody and reprojects exact published objects under one read snapshot; a
+rehashed nested locator cannot evade the legacy universe hash. Earlier unmarked monthly custody
+remains readable/replayable and unresolved by this new proof. The monthly eligibility guide owns
+the marker, hashing, scope and authority boundaries; each month still requires separate approval.
+
 ## Current scope
 
 Current scope: this page maps implementation-backed `lotus-manage` integration boundaries for

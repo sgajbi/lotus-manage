@@ -27,6 +27,266 @@ CHECKER = HEADERS | {"X-Actor-Id": "synthetic-checker"}
 URL = BASE + "/evaluations/synthetic-evaluation-r1"
 
 
+def test_exact_resolver_openapi_declares_both_receipt_products_without_new_route():
+    schema = app.openapi()
+    path = "/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/eligibility-evidence/resolve"
+    response = schema["paths"][path]["post"]["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]
+    assert response["discriminator"]["propertyName"] == "product_name"
+    assert set(response["discriminator"]["mapping"]) == {
+        "CompositeEligibilityFinalizationReceipt",
+        "CompositeMonthlyEligibilityPublicationReceipt",
+    }
+    monthly = schema["components"]["schemas"]["MonthlyEligibilityPublicationReceipt"]
+    assert monthly["additionalProperties"] is False
+    assert monthly["properties"]["publication_sequence"]["exclusiveMinimum"] == 0
+    assert set(monthly["required"]) >= {
+        "definition",
+        "approval",
+        "membership_binding",
+        "universe_binding",
+        "source_cut_id",
+        "publication_sequence",
+    }
+
+
+def test_actual_791_main_unmarked_monthly_approval_preserves_original_wire_and_hash():
+    import json
+    from pathlib import Path
+
+    wire = json.loads(
+        (
+            Path(__file__).parents[2]
+            / "fixtures/composites/historical-recurring-monthly-approval.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert (
+        wire["content_hash"]
+        == "sha256:9fe7b283b8f54763a5d345034716f79993b3bce4881b7f747862e54f3876f72b"
+    )
+    assert "publication_evidence_version" not in wire["proposal"]
+    restored = MonthlyEvaluationApproval.model_validate(wire)
+    assert restored.model_dump(mode="json") == wire
+    assert restored.proposal.source_assembly_evidence is not None
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_monthly_unqualified_or_unmarked_custody_cannot_invent_published_proof(
+    evaluation_api, legacy
+):
+    repository = evaluation_api[1]
+    wire = propose(evaluation_api)
+    if legacy:
+        wire.pop("publication_evidence_version")
+        wire["content_hash"] = ""
+        retained = MonthlyEvaluationProposal.model_validate(wire)
+        # Restore an earlier unmarked proposal, without authorizing a client marker downgrade.
+        repository._monthly_evaluations.clear()
+        repository.save_monthly_evaluation_proposal(proposal=retained)
+        wire = retained.model_dump(mode="json")
+    response = approve(evaluation_api, wire)
+    assert response.status_code == 200, response.text
+    approval = response.json()
+    arguments = dict(
+        tenant_id="synthetic-tenant",
+        composite_id="synthetic-composite",
+        definition_version="synthetic-definition",
+        evaluation_revision=wire["evaluation_revision"],
+        approval_content_hash=approval["content_hash"],
+    )
+    if legacy:
+        assert repository.resolve_monthly_eligibility_evidence(**arguments) is None
+        assert "publication_evidence_version" not in approval["proposal"]
+    else:
+        with pytest.raises(ValueError, match="COMPOSITE_MONTHLY_EVIDENCE_UNAVAILABLE"):
+            repository.resolve_monthly_eligibility_evidence(**arguments)
+    assert evaluation_api[0].get(URL + "/approval", headers=HEADERS).json() == approval
+    assert approve(evaluation_api, wire).json() == approval
+    assert len(publications(evaluation_api)) == 2 and len(evaluation_api[6]) == 1
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    [
+        None,
+        "policy",
+        "policy_proposal",
+        "evaluation",
+        "parent",
+        "membership",
+        "universe",
+        "publication",
+        "input_universe",
+    ],
+)
+def test_monthly_memory_resolver_joins_independent_custody(evaluation_api, corruption):
+    from src.core.composite_eligibility.source_assembly import (
+        MonthlySourceAssembly,
+        VerifiedMonthlySourceAssembly,
+        assembly_verification_request,
+    )
+    from tests.composite_staged_eligibility_helpers import synthetic_verification
+    from tests.unit.dpm.infrastructure.test_composite_monthly_source_assembly import (
+        assembly_material,
+    )
+
+    _, material = assembly_material()
+    assembly = MonthlySourceAssembly.model_validate(material)
+    evaluation_api[4]["evidence"] = VerifiedMonthlySourceAssembly(
+        assembly=assembly,
+        verification=synthetic_verification(assembly_verification_request(assembly)),
+    )
+    proposal = propose(evaluation_api)
+    response = approve(evaluation_api, proposal)
+    assert response.status_code == 200, response.text
+    approval = response.json()
+    repository = evaluation_api[1]
+    arguments = dict(
+        tenant_id="synthetic-tenant",
+        composite_id="synthetic-composite",
+        definition_version="synthetic-definition",
+        evaluation_revision=proposal["evaluation_revision"],
+        approval_content_hash=approval["content_hash"],
+    )
+    receipt = repository.resolve_monthly_eligibility_evidence(**arguments)
+    assert receipt.approval.model_dump(mode="json") == approval
+    assert receipt.publication_sequence == 2
+    if corruption is None:
+        from copy import deepcopy
+        from src.core.composite_eligibility.monthly_evidence import (
+            MonthlyEligibilityPublicationReceipt,
+        )
+
+        for field, value in (
+            (
+                "membership_binding",
+                {**receipt.membership_binding.model_dump(), "revision": "wrong-member"},
+            ),
+            (
+                "universe_binding",
+                {**receipt.universe_binding.model_dump(), "revision": "wrong-month"},
+            ),
+            ("source_cut_id", "wrong-cut"),
+            ("publication_sequence", 0),
+            ("content_hash", "sha256:" + "e" * 64),
+            ("unknown", "refuse"),
+        ):
+            changed = {**receipt.model_dump(mode="json"), "content_hash": "", field: value}
+            with pytest.raises(ValidationError):
+                MonthlyEligibilityPublicationReceipt.model_validate(changed)
+        for target in ("definition", "source_authority"):
+            changed = deepcopy(receipt.model_dump(mode="json"))
+            selected = (
+                changed["definition"] if target == "definition" else changed["definition"][target]
+            )
+            selected["unknown"] = "must-not-be-dropped"
+            changed["content_hash"] = ""
+            with pytest.raises(ValidationError, match="DEFINITION_WIRE_INVALID"):
+                MonthlyEligibilityPublicationReceipt.model_validate(changed)
+    with pytest.raises(DpmCompositeConflictError, match="BINDING_MISMATCH"):
+        repository.resolve_monthly_eligibility_evidence(
+            **{**arguments, "approval_content_hash": "sha256:" + "e" * 64}
+        )
+    stores = {
+        "policy": repository._monthly_approvals,
+        "policy_proposal": repository._monthly_proposals,
+        "evaluation": repository._monthly_evaluations,
+        "parent": repository._membership_revisions,
+        "membership": repository._membership_revisions,
+        "universe": repository._universe_attestations,
+        "input_universe": repository._universe_attestations,
+        "publication": repository._publications,
+    }
+    if corruption is not None:
+        store = stores[corruption]
+        key = (
+            next(iter(store))
+            if corruption in ("parent", "input_universe")
+            else next(reversed(store))
+        )
+        retained = store.pop(key)
+        try:
+            with pytest.raises((DpmCompositeConflictError, ValueError)):
+                repository.resolve_monthly_eligibility_evidence(**arguments)
+        finally:
+            store[key] = retained
+        assert repository.resolve_monthly_eligibility_evidence(**arguments) == receipt
+    assert len(publications(evaluation_api)) == 2
+    assert len(evaluation_api[6]) == 1
+
+
+def test_monthly_publication_marker_is_server_owned_and_legacy_omission_is_preserved(
+    evaluation_api,
+):
+    from src.core.composite_eligibility.publication import build_monthly_publication
+
+    wire = propose(evaluation_api)
+    assert wire["publication_evidence_version"] == "v1"
+    proposal = MonthlyEvaluationProposal.model_validate(wire)
+    for invalid in (None, "v2", "", 1, False):
+        with pytest.raises(ValidationError):
+            MonthlyEvaluationProposal.model_validate(
+                {**wire, "publication_evidence_version": invalid}
+            )
+    for supplied in (None, "v1"):
+        refused = evaluation_api[0].put(
+            URL,
+            headers=HEADERS,
+            json={**evaluation_api[5], "publication_evidence_version": supplied},
+        )
+        assert refused.status_code == 422, refused.text
+    legacy_wire = dict(wire)
+    legacy_wire.pop("publication_evidence_version")
+    legacy_wire["content_hash"] = ""
+    legacy = MonthlyEvaluationProposal.model_validate(legacy_wire)
+    assert "publication_evidence_version" not in legacy.model_dump(mode="json")
+    assert legacy.content_hash == hash_canonical_payload(
+        {name: value for name, value in legacy_wire.items() if name != "content_hash"}
+    )
+    parent = evaluation_api[1].get_membership_revision(
+        tenant_id="synthetic-tenant",
+        composite_id="synthetic-composite",
+        definition_version="synthetic-definition",
+        membership_revision="synthetic-membership",
+    )
+    checked, _, universe = build_monthly_publication(
+        proposal, parent, approved_by="synthetic-checker", approved_at=proposal.proposed_at
+    )
+    locators = [
+        item
+        for item in universe.source_products
+        if item.product_name == "CompositeMonthlyEvaluationApproval"
+    ]
+    assert len(locators) == 1
+    locator = locators[0]
+    assert (
+        locator.owner_service,
+        locator.contract_version,
+        locator.authority_scope,
+        locator.source_cut_id,
+        locator.source_watermark,
+        locator.content_hash,
+    ) == (
+        "lotus-manage",
+        "v1",
+        "POLICY_INPUT",
+        universe.source_cut_id,
+        proposal.evaluation_revision,
+        checked.content_hash,
+    )
+    assert checked.published_universe_content_hash == universe.content_hash
+    _, _, old_universe = build_monthly_publication(
+        legacy, parent, approved_by="synthetic-checker", approved_at=legacy.proposed_at
+    )
+    assert old_universe.source_products == legacy.universe.source_products
+    field = MonthlyEvaluationProposal.model_json_schema()["properties"][
+        "publication_evidence_version"
+    ]
+    assert field["const"] == "v1" and field["type"] == "string"
+    assert "default" not in field and "anyOf" not in field
+
+
 @pytest.mark.parametrize("stage", ["proposal", "approval"])
 @pytest.mark.parametrize("winner", ["same", "different", "absent"])
 def test_evaluation_conflict_reconciles_only_exact_retained_winner(
@@ -293,7 +553,11 @@ def evaluation_api(request):
     class SyntheticSource:
         def resolve(self, request):
             resolutions.append(request)
-            return MonthlyEligibilitySourceResolution(snapshot, owner_service=state["owner"])
+            return MonthlyEligibilitySourceResolution(
+                snapshot,
+                owner_service=state["owner"],
+                source_assembly_evidence=state.get("evidence"),
+            )
 
     service = CompositeMonthlyEligibilityApplicationService(
         repository=repository,

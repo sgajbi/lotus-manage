@@ -59,6 +59,7 @@ from src.core.composite_eligibility.verification import (
     require_verification,
 )
 from src.core.composite_universe import DpmCompositeUniverseSourceProduct
+from src.core.composite_eligibility.monthly_evidence import MonthlyEligibilityPublicationReceipt
 
 ControlT = TypeVar(
     "ControlT",
@@ -374,7 +375,18 @@ class CompositeSubjectApplicationService:
 
     def resolve_evidence(
         self, tenant_id: str, composite_id: str, definition_version: str, binding: EvidenceBinding
-    ) -> SubjectFinalizationReceipt:
+    ) -> SubjectFinalizationReceipt | MonthlyEligibilityPublicationReceipt:
+        if binding.product_name == "CompositeMonthlyEvaluationApproval":
+            result_monthly = self.repository.resolve_monthly_eligibility_evidence(
+                tenant_id=tenant_id,
+                composite_id=composite_id,
+                definition_version=definition_version,
+                evaluation_revision=binding.revision,
+                approval_content_hash=binding.digest,
+            )
+            if result_monthly is None:
+                raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_NOT_FOUND")
+            return result_monthly
         if (
             binding.product_name != "CompositeSubjectEvaluationApproval"
             or binding.product_version != "v1"

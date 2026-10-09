@@ -1,8 +1,8 @@
 """Registered staging and server-resolved published eligibility evidence."""
 
-from typing import Callable, TypeVar
+from typing import Annotated, Callable, TypeVar
 from fastapi import APIRouter, Depends, HTTPException, Response
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 
 from src.api.composite_identity import (
     CompositeTrustedIdentity,
@@ -30,6 +30,12 @@ from src.core.composite_eligibility.staged_publication import (
     SubjectFinalizationReceipt,
     authority_approval_follows_evaluation,
 )
+from src.core.composite_eligibility.monthly_evidence import MonthlyEligibilityPublicationReceipt
+
+PublishedEligibilityReceipt = Annotated[
+    SubjectFinalizationReceipt | MonthlyEligibilityPublicationReceipt,
+    Field(discriminator="product_name"),
+]
 
 router = APIRouter(
     prefix="/rebalance/composites", tags=["lotus-manage Composite Eligibility Subjects"]
@@ -327,9 +333,9 @@ def get_finalization(
 
 @router.post(
     "/{composite_id}/definitions/{definition_version}/eligibility-evidence/resolve",
-    response_model=SubjectFinalizationReceipt,
+    response_model=PublishedEligibilityReceipt,
     summary="Resolve exact eligibility evidence binding against retained published custody",
-    description="Read-only lookup by existing product/version/revision/digest and admitted scope. Returns the exact subject locator, approval and finalization only after joining canonical definition, membership, universe and publication; never latest or correlation inference.",
+    description="Read-only lookup by exact product/version/revision/digest and admitted scope. CompositeSubjectEvaluationApproval returns retained subject finalization; CompositeMonthlyEvaluationApproval returns the monthly publication receipt with full definition, approval/source graph, bindings and UNVERIFIED completeness. Independent policy/evaluation custody, parent, membership, universe and canonical publication must agree in one read snapshot; no latest or correlation inference.",
 )
 def resolve_evidence(
     composite_id: str,
@@ -338,12 +344,14 @@ def resolve_evidence(
     response: Response,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectFinalizationReceipt:
+) -> PublishedEligibilityReceipt:
     receipt = _call(
         lambda: service.resolve_evidence(
             identity.tenant_id, composite_id, definition_version, binding
         )
     )
+    if isinstance(receipt, MonthlyEligibilityPublicationReceipt):
+        return receipt
     return _historical_receipt_response(receipt, response)
 
 
@@ -359,6 +367,13 @@ def _historical_receipt_response(
 
 
 PUBLIC_CODES = {
+    "COMPOSITE_MONTHLY_EVIDENCE_NOT_FOUND",
+    "COMPOSITE_MONTHLY_EVIDENCE_UNAVAILABLE",
+    "COMPOSITE_MONTHLY_EVIDENCE_BINDING_MISMATCH",
+    "COMPOSITE_MONTHLY_EVIDENCE_SCOPE_MISMATCH",
+    "COMPOSITE_MONTHLY_EVIDENCE_CONTENT_MISMATCH",
+    "COMPOSITE_MONTHLY_EVIDENCE_DEFINITION_WIRE_INVALID",
+    "COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT",
     "COMPOSITE_ELIGIBILITY_CLOCK_MISMATCH",
     "COMPOSITE_SOURCE_TRANSPORT_UNAVAILABLE",
     "COMPOSITE_SOURCE_TRANSPORT_REJECTED",
