@@ -104,6 +104,9 @@ Default candidate, observation and independent-verifier adapters are unavailable
 receipt is not qualification by itself: only an independently configured verifier can establish its
 issuer/artifact/purpose authority. Test fixtures are explicitly synthetic; their assets/returns
 labels do not supply actual financial products. Performance owns downstream admission/calculation.
+The [configured source guide](composite-configured-sources.md) describes the normal deployment
+factory for synthetic signed candidate, complete monthly assembly and purpose-bound independent
+verification, including retained manifest/receipt custody and native HTTP/PostgreSQL proof.
 
 ### Existing Published Definition
 

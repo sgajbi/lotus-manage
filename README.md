@@ -57,6 +57,10 @@ history, exact replay, missing-member evidence and the controlled HTTP/PostgreSQ
 Unpublished eligibility subjects reserve a definition version without provisional membership.
 Exact independent controls precede atomic v2 finalization; consumers resolve retained approval
 bindings against canonical publication custody. Default sources and verification remain unavailable.
+Deployment-configured synthetic candidate, monthly assembly and independent verifier adapters
+reuse those ports and retain complete signed source provenance. See the
+[configured source guide](docs/guides/composite-configured-sources.md); bank qualification and
+official activation remain unavailable.
 Definition and membership-revision list `count` values are total tenant/scoped record counts from
 the same read snapshot as their bounded `items`, not page lengths. Offset pages can shift if new
 revisions arrive between requests; consumers needing an ordered handoff should use the publication

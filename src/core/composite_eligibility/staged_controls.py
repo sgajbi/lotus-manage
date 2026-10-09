@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import Field, TypeAdapter, model_validator
+from src.core.composite_eligibility.source_assembly import VerifiedMonthlySourceAssembly
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import Digest, Identity, StrictAuthorityModel
@@ -97,6 +98,9 @@ class SubjectEvaluationProposal(StrictAuthorityModel):
     target_membership_revision: Identity
     observations: MonthlyEligibilityObservations
     observation_binding: DpmCompositeUniverseSourceProduct
+    source_assembly_evidence: VerifiedMonthlySourceAssembly | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     evaluation: MonthlyEligibilityEvaluation
     proposed_by: Identity
     proposed_at: UtcInstant
@@ -111,6 +115,13 @@ class SubjectEvaluationProposal(StrictAuthorityModel):
         observations = MonthlyEligibilityObservations.model_validate(
             self.observations.model_dump(mode="json")
         )
+        if self.source_assembly_evidence is not None:
+            evidence = VerifiedMonthlySourceAssembly.model_validate(
+                self.source_assembly_evidence.model_dump(mode="json")
+            )
+            if evidence.assembly.observations != observations:
+                raise ValueError("COMPOSITE_SOURCE_ASSEMBLY_OBSERVATIONS_MISMATCH")
+            self.source_assembly_evidence = evidence
         if observations.expected_portfolio_ids != [m.member_id for m in subject.universe.members]:
             raise ValueError("COMPOSITE_SUBJECT_SOURCE_UNIVERSE_MISMATCH")
         product = self.observation_binding

@@ -63,7 +63,7 @@ def disposable_database():
             )
 
 
-def _serve(dsn, pipe, stop, core_url=None, risk_config=None):
+def _serve(dsn, pipe, stop, core_url=None, risk_config=None, composite_config=None):
     # Spawned interpreters do not inherit parent's in-process dependency overrides.
     for name in list(os.environ):
         if name.startswith(("DPM_", "ENTERPRISE_", "APP_")):
@@ -87,6 +87,8 @@ def _serve(dsn, pipe, stop, core_url=None, risk_config=None):
         )
     if risk_config is not None:
         os.environ.update(risk_config.environment())
+    if composite_config is not None:
+        os.environ["DPM_COMPOSITE_SOURCES_JSON"] = composite_config
     import uvicorn
     from src.api.main import app
 
@@ -107,9 +109,15 @@ def _serve(dsn, pipe, stop, core_url=None, risk_config=None):
 
 
 @contextmanager
-def native_api(dsn, *, core_url=None, risk_config: RiskRuntimeConfiguration | None = None):
+def native_api(
+    dsn,
+    *,
+    core_url=None,
+    risk_config: RiskRuntimeConfiguration | None = None,
+    composite_config: str | None = None,
+):
     if os.environ.get("DPM_NETWORK_IMAGE_ID"):
-        if core_url is not None or risk_config is not None:
+        if core_url is not None or risk_config is not None or composite_config is not None:
             raise ValueError("Controlled source proof requires the native installed API.")
         from tests.integration.dpm.image_runtime import image_api
 
@@ -119,7 +127,9 @@ def native_api(dsn, *, core_url=None, risk_config: RiskRuntimeConfiguration | No
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe(duplex=False)
     stop = context.Event()
-    process = context.Process(target=_serve, args=(dsn, child, stop, core_url, risk_config))
+    process = context.Process(
+        target=_serve, args=(dsn, child, stop, core_url, risk_config, composite_config)
+    )
     process.start()
     child.close()
     port = None

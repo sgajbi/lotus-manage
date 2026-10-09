@@ -1,5 +1,19 @@
 # Integrations
 
+## Configured Composite eligibility sources
+
+Normal Manage composition supports deployment-configured synthetic candidate, monthly assembly
+and independent verifier HTTP ports. They reuse the monthly engine, staged custody and shared
+bounded HTTP client. Platform Ed25519 credentials bind exact requests and complete responses;
+deployment keys, issuer, tenant and permitted verification purpose govern admission.
+`CompositeMonthlyEligibilityAssembly/v1` carries all five monthly input kinds, source cut/product
+bindings and independent full-assembly verification under `COMPOSITE_MONTHLY_SOURCE_CUT`.
+Staged evaluation evidence retains that complete provenance and replays it after restart.
+Default configuration and actual Core unqualified/UNAVAILABLE inputs fail closed. Evidence remains
+synthetic and non-certifying; qualified financial compatibility, bank identity/grants and official
+activation remain outstanding. The repository guide `docs/guides/composite-configured-sources.md`
+owns the configuration, wire contract, negative cases and native API/PostgreSQL commands.
+
 ## Current scope
 
 Current scope: this page maps implementation-backed `lotus-manage` integration boundaries for

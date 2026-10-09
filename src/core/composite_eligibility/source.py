@@ -8,6 +8,7 @@ from typing import Protocol
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.composite_eligibility.policy import MonthlyPolicyScope
+from src.core.composite_eligibility.source_assembly import VerifiedMonthlySourceAssembly
 
 
 class MonthlyEligibilitySourceUnavailable(ValueError):
@@ -30,6 +31,7 @@ class MonthlyEligibilitySourceRequest:
 class MonthlyEligibilitySourceResolution:
     observations: MonthlyEligibilityObservations | None
     owner_service: str | None = None
+    source_assembly_evidence: VerifiedMonthlySourceAssembly | None = None
 
 
 class MonthlyEligibilitySourcePort(Protocol):

@@ -32,6 +32,7 @@ from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
 )
 from src.api.services.composite_subject_application import CompositeSubjectApplicationService
+from src.api.composition.composite_source_service import build_composite_subject_service
 from src.api.services.composite_monthly_eligibility import (
     CompositeMonthlyEligibilityApplicationService,
 )
@@ -586,8 +587,8 @@ def get_composite_monthly_eligibility_service(
 def get_composite_subject_service(
     repository: DpmCompositeRepository = Depends(get_composite_repository),
 ) -> CompositeSubjectApplicationService:
-    """No deployed source/verifier adapter has been qualified for staged eligibility."""
-    return CompositeSubjectApplicationService(repository=repository)
+    """Compose deployment-owned source ports; default posture remains unavailable."""
+    return build_composite_subject_service(repository)
 
 
 def get_composite_monthly_evaluation_service(

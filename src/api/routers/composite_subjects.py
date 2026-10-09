@@ -53,7 +53,7 @@ def checker(
     PREFIX,
     response_model=EligibilitySubject,
     summary="Reserve an immutable eligibility subject with source-owned population",
-    description="No definition or membership is published. Normal source composition is unavailable; request bodies cannot supply members, observations or server time.",
+    description="No definition or membership is published. Sources are deployment-configured and synthetic only; absent configuration is unavailable. Request bodies cannot supply members, observations or server time.",
 )
 def create_subject(
     composite_id: str,
@@ -339,6 +339,9 @@ def resolve_evidence(
 
 
 PUBLIC_CODES = {
+    "COMPOSITE_SOURCE_TRANSPORT_UNAVAILABLE",
+    "COMPOSITE_SOURCE_TRANSPORT_REJECTED",
+    "COMPOSITE_SOURCE_RESPONSE_INVALID",
     "COMPOSITE_SUBJECT_NOT_FOUND",
     "COMPOSITE_SUBJECT_CONTROL_NOT_FOUND",
     "COMPOSITE_SUBJECT_FINALIZATION_NOT_FOUND",
