@@ -8,6 +8,11 @@ from typing import Any, Awaitable, Callable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from src.api.composite_read_authority import (
+    IDENTITY_HEADERS,
+    composite_read_failure,
+    is_composite_read_service,
+)
 from src.core.risk_authority.context import (
     RiskAuthorityContext,
     RiskAuthorityGrant,
@@ -200,10 +205,13 @@ def _required_capability(method: str, path: str) -> str | None:
 def authorize_write_request(
     method: str, path: str, headers: dict[str, str]
 ) -> tuple[bool, str | None]:
+    normalized = _normalized_headers(headers)
+    if _env_enabled("ENTERPRISE_ENFORCE_AUTHZ", "false") and is_composite_read_service(normalized):
+        reason = composite_read_failure(method.upper(), path, normalized)
+        return reason is None, reason
     if not _write_authorization_required(method):
         return True, None
 
-    normalized = _normalized_headers(headers)
     failure_reason = _write_authorization_failure_reason(
         method=method,
         path=path,
@@ -394,8 +402,10 @@ def _attach_policy_version_header(response: Response) -> None:
     response.headers["X-Enterprise-Policy-Version"] = enterprise_policy_version()
 
 
-def _emit_write_audit_if_needed(request: Request, response: Response) -> None:
-    if request.method not in _WRITE_METHODS:
+def _emit_write_audit_if_needed(
+    request: Request, response: Response, *, read_service: bool = False
+) -> None:
+    if request.method not in _WRITE_METHODS and not (read_service and request.method == "GET"):
         return
     identity = _audit_identity_from_request(request)
     emit_audit_event(
@@ -406,6 +416,16 @@ def _emit_write_audit_if_needed(request: Request, response: Response) -> None:
         correlation_id=identity.correlation_id,
         metadata={"status_code": response.status_code},
     )
+
+
+def _read_service_transport_failure(request: Request, *, read_service: bool) -> str | None:
+    if not _env_enabled("ENTERPRISE_ENFORCE_AUTHZ", "false") or not read_service:
+        return None
+    if any(
+        len(request.headers.getlist(name)) != 1 for name in IDENTITY_HEADERS
+    ) or b"%" in request.scope.get("raw_path", b""):
+        return "composite_read_identity_or_path_invalid"
+    return None
 
 
 def build_enterprise_audit_middleware() -> MiddlewareCallable:
@@ -430,6 +450,16 @@ def build_enterprise_audit_middleware() -> MiddlewareCallable:
                     detail="payload_too_large",
                 )
 
+        read_service = is_composite_read_service(
+            {
+                name: ",".join(request.headers.getlist(name))
+                for name in ("x-role", "x-service-identity")
+            }
+        )
+        invalid_reader = _read_service_transport_failure(request, read_service=read_service)
+        if invalid_reader is not None:
+            _emit_denied_write_audit(request, reason=invalid_reader)
+            return _authorization_denied_response(request, invalid_reader)
         authorized, reason = authorize_write_request(
             request.method, request.url.path, dict(request.headers)
         )
@@ -456,7 +486,7 @@ def build_enterprise_audit_middleware() -> MiddlewareCallable:
 
         response = await call_next(request)
         _attach_policy_version_header(response)
-        _emit_write_audit_if_needed(request, response)
+        _emit_write_audit_if_needed(request, response, read_service=read_service)
         return response
 
     return middleware

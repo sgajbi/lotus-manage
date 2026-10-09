@@ -14,6 +14,56 @@ qualified complete Core cut remain outstanding under issues #714, #778 and #779.
 
 ## Deployment composition and transport
 
+### Read-only Report service
+
+The existing published-evidence resolver uses POST to carry an exact immutable binding; it is a
+read, not an approval. With `ENTERPRISE_ENFORCE_AUTHZ=true`, deployment-owned
+`DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON` enrolls a dedicated reader. The default `[]` grants
+nothing. A controlled example is:
+
+```json
+[{"service_identity":"synthetic-report-read-service","actor_id":"synthetic-report-read-actor","tenant_id":"synthetic-tenant"}]
+```
+
+Each entry has exactly these three nonblank single-assertion strings; service identities must be
+unique. Invalid JSON, extra fields, malformed values or duplicate identities refuse the entire
+read enrollment. Provision a separate service identity for each admitted tenant/actor tuple.
+This is a trusted-ingress header assertion boundary, **not cryptographic service authentication
+or bank IAM certification**. The ingress must strip caller-controlled authority headers and admit
+the configured service independently. Merely possessing these example strings is not bank authority.
+
+Report supplies exactly one of each header: `X-Service-Identity`, `X-Actor-Id`, `X-Tenant-Id`,
+`X-Role: REPORT_COMPOSITE_READER`, `X-Capabilities: manage.read`, and `X-Correlation-Id`.
+The configured actor/service and admitted tenant must match the enrollment. Do not propagate caller
+roles/capabilities, reuse writer credentials, or grant `manage.write`. Duplicate or comma-joined
+identity headers refuse. The dedicated read rule precedes legacy prefix rules independently of JSON
+insertion order. Ordinary writers retain existing authorization requirements.
+
+Let `D=/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}`. The service
+may call only the following exact paths, with conservative identifier segments of 1–256 ASCII
+letters/digits/dots/underscores/hyphens beginning with a letter or digit:
+
+| Method | Path | Meaning |
+| --- | --- | --- |
+| GET | `D/membership/{membership_revision}` | Pinned membership or its full parent |
+| GET | `D/membership/{membership_revision}/universe-attestations/{attestation_version}` | Published universe |
+| GET | `D/monthly-eligibility/evaluations/{evaluation_revision}` | Exact retained evaluated-only proposal |
+| POST | `D/eligibility-evidence/resolve` | Exact-binding published receipt |
+| GET | `/api/v1/rebalance/composites/publications/{sequence}` | Positive integer publication cursor |
+
+Extra segments, trailing slashes and percent-encoded paths refuse. The same enrolled identity
+cannot mutate any record or use other protected operations, even if it asserts a writer role or
+capability. GET and POST outcomes use the existing enterprise audit envelope. Custody still verifies
+the exact tenant, product, revision, digest, membership, universe and publication binding; reader
+enrollment does not change source qualification or grant approval authority.
+
+`tests/unit/api/test_composite_read_authority.py` covers valid and adversarial admission. The existing
+three-month v1/v2 native PostgreSQL history test also performs all five reads, foreign/missing
+assertion refusals, same-reader mutation denials and publication equality before/after reads and
+refusals. The native economic matrix also checks exact evaluated-only proposal reads and refuses
+approval/suffix and mutation paths for the same service. Those direct HTTP tests prove Manage behavior; actual configured Report-client transport
+is a separately recorded joined acceptance requirement under #795 and Report #417.
+
 Set `DPM_COMPOSITE_SOURCES_JSON` to a strict `CompositeSourceConfiguration` JSON document. The
 normal subject and recurring monthly dependencies use the same deployment-owned bindings; request headers and bodies cannot
 select a source, endpoint, issuer, key set, credential or evidence posture. Missing configuration,

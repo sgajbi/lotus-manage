@@ -31,6 +31,11 @@ from tests.composite_recurring_economic_cases import economic_cases
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.core.composite_eligibility.policy import month_window
 from tests.composite_recurring_economic_cases import transition_cases
+from tests.composite_read_service_helpers import (
+    READ_GRANTS,
+    assert_evaluated_read_service,
+    assert_read_service_capture,
+)
 
 
 BASE = "/api/v1/rebalance/composites/synthetic-composite/definitions/synthetic-definition/monthly-eligibility"
@@ -529,7 +534,10 @@ def test_registered_recurring_economic_matrix_retains_all_rules_and_replays(monk
         original = seed_recurring(repository)
         policy = retained_policy(repository, original)
         records = []
-        with native_api(dsn, composite_config=configuration) as (client, _):
+        with native_api(dsn, composite_config=configuration, composite_read_grants=READ_GRANTS) as (
+            client,
+            _,
+        ):
             for name, assembly, status, outcomes, flow_ratio in economic_cases():
                 universe = economic_universe(repository, original, name, assembly)
                 state["assembly"] = assembly
@@ -540,15 +548,17 @@ def test_registered_recurring_economic_matrix_retains_all_rules_and_replays(monk
                 assert response.status_code == 200, (name, response.text)
                 proposal = response.json()
                 assert_economic_result(name, proposal, status, outcomes, flow_ratio)
+                assert_evaluated_read_service(client, url, proposal)
                 assert proposal["source_assembly_evidence"]["assembly"] == assembly
                 records.append({"case": name, "url": url, "body": body, "proposal": proposal})
         calls = list(state["calls"])
         assert calls == ["observations", "verification"] * len(records)
-        with native_api(dsn) as (client, _):
+        with native_api(dsn, composite_read_grants=READ_GRANTS) as (client, _):
             for record in records:
                 response = client.put(record["url"], json=record["body"], headers=RUNTIME_HEADERS)
                 assert response.status_code == 200, response.text
                 assert response.json() == record["proposal"]
+                assert_evaluated_read_service(client, record["url"], record["proposal"])
             publications = client.get(
                 "/api/v1/rebalance/composites/publications", headers=RUNTIME_HEADERS
             )
@@ -581,7 +591,10 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
         )
         parent = genesis
         records = []
-        with native_api(dsn, composite_config=configuration) as (client, _):
+        with native_api(dsn, composite_config=configuration, composite_read_grants=READ_GRANTS) as (
+            client,
+            _,
+        ):
             for month, assembly, status, outcomes in transition_cases():
                 prior_locator = (
                     next(
@@ -640,6 +653,9 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                 receipt = resolve_published_month(
                     client, approval, captured=captured, repository=repository
                 )
+                reader_responses = assert_read_service_capture(
+                    client, receipt, captured | {"writer_headers": RUNTIME_HEADERS}
+                )
                 if prior_locator is not None:
                     assert prior_locator in proposal["universe"]["source_products"]
                 assert receipt["definition"]["product_version"] == definition_version
@@ -660,6 +676,7 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                         "approval_body": approval_body,
                         "approval": approval,
                         "publication_receipt": receipt,
+                        "reader_responses": reader_responses,
                         **captured,
                         "membership": parent.model_dump(mode="json"),
                     }
@@ -695,7 +712,7 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                 ]
         calls = list(state["calls"])
         assert calls == ["observations", "verification"] * 3
-        with native_api(dsn) as (client, _):
+        with native_api(dsn, composite_read_grants=READ_GRANTS) as (client, _):
             for record in records:
                 replay = client.put(record["url"], json=record["body"], headers=RUNTIME_HEADERS)
                 assert replay.status_code == 200 and replay.json() == record["proposal"], (
@@ -710,6 +727,14 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                 assert (
                     resolve_published_month(client, record["approval"])
                     == record["publication_receipt"]
+                )
+                assert (
+                    assert_read_service_capture(
+                        client,
+                        record["publication_receipt"],
+                        record | {"writer_headers": RUNTIME_HEADERS},
+                    )
+                    == record["reader_responses"]
                 )
             publications = client.get(
                 "/api/v1/rebalance/composites/publications", headers=RUNTIME_HEADERS
