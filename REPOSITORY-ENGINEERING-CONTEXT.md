@@ -42,7 +42,9 @@ This repository owns:
    remain readable; the guard does not rewrite legacy rows.
    Pinned membership `/range` reads select original decision intervals intersecting an inclusive
    calendar-date window from one immutable revision. They retain every status/evidence and return
-   an interval count plus the complete revision's explicitly named `membership_content_hash`.
+   total matching interval count plus the complete revision's explicitly named `membership_content_hash`.
+   Stable offset pages default to 100 intervals and cap responses at 1000. Filtering scans the full
+   pinned revision; existing revision admission has no hard decision-count cap or new capacity claim.
    They do not clip intervals, fill gaps, qualify population or change full/as-of wires/publication.
    Definition decoding now dispatches v1/v2 through `src/core/composite_definition_versions.py`.
    v2 authority models/policy bind separate profile/business/wire digests; existing JSONB keys and
@@ -441,6 +443,28 @@ Use these commands as the primary local contract:
     operator-visible, while the fence token must never cross an API or log boundary.
 
 ## Repo-Scoped Testing Practice
+
+After adding or changing a registered API route, update its exact path and bounded evidence in
+`wiki/Endpoint-Certification.md` as well as the owning guide/API wiki. Run the cheap documentation
+check before pushing; `make static-quality-gates` does not replace this unit-suite check. Working
+directory: the root of the target `lotus-manage` checkout or owned worktree, with its supported
+Python environment activated.
+
+PowerShell:
+
+```powershell
+python -m pytest tests/unit/test_documentation_current_state.py -q
+```
+
+POSIX shell:
+
+```bash
+python -m pytest tests/unit/test_documentation_current_state.py -q
+```
+
+This command's 33 tests include exact OpenAPI-path coverage in the endpoint-certification wiki.
+It was verified in the pinned membership range delivery; it is documentation evidence, not runtime
+or financial certification.
 
 The opt-in [Core cohort consumer proof](docs/operations/core-cohort-consumer-proof.md) runs actual
 Core cohort selection through registered Manage wave preview/create and PostgreSQL persistence.

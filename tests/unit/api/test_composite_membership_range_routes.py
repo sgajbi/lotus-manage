@@ -11,7 +11,12 @@ from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
 )
 from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
-from tests.composite_correction_helpers import correction_body, definition_body, original_body
+from tests.composite_correction_helpers import (
+    correction_body,
+    decision,
+    definition_body,
+    original_body,
+)
 
 
 @pytest.fixture
@@ -83,6 +88,7 @@ def test_range_selects_inclusive_intersections_and_preserves_original_evidence(
     result = response.json()
     assert result["tenant_id"] == headers["X-Tenant-Id"]
     assert result["completeness"] == "UNVERIFIED"
+    assert result["limit"] == 100 and result["offset"] == 0
     assert [(item["portfolio_id"], item["status"]) for item in result["decisions"]] == expected
     assert result["count"] == len(expected)
     assert result["membership_content_hash"] == original["content_hash"]
@@ -91,6 +97,70 @@ def test_range_selects_inclusive_intersections_and_preserves_original_evidence(
     assert result["effective_from"] == first and result["effective_to"] == last
     assert all(item in original["decisions"] for item in result["decisions"])
     assert client.get(f"{base}/membership/m1", headers=headers).json() == original
+
+
+def test_range_pages_are_complete_and_stable_when_another_revision_is_published(range_api):
+    client, base, headers, original, _ = range_api
+    params = {"effective_from": "2026-01-01", "effective_to": "2026-03-01", "limit": 2}
+    collected = []
+    for offset in (0, 2, 4, 6, 8):
+        response = client.get(
+            f"{base}/membership/m1/range", headers=headers, params=params | {"offset": offset}
+        )
+        assert response.status_code == 200
+        page = response.json()
+        assert page["count"] == 7 and page["limit"] == 2 and page["offset"] == offset
+        assert page["membership_content_hash"] == original["content_hash"]
+        assert page["tenant_id"] == headers["X-Tenant-Id"]
+        assert page["completeness"] == "UNVERIFIED"
+        assert len(page["decisions"]) <= 2
+        collected.extend(page["decisions"])
+        if offset == 0:
+            body = original_body() | {"decisions": original["decisions"]}
+            assert (
+                client.put(f"{base}/membership/m3", headers=headers, json=body).status_code == 200
+            )
+    assert page["decisions"] == []
+    assert collected == original["decisions"]
+    assert client.get(f"{base}/membership/m1", headers=headers).json() == original
+
+
+@pytest.mark.parametrize(
+    "page", [{"limit": 0}, {"limit": 1001}, {"offset": -1}, {"limit": "invalid"}]
+)
+def test_range_refuses_invalid_page_bounds(range_api, page):
+    client, base, headers, _, _ = range_api
+    response = client.get(
+        f"{base}/membership/m1/range",
+        headers=headers,
+        params={"effective_from": "2026-01-01", "effective_to": "2026-01-31"} | page,
+    )
+    assert response.status_code == 422
+
+
+def test_range_enforces_default_and_maximum_response_sizes_without_losing_total_count(range_api):
+    client, base, headers, _, _ = range_api
+    body = original_body() | {"decisions": [decision(f"L{index:04d}") for index in range(1001)]}
+    stored = client.put(f"{base}/membership/large", headers=headers, json=body)
+    assert stored.status_code == 200
+    params = {"effective_from": "2026-01-01", "effective_to": "2026-01-31"}
+    for page, size in (
+        ({}, 100),
+        ({"limit": 1000}, 1000),
+        ({"limit": 1000, "offset": 1000}, 1),
+        ({"offset": 1001}, 0),
+    ):
+        response = client.get(
+            f"{base}/membership/large/range", headers=headers, params=params | page
+        )
+        assert response.status_code == 200
+        result = response.json()
+        assert result["count"] == 1001 and len(result["decisions"]) == size
+        assert result["membership_content_hash"] == stored.json()["content_hash"]
+        assert (
+            result["decisions"]
+            == stored.json()["decisions"][result["offset"] : result["offset"] + result["limit"]]
+        )
 
 
 def test_range_preserves_gaps_and_original_intervals_at_both_edges(range_api):

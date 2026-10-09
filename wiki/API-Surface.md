@@ -97,14 +97,18 @@ current portfolio-book membership for historical eligibility.
   effective on that date from the explicitly pinned revision, retaining exclusions and terminated
   periods for historical consumers.
 - `GET .../membership/{membership_revision}/range?effective_from=YYYY-MM-DD&effective_to=YYYY-MM-DD`
-  returns all original decision intervals intersecting the inclusive calendar-date window, retaining
+  pages original decision intervals intersecting the inclusive calendar-date window, retaining
   include/exclude/pending statuses and original evidence. Both dates are required; invalid or
-  reversed windows refuse. `count` counts intervals, not portfolios; `membership_content_hash`
+  reversed windows refuse. `limit` defaults to 100 (maximum 1000); `offset` defaults to zero.
+  `count` is the total matching intervals, not portfolios or page size; `membership_content_hash`
   identifies the complete pinned revision. Intervals are not clipped, gaps are not filled, and an
   empty result does not certify population completeness. Reads preserve full/as-of wires and do
   not advance publication. Explicit `tenant_id` retains admitted scope and `completeness=UNVERIFIED`
   preserves the source posture. See the worked correction and executable examples in
   `docs/guides/composite-membership-corrections.md`.
+  Offset pages are stable for this immutable revision, including when another revision is published.
+  Response size is bounded; filtering still scans the full revision, whose admission has no hard
+  decision-count cap. An empty page beyond the end retains the total count.
 - Definition and membership-revision list `count` values are total records in the admitted scope,
   evaluated in the same read snapshot as the bounded page. Offset pages are not stable across
   concurrent writes; use the publication cursor/high watermark for ordered handoff. A count does

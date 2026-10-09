@@ -48,6 +48,7 @@ class DpmCompositeNotFoundError(ValueError):
 class DpmCompositeMembershipRange:
     revision: DpmCompositeMembershipRevision
     decisions: list[DpmCompositeMembershipDecision]
+    count: int
 
 
 @dataclass(frozen=True)
@@ -309,6 +310,8 @@ class DpmCompositeMembershipApplicationService:
         membership_revision: str,
         effective_from: str,
         effective_to: str,
+        limit: int,
+        offset: int,
     ) -> DpmCompositeMembershipRange:
         revision = self.get_membership_revision(
             tenant_id=tenant_id,
@@ -319,17 +322,18 @@ class DpmCompositeMembershipApplicationService:
         first, last = date.fromisoformat(effective_from), date.fromisoformat(effective_to)
         if first > last:
             raise ValueError("COMPOSITE_MEMBERSHIP_RANGE_INVALID")
+        decisions = [
+            decision
+            for decision in revision.decisions
+            if date.fromisoformat(decision.effective_from) <= last
+            and (
+                decision.effective_to is None or first <= date.fromisoformat(decision.effective_to)
+            )
+        ]
         return DpmCompositeMembershipRange(
             revision=revision,
-            decisions=[
-                decision
-                for decision in revision.decisions
-                if date.fromisoformat(decision.effective_from) <= last
-                and (
-                    decision.effective_to is None
-                    or first <= date.fromisoformat(decision.effective_to)
-                )
-            ],
+            decisions=decisions[offset : offset + limit],
+            count=len(decisions),
         )
 
     def get_publication(
