@@ -86,6 +86,9 @@ Platform Ed25519 credentials and purpose-specific synthetic verification binding
 `COMPOSITE_MONTHLY_SOURCE_CUT` verification with staged evaluations. Default sources remain
 unavailable, Core unqualified inputs refuse, and legacy hashes omit absent new provenance fields.
 See [configured source guide](docs/guides/composite-configured-sources.md) for contract and proof.
+Its native HTTP/PostgreSQL proof follows retained provenance through finalization, publication,
+exact-digest evidence resolution and restart; the actual receipt is retained in pytest temporary
+artifacts for downstream compatibility investigation. Synthetic publication stays UNVERIFIED.
 
 Staged v2 finalization reserves an immutable subject before any definition or membership exists.
 `staged_*` core modules reuse the monthly engine; adapters reuse all four policy/evaluation stores.
