@@ -32,7 +32,10 @@ from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
 )
 from src.api.services.composite_subject_application import CompositeSubjectApplicationService
-from src.api.composition.composite_source_service import build_composite_subject_service
+from src.api.composition.composite_source_service import (
+    build_composite_subject_service,
+    build_composite_monthly_service,
+)
 from src.api.services.composite_monthly_eligibility import (
     CompositeMonthlyEligibilityApplicationService,
 )
@@ -581,7 +584,7 @@ def get_composite_monthly_eligibility_service(
     repository: DpmCompositeRepository = Depends(get_composite_repository),
 ) -> CompositeMonthlyEligibilityApplicationService:
     """No configured source adapter means fail-closed simulation, not request-owned facts."""
-    return CompositeMonthlyEligibilityApplicationService(repository=repository)
+    return build_composite_monthly_service(repository)
 
 
 def get_composite_subject_service(

@@ -349,6 +349,9 @@ def get_monthly_evaluation_approval(
 def _monthly_domain_error(exc: ValueError) -> HTTPException:
     raw = str(exc)
     public_codes = {
+        "COMPOSITE_SOURCE_TRANSPORT_UNAVAILABLE",
+        "COMPOSITE_SOURCE_TRANSPORT_REJECTED",
+        "COMPOSITE_SOURCE_RESPONSE_INVALID",
         "COMPOSITE_ELIGIBILITY_SOURCE_OWNER_MISMATCH",
         "COMPOSITE_ELIGIBILITY_APPROVED_POLICY_NOT_FOUND",
         "COMPOSITE_ELIGIBILITY_APPROVED_POLICY_MISMATCH",

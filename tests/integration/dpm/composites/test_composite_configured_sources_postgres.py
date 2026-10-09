@@ -5,6 +5,7 @@ time. This is a synthetic adapter proof, not bank identity or financial qualific
 """
 
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import threading
@@ -58,7 +59,7 @@ def synthetic_sources(monkeypatch):
                 payload["content_hash"] = ""
                 payload = CandidateUniverse.model_validate(payload).model_dump(mode="json")
             elif operation == "observations":
-                key, payload = source_key, assembly
+                key, payload = source_key, state.get("assembly", assembly)
             else:
                 if state["deny"]:
                     self.send_response(503)
@@ -68,11 +69,16 @@ def synthetic_sources(monkeypatch):
                 payload = synthetic_verification(
                     VerificationRequest.model_validate(request)
                 ).model_dump(mode="json")
+            credential = signed(key, binding, request, payload)
+            if operation == "observations" and state.get("forge_observations"):
+                header, claims, signature = credential.split(".")
+                signature = ("B" if signature[0] == "A" else "A") + signature[1:]
+                credential = ".".join((header, claims, signature))
             body = json.dumps(
                 {
                     "owner_service": binding.owner_service,
                     "payload": payload,
-                    "credential": signed(key, binding, request, payload),
+                    "credential": credential,
                 }
             ).encode()
             self.send_response(200)
@@ -124,9 +130,9 @@ def synthetic_sources(monkeypatch):
         assert not thread.is_alive()
 
 
-def finalization_body(subject, approval):
+def finalization_body(subject, approval, *, authority_approved_at=None):
     approved = SubjectEvaluationApproval.model_validate(approval)
-    definition = final_definition(subject, approved)
+    definition = final_definition(subject, approved, authority_approved_at=authority_approved_at)
     return {
         "evaluation_revision": approved.proposal.evaluation_revision,
         "expected_approval_content_hash": approved.content_hash,
@@ -241,7 +247,24 @@ def test_registered_configured_evaluation_refusal_recovery_and_restart(monkeypat
             assert approved.status_code == 200, approved.text
             assert approved.json()["evidence_kind"] == "SYNTHETIC_UNSIGNED"
             approval = approved.json()
-            final_body = finalization_body(subject, approval)
+            before_calls = list(state["calls"])
+            premature = client.put(
+                BASE + "/finalization",
+                json=finalization_body(
+                    subject, approval, authority_approved_at="2026-10-02T00:00:00.000000Z"
+                ),
+                headers=headers | {"X-Actor-Id": CHECKER},
+            )
+            assert premature.status_code == 422, premature.text
+            assert premature.json()["detail"]["code"] == "COMPOSITE_ELIGIBILITY_CLOCK_MISMATCH"
+            assert state["calls"] == before_calls
+            publications = client.get("/api/v1/rebalance/composites/publications", headers=headers)
+            assert publications.status_code == 200 and publications.json()["items"] == []
+            final_body = finalization_body(
+                subject,
+                approval,
+                authority_approved_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            )
             finalized = client.put(
                 BASE + "/finalization",
                 json=final_body,
@@ -271,6 +294,7 @@ def test_registered_configured_evaluation_refusal_recovery_and_restart(monkeypat
             )
             assert finalized_replay.status_code == 200, finalized_replay.text
             assert finalized_replay.json() == receipt
+            assert_published_custody(client, headers, receipt, retained)
         assert state["calls"] == calls
         # Retain the actual HTTP graph for consumer compatibility investigation.
         (tmp_path / "configured-source-finalization.json").write_text(

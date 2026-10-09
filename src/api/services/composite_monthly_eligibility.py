@@ -32,6 +32,7 @@ from src.core.composite_eligibility.source import (
     admitted_source_snapshot,
 )
 from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
+from src.core.composite_eligibility.source_assembly import VerifiedMonthlySourceAssembly
 from src.core.composite_repository import DpmCompositeConflictError, DpmCompositeRepository
 from src.core.composite_definition_versions import CompositeDefinition
 from src.core.composite_universe import DpmCompositeUniverseAttestation
@@ -361,6 +362,22 @@ class CompositeMonthlyEligibilityApplicationService:
         *,
         reporting_currency: str,
     ) -> tuple[MonthlyEligibilityObservations, DpmCompositeUniverseAttestation]:
+        snapshot, attestation, _ = self.resolve_source_inputs_with_evidence(
+            policy, command, reporting_currency=reporting_currency
+        )
+        return snapshot, attestation
+
+    def resolve_source_inputs_with_evidence(
+        self,
+        policy: ResolvedMonthlyPolicy,
+        command: MonthlySimulationRequest,
+        *,
+        reporting_currency: str,
+    ) -> tuple[
+        MonthlyEligibilityObservations,
+        DpmCompositeUniverseAttestation,
+        VerifiedMonthlySourceAssembly | None,
+    ]:
         """One canonical source admission path for simulation and approved-policy evaluation."""
         attestation = self._retained_universe(policy, command)
         products = [
@@ -383,8 +400,9 @@ class CompositeMonthlyEligibilityApplicationService:
             expected_portfolio_ids=tuple(attestation.expected_portfolio_ids),
             reporting_currency=reporting_currency,
         )
-        snapshot = admitted_source_snapshot(request, self.source.resolve(request))
-        return snapshot, attestation
+        resolution = self.source.resolve(request)
+        snapshot = admitted_source_snapshot(request, resolution)
+        return snapshot, attestation, resolution.source_assembly_evidence
 
     def _retained_universe(
         self,

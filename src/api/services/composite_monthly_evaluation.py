@@ -121,10 +121,12 @@ class CompositeMonthlyEvaluationApplicationService:
             attestation_version=command.attestation_version,
             universe_content_hash=command.universe_content_hash,
         )
-        observations, universe = self.configuration.resolve_source_inputs(
-            policy.proposal.policy,
-            request,
-            reporting_currency=definition.reporting_currency,
+        observations, universe, source_evidence = (
+            self.configuration.resolve_source_inputs_with_evidence(
+                policy.proposal.policy,
+                request,
+                reporting_currency=definition.reporting_currency,
+            )
         )
         instant = self.configuration.clock()
         evaluation = evaluate_monthly_eligibility(
@@ -134,6 +136,7 @@ class CompositeMonthlyEvaluationApplicationService:
             universe_content_hash=universe.content_hash,
         )
         proposal = MonthlyEvaluationProposal(
+            source_assembly_evidence=source_evidence,
             evaluation_revision=evaluation_revision,
             target_membership_revision=command.target_membership_revision,
             parent_membership_revision=parent.membership_revision,

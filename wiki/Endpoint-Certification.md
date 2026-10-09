@@ -85,6 +85,28 @@ The second command requires an isolated `DPM_POSTGRES_INTEGRATION_DSN` and
 `DPM_POSTGRES_INTEGRATION_REQUIRED=1`. Performance contract admission of controlled v1 publication
 does not establish v2 independent-approval lifecycle, qualified return materialization or capacity.
 
+Configured Composite sources serve staged and recurring monthly simulation/diff/evaluation through
+the same signed assembly and independent `COMPOSITE_MONTHLY_SOURCE_CUT` verification. Optional
+`source_assembly_evidence` retains complete provenance on both proposal products; legacy absent
+fields preserve hashes. Each month requires a separate prospective policy approval. Definition
+economic-authority approval must follow its bound evaluation approval; premature claims refuse
+before verification or publication. These are synthetic controls, with official activation unavailable.
+
+The registered HTTP/PostgreSQL pack includes 17 independent economic scenarios, forged/mixed/stale
+source refusals, checker publication, and a July–September exclusion/re-entry campaign. Clearing
+cash alone does not clear readiness failure; immutable earlier revisions and all month approvals
+replay after restart without additional source calls or publications. Run from `lotus-manage` root
+on PowerShell or POSIX with an owned `DPM_POSTGRES_INTEGRATION_DSN` and
+`DPM_POSTGRES_INTEGRATION_REQUIRED=1`:
+
+```text
+python -m pytest tests/integration/dpm/composites/test_composite_configured_sources_postgres.py tests/integration/dpm/composites/test_composite_recurring_sources_postgres.py -q
+```
+
+See the [configured source guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-configured-sources.md)
+for exact contracts and retained HTTP artifacts. These proofs do not qualify Core facts or establish
+Performance financial materialization.
+
 ## Certified endpoint family: service health probes
 
 Routes:

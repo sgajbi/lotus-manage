@@ -58,7 +58,8 @@ Unpublished eligibility subjects reserve a definition version without provisiona
 Exact independent controls precede atomic v2 finalization; consumers resolve retained approval
 bindings against canonical publication custody. Default sources and verification remain unavailable.
 Deployment-configured synthetic candidate, monthly assembly and independent verifier adapters
-reuse those ports and retain complete signed source provenance. See the
+reuse those ports for staged and recurring monthly evaluation and retain complete signed source
+provenance through publication and replay. Every month needs its own prospective policy approval. See the
 [configured source guide](docs/guides/composite-configured-sources.md); bank qualification and
 official activation remain unavailable.
 Definition and membership-revision list `count` values are total tenant/scoped record counts from

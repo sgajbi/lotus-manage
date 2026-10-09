@@ -15,7 +15,7 @@ qualified complete Core cut remain outstanding under issues #714, #778 and #779.
 ## Deployment composition and transport
 
 Set `DPM_COMPOSITE_SOURCES_JSON` to a strict `CompositeSourceConfiguration` JSON document. The
-normal subject dependency uses its deployment-owned bindings; request headers and bodies cannot
+normal subject and recurring monthly dependencies use the same deployment-owned bindings; request headers and bodies cannot
 select a source, endpoint, issuer, key set, credential or evidence posture. Missing configuration,
 tenant binding, credential environment value or permitted verifier purpose fails closed.
 
@@ -88,12 +88,20 @@ Absent verification refuses before evaluation persistence. `SOURCE_UNVERIFIED` a
 refuse before contacting the verifier. This contract describes source-supplied normalized facts;
 it does not implement or certify a join of raw Core financial products.
 
-Staged evaluation custody retains `source_assembly_evidence` with the complete assembly and the
+Staged and recurring monthly evaluation custody retain optional `source_assembly_evidence` with the complete assembly and the
 independently admitted verification receipt. It revalidates exact observations, manifest and receipt
 request on decoding. The field is omitted for legacy evaluations, preserving their canonical hashes;
 legacy history is not retroactively certified. Replay uses retained evidence after process restart
 without re-resolving changed source facts. The calculation and maker/checker rules remain in their
 existing owners.
+
+The recurring simulation, diff and evaluation paths resolve the same signed assembly and whole-cut
+verification. The approved evaluation retains it through atomic membership publication and restart.
+Each month requires its own prospective policy approval: first-definition authority approval or a
+prior month's policy approval does not approve later months. Final definition economic-authority
+approval must occur at or after its bound evaluation approval; premature approval refuses before
+verification or publication. This chronology differs from monthly policy approval, which must
+precede the month being evaluated.
 
 ## Owning proof
 
@@ -113,7 +121,7 @@ The test creates and removes only its UUID database and explicitly owned listene
 Run from the repository root on either shell:
 
 ```text
-python -m pytest tests/integration/dpm/composites/test_composite_configured_sources_postgres.py -q
+python -m pytest tests/integration/dpm/composites/test_composite_configured_sources_postgres.py tests/integration/dpm/composites/test_composite_recurring_sources_postgres.py -q
 ```
 
 The fixture generates separate ephemeral source and verifier Ed25519 keys and exact configuration;
@@ -126,3 +134,14 @@ refusal, and persisted replay after restart with default unavailable sources. Th
 directory retains the actual HTTP finalization graph as `configured-source-finalization.json` for
 consumer compatibility investigation. It proves executable adapter behavior, not bank IAM,
 qualified financial products, official Composite membership or Performance materialization.
+
+The recurring pack uses registered HTTP and disposable PostgreSQL without dependency overrides.
+It covers forged credentials, mixed cuts, stale source revisions, verifier outage, recovery,
+checker publication and replay. Its 17-case economic campaign retains all three rule assessments
+for thresholds, missing/nonpositive denominators, conflicting/exact duplicates, linked reversals,
+late arrivals, missing members and failure precedence over unknown facts. A separate July–September
+campaign publishes three independently approved months, retains immutable exclusion history,
+refuses prior-month policy inheritance, and proves that cash clearing alone cannot cause re-entry.
+`recurring-economic-matrix.json` and `recurring-transition-history.json` are actual HTTP campaign
+records in pytest temporary artifacts. Their constituent bindings describe explicit synthetic
+normalized snapshots; they do not prove qualification of individual Core financial products.

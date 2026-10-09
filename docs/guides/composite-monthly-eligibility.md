@@ -85,6 +85,9 @@ the separately admitted owner/cut/revision/content, currency, complete logical m
 and all-rule results. The approval digest is retained before the final economic-authority profile
 and definition hashes; no hash depends on its own future definition. Authority, eligibility,
 method/calendar and provider-registration verification are distinct purposes.
+Economic-authority approval must occur at or after the bound evaluation approval. Premature
+approval refuses before final verification or publication. This does not change the prospective
+monthly policy requirement: policy approval must precede its month, and each month needs a new approval.
 
 Finalization atomically retains the v2 definition, first membership, universe, existing publication
 cursor and final receipt. Identical retry returns the original graph; changed content conflicts.
@@ -114,6 +117,12 @@ Prefix `P = /api/v1/rebalance/composites/{composite_id}/definitions/{definition_
 All calls require unambiguous `X-Tenant-Id`, `X-Actor-Id` and `X-Role`. Administrators or portfolio
 managers propose; only an independent `DPM_COMPOSITE_ADMIN` checks. These headers require trusted
 ingress and are not authenticated bank-principal evidence.
+
+Deployment-configured recurring simulation, diff and evaluation use the same signed monthly
+assembly and independent whole-cut verifier as staged evaluation. Configured proposals retain
+optional `source_assembly_evidence`; legacy proposals omit the field and retain their hashes.
+Approval and membership publication preserve this graph without querying sources during replay.
+First-definition approval and earlier monthly approvals do not authorize future months.
 
 | Step | Operation | Required Evidence |
 | --- | --- | --- |
