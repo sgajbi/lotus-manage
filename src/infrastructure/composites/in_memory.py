@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from threading import Lock
 from typing import TypeVar
 
+from src.core.composite_corrections import require_correction_window
 from src.core.composite_membership import (
     DpmCompositeMembershipRevision,
 )
@@ -464,6 +465,14 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         with self._lock:
             if definition_key not in self._definitions:
                 raise DpmCompositeConflictError("COMPOSITE_MEMBERSHIP_DEFINITION_NOT_FOUND")
+            if revision_key in self._membership_revisions:
+                _save_immutable(
+                    values=self._membership_revisions,
+                    key=revision_key,
+                    value=revision,
+                    conflict_code="COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT",
+                )
+                return
             if (
                 revision.supersedes_membership_revision is not None
                 and (*definition_key, revision.supersedes_membership_revision)
@@ -472,20 +481,26 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 raise DpmCompositeConflictError(
                     "COMPOSITE_MEMBERSHIP_SUPERSEDED_REVISION_NOT_FOUND"
                 )
-            newly_created = revision_key not in self._membership_revisions
+            if revision.supersedes_membership_revision is not None:
+                parent = self._membership_revisions[
+                    (*definition_key, revision.supersedes_membership_revision)
+                ]
+                try:
+                    require_correction_window(parent=parent, revision=revision)
+                except ValueError as exc:
+                    raise DpmCompositeConflictError(str(exc)) from exc
             _save_immutable(
                 values=self._membership_revisions,
                 key=revision_key,
                 value=revision,
                 conflict_code="COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT",
             )
-            if newly_created:
-                self._last_sequence += 1
-                self._publications[self._last_sequence] = publication_from_revision(
-                    revision=revision,
-                    sequence=self._last_sequence,
-                    published_at=datetime.now(timezone.utc),
-                )
+            self._last_sequence += 1
+            self._publications[self._last_sequence] = publication_from_revision(
+                revision=revision,
+                sequence=self._last_sequence,
+                published_at=datetime.now(timezone.utc),
+            )
 
     def get_membership_revision(
         self,

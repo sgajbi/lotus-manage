@@ -569,7 +569,10 @@ def _from_domain_error(exc: ValueError) -> HTTPException:
         if code.endswith("NOT_FOUND")
         else (
             status.HTTP_409_CONFLICT
-            if "CONFLICT" in code or "MISMATCH" in code or "CURSOR_AHEAD" in code
+            if "CONFLICT" in code
+            or "MISMATCH" in code
+            or "CURSOR_AHEAD" in code
+            or code == "COMPOSITE_MEMBERSHIP_CORRECTION_OUTSIDE_WINDOW"
             else status.HTTP_422_UNPROCESSABLE_CONTENT
         )
     )

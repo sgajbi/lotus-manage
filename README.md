@@ -50,6 +50,10 @@ attestation verification fail closed; controlled fixtures are not official appro
 Monthly synthetic eligibility adds typed policy resolution, all-rule evidence and independent
 approval with atomic existing-ledger publication. Official activation and the default source
 remain unavailable. See the [monthly eligibility guide](docs/guides/composite-monthly-eligibility.md).
+
+Membership corrections preserve all effective decision evidence outside their declared impact
+window. The [correction tutorial](docs/guides/composite-membership-corrections.md) explains retained
+history, exact replay, missing-member evidence and the controlled HTTP/PostgreSQL/restart proof.
 Unpublished eligibility subjects reserve a definition version without provisional membership.
 Exact independent controls precede atomic v2 finalization; consumers resolve retained approval
 bindings against canonical publication custody. Default sources and verification remain unavailable.
