@@ -10,6 +10,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from pydantic import ValidationError
+from prometheus_client import REGISTRY
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_eligibility.staged_ports import CandidateUniverseRequest
@@ -553,3 +554,34 @@ def test_committed_platform_ed25519_vectors_verify_before_manage_audience(name, 
     # refuses earlier, before trusting issuer, audience or expired fixture time.
     with pytest.raises(ValueError, match=error):
         verified_artifact(vector["credential"], binding=binding, request={}, payload={})
+
+
+@pytest.mark.parametrize(
+    "owner,label", [("lotus-core", "lotus-core"), ("synthetic-owner", "unknown")]
+)
+def test_configured_source_metrics_keep_bound_owner_and_normalize_external_owner(
+    signing, monkeypatch, owner, label
+):
+    key, original = signing
+    binding = original.model_copy(update={"owner_service": owner})
+    monkeypatch.setenv(binding.credential_env, "test")
+    labels = {"source_service": label, "method": "post", "outcome": "success"}
+    metric = "lotus_manage_source_http_request_total"
+    before = REGISTRY.get_sample_value(metric, labels) or 0
+
+    def handler(_):
+        return httpx.Response(
+            200,
+            json={
+                "owner_service": owner,
+                "payload": {},
+                "credential": signed(key, binding, {}, {}),
+            },
+        )
+
+    transport = CompositeSourceTransport(
+        CompositeSourceConfiguration(bindings=(binding,)),
+        httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    assert transport.resolve(tenant_id=binding.tenant_id, operation="candidates", request={}) == {}
+    assert REGISTRY.get_sample_value(metric, labels) == before + 1

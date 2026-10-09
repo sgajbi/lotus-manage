@@ -39,6 +39,8 @@ bounds timeout to 0.1–30 seconds, attempts to 1–3, and response bytes to 1,0
 (default 2,000,000). Responses stream under the byte cap, close on refusal, reject redirects,
 request identity content encoding and refuse compressed content before decompression. Only
 transport failures and 502/503/504 retry. No credentials enter response errors.
+Source HTTP metrics use the bound upstream owner and the existing governed label normalization;
+recognized Lotus owners retain their labels, while synthetic/external owners normalize to `unknown`.
 
 ## Signed response binding
 
