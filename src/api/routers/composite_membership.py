@@ -117,7 +117,11 @@ class CompositeMembershipRangeResponse(BaseModel):
     effective_from: str
     effective_to: str
     decisions: list[DpmCompositeMembershipDecision]
-    count: int = Field(ge=0, description="All decision intervals intersecting the inclusive range.")
+    count: int = Field(
+        ge=0, description="Total decision intervals intersecting the inclusive range."
+    )
+    limit: int
+    offset: int
     source_cut_id: str
     membership_content_hash: str = Field(
         description="Hash of the complete pinned membership revision, not this filtered projection."
@@ -400,7 +404,7 @@ def get_membership_as_of(
 @router.get(
     "/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/range",
     response_model=CompositeMembershipRangeResponse,
-    summary="Read complete decision intervals intersecting a pinned inclusive date range",
+    summary="Page original decision intervals intersecting a pinned inclusive date range",
     description=(
         "Retains original decision intervals, statuses and evidence without clipping or filling "
         "gaps. The membership hash identifies the full pinned revision. This read does not "
@@ -413,6 +417,8 @@ def get_membership_range(
     membership_revision: str,
     effective_from: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
     effective_to: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: DpmCompositeMembershipApplicationService = Depends(
         get_composite_membership_application_service
@@ -426,6 +432,8 @@ def get_membership_range(
             membership_revision=membership_revision,
             effective_from=effective_from,
             effective_to=effective_to,
+            limit=limit,
+            offset=offset,
         )
         return CompositeMembershipRangeResponse(
             tenant_id=identity.tenant_id,
@@ -435,7 +443,9 @@ def get_membership_range(
             effective_from=effective_from,
             effective_to=effective_to,
             decisions=result.decisions,
-            count=len(result.decisions),
+            count=result.count,
+            limit=limit,
+            offset=offset,
             source_cut_id=result.revision.source_cut_id,
             membership_content_hash=result.revision.content_hash,
         )

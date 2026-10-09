@@ -10,7 +10,12 @@ from src.api.services.composite_membership_application import (
     DpmCompositeMembershipApplicationService,
 )
 from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository
-from tests.composite_correction_helpers import correction_body, definition_body, original_body
+from tests.composite_correction_helpers import (
+    correction_body,
+    decision,
+    definition_body,
+    original_body,
+)
 from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
 
 
@@ -33,6 +38,12 @@ def test_registered_range_retains_original_and_corrected_evidence_after_restart(
                         client.put(base, headers=headers, json=definition_body()).status_code == 200
                     )
                     for revision, body in (("m1", original_body()), ("m2", correction_body())):
+                        body["decisions"].extend(
+                            [
+                                decision("G", first="2026-01-01", last="2026-01-10"),
+                                decision("G", first="2026-01-20", last="2026-01-25"),
+                            ]
+                        )
                         response = client.put(
                             f"{base}/membership/{revision}", headers=headers, json=body
                         )
@@ -53,10 +64,58 @@ def test_registered_range_retains_original_and_corrected_evidence_after_restart(
                     result = response.json()
                     assert result["tenant_id"] == tenant
                     assert result["completeness"] == "UNVERIFIED"
-                    assert result["count"] == 3
+                    assert result["count"] == 4
                     assert result["decisions"][0]["status"] == expected_status
                     assert result["membership_content_hash"] == retained[revision]["content_hash"]
                     assert result["source_cut_id"] == retained[revision]["source_cut_id"]
+                    collected = []
+                    for offset in (0, 3, 6):
+                        paged = client.get(
+                            f"{url}/range",
+                            headers=headers,
+                            params={
+                                "effective_from": "2026-01-05",
+                                "effective_to": "2026-01-05",
+                                "limit": 3,
+                                "offset": offset,
+                            },
+                        )
+                        assert paged.status_code == 200
+                        page = paged.json()
+                        assert (
+                            page["count"] == 4 and page["limit"] == 3 and page["offset"] == offset
+                        )
+                        assert page["membership_content_hash"] == result["membership_content_hash"]
+                        assert page["source_cut_id"] == result["source_cut_id"]
+                        assert len(page["decisions"]) <= 3
+                        collected.extend(page["decisions"])
+                    assert page["decisions"] == []
+                    assert collected == result["decisions"]
+                    gap = client.get(
+                        f"{url}/range",
+                        headers=headers,
+                        params={
+                            "effective_from": "2026-01-16",
+                            "effective_to": "2026-01-19",
+                            "limit": 1,
+                        },
+                    )
+                    assert gap.status_code == 200 and gap.json()["count"] == 2
+                    gap_end = client.get(
+                        f"{url}/range",
+                        headers=headers,
+                        params={
+                            "effective_from": "2026-01-16",
+                            "effective_to": "2026-01-19",
+                            "limit": 1,
+                            "offset": 1,
+                        },
+                    )
+                    assert gap_end.status_code == 200 and gap_end.json()["count"] == 2
+                    assert [
+                        item["portfolio_id"]
+                        for item in gap.json()["decisions"] + gap_end.json()["decisions"]
+                    ] == ["A", "B"]
                     assert all(
                         item in retained[revision]["decisions"] for item in result["decisions"]
                     )

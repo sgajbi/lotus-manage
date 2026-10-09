@@ -33,15 +33,19 @@ demo proof.
 
 `GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/range`
 requires inclusive `effective_from` and `effective_to` calendar dates and the existing admitted
-tenant identity. It returns every intersecting original decision interval without clipping,
+tenant identity. It pages intersecting original decision intervals without clipping,
 filling gaps or discarding excluded/pending members. The response retains exact tenant,
 definition/revision/source-cut provenance and the full revision's `membership_content_hash`;
-`count` counts matching intervals, not distinct portfolios. `completeness=UNVERIFIED` explicitly
+`count` counts all matching intervals, not distinct portfolios or page size. `limit` defaults to 100
+(1–1000 allowed), and `offset` defaults to zero and must be nonnegative. Invalid page bounds refuse
+with 422. `completeness=UNVERIFIED` explicitly
 preserves the source boundary. Invalid or reversed dates refuse with 422; absent/foreign revisions
 return 404 and missing admitted identity returns 403.
 
-One immutable stored revision supplies the projection. Work is linear in that revision's bounded
-decision list, with no day-by-day expansion, latest lookup, offset pagination or new write. Repeated
+One immutable stored revision supplies stable offset pages. Each response is limited to the
+requested page size. Work is linear in the full revision's decision list, which has no hard
+admission count cap; this does not certify capacity or an SLO. There is no day-by-day expansion,
+latest lookup or new write. Repeated
 reads leave both the revision and publication page unchanged. Manage owns the supplied membership
 decisions; this endpoint does not qualify the upstream population, bank IAM or financial facts.
 Performance's existing pinned-revision consumer remains unchanged; new range-consumer financial
@@ -50,7 +54,8 @@ acceptance is not claimed.
 The [worked client examples](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-membership-corrections.md)
 describe original/corrected and terminated history. Registered API tests in
 `tests/unit/api/test_composite_membership_range_routes.py` cover boundaries, per-member gaps,
-interval counts, malformed windows, scope and original/corrected pins. Actual PostgreSQL tests in
+interval counts, bounded pagination over 1,001 intervals, stable pages across a new publication,
+malformed windows/page bounds, scope and original/corrected pins. Actual PostgreSQL tests in
 `tests/integration/dpm/composites/test_composite_membership_range_postgres.py` repeat reads after
 application/client/repository restart against the same database and verify the complete publication
 page is unchanged. This is bounded synthetic software evidence; protected/current-main gates and

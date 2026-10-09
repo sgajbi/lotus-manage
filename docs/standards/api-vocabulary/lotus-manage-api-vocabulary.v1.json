@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-09T08:50:30.978555+00:00",
+  "generatedAt": "2026-10-09T09:14:08.271874+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -24459,6 +24459,30 @@
       "allowedValues": [],
       "semanticId": "lotus.effective_to",
       "attributeRef": "#/attributeCatalog/lotus.effective_to"
+    },
+    {
+      "name": "limit",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Canonical limit used by lotus-manage APIs.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.limit",
+      "attributeRef": "#/attributeCatalog/lotus.limit"
+    },
+    {
+      "name": "offset",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Canonical offset used by lotus-manage APIs.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.offset",
+      "attributeRef": "#/attributeCatalog/lotus.offset"
     },
     {
       "name": "composite_id",
@@ -85830,7 +85854,7 @@
       "method": "GET",
       "path": "/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/range",
       "operationId": "get_membership_range_api_v1_rebalance_composites__composite_id__definitions__definition_version__membership__membership_revision__range_get",
-      "summary": "Read complete decision intervals intersecting a pinned inclusive date range",
+      "summary": "Page original decision intervals intersecting a pinned inclusive date range",
       "request": {
         "fields": [
           {
@@ -85872,6 +85896,22 @@
             "type": "string",
             "semanticId": "lotus.effective_to",
             "attributeRef": "#/attributeCatalog/lotus.effective_to"
+          },
+          {
+            "name": "limit",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
           }
         ]
       },
@@ -86004,6 +86044,22 @@
             "type": "integer",
             "semanticId": "lotus.count",
             "attributeRef": "#/attributeCatalog/lotus.count"
+          },
+          {
+            "name": "limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
           },
           {
             "name": "source_cut_id",
