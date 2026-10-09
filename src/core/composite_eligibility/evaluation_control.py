@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import Digest, Identity, StrictAuthorityModel
@@ -23,6 +24,11 @@ from src.core.composite_eligibility.source_assembly import (
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 
 
+def _publication_marker_schema(schema: dict[str, Any]) -> None:
+    """Omission permits old custody; explicit null is not a supported marker."""
+    schema.pop("default", None)
+
+
 class MonthlyEvaluationProposal(StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEvaluationProposal"] = (
         "CompositeMonthlyEvaluationProposal"
@@ -38,11 +44,27 @@ class MonthlyEvaluationProposal(StrictAuthorityModel):
     source_assembly_evidence: VerifiedMonthlySourceAssembly | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    publication_evidence_version: Literal["v1"] | SkipJsonSchema[None] = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        json_schema_extra=_publication_marker_schema,
+    )
     evaluation: MonthlyEligibilityEvaluation
     proposed_by: Identity
     proposed_at: UtcInstant
     correlation_id: Identity
     content_hash: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def require_supported_publication_evidence_version(cls, wire: object) -> object:
+        if (
+            isinstance(wire, dict)
+            and "publication_evidence_version" in wire
+            and wire["publication_evidence_version"] is None
+        ):
+            raise ValueError("COMPOSITE_ELIGIBILITY_PUBLICATION_EVIDENCE_VERSION_INVALID")
+        return wire
 
     @model_validator(mode="after")
     def require_reproducible_bound_evaluation(self) -> MonthlyEvaluationProposal:

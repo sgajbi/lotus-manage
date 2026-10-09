@@ -183,6 +183,65 @@ refusals, atomic first publication and an authenticated resolver in a fresh API 
 
 ## Operations And Remaining Boundaries
 
+### Exact monthly published evidence
+
+Fresh monthly proposals carry the server-owned `publication_evidence_version: "v1"` marker.
+Commands cannot supply or downgrade it. Missing markers preserve legacy custody; explicit null
+or unknown versions are refused. No migration rewrites an earlier proposal, approval or universe.
+
+A marked checker publication adds exactly one current `lotus-manage` source product named
+`CompositeMonthlyEvaluationApproval/v1` to its published universe, with `POLICY_INPUT` scope,
+the exact source cut, evaluation revision as watermark and full approval content hash. A previous
+monthly locator is replaced only in the new projected universe; retained inputs remain immutable.
+
+POST the locator as an `EvidenceBinding` to the existing
+`/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/eligibility-evidence/resolve`
+operation. For this product it returns `CompositeMonthlyEligibilityPublicationReceipt/v1`:
+the full definition and approval (including complete source assembly), membership/universe
+bindings, source cut, positive canonical publication sequence, `UNVERIFIED` completeness and
+content hash. The receipt hash excludes only its own root hash and retains every nested hash.
+The staged product continues to return its existing subject finalization receipt.
+
+Resolution joins independently retained definition, policy proposal/approval, evaluation
+proposal/approval, parent, input universe, published membership/universe and canonical publication
+under one memory lock or PostgreSQL repeatable-read snapshot. Full reprojection rejects a changed
+nested locator even when the legacy universe self-hash is unchanged. Missing custody, incorrect
+pins or rehashed disagreement fail closed; no source call, new approval or publication is made.
+Unmarked legacy monthly approvals remain readable and replayable but cannot be resolved as this
+new proof. A marked proposal without retained complete source evidence returns unavailable.
+
+Each month's checker evidence is separate from prospective policy approval, Core per-fact
+qualification and whole-cut verification. It does not extend a v2 definition's economic authority
+dates, method/provider registration, institutional approval or official activation.
+
+An internal client must derive the binding from the exact published universe, rather than copy
+the evaluation claims digest or select the latest approval. With an authenticated HTTP client,
+the definition's base URL and that universe already pinned:
+
+```python
+locator, = (
+    product for product in published_universe["source_products"]
+    if product["owner_service"] == "lotus-manage"
+    and product["product_name"] == "CompositeMonthlyEvaluationApproval"
+)
+response = client.post(
+    definition_base_url + "/eligibility-evidence/resolve",
+    json={
+        "product_name": locator["product_name"],
+        "product_version": locator["contract_version"],
+        "revision": locator["source_watermark"],
+        "digest": locator["content_hash"],
+    },
+)
+response.raise_for_status()
+receipt = response.json()
+```
+
+Legacy v1 retrieval remains supported. A consumer requiring a v2 economic profile must additionally
+admit that full profile, its unchanged effective dates, provider/method registration and separately
+qualified financial facts. The native three-month v2 campaign defines a distinct initial synthetic
+profile for July–September; it does not promote fixture authority into financial qualification.
+
 | Condition | Operator Action |
 | --- | --- |
 | Source unavailable or owner/cut/content mismatch | Obtain qualified owner evidence; never replace pins with latest facts |

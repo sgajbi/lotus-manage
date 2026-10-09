@@ -1,7 +1,12 @@
 """Configured recurring monthly source behavior over registered HTTP and owned PostgreSQL."""
 
 import json
+from copy import deepcopy
 from datetime import date, timedelta
+
+import psycopg
+import pytest
+from psycopg import sql
 
 from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository
 from src.core.common.canonical import hash_canonical_payload
@@ -36,7 +41,229 @@ RUNTIME_HEADERS = HEADERS | {
 }
 
 
-def seed_recurring(repository, *, coverage_from="2026-09-01"):
+def resolve_published_month(client, approval, *, captured=None):
+    """Use the actual published locator, then verify the complete HTTP proof."""
+    root = BASE.removesuffix("/monthly-eligibility")
+    proposal = approval["proposal"]
+    published = client.get(
+        root
+        + "/membership/"
+        + proposal["target_membership_revision"]
+        + "/universe-attestations/"
+        + proposal["evaluation_revision"],
+        headers=RUNTIME_HEADERS,
+    )
+    assert published.status_code == 200, published.text
+    universe = published.json()
+    if captured is not None:
+        membership = client.get(
+            root + "/membership/" + proposal["target_membership_revision"],
+            headers=RUNTIME_HEADERS,
+        )
+        assert membership.status_code == 200, membership.text
+        captured.update(canonical_universe=universe, canonical_membership=membership.json())
+    locators = [
+        item
+        for item in universe["source_products"]
+        if item["owner_service"] == "lotus-manage"
+        and item["product_name"] == "CompositeMonthlyEvaluationApproval"
+    ]
+    assert len(locators) == 1
+    locator = locators[0]
+    assert locator["content_hash"] == approval["content_hash"]
+    assert locator["source_watermark"] == proposal["evaluation_revision"]
+    assert locator["source_cut_id"] == universe["source_cut_id"]
+    assert locator["authority_scope"] == "POLICY_INPUT"
+    binding = {
+        "product_name": locator["product_name"],
+        "product_version": locator["contract_version"],
+        "revision": locator["source_watermark"],
+        "digest": locator["content_hash"],
+    }
+    response = client.post(
+        root + "/eligibility-evidence/resolve", json=binding, headers=RUNTIME_HEADERS
+    )
+    assert response.status_code == 200, response.text
+    receipt = response.json()
+    assert receipt["approval"] == approval
+    assert receipt["universe_binding"]["digest"] == universe["content_hash"]
+    assert receipt["membership_binding"]["digest"] == approval["membership_content_hash"]
+    assert receipt["content_hash"] == hash_canonical_payload(
+        {key: value for key, value in receipt.items() if key != "content_hash"}
+    )
+    assert receipt["completeness"] == "UNVERIFIED"
+    for field, value, status in (
+        ("digest", "sha256:" + "f" * 64, 422),
+        ("revision", "missing.month", 404),
+        ("product_version", "v2", 422),
+    ):
+        refused = client.post(
+            root + "/eligibility-evidence/resolve",
+            json={**binding, field: value},
+            headers=RUNTIME_HEADERS,
+        )
+        assert refused.status_code == status, refused.text
+    wrong_tenant = client.post(
+        root + "/eligibility-evidence/resolve",
+        json=binding,
+        headers=RUNTIME_HEADERS | {"X-Tenant-Id": "other-tenant"},
+    )
+    assert wrong_tenant.status_code == 404, wrong_tenant.text
+    return receipt
+
+
+def refuse_rehashed_custody_corruption(client, dsn, approval):
+    """Valid rehashed payloads cannot evade retained hashes or full-object joins."""
+    from src.core.composite_eligibility.approval import MonthlyPolicyProposal
+    from src.core.composite_eligibility.evaluation_control import MonthlyEvaluationProposal
+    from src.core.composite_membership import DpmCompositeMembershipRevision
+
+    proposal = approval["proposal"]
+    root = BASE.removesuffix("/monthly-eligibility")
+    binding = {
+        "product_name": "CompositeMonthlyEvaluationApproval",
+        "product_version": "v1",
+        "revision": proposal["evaluation_revision"],
+        "digest": approval["content_hash"],
+    }
+    cases = [
+        (
+            "dpm_composite_monthly_policy_proposals",
+            "proposal_revision",
+            proposal["policy_approval"]["proposal"]["proposal_revision"],
+            MonthlyPolicyProposal,
+        ),
+        (
+            "dpm_composite_monthly_evaluation_proposals",
+            "evaluation_revision",
+            proposal["evaluation_revision"],
+            MonthlyEvaluationProposal,
+        ),
+        (
+            "dpm_composite_membership_revisions",
+            "membership_revision",
+            proposal["parent_membership_revision"],
+            DpmCompositeMembershipRevision,
+        ),
+        (
+            "dpm_composite_membership_revisions",
+            "membership_revision",
+            proposal["target_membership_revision"],
+            DpmCompositeMembershipRevision,
+        ),
+        (
+            "dpm_composite_universe_attestations",
+            "attestation_version",
+            proposal["evaluation_revision"],
+            DpmCompositeUniverseAttestation,
+        ),
+        (
+            "dpm_composite_universe_attestations",
+            "attestation_version",
+            proposal["universe"]["attestation_version"],
+            DpmCompositeUniverseAttestation,
+        ),
+    ]
+    with psycopg.connect(dsn, row_factory=psycopg.rows.dict_row) as connection:
+        publication_count = connection.execute(
+            "SELECT count(*) AS total FROM dpm_composite_membership_publications WHERE tenant_id=%s",
+            ("synthetic-tenant",),
+        ).fetchone()["total"]
+        for table, column, revision, model in cases:
+            selector = sql.SQL(
+                " WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND {}=%s"
+            ).format(sql.Identifier(column))
+            key = ("synthetic-tenant", "synthetic-composite", "synthetic-definition", revision)
+            row = connection.execute(
+                sql.SQL("SELECT content_hash,payload_json FROM {}").format(sql.Identifier(table))
+                + selector,
+                key,
+            ).fetchone()
+            assert row is not None
+            original = row["payload_json"]
+            changed = deepcopy(original)
+            if model is DpmCompositeUniverseAttestation:
+                changed["source_products"][-1]["content_hash"] = "sha256:" + "e" * 64
+            elif model is MonthlyPolicyProposal:
+                changed["proposed_by"] = "individually-valid-rehashed-corruption"
+            else:
+                changed["correlation_id"] = "individually-valid-rehashed-corruption"
+            changed["content_hash"] = ""
+            changed = model.model_validate(changed).model_dump(mode="json")
+            if model is DpmCompositeUniverseAttestation:
+                assert changed["content_hash"] == original["content_hash"]
+            update = (
+                sql.SQL("UPDATE {} SET payload_json=%s::jsonb,content_hash=%s").format(
+                    sql.Identifier(table)
+                )
+                + selector
+            )
+            try:
+                connection.execute(update, (json.dumps(changed), changed["content_hash"], *key))
+            except psycopg.errors.ForeignKeyViolation:
+                # Existing custody FKs forbid replacing referenced hash anchors.
+                # Keep that anchor and exercise the payload/anchor read guard.
+                connection.rollback()
+                connection.execute(update, (json.dumps(changed), row["content_hash"], *key))
+            connection.commit()
+            try:
+                refused = client.post(
+                    root + "/eligibility-evidence/resolve", json=binding, headers=RUNTIME_HEADERS
+                )
+                assert refused.status_code in (409, 422), (table, refused.text)
+                assert (
+                    connection.execute(
+                        "SELECT count(*) AS total FROM dpm_composite_membership_publications WHERE tenant_id=%s",
+                        ("synthetic-tenant",),
+                    ).fetchone()["total"]
+                    == publication_count
+                )
+            finally:
+                connection.execute(update, (json.dumps(original), row["content_hash"], *key))
+                connection.commit()
+            resolve_published_month(client, approval)
+
+
+def refuse_rehashed_v2_definition_scope(client, dsn, approval):
+    from src.core.composite_definition_versions import decode_composite_definition
+    from tests.composite_authority_helpers import rebind_definition
+
+    key = ("synthetic-tenant", "synthetic-composite", "synthetic-definition")
+    selector = " WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s"
+    with psycopg.connect(dsn, row_factory=psycopg.rows.dict_row) as connection:
+        row = connection.execute(
+            "SELECT content_hash,payload_json FROM dpm_composite_definitions" + selector, key
+        ).fetchone()
+        changed = deepcopy(row["payload_json"])
+        changed["strategy_code"] = "other-synthetic-strategy"
+        changed = decode_composite_definition(
+            rebind_definition(changed, refresh_approval=True)
+        ).model_dump(mode="json")
+        update = (
+            "UPDATE dpm_composite_definitions SET content_hash=%s,payload_json=%s::jsonb" + selector
+        )
+        connection.execute(update, (changed["content_hash"], json.dumps(changed), *key))
+        connection.commit()
+        try:
+            response = client.post(
+                BASE.removesuffix("/monthly-eligibility") + "/eligibility-evidence/resolve",
+                json={
+                    "product_name": "CompositeMonthlyEvaluationApproval",
+                    "product_version": "v1",
+                    "revision": approval["proposal"]["evaluation_revision"],
+                    "digest": approval["content_hash"],
+                },
+                headers=RUNTIME_HEADERS,
+            )
+            assert response.status_code == 422, response.text
+            assert response.json()["detail"]["code"] == "COMPOSITE_MONTHLY_EVIDENCE_SCOPE_MISMATCH"
+        finally:
+            connection.execute(update, (row["content_hash"], json.dumps(row["payload_json"]), *key))
+            connection.commit()
+        resolve_published_month(client, approval)
+
+
+def seed_recurring(repository, *, coverage_from="2026-09-01", definition_version="v1"):
     snapshot = source_snapshot()
     seed, universe = retained_repository(snapshot, coverage_from=coverage_from)
     scope = {
@@ -44,7 +271,12 @@ def seed_recurring(repository, *, coverage_from="2026-09-01"):
         "composite_id": snapshot.composite_id,
         "definition_version": snapshot.definition_version,
     }
-    repository.save_definition(definition=seed.get_definition(**scope))
+    definition = seed.get_definition(**scope)
+    if definition_version == "v2":
+        from tests.composite_monthly_v2_helpers import synthetic_monthly_v2_definition
+
+        definition = synthetic_monthly_v2_definition(definition)
+    repository.save_definition(definition=definition)
     repository.save_membership_revision(
         revision=seed.get_membership_revision(**scope, membership_revision="synthetic-membership")
     )
@@ -137,6 +369,8 @@ def test_registered_recurring_simulation_uses_configured_verified_monthly_source
             approval = approved.json()
             assert approval["proposal"] == proposal
             assert approval["official_activation"] == "UNAVAILABLE"
+            receipt = resolve_published_month(client, approval)
+            refuse_rehashed_custody_corruption(client, dsn, approval)
             future = client.put(
                 BASE + "/evaluations/unapproved.future.month",
                 json={**body, "month": "2026-10"},
@@ -156,6 +390,7 @@ def test_registered_recurring_simulation_uses_configured_verified_monthly_source
             replayed_approval = client.put(url + "/approval", json=approval_body, headers=checker)
             assert replayed_approval.status_code == 200, replayed_approval.text
             assert replayed_approval.json() == approval
+            assert resolve_published_month(client, approval) == receipt
             publications = client.get("/api/v1/rebalance/composites/publications", headers=headers)
             assert publications.status_code == 200, publications.text
             assert len(publications.json()["items"]) == 2
@@ -210,7 +445,7 @@ def test_registered_recurring_source_refusals_never_retain_proposal_or_publicati
             assert recovered.status_code == 200, recovered.text
 
 
-def economic_universe(repository, original, name, assembly, *, parent=None):
+def economic_universe(repository, original, name, assembly, *, parent=None, prior_locator=None):
     wire = original.model_dump(mode="json")
     wire["attestation_version"] = f"economic.{name}.u1"
     wire["content_hash"] = ""
@@ -231,6 +466,8 @@ def economic_universe(repository, original, name, assembly, *, parent=None):
                 source_watermark=snapshot["source_revision"],
                 content_hash=hash_canonical_payload(snapshot),
             )
+    if prior_locator is not None:
+        wire["source_products"].append(prior_locator)
     universe = DpmCompositeUniverseAttestation.model_validate(wire)
     repository.save_universe_attestation(attestation=universe)
     return universe
@@ -298,8 +535,9 @@ def test_registered_recurring_economic_matrix_retains_all_rules_and_replays(monk
         )
 
 
+@pytest.mark.parametrize("definition_version", ["v1", "v2"])
 def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
-    monkeypatch, tmp_path
+    monkeypatch, tmp_path, definition_version
 ):
     scope = {
         "tenant_id": "synthetic-tenant",
@@ -310,7 +548,9 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
     membership_path = BASE.removesuffix("/monthly-eligibility") + "/membership/"
     with disposable_database() as dsn, synthetic_sources(monkeypatch) as (configuration, state):
         repository = PostgresDpmCompositeRepository(dsn=dsn)
-        original = seed_recurring(repository, coverage_from="2026-07-01")
+        original = seed_recurring(
+            repository, coverage_from="2026-07-01", definition_version=definition_version
+        )
         genesis = repository.get_membership_revision(
             **scope, membership_revision="synthetic-membership"
         )
@@ -318,7 +558,26 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
         records = []
         with native_api(dsn, composite_config=configuration) as (client, _):
             for month, assembly, status, outcomes in transition_cases():
-                universe = economic_universe(repository, original, month, assembly, parent=parent)
+                prior_locator = (
+                    next(
+                        (
+                            item
+                            for item in records[-1]["canonical_universe"]["source_products"]
+                            if item["product_name"] == "CompositeMonthlyEvaluationApproval"
+                        ),
+                        None,
+                    )
+                    if records
+                    else None
+                )
+                universe = economic_universe(
+                    repository,
+                    original,
+                    month,
+                    assembly,
+                    parent=parent,
+                    prior_locator=prior_locator,
+                )
                 # A prior month's independent policy approval grants no authority for this month.
                 if records:
                     denied_body = {**records[-1]["body"], "month": month}
@@ -352,6 +611,14 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                 approved = client.put(url + "/approval", json=approval_body, headers=checker)
                 assert approved.status_code == 200, approved.text
                 approval = approved.json()
+                captured = {}
+                receipt = resolve_published_month(client, approval, captured=captured)
+                if prior_locator is not None:
+                    assert prior_locator in proposal["universe"]["source_products"]
+                assert receipt["definition"]["product_version"] == definition_version
+                if definition_version == "v2":
+                    refuse_rehashed_custody_corruption(client, dsn, approval)
+                    refuse_rehashed_v2_definition_scope(client, dsn, approval)
                 parent = repository.get_membership_revision(
                     **scope, membership_revision=body["target_membership_revision"]
                 )
@@ -365,6 +632,8 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                         "proposal": proposal,
                         "approval_body": approval_body,
                         "approval": approval,
+                        "publication_receipt": receipt,
+                        **captured,
                         "membership": parent.model_dump(mode="json"),
                     }
                 )
@@ -410,6 +679,10 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                 )
                 assert approved.status_code == 200 and approved.json() == record["approval"], (
                     approved.text
+                )
+                assert (
+                    resolve_published_month(client, record["approval"])
+                    == record["publication_receipt"]
                 )
             publications = client.get(
                 "/api/v1/rebalance/composites/publications", headers=RUNTIME_HEADERS

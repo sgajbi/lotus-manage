@@ -31,12 +31,14 @@ from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApproval,
     MonthlyEvaluationProposal,
 )
+from src.core.composite_eligibility.monthly_evidence import MonthlyEligibilityPublicationReceipt
 from src.infrastructure.composites import (
     policy_control,
     membership_store,
     universe_store,
     evaluation_control,
     staged_postgres,
+    monthly_evidence,
 )
 from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
 from src.core.composite_eligibility.staged_controls import StagedControl
@@ -123,6 +125,23 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
             ):
                 raise DpmCompositeConflictError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
             return receipt
+
+    def resolve_monthly_eligibility_evidence(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        evaluation_revision: str,
+        approval_content_hash: str,
+    ) -> MonthlyEligibilityPublicationReceipt | None:
+        with closing(self._connect()) as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            return monthly_evidence.resolve(
+                connection,
+                (tenant_id, composite_id, definition_version, evaluation_revision),
+                approval_content_hash,
+            )
 
     def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
         with closing(self._connect()) as connection:

@@ -14,7 +14,10 @@ from src.core.composite_membership import (
     DpmCompositeMembershipDecision,
     DpmCompositeMembershipRevision,
 )
-from src.core.composite_universe import DpmCompositeUniverseAttestation
+from src.core.composite_universe import (
+    DpmCompositeUniverseAttestation,
+    DpmCompositeUniverseSourceProduct,
+)
 from src.core.composite_universe_resolution import reconcile_composite_universe
 
 
@@ -65,6 +68,15 @@ def build_monthly_publication(
         membership_content_hash=revision.content_hash,
         published_universe_content_hash=universe.content_hash,
     )
+    if proposal.publication_evidence_version == "v1":
+        linked = _published_universe(
+            proposal, revision, approved_by, approved_at, approval_digest=approval.content_hash
+        )
+        # Legacy universe hashing omits nested content_hash. Explicit receipt admission
+        # must verify the locator digest; the outer universe hash alone cannot protect it.
+        if linked.content_hash != universe.content_hash:
+            raise ValueError("COMPOSITE_ELIGIBILITY_PUBLICATION_LOCATOR_HASH_CYCLE")
+        universe = linked
     return approval, revision, universe
 
 
@@ -164,6 +176,8 @@ def _published_universe(
     revision: DpmCompositeMembershipRevision,
     approved_by: str,
     approved_at: str,
+    *,
+    approval_digest: str = "sha256:" + "0" * 64,
 ) -> DpmCompositeUniverseAttestation:
     first, last = month_window(proposal.evaluation.month)
     expected = proposal.observations.expected_portfolio_ids
@@ -175,6 +189,29 @@ def _published_universe(
     )
     if missing or unexpected or gaps:
         raise ValueError("COMPOSITE_ELIGIBILITY_PROJECTED_UNIVERSE_MISMATCH")
+    products = list(proposal.universe.source_products)
+    if proposal.publication_evidence_version == "v1":
+        # The retained input stays immutable. The output names only its own month's
+        # approval rather than inheriting a previous month's locator on the same cut.
+        products = [
+            item
+            for item in products
+            if not (
+                item.owner_service == "lotus-manage"
+                and item.product_name == "CompositeMonthlyEvaluationApproval"
+            )
+        ]
+        products.append(
+            DpmCompositeUniverseSourceProduct(
+                owner_service="lotus-manage",
+                product_name="CompositeMonthlyEvaluationApproval",
+                contract_version="v1",
+                authority_scope="POLICY_INPUT",
+                source_cut_id=revision.source_cut_id,
+                source_watermark=proposal.evaluation_revision,
+                content_hash=approval_digest,
+            )
+        )
     return DpmCompositeUniverseAttestation(
         tenant_id=revision.tenant_id,
         composite_id=revision.composite_id,
@@ -186,7 +223,7 @@ def _published_universe(
         coverage_to=last,
         policy_version=revision.policy_version,
         source_cut_id=revision.source_cut_id,
-        source_products=proposal.universe.source_products,
+        source_products=products,
         posture="COMPLETE",
         expected_portfolio_ids=expected,
         expected_portfolio_count=len(expected),

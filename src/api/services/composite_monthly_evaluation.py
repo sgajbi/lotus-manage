@@ -7,7 +7,11 @@ from src.api.services.composite_monthly_eligibility import (
     MonthlyApprovalRequest,
     MonthlySimulationRequest,
 )
-from src.core.composite_authority_models import Digest, Identity, StrictAuthorityModel
+from src.core.composite_authority_models import (
+    Digest,
+    Identity,
+    StrictAuthorityModel,
+)
 from src.core.composite_eligibility.evaluation import evaluate_monthly_eligibility
 from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApproval,
@@ -136,6 +140,7 @@ class CompositeMonthlyEvaluationApplicationService:
             universe_content_hash=universe.content_hash,
         )
         proposal = MonthlyEvaluationProposal(
+            publication_evidence_version="v1",
             source_assembly_evidence=source_evidence,
             evaluation_revision=evaluation_revision,
             target_membership_revision=command.target_membership_revision,
