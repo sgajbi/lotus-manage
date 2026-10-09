@@ -8,7 +8,9 @@ bounded HTTP client. Platform Ed25519 credentials bind exact requests and comple
 deployment keys, issuer, tenant and permitted verification purpose govern admission.
 `CompositeMonthlyEligibilityAssembly/v1` carries all five monthly input kinds, source cut/product
 bindings and independent full-assembly verification under `COMPOSITE_MONTHLY_SOURCE_CUT`.
-Staged evaluation evidence retains that complete provenance and replays it after restart.
+Staged evaluation evidence retains that complete provenance through finalization and publication.
+The native configured-source proof resolves the exact published eligibility digest, refuses a
+changed digest and replays the same complete receipt after restart with default unavailable ports.
 Default configuration and actual Core unqualified/UNAVAILABLE inputs fail closed. Evidence remains
 synthetic and non-certifying; qualified financial compatibility, bank identity/grants and official
 activation remain outstanding. The repository guide `docs/guides/composite-configured-sources.md`

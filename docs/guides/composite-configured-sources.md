@@ -120,6 +120,9 @@ The fixture generates separate ephemeral source and verifier Ed25519 keys and ex
 it provides a runnable configuration example without committing private keys. No dependency override
 is installed in the spawned API. Prospective controls are retained synthetic fixture history;
 evaluation and approval use actual runtime time. Proof covers independent refusal before write,
-recovery, existing +150/-100 net-flow calculation, maker/checker separation and persisted replay
-after restart with default unavailable sources. It proves executable adapter behavior, not bank IAM,
+recovery, existing +150/-100 net-flow calculation, maker/checker separation, finalization and
+publication of the complete source evidence, exact-digest evidence resolution, changed-digest
+refusal, and persisted replay after restart with default unavailable sources. The pytest temporary
+directory retains the actual HTTP finalization graph as `configured-source-finalization.json` for
+consumer compatibility investigation. It proves executable adapter behavior, not bank IAM,
 qualified financial products, official Composite membership or Performance materialization.

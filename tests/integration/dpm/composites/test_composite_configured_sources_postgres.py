@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from src.core.composite_eligibility.verification import VerificationRequest
 from src.core.composite_eligibility.staged_subject import CandidateUniverse
+from src.core.composite_eligibility.staged_controls import SubjectEvaluationApproval
 from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository
 from tests.composite_staged_eligibility_helpers import (
     BASE,
@@ -21,6 +22,7 @@ from tests.composite_staged_eligibility_helpers import (
     CHECKER,
     lifecycle_material,
     synthetic_verification,
+    final_definition,
 )
 from tests.integration.dpm.network_runtime import disposable_database, native_api
 from tests.unit.api.test_composite_subject_lifecycle_routes import subject_body, evaluation_body
@@ -93,7 +95,13 @@ def synthetic_sources(monkeypatch):
             principal_id="synthetic-fixture-verifier" if operation == "verification" else "source",
             credential_env="SYNTHETIC_CONFIGURED_SOURCE_CREDENTIAL",
             evidence_posture="SYNTHETIC_NON_CERTIFYING",
-            verification_purposes=("ELIGIBILITY_POLICY_EVALUATION", "COMPOSITE_MONTHLY_SOURCE_CUT")
+            verification_purposes=(
+                "ELIGIBILITY_POLICY_EVALUATION",
+                "COMPOSITE_MONTHLY_SOURCE_CUT",
+                "COMPOSITE_ECONOMIC_AUTHORITY_PROFILE",
+                "RETURN_METHOD_CALENDAR",
+                "PROVIDER_REGISTRATION",
+            )
             if operation == "verification"
             else (),
             keys=[
@@ -116,7 +124,55 @@ def synthetic_sources(monkeypatch):
         assert not thread.is_alive()
 
 
-def test_registered_configured_evaluation_refusal_recovery_and_restart(monkeypatch):
+def finalization_body(subject, approval):
+    approved = SubjectEvaluationApproval.model_validate(approval)
+    definition = final_definition(subject, approved)
+    return {
+        "evaluation_revision": approved.proposal.evaluation_revision,
+        "expected_approval_content_hash": approved.content_hash,
+        "definition": definition.model_dump(
+            mode="json",
+            exclude={
+                "product_name",
+                "tenant_id",
+                "composite_id",
+                "definition_version",
+                "created_by",
+            },
+        ),
+    }
+
+
+def assert_published_custody(client, headers, receipt, retained):
+    response = client.get(BASE + "/finalization", headers=headers)
+    assert response.status_code == 200, response.text
+    assert response.json() == receipt
+    assert receipt["completeness"] == "UNVERIFIED"
+    proposal = receipt["finalization"]["evaluation_approval"]["proposal"]
+    assert proposal == retained
+    assert proposal["source_assembly_evidence"] == retained["source_assembly_evidence"]
+    publications = client.get("/api/v1/rebalance/composites/publications", headers=headers)
+    assert publications.status_code == 200, publications.text
+    items = publications.json()["items"]
+    assert len(items) == 1
+    assert items[0]["sequence"] == receipt["publication_sequence"]
+    assert items[0]["membership_content_hash"] == receipt["membership_content_hash"]
+    definition = receipt["finalization"]["definition"]
+    binding = definition["source_authority"]["payload"]["eligibility_evaluation_binding"]
+    path = (
+        "/api/v1/rebalance/composites/synthetic-composite/definitions/"
+        "synthetic-definition/eligibility-evidence/resolve"
+    )
+    resolved = client.post(path, headers=headers, json=binding)
+    assert resolved.status_code == 200, resolved.text
+    assert resolved.json() == receipt
+    changed_digest = binding["digest"][:-1] + ("0" if binding["digest"][-1] != "0" else "1")
+    changed = client.post(path, headers=headers, json={**binding, "digest": changed_digest})
+    assert changed.status_code == 422, changed.text
+    assert changed.json()["detail"]["code"] == "COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH"
+
+
+def test_registered_configured_evaluation_refusal_recovery_and_restart(monkeypatch, tmp_path):
     _, subject, policy, approved_policy, evaluation, *_ = lifecycle_material()
     headers = HEADERS | {
         "X-Service-Identity": "synthetic-native-source-proof",
@@ -185,6 +241,15 @@ def test_registered_configured_evaluation_refusal_recovery_and_restart(monkeypat
             assert approved.status_code == 200, approved.text
             assert approved.json()["evidence_kind"] == "SYNTHETIC_UNSIGNED"
             approval = approved.json()
+            final_body = finalization_body(subject, approval)
+            finalized = client.put(
+                BASE + "/finalization",
+                json=final_body,
+                headers=headers | {"X-Actor-Id": CHECKER},
+            )
+            assert finalized.status_code == 200, finalized.text
+            receipt = finalized.json()
+            assert_published_custody(client, headers, receipt, retained)
         calls = list(state["calls"])
         # Default unavailable composition replays retained custody after process restart.
         with native_api(dsn) as (client, _):
@@ -198,4 +263,16 @@ def test_registered_configured_evaluation_refusal_recovery_and_restart(monkeypat
                 ).json()
                 == approval
             )
+            assert_published_custody(client, headers, receipt, retained)
+            finalized_replay = client.put(
+                BASE + "/finalization",
+                json=final_body,
+                headers=headers | {"X-Actor-Id": CHECKER},
+            )
+            assert finalized_replay.status_code == 200, finalized_replay.text
+            assert finalized_replay.json() == receipt
         assert state["calls"] == calls
+        # Retain the actual HTTP graph for consumer compatibility investigation.
+        (tmp_path / "configured-source-finalization.json").write_text(
+            json.dumps(receipt, indent=2), encoding="utf-8"
+        )
