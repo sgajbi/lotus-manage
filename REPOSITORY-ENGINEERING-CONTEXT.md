@@ -103,6 +103,12 @@ receipt decoding preserves exact historical bodies/hashes; premature historical 
 granting new authority. Consumer financial admission remains separately strict. Default sources remain
 unavailable, Core unqualified inputs refuse, and legacy hashes omit absent new provenance fields.
 See [configured source guide](docs/guides/composite-configured-sources.md) for contract and proof.
+Composite read services use deployment-owned `DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON` enrollment
+with fixed `REPORT_COMPOSITE_READER`/`manage.read`, exact custody GETs and the read-only resolver
+POST. No default grant exists. The same enrolled service cannot mutate or claim writer authority;
+legacy writer prefix rules remain unchanged. This trusted-ingress assertion boundary is not bank
+IAM certification. See the guide for exact header, identifier and denial contracts. Direct native
+HTTP tests and actual configured Report-client joined proof are distinct evidence classes.
 Its native HTTP/PostgreSQL proof follows retained provenance through finalization, publication,
 exact-digest evidence resolution and restart; the actual receipt is retained in pytest temporary
 artifacts for downstream compatibility investigation. Synthetic publication stays UNVERIFIED.

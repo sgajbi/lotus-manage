@@ -23,6 +23,15 @@ scope unless a future source-owning service publishes and certifies that capabil
 
 ## Important operational checks
 
+- enroll Report custody readers explicitly with `DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON` and
+  fixed `REPORT_COMPOSITE_READER`/`manage.read`; default enrollment is empty. Use a distinct service
+  identity bound to one actor and tenant. Exact membership, universe, publication, evaluated-only
+  proposal and resolver reads
+  retain custody checks and enterprise audit; that service cannot mutate, including with asserted
+  writer privileges. This is trusted-ingress header admission, not bank IAM verification. See the
+  [configured source guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-configured-sources.md#read-only-report-service)
+  for the exact contract and proof boundaries.
+
 - use the [Core cohort consumer proof](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations/core-cohort-consumer-proof.md)
   for isolated actual-source wave acceptance; require both prerequisite flags, exact source pins,
   identical selectors and verified owned-resource teardown. Missing producer digests remain an
