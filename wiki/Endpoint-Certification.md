@@ -29,6 +29,33 @@ demo proof.
 | Operations/support | Find the route family, common failure posture, and command evidence for support-safe diagnosis. | Endpoint claims must remain bounded and source-safe. |
 | Future agent or engineer | Keep route behavior, OpenAPI descriptions, tests, and wiki truth synchronized during issue fixes. | Update this page when API semantics or certification evidence changes. |
 
+## Pinned Composite Membership Range: Bounded Read
+
+`GET /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/range`
+requires inclusive `effective_from` and `effective_to` calendar dates and the existing admitted
+tenant identity. It returns every intersecting original decision interval without clipping,
+filling gaps or discarding excluded/pending members. The response retains exact tenant,
+definition/revision/source-cut provenance and the full revision's `membership_content_hash`;
+`count` counts matching intervals, not distinct portfolios. `completeness=UNVERIFIED` explicitly
+preserves the source boundary. Invalid or reversed dates refuse with 422; absent/foreign revisions
+return 404 and missing admitted identity returns 403.
+
+One immutable stored revision supplies the projection. Work is linear in that revision's bounded
+decision list, with no day-by-day expansion, latest lookup, offset pagination or new write. Repeated
+reads leave both the revision and publication page unchanged. Manage owns the supplied membership
+decisions; this endpoint does not qualify the upstream population, bank IAM or financial facts.
+Performance's existing pinned-revision consumer remains unchanged; new range-consumer financial
+acceptance is not claimed.
+
+The [worked client examples](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-membership-corrections.md)
+describe original/corrected and terminated history. Registered API tests in
+`tests/unit/api/test_composite_membership_range_routes.py` cover boundaries, per-member gaps,
+interval counts, malformed windows, scope and original/corrected pins. Actual PostgreSQL tests in
+`tests/integration/dpm/composites/test_composite_membership_range_postgres.py` repeat reads after
+application/client/repository restart against the same database and verify the complete publication
+page is unchanged. This is bounded synthetic software evidence; protected/current-main gates and
+wiki parity remain separate release requirements.
+
 ## Certification standard
 
 An endpoint is complete only when these checks are true:
