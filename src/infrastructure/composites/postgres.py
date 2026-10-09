@@ -41,8 +41,8 @@ from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
 from src.core.composite_eligibility.staged_controls import StagedControl
 from src.core.composite_eligibility.staged_subject import EligibilitySubject
 from src.core.composite_eligibility.staged_publication import (
-    SubjectFinalization,
-    SubjectFinalizationReceipt,
+    SubjectFinalizationRecord,
+    SubjectFinalizationProof,
 )
 from src.infrastructure.composites import publication as publication_sql
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
@@ -82,14 +82,14 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
             return staged_postgres.get_control(connection, key, kind, revision)
 
     def finalize_eligibility_subject(
-        self, *, finalization: SubjectFinalization
-    ) -> SubjectFinalizationReceipt:
+        self, *, finalization: SubjectFinalizationRecord
+    ) -> SubjectFinalizationProof:
         with closing(self._connect()) as connection:
             receipt = staged_postgres.finalize(connection, finalization)
             connection.commit()
             return receipt
 
-    def get_eligibility_finalization(self, *, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+    def get_eligibility_finalization(self, *, key: SubjectKey) -> SubjectFinalizationProof | None:
         with closing(self._connect()) as connection:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             return staged_postgres.get_finalization(connection, key)
@@ -102,7 +102,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         definition_version: str,
         evaluation_revision: str,
         approval_content_hash: str,
-    ) -> SubjectFinalizationReceipt | None:
+    ) -> SubjectFinalizationProof | None:
         with closing(self._connect()) as connection:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             row = connection.execute(

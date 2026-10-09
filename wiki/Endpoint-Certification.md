@@ -2,6 +2,13 @@
 
 ## Staged Composite Eligibility: Bounded Proof
 
+Configured institutional finalization adds explicit v2 responses on the existing finalization and
+eligibility-evidence resolver routes. Offline controlled-signature tests cover independent original
+and fresh verification, exact scope, current revocation, version refusal and unchanged v1 reads.
+Native HTTPS/PostgreSQL restart qualification remains a separate proof requirement. The deployment
+contract is `docs/guides/composite-institutional-verification.md`; enabling it supplies no caller
+grants, official activation or historical monthly-policy authority.
+
 The following registered paths have source-owned synthetic lifecycle/refusal tests. They are not
 bank certification: default source/verifier adapters are unavailable; PostgreSQL upgrade/custody,
 independent Performance admission and qualified source evidence are separate acceptance gates.

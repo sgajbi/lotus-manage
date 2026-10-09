@@ -1,5 +1,23 @@
 # Integrations
 
+## Institutional attestation verification
+
+The separate deployment setting `DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON` enables verification
+for staged institutional finalization. It requires an HTTPS verifier, independently pinned original
+signer, explicit revocation state and a current snapshot lasting at most five minutes. Original
+attestation signatures bind the approval claims, reference digest, subject and evaluation approval;
+fresh verification binds the complete definition and selected method/provider scope. Each related
+method/provider verification must match its exact retained revision and digest during fresh admission
+and retained v2 decoding; recomputed hashes do not bypass that binding. The resulting
+`CompositeEligibilityFinalization/v2` and receipt retain both credentials and admission provenance in
+existing atomic custody. Synthetic v1 evidence and hashes remain unchanged.
+
+This setting supplies no caller grants, bank identity, financial-source qualification or official
+activation. Direct institutional definition PUT and historical monthly-policy admission remain
+unavailable. See `docs/guides/composite-institutional-verification.md` for the wire and operational
+contract. Deployment must retain the public configuration and revocation snapshot addressed by
+the receipt digests; configuration rotation does not rewrite existing proofs.
+
 ## Configured Composite eligibility sources
 
 Normal Manage composition supports deployment-configured synthetic candidate, monthly assembly

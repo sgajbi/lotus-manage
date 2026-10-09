@@ -1,29 +1,57 @@
-"""Platform principal-credential Ed25519 wire verification for synthetic sources.
+"""Platform principal-credential Ed25519 verification for deployment-pinned sources.
 
 Uses the governed compact JWS, pinned OKP/Ed25519 JWKS and refusal order from
 lotus-platform/platform-contracts/principal-credential. This boundary binds an
 artifact to a service credential; it does not resolve a bank principal or grant.
-Deployment bindings are limited to synthetic non-certifying evidence.
+Synthetic source admission and separate institutional verification share this wire primitive.
 """
 
 import base64
 import binascii
 import json
 import time
-from typing import Any
+from typing import Any, Protocol
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from src.core.common.canonical import hash_canonical_payload
-from src.infrastructure.composites.source_configuration import SourceBinding
+from src.infrastructure.composites.source_configuration import SourceKey
+
+
+class CredentialBinding(Protocol):
+    @property
+    def keys(self) -> tuple[SourceKey, ...]: ...
+    @property
+    def issuer(self) -> str: ...
+    @property
+    def principal_id(self) -> str: ...
+    @property
+    def tenant_id(self) -> str: ...
+    @property
+    def revoked_credentials(self) -> tuple[str, ...]: ...
+    @property
+    def revoked_subjects(self) -> tuple[str, ...]: ...
+    @property
+    def operation(self) -> str: ...
+    @property
+    def evidence_posture(self) -> str: ...
 
 
 def _decode(segment: str) -> bytes:
     return base64.b64decode(segment + "=" * (-len(segment) % 4), altchars=b"-_", validate=True)
 
 
-def _trusted_key(header: Any, binding: SourceBinding) -> Ed25519PublicKey:
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("malformed_credential")
+        result[key] = value
+    return result
+
+
+def _trusted_key(header: Any, binding: CredentialBinding) -> Ed25519PublicKey:
     if not isinstance(header, dict) or header.get("alg") != "EdDSA":
         raise ValueError("malformed_credential")
     if set(header) - {"alg", "kid", "typ"}:
@@ -36,16 +64,16 @@ def _trusted_key(header: Any, binding: SourceBinding) -> Ed25519PublicKey:
     return Ed25519PublicKey.from_public_bytes(_decode(key.x))
 
 
-def _verified_claims(credential: str, binding: SourceBinding) -> dict[str, Any]:
+def _verified_claims(credential: str, binding: CredentialBinding) -> dict[str, Any]:
     try:
         parts = credential.split(".")
         if len(parts) != 3 or not all(parts):
             raise ValueError("malformed_credential")
-        header = json.loads(_decode(parts[0]))
+        header = json.loads(_decode(parts[0]), object_pairs_hook=_unique_object)
         _trusted_key(header, binding).verify(
             _decode(parts[2]), f"{parts[0]}.{parts[1]}".encode("ascii")
         )
-        claims = json.loads(_decode(parts[1]))
+        claims = json.loads(_decode(parts[1]), object_pairs_hook=_unique_object)
         if not isinstance(claims, dict):
             raise ValueError("malformed_credential")
     except InvalidSignature as exc:
@@ -55,7 +83,7 @@ def _verified_claims(credential: str, binding: SourceBinding) -> dict[str, Any]:
     return claims
 
 
-def _require_issuer_and_audience(claims: dict[str, Any], binding: SourceBinding) -> None:
+def _require_issuer_and_audience(claims: dict[str, Any], binding: CredentialBinding) -> None:
     if claims.get("iss") != binding.issuer:
         raise ValueError("wrong_issuer")
     audience = claims.get("aud")
@@ -73,7 +101,7 @@ def _require_current_window(claims: dict[str, Any], current: float) -> None:
         raise ValueError("expired_credential")
 
 
-def _require_bound_principal(claims: dict[str, Any], binding: SourceBinding) -> None:
+def _require_bound_principal(claims: dict[str, Any], binding: CredentialBinding) -> None:
     if (
         claims.get("jti") in binding.revoked_credentials
         or claims.get("sub") in binding.revoked_subjects
@@ -92,7 +120,7 @@ def _require_bound_principal(claims: dict[str, Any], binding: SourceBinding) -> 
 def verified_artifact(
     credential: str,
     *,
-    binding: SourceBinding,
+    binding: CredentialBinding,
     request: dict[str, Any],
     payload: dict[str, Any],
     now: float | None = None,

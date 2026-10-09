@@ -2,7 +2,8 @@
 
 Manage owns definitions and membership. Performance owns composite materialization and calculation.
 This guide covers the versioned producer schema and controlled tests, **not live provider acceptance**.
-Production provider trust and institutional-attestation verification remain unavailable.
+Production provider trust defaults unavailable. Institutional verification is available only through
+the separately configured [staged finalization channel](composite-institutional-verification.md).
 
 ## Versions And Ownership
 
@@ -55,11 +56,13 @@ version; original content remains retrievable.
   The referenced signed artifact must bind the exact canonical claims; no algorithm or trusted
   key is inferred from caller text.
 
-Both currently declare `official_activation=UNAVAILABLE`. The institutional reference refuses
-persistence with HTTP 503 / `COMPOSITE_AUTHORITY_ATTESTATION_VERIFIER_UNAVAILABLE`, including with
+Both currently declare `official_activation=UNAVAILABLE`. Direct definition PUT with an institutional
+reference refuses persistence with HTTP 503 / `COMPOSITE_AUTHORITY_ATTESTATION_VERIFIER_UNAVAILABLE`, including with
 synthetic registration injected. Default v2 registration refuses with HTTP 503 /
 `COMPOSITE_PROVIDER_TRUST_UNAVAILABLE`. A test resolver is injected only by owning tests; no request
-flag, environment mode or deployed fallback selects it. No affirmative production resolver exists.
+flag, environment mode or deployed fallback selects it. Direct definition registration has no
+affirmative production resolver. The separate staged channel requires explicit deployment-owned
+signer/verifier trust and current revocation, with qualified method/provider receipt bindings.
 Eligibility-policy/evaluation approval (#778) and return-method/calendar approval (#607) remain
 separate obligations; an authority-profile attestation cannot substitute for either.
 

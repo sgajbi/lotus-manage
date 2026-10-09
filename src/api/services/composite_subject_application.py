@@ -14,6 +14,7 @@ from src.api.services.composite_subject_requests import (
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import EvidenceBinding
 from src.core.composite_definition_versions import DpmCompositeDefinitionV2
+from src.core.composite_repository import DpmCompositeConflictError
 from src.core.composite_eligibility.approval import MonthlyPolicyProposal, MonthlyPolicyApproval
 from src.core.composite_eligibility.evaluation import evaluate_monthly_eligibility
 from src.core.composite_eligibility.policy import (
@@ -45,7 +46,10 @@ from src.core.composite_eligibility.staged_controls import (
 )
 from src.core.composite_eligibility.staged_publication import (
     SubjectFinalization,
-    SubjectFinalizationReceipt,
+    InstitutionalSubjectFinalization,
+    SubjectFinalizationRecord,
+    SubjectFinalizationProof,
+    institutional_finalization_request,
     initial_projection,
     finalization_verification_requests,
     require_definition_subject,
@@ -57,6 +61,10 @@ from src.core.composite_eligibility.verification import (
     VerificationRequest,
     VerificationPurpose,
     require_verification,
+)
+from src.core.composite_eligibility.institutional_verification import (
+    InstitutionalEvidenceVerifier,
+    UnavailableInstitutionalEvidenceVerifier,
 )
 from src.core.composite_universe import DpmCompositeUniverseSourceProduct
 from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationReceipt
@@ -84,6 +92,9 @@ class CompositeSubjectApplicationService:
     )
     verifier: CompositeEvidenceVerifier = field(
         default_factory=UnavailableCompositeEvidenceVerifier
+    )
+    attestations: InstitutionalEvidenceVerifier = field(
+        default_factory=UnavailableInstitutionalEvidenceVerifier
     )
     clock: Callable[[], str] = utc_now
 
@@ -326,7 +337,7 @@ class CompositeSubjectApplicationService:
 
     def finalize(
         self, key: SubjectKey, actor: str, command: SubjectFinalizationRequest
-    ) -> SubjectFinalizationReceipt:
+    ) -> SubjectFinalizationProof:
         command = SubjectFinalizationRequest.model_validate(command.model_dump(mode="json"))
         subject = self.subject(key)
         approval = self.control(key, command.evaluation_revision, SubjectEvaluationApproval)
@@ -356,19 +367,58 @@ class CompositeSubjectApplicationService:
             ):
                 raise ValueError("COMPOSITE_SUBJECT_IMMUTABLE_CONFLICT")
             return retained
-        requests = finalization_verification_requests(definition, subject)
         if not authority_approval_follows_evaluation(definition, approval):
             raise ValueError("COMPOSITE_ELIGIBILITY_CLOCK_MISMATCH")
-        verifications = [require_verification(self.verifier, request) for request in requests]
-        finalization = SubjectFinalization(
+        finalization = self._verified_finalization(definition, subject, approval)
+        return self._commit_finalization(key, finalization)
+
+    def _verified_finalization(
+        self,
+        definition: DpmCompositeDefinitionV2,
+        subject: EligibilitySubject,
+        approval: SubjectEvaluationApproval,
+    ) -> SubjectFinalizationRecord:
+        requests = finalization_verification_requests(definition, subject)
+        if definition.authority_approval.evidence_kind == "INSTITUTIONAL_ATTESTATION_REFERENCE":
+            authority = self.attestations.verify(
+                institutional_finalization_request(definition, subject, approval)
+            )
+            if authority is None:
+                raise ValueError("COMPOSITE_SUBJECT_INSTITUTIONAL_VERIFICATION_UNAVAILABLE")
+            related = [self.attestations.verify_related(request) for request in requests[1:]]
+            if any(item is None for item in related):
+                raise ValueError("COMPOSITE_SUBJECT_INSTITUTIONAL_VERIFICATION_UNAVAILABLE")
+            return InstitutionalSubjectFinalization(
+                subject=subject,
+                evaluation_approval=approval,
+                definition=definition,
+                verifications=[authority, *[item for item in related if item is not None]],
+            )
+        return SubjectFinalization(
             subject=subject,
             evaluation_approval=approval,
             definition=definition,
-            verifications=verifications,
+            verifications=[require_verification(self.verifier, request) for request in requests],
         )
-        return self.repository.finalize_eligibility_subject(finalization=finalization)
 
-    def finalization(self, key: SubjectKey) -> SubjectFinalizationReceipt:
+    def _commit_finalization(
+        self, key: SubjectKey, finalization: SubjectFinalizationRecord
+    ) -> SubjectFinalizationProof:
+        try:
+            return self.repository.finalize_eligibility_subject(finalization=finalization)
+        except DpmCompositeConflictError:
+            winner = self.repository.get_eligibility_finalization(key=key)
+            if winner is None or (
+                winner.finalization.definition != finalization.definition
+                or winner.finalization.evaluation_approval != finalization.evaluation_approval
+                or winner.finalization.subject != finalization.subject
+            ):
+                raise
+            # Same admitted command may have independently resolved fresh verification evidence.
+            # Return the single committed immutable proof; never replace it with a loser receipt.
+            return winner
+
+    def finalization(self, key: SubjectKey) -> SubjectFinalizationProof:
         result = self.repository.get_eligibility_finalization(key=key)
         if result is None:
             raise ValueError("COMPOSITE_SUBJECT_FINALIZATION_NOT_FOUND")
@@ -380,7 +430,7 @@ class CompositeSubjectApplicationService:
         composite_id: str,
         definition_version: str,
         binding: EvidenceBinding | MonthlyApprovalBinding,
-    ) -> SubjectFinalizationReceipt | MonthlyPublicationReceipt:
+    ) -> SubjectFinalizationProof | MonthlyPublicationReceipt:
         if binding.product_name == "CompositeMonthlyEvaluationApproval":
             result_monthly = self.repository.resolve_monthly_eligibility_evidence(
                 tenant_id=tenant_id,

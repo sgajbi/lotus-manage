@@ -27,7 +27,7 @@ from src.core.composite_eligibility.staged_controls import (
     SubjectEvaluationApproval,
 )
 from src.core.composite_eligibility.staged_publication import (
-    SubjectFinalizationReceipt,
+    SubjectFinalizationProof,
     authority_approval_follows_evaluation,
 )
 from src.core.composite_eligibility.monthly_evidence import (
@@ -40,9 +40,12 @@ from src.core.composite_eligibility.monthly_amendment import MonthlyApprovalBind
 MonthlyReceiptResponse = Annotated[
     MonthlyPublicationReceipt, Field(discriminator="product_version")
 ]
+FinalizationReceiptResponse = Annotated[
+    SubjectFinalizationProof, Field(discriminator="product_version")
+]
 
 PublishedEligibilityReceipt = Annotated[
-    SubjectFinalizationReceipt | MonthlyReceiptResponse,
+    FinalizationReceiptResponse | MonthlyReceiptResponse,
     Field(discriminator="product_name"),
 ]
 
@@ -296,9 +299,9 @@ def get_evaluation_approval(
 
 @router.put(
     PREFIX + "/finalization",
-    response_model=SubjectFinalizationReceipt,
+    response_model=FinalizationReceiptResponse,
     summary="Atomically finalize the definition and independently evaluated first membership",
-    description="Requires independent authority, method and provider verification. Publishes through the existing cursor; completeness remains UNVERIFIED.",
+    description="Requires independent authority, method and provider verification. Synthetic evidence returns finalization receipt v1. Separately configured institutional verification returns explicit v2 with the original attestation/signature and fresh admission; caller grants remain separate. Publishes through the existing cursor; completeness remains UNVERIFIED and official activation UNAVAILABLE.",
 )
 def finalize_subject(
     composite_id: str,
@@ -308,7 +311,7 @@ def finalize_subject(
     response: Response,
     identity: CompositeTrustedIdentity = Depends(checker),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectFinalizationReceipt:
+) -> SubjectFinalizationProof:
     receipt = _call(
         lambda: service.finalize(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
@@ -321,7 +324,7 @@ def finalize_subject(
 
 @router.get(
     PREFIX + "/finalization",
-    response_model=SubjectFinalizationReceipt,
+    response_model=FinalizationReceiptResponse,
     summary="Read finalization only after verifying retained canonical publication custody",
 )
 def get_finalization(
@@ -331,7 +334,7 @@ def get_finalization(
     response: Response,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectFinalizationReceipt:
+) -> SubjectFinalizationProof:
     receipt = _call(
         lambda: service.finalization(
             (identity.tenant_id, composite_id, definition_version, subject_revision)
@@ -367,8 +370,8 @@ def resolve_evidence(
 
 
 def _historical_receipt_response(
-    receipt: SubjectFinalizationReceipt, response: Response
-) -> SubjectFinalizationReceipt:
+    receipt: SubjectFinalizationProof, response: Response
+) -> SubjectFinalizationProof:
     finalization = receipt.finalization
     if not authority_approval_follows_evaluation(
         finalization.definition, finalization.evaluation_approval
@@ -378,6 +381,16 @@ def _historical_receipt_response(
 
 
 PUBLIC_CODES = {
+    "COMPOSITE_ATTESTATION_REVOCATION_UNAVAILABLE",
+    "COMPOSITE_ATTESTATION_ORIGINAL_UNAVAILABLE",
+    "COMPOSITE_ATTESTATION_RELATED_ARTIFACT_MISMATCH",
+    "COMPOSITE_ATTESTATION_VERIFIER_SCOPE_MISMATCH",
+    "COMPOSITE_ATTESTATION_ORIGINAL_MISMATCH",
+    "COMPOSITE_ATTESTATION_ARTIFACT_CONTENT_MISMATCH",
+    "COMPOSITE_ATTESTATION_RECEIPT_CONTENT_MISMATCH",
+    "COMPOSITE_ATTESTATION_ADMISSION_WINDOW_INVALID",
+    "COMPOSITE_ATTESTATION_REFERENCE_REQUIRED",
+    "COMPOSITE_ATTESTATION_SCOPE_MISMATCH",
     "COMPOSITE_MONTHLY_EVIDENCE_NOT_FOUND",
     "COMPOSITE_MONTHLY_EVIDENCE_UNAVAILABLE",
     "COMPOSITE_MONTHLY_EVIDENCE_BINDING_MISMATCH",

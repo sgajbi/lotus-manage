@@ -21,8 +21,11 @@ from src.core.composite_eligibility.staged_custody import (
 )
 from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
 from src.core.composite_eligibility.staged_publication import (
-    SubjectFinalization,
-    SubjectFinalizationReceipt,
+    SubjectFinalizationRecord,
+    decode_subject_finalization,
+    decode_subject_receipt,
+    finalization_receipt,
+    SubjectFinalizationProof,
     initial_projection,
 )
 from src.core.composite_eligibility.staged_subject import EligibilitySubject, subject_key
@@ -196,7 +199,7 @@ def save_control(connection: Any, control: StagedControl) -> None:
         raise DpmCompositeConflictError("COMPOSITE_SUBJECT_ACTIVE_CONTROL_CONFLICT")
 
 
-def get_receipt_row(connection: Any, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+def get_receipt_row(connection: Any, key: SubjectKey) -> SubjectFinalizationProof | None:
     row = connection.execute(
         """SELECT content_hash,payload_json FROM dpm_composite_eligibility_finalizations
         WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND subject_revision=%s""",
@@ -204,7 +207,7 @@ def get_receipt_row(connection: Any, key: SubjectKey) -> SubjectFinalizationRece
     ).fetchone()
     if row is None:
         return None
-    receipt = load_model_json(SubjectFinalizationReceipt, row["payload_json"])
+    receipt = decode_subject_receipt(row["payload_json"])
     if (
         receipt.content_hash != row["content_hash"]
         or subject_key(receipt.finalization.subject) != key
@@ -213,7 +216,7 @@ def get_receipt_row(connection: Any, key: SubjectKey) -> SubjectFinalizationRece
     return receipt
 
 
-def get_finalization(connection: Any, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+def get_finalization(connection: Any, key: SubjectKey) -> SubjectFinalizationProof | None:
     receipt = get_receipt_row(connection, key)
     if receipt is None:
         return None
@@ -293,8 +296,8 @@ def _retained_publication(
     )
 
 
-def finalize(connection: Any, finalization: SubjectFinalization) -> SubjectFinalizationReceipt:
-    finalization = SubjectFinalization.model_validate(finalization.model_dump(mode="json"))
+def finalize(connection: Any, finalization: SubjectFinalizationRecord) -> SubjectFinalizationProof:
+    finalization = decode_subject_finalization(finalization.model_dump(mode="json"))
     key = subject_key(finalization.subject)
     lock_tenant_publication_order(connection=connection, tenant_id=key[0])
     retained = get_finalization(connection, key)
@@ -327,7 +330,7 @@ def finalize(connection: Any, finalization: SubjectFinalization) -> SubjectFinal
         WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s AND membership_revision=%s""",
         (*key[:3], revision.membership_revision),
     ).fetchone()["sequence"]
-    receipt = SubjectFinalizationReceipt(
+    receipt = finalization_receipt(
         finalization=finalization,
         publication_sequence=sequence,
         membership_content_hash=revision.content_hash,

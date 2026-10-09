@@ -8,8 +8,8 @@ from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationRe
 from src.core.composite_eligibility.staged_subject import CandidateUniverse, EligibilitySubject
 from src.core.composite_eligibility.staged_controls import StagedControl
 from src.core.composite_eligibility.staged_publication import (
-    SubjectFinalization,
-    SubjectFinalizationReceipt,
+    SubjectFinalizationRecord,
+    SubjectFinalizationProof,
 )
 
 SubjectKey = tuple[str, str, str, str]
@@ -60,11 +60,11 @@ class StagedCompositeRepository(Protocol):
         self, *, key: SubjectKey, kind: ControlKind, revision: str
     ) -> StagedControl | None: ...
     def finalize_eligibility_subject(
-        self, *, finalization: SubjectFinalization
-    ) -> SubjectFinalizationReceipt: ...
+        self, *, finalization: SubjectFinalizationRecord
+    ) -> SubjectFinalizationProof: ...
     def get_eligibility_finalization(
         self, *, key: SubjectKey
-    ) -> SubjectFinalizationReceipt | None: ...
+    ) -> SubjectFinalizationProof | None: ...
     def resolve_eligibility_evidence(
         self,
         *,
@@ -73,4 +73,4 @@ class StagedCompositeRepository(Protocol):
         definition_version: str,
         evaluation_revision: str,
         approval_content_hash: str,
-    ) -> SubjectFinalizationReceipt | None: ...
+    ) -> SubjectFinalizationProof | None: ...

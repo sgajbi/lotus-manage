@@ -44,12 +44,14 @@ class SourceBinding(BaseModel):
     keys: tuple[SourceKey, ...] = Field(min_length=1, max_length=8)
     revoked_credentials: tuple[Identity, ...] = ()
     revoked_subjects: tuple[Identity, ...] = ()
-    evidence_posture: Literal["SYNTHETIC_NON_CERTIFYING"]
+    evidence_posture: Literal["SYNTHETIC_NON_CERTIFYING", "QUALIFIED_RECEIPT"]
     verification_purposes: tuple[VerificationPurpose, ...] = ()
     allow_local_http: bool = False
 
     @model_validator(mode="after")
     def require_verifier_binding(self) -> "SourceBinding":
+        if self.evidence_posture == "QUALIFIED_RECEIPT" and self.operation != "verification":
+            raise ValueError("COMPOSITE_SOURCE_QUALIFIED_OPERATION_FORBIDDEN")
         if not urlsplit(self.issuer).scheme:
             raise ValueError("COMPOSITE_SOURCE_ISSUER_URI_REQUIRED")
         if (self.operation == "verification") != (self.receipt_issuer_id is not None):

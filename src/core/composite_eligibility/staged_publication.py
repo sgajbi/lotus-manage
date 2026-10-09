@@ -1,7 +1,8 @@
 """First-membership projection and exact subject-to-definition finalization."""
 
 from datetime import datetime
-from typing import Literal, TypedDict
+import json
+from typing import Any, Literal, TypedDict, Sequence
 
 from pydantic import Field, model_validator
 
@@ -16,6 +17,11 @@ from src.core.composite_eligibility.staged_controls import (
 )
 from src.core.composite_eligibility.staged_subject import EligibilitySubject, bind_content
 from src.core.composite_eligibility.verification import VerificationReceipt, VerificationRequest
+from src.core.composite_eligibility.institutional_verification import (
+    InstitutionalVerificationRequest,
+    InstitutionalVerificationReceipt,
+    require_bound_related_artifact,
+)
 from src.core.composite_membership import DpmCompositeMembershipRevision
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 
@@ -69,18 +75,20 @@ def initial_projection(
     return revision, universe
 
 
-class SubjectFinalization(StrictAuthorityModel):
+class SubjectFinalizationContent(StrictAuthorityModel):
     product_name: Literal["CompositeEligibilityFinalization"] = "CompositeEligibilityFinalization"
-    product_version: Literal["v1"] = "v1"
+    product_version: Literal["v1", "v2"]
     official_activation: Literal["UNAVAILABLE"] = "UNAVAILABLE"
     subject: EligibilitySubject
     evaluation_approval: SubjectEvaluationApproval
     definition: DpmCompositeDefinitionV2
-    verifications: list[VerificationReceipt] = Field(min_length=3, max_length=258)
+    verifications: Sequence[VerificationReceipt | InstitutionalVerificationReceipt] = Field(
+        min_length=3, max_length=258
+    )
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_joined_content(self) -> "SubjectFinalization":
+    def require_joined_content(self) -> "SubjectFinalizationContent":
         self.subject = EligibilitySubject.model_validate(self.subject.model_dump(mode="json"))
         self.evaluation_approval = SubjectEvaluationApproval.model_validate(
             self.evaluation_approval.model_dump(mode="json")
@@ -91,15 +99,7 @@ class SubjectFinalization(StrictAuthorityModel):
         if self.evaluation_approval.proposal.policy_approval.proposal.subject != self.subject:
             raise ValueError("COMPOSITE_SUBJECT_APPROVAL_BINDING_MISMATCH")
         require_definition_subject(self.definition, self.subject, self.evaluation_approval)
-        requests = finalization_verification_requests(self.definition, self.subject)
-        if [receipt.request for receipt in self.verifications] != requests:
-            raise ValueError("COMPOSITE_SUBJECT_FINAL_VERIFICATION_MISMATCH")
-        if (
-            self.definition.authority_approval.evidence_kind
-            == "INSTITUTIONAL_ATTESTATION_REFERENCE"
-            and (self.verifications[0].posture != "QUALIFIED_RECEIPT")
-        ):
-            raise ValueError("COMPOSITE_SUBJECT_INSTITUTIONAL_VERIFICATION_UNAVAILABLE")
+        self._require_verifications()
         revision, universe = initial_projection(
             self.evaluation_approval.proposal,
             self.evaluation_approval.claims_digest,
@@ -113,6 +113,82 @@ class SubjectFinalization(StrictAuthorityModel):
             raise ValueError("COMPOSITE_SUBJECT_PROJECTION_MISMATCH")
         bind_content(self)
         return self
+
+    def _require_verifications(self) -> None:
+        """Keep verification identity checks separate from canonical publication projection."""
+        requests: list[VerificationRequest | InstitutionalVerificationRequest] = list(
+            finalization_verification_requests(self.definition, self.subject)
+        )
+        if self.product_version == "v2":
+            requests[0] = institutional_finalization_request(
+                self.definition, self.subject, self.evaluation_approval
+            )
+            if not isinstance(self.verifications[0], InstitutionalVerificationReceipt) or any(
+                item.posture != "QUALIFIED_RECEIPT" for item in self.verifications
+            ):
+                raise ValueError("COMPOSITE_SUBJECT_INSTITUTIONAL_VERIFICATION_UNAVAILABLE")
+        if [receipt.request for receipt in self.verifications] != requests:
+            raise ValueError("COMPOSITE_SUBJECT_FINAL_VERIFICATION_MISMATCH")
+        if self.product_version == "v2":
+            self._require_related_verifications()
+        if (
+            self.definition.authority_approval.evidence_kind
+            == "INSTITUTIONAL_ATTESTATION_REFERENCE"
+            and (self.verifications[0].posture != "QUALIFIED_RECEIPT")
+        ):
+            raise ValueError("COMPOSITE_SUBJECT_INSTITUTIONAL_VERIFICATION_UNAVAILABLE")
+
+    def _require_related_verifications(self) -> None:
+        for receipt in self.verifications[1:]:
+            if not isinstance(receipt, VerificationReceipt):
+                raise ValueError("COMPOSITE_SUBJECT_FINAL_VERIFICATION_MISMATCH")
+            require_bound_related_artifact(receipt)
+
+
+class SubjectFinalization(SubjectFinalizationContent):
+    product_version: Literal["v1"] = "v1"
+    verifications: list[VerificationReceipt] = Field(min_length=3, max_length=258)
+
+
+class InstitutionalSubjectFinalization(SubjectFinalizationContent):
+    product_version: Literal["v2"] = "v2"
+    verifications: list[VerificationReceipt | InstitutionalVerificationReceipt] = Field(
+        min_length=3, max_length=258
+    )
+
+
+SubjectFinalizationRecord = SubjectFinalization | InstitutionalSubjectFinalization
+
+
+def institutional_finalization_request(
+    definition: DpmCompositeDefinitionV2,
+    subject: EligibilitySubject,
+    approval: SubjectEvaluationApproval,
+) -> InstitutionalVerificationRequest:
+    return InstitutionalVerificationRequest(
+        definition=definition,
+        subject_binding=EvidenceBinding(
+            product_name=subject.product_name,
+            product_version=subject.product_version,
+            revision=subject.subject_revision,
+            digest=subject.content_hash,
+        ),
+        evaluation_approval_binding=EvidenceBinding(
+            product_name=approval.product_name,
+            product_version=approval.product_version,
+            revision=approval.proposal.evaluation_revision,
+            digest=approval.content_hash,
+        ),
+    )
+
+
+def decode_subject_finalization(wire: dict[str, Any]) -> SubjectFinalizationRecord:
+    version = wire.get("product_version", "v1")
+    if version == "v1":
+        return SubjectFinalization.model_validate(wire)
+    if version == "v2":
+        return InstitutionalSubjectFinalization.model_validate(wire)
+    raise ValueError("COMPOSITE_SUBJECT_FINALIZATION_VERSION_UNSUPPORTED")
 
 
 class _VerificationScope(TypedDict):
@@ -229,12 +305,12 @@ def authority_approval_follows_evaluation(
     ) >= datetime.fromisoformat(approval.approved_at)
 
 
-class SubjectFinalizationReceipt(StrictAuthorityModel):
+class SubjectFinalizationReceiptContent(StrictAuthorityModel):
     product_name: Literal["CompositeEligibilityFinalizationReceipt"] = (
         "CompositeEligibilityFinalizationReceipt"
     )
-    product_version: Literal["v1"] = "v1"
-    finalization: SubjectFinalization
+    product_version: Literal["v1", "v2"]
+    finalization: SubjectFinalizationRecord
     publication_sequence: int = Field(ge=1)
     membership_content_hash: Digest
     universe_content_hash: Digest
@@ -242,10 +318,8 @@ class SubjectFinalizationReceipt(StrictAuthorityModel):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_receipt_projection(self) -> "SubjectFinalizationReceipt":
-        self.finalization = SubjectFinalization.model_validate(
-            self.finalization.model_dump(mode="json")
-        )
+    def require_receipt_projection(self) -> "SubjectFinalizationReceiptContent":
+        self.finalization = decode_subject_finalization(self.finalization.model_dump(mode="json"))
         approval = self.finalization.evaluation_approval
         if (self.membership_content_hash, self.universe_content_hash) != (
             approval.membership_content_hash,
@@ -254,3 +328,44 @@ class SubjectFinalizationReceipt(StrictAuthorityModel):
             raise ValueError("COMPOSITE_SUBJECT_RECEIPT_BINDING_MISMATCH")
         bind_content(self)
         return self
+
+
+class SubjectFinalizationReceipt(SubjectFinalizationReceiptContent):
+    product_version: Literal["v1"] = "v1"
+    finalization: SubjectFinalization
+
+
+class InstitutionalSubjectFinalizationReceipt(SubjectFinalizationReceiptContent):
+    product_version: Literal["v2"] = "v2"
+    finalization: InstitutionalSubjectFinalization
+
+
+SubjectFinalizationProof = SubjectFinalizationReceipt | InstitutionalSubjectFinalizationReceipt
+
+
+def decode_subject_receipt(wire: dict[str, Any] | str) -> SubjectFinalizationProof:
+    payload = json.loads(wire) if isinstance(wire, str) else wire
+    if not isinstance(payload, dict):
+        raise ValueError("COMPOSITE_SUBJECT_FINALIZATION_WIRE_INVALID")
+    version = payload.get("product_version", "v1")
+    if version == "v1":
+        return SubjectFinalizationReceipt.model_validate(payload)
+    if version == "v2":
+        return InstitutionalSubjectFinalizationReceipt.model_validate(payload)
+    raise ValueError("COMPOSITE_SUBJECT_FINALIZATION_VERSION_UNSUPPORTED")
+
+
+def finalization_receipt(
+    finalization: SubjectFinalizationRecord,
+    publication_sequence: int,
+    membership_content_hash: str,
+    universe_content_hash: str,
+) -> SubjectFinalizationProof:
+    wire = dict(
+        product_version=finalization.product_version,
+        finalization=finalization.model_dump(mode="json"),
+        publication_sequence=publication_sequence,
+        membership_content_hash=membership_content_hash,
+        universe_content_hash=universe_content_hash,
+    )
+    return decode_subject_receipt(wire)
