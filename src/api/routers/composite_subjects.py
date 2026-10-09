@@ -1,7 +1,7 @@
 """Registered staging and server-resolved published eligibility evidence."""
 
 from typing import Callable, TypeVar
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import ValidationError
 
 from src.api.composite_identity import (
@@ -26,7 +26,10 @@ from src.core.composite_eligibility.staged_controls import (
     SubjectEvaluationProposal,
     SubjectEvaluationApproval,
 )
-from src.core.composite_eligibility.staged_publication import SubjectFinalizationReceipt
+from src.core.composite_eligibility.staged_publication import (
+    SubjectFinalizationReceipt,
+    authority_approval_follows_evaluation,
+)
 
 router = APIRouter(
     prefix="/rebalance/composites", tags=["lotus-manage Composite Eligibility Subjects"]
@@ -287,16 +290,18 @@ def finalize_subject(
     definition_version: str,
     subject_revision: str,
     request: SubjectFinalizationRequest,
+    response: Response,
     identity: CompositeTrustedIdentity = Depends(checker),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
 ) -> SubjectFinalizationReceipt:
-    return _call(
+    receipt = _call(
         lambda: service.finalize(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
             identity.actor_id,
             request,
         )
     )
+    return _historical_receipt_response(receipt, response)
 
 
 @router.get(
@@ -308,14 +313,16 @@ def get_finalization(
     composite_id: str,
     definition_version: str,
     subject_revision: str,
+    response: Response,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
 ) -> SubjectFinalizationReceipt:
-    return _call(
+    receipt = _call(
         lambda: service.finalization(
             (identity.tenant_id, composite_id, definition_version, subject_revision)
         )
     )
+    return _historical_receipt_response(receipt, response)
 
 
 @router.post(
@@ -328,14 +335,27 @@ def resolve_evidence(
     composite_id: str,
     definition_version: str,
     binding: EvidenceBinding,
+    response: Response,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
 ) -> SubjectFinalizationReceipt:
-    return _call(
+    receipt = _call(
         lambda: service.resolve_evidence(
             identity.tenant_id, composite_id, definition_version, binding
         )
     )
+    return _historical_receipt_response(receipt, response)
+
+
+def _historical_receipt_response(
+    receipt: SubjectFinalizationReceipt, response: Response
+) -> SubjectFinalizationReceipt:
+    finalization = receipt.finalization
+    if not authority_approval_follows_evaluation(
+        finalization.definition, finalization.evaluation_approval
+    ):
+        response.headers["X-Composite-Evidence-Diagnostic"] = "HISTORICAL_AUTHORITY_CLOCK_MISMATCH"
+    return receipt
 
 
 PUBLIC_CODES = {

@@ -218,10 +218,15 @@ def require_definition_subject(
     )
     if profile.eligibility_evaluation_binding != binding:
         raise ValueError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
-    if datetime.fromisoformat(
+
+
+def authority_approval_follows_evaluation(
+    definition: DpmCompositeDefinitionV2, approval: SubjectEvaluationApproval
+) -> bool:
+    """Diagnose chronology without changing immutable historical decoding or hashes."""
+    return datetime.fromisoformat(
         definition.authority_approval.claims.approved_at
-    ) < datetime.fromisoformat(approval.approved_at):
-        raise ValueError("COMPOSITE_ELIGIBILITY_CLOCK_MISMATCH")
+    ) >= datetime.fromisoformat(approval.approved_at)
 
 
 class SubjectFinalizationReceipt(StrictAuthorityModel):
