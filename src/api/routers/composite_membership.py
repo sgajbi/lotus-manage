@@ -109,6 +109,22 @@ class CompositeMembershipAsOfResponse(BaseModel):
     content_hash: str
 
 
+class CompositeMembershipRangeResponse(BaseModel):
+    tenant_id: str
+    composite_id: str
+    definition_version: str
+    membership_revision: str
+    effective_from: str
+    effective_to: str
+    decisions: list[DpmCompositeMembershipDecision]
+    count: int = Field(ge=0, description="All decision intervals intersecting the inclusive range.")
+    source_cut_id: str
+    membership_content_hash: str = Field(
+        description="Hash of the complete pinned membership revision, not this filtered projection."
+    )
+    completeness: Literal["UNVERIFIED"] = "UNVERIFIED"
+
+
 class CompositePublicationReceiptRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -376,6 +392,52 @@ def get_membership_as_of(
             decisions=decisions,
             source_cut_id=revision.source_cut_id,
             content_hash=revision.content_hash,
+        )
+    except (DpmCompositeNotFoundError, ValueError) as exc:
+        raise _from_domain_error(exc) from exc
+
+
+@router.get(
+    "/{composite_id}/definitions/{definition_version}/membership/{membership_revision}/range",
+    response_model=CompositeMembershipRangeResponse,
+    summary="Read complete decision intervals intersecting a pinned inclusive date range",
+    description=(
+        "Retains original decision intervals, statuses and evidence without clipping or filling "
+        "gaps. The membership hash identifies the full pinned revision. This read does not "
+        "attest population completeness or eligibility."
+    ),
+)
+def get_membership_range(
+    composite_id: str,
+    definition_version: str,
+    membership_revision: str,
+    effective_from: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
+    effective_to: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
+    identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
+    service: DpmCompositeMembershipApplicationService = Depends(
+        get_composite_membership_application_service
+    ),
+) -> CompositeMembershipRangeResponse:
+    try:
+        result = service.membership_in_range(
+            tenant_id=identity.tenant_id,
+            composite_id=composite_id,
+            definition_version=definition_version,
+            membership_revision=membership_revision,
+            effective_from=effective_from,
+            effective_to=effective_to,
+        )
+        return CompositeMembershipRangeResponse(
+            tenant_id=identity.tenant_id,
+            composite_id=composite_id,
+            definition_version=definition_version,
+            membership_revision=membership_revision,
+            effective_from=effective_from,
+            effective_to=effective_to,
+            decisions=result.decisions,
+            count=len(result.decisions),
+            source_cut_id=result.revision.source_cut_id,
+            membership_content_hash=result.revision.content_hash,
         )
     except (DpmCompositeNotFoundError, ValueError) as exc:
         raise _from_domain_error(exc) from exc
