@@ -26,7 +26,7 @@ from tests.integration.dpm.composites.test_composite_configured_sources_postgres
     synthetic_sources,
 )
 from tests.integration.dpm.network_runtime import disposable_database, native_api
-from tests.unit.dpm.infrastructure.test_composite_monthly_source_assembly import assembly_material
+from tests.composite_monthly_source_helpers import assembly_material
 from tests.composite_recurring_economic_cases import economic_cases
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.core.composite_eligibility.policy import month_window

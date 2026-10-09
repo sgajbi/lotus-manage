@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from src.core.composite_authority_models import EvidenceBinding
-from src.core.composite_eligibility.monthly_evidence import MonthlyEligibilityPublicationReceipt
+from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationReceipt
 from src.core.composite_eligibility.staged_subject import CandidateUniverse, EligibilitySubject
 from src.core.composite_eligibility.staged_controls import StagedControl
 from src.core.composite_eligibility.staged_publication import (
@@ -50,7 +50,7 @@ class StagedCompositeRepository(Protocol):
         definition_version: str,
         evaluation_revision: str,
         approval_content_hash: str,
-    ) -> MonthlyEligibilityPublicationReceipt | None:
+    ) -> MonthlyPublicationReceipt | None:
         """Join exact monthly approval and canonical publication in one read snapshot."""
 
     def save_eligibility_subject(self, *, subject: EligibilitySubject) -> None: ...

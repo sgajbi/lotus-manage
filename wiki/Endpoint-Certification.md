@@ -101,6 +101,7 @@ for input dictionaries, temporal controls, worked examples and refusal/recovery 
 | PUT policy check | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}/approval` |
 | GET policy approval | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/approval` |
 | PUT/GET evaluation | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}` |
+| PUT source correction proposal | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}/source-amendment` |
 | PUT/GET evaluation check | `/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}/approval` |
 
 Owning tests cover exact replay, tenant/role admission, stale content/parent, full rollback,
@@ -116,6 +117,22 @@ python -m pytest tests/integration/dpm/composites/test_composite_monthly_policy_
 The second command requires an isolated `DPM_POSTGRES_INTEGRATION_DSN` and
 `DPM_POSTGRES_INTEGRATION_REQUIRED=1`. Performance contract admission of controlled v1 publication
 does not establish v2 independent-approval lifecycle, qualified return materialization or capacity.
+
+The source-amendment operation adds explicit v2 proposal, approval and monthly receipt products
+for a correction under the same approved policy and expected population. Native configured-source
+HTTP, registered API, PostgreSQL and API-process restart tests cover both embedded definition
+versions, exact replay and original v1 receipt preservation. The initial month remains retained
+synthetic history. Storage tests cover populated migration 0043→0044, SQL constraints, competing
+approvals and publication rollback. Execute from the repository root with the isolated database
+variables above:
+
+```text
+python -m pytest tests/integration/dpm/composites/test_composite_monthly_amendment_http_postgres.py tests/integration/dpm/composites/test_composite_monthly_amendment_postgres.py tests/integration/dpm/composites/test_composite_monthly_amendment_upgrade_postgres.py -q
+```
+
+This bounded proof remains UNVERIFIED for qualified financial sources, bank IAM, downstream
+consumer acceptance and official activation. Later approved months, policy/population changes
+and staged-finalization roots remain unsupported amendment inputs.
 
 Configured Composite sources serve staged and recurring monthly simulation/diff/evaluation through
 the same signed assembly and independent `COMPOSITE_MONTHLY_SOURCE_CUT` verification. Optional

@@ -29,11 +29,11 @@ def _publication_marker_schema(schema: dict[str, Any]) -> None:
     schema.pop("default", None)
 
 
-class MonthlyEvaluationProposal(StrictAuthorityModel):
+class MonthlyEvaluationProposalContent(StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEvaluationProposal"] = (
         "CompositeMonthlyEvaluationProposal"
     )
-    product_version: Literal["v1"] = "v1"
+    product_version: Literal["v1", "v2"]
     evaluation_revision: Identity
     target_membership_revision: Identity
     parent_membership_revision: Identity
@@ -67,7 +67,7 @@ class MonthlyEvaluationProposal(StrictAuthorityModel):
         return wire
 
     @model_validator(mode="after")
-    def require_reproducible_bound_evaluation(self) -> MonthlyEvaluationProposal:
+    def require_reproducible_bound_evaluation(self) -> MonthlyEvaluationProposalContent:
         self.policy_approval = MonthlyPolicyApproval.model_validate(
             self.policy_approval.model_dump(mode="json")
         )
@@ -103,7 +103,13 @@ class MonthlyEvaluationProposal(StrictAuthorityModel):
         return self
 
 
-def _require_universe_binding(proposal: MonthlyEvaluationProposal) -> None:
+class MonthlyEvaluationProposal(MonthlyEvaluationProposalContent):
+    """Frozen ordinary monthly evaluation wire and digest."""
+
+    product_version: Literal["v1"] = "v1"
+
+
+def _require_universe_binding(proposal: MonthlyEvaluationProposalContent) -> None:
     scope = proposal.policy_approval.proposal.policy.scope
     universe = proposal.universe
     first, last = month_window(proposal.policy_approval.proposal.policy.month)
@@ -128,7 +134,7 @@ def _require_universe_binding(proposal: MonthlyEvaluationProposal) -> None:
     _require_observation_product_binding(proposal)
 
 
-def _require_observation_product_binding(proposal: MonthlyEvaluationProposal) -> None:
+def _require_observation_product_binding(proposal: MonthlyEvaluationProposalContent) -> None:
     """Keep independently pinned source-product identity separate from universe admission."""
     products = [
         item
@@ -148,7 +154,7 @@ def _require_observation_product_binding(proposal: MonthlyEvaluationProposal) ->
         raise ValueError("COMPOSITE_ELIGIBILITY_EVALUATION_SOURCE_BINDING_MISMATCH")
 
 
-def evaluation_key(proposal: MonthlyEvaluationProposal) -> tuple[str, str, str, str]:
+def evaluation_key(proposal: MonthlyEvaluationProposalContent) -> tuple[str, str, str, str]:
     """Canonical custody scope shared by storage adapters."""
     scope = proposal.policy_approval.proposal.policy.scope
     return (
@@ -160,7 +166,7 @@ def evaluation_key(proposal: MonthlyEvaluationProposal) -> tuple[str, str, str, 
 
 
 def monthly_evaluation_approval_claims_hash(
-    proposal: MonthlyEvaluationProposal,
+    proposal: MonthlyEvaluationProposalContent,
     *,
     approved_by: str,
     approved_at: str,
@@ -175,14 +181,14 @@ def monthly_evaluation_approval_claims_hash(
     )
 
 
-class MonthlyEvaluationApproval(StrictAuthorityModel):
+class MonthlyEvaluationApprovalContent(StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEvaluationApproval"] = (
         "CompositeMonthlyEvaluationApproval"
     )
-    product_version: Literal["v1"] = "v1"
+    product_version: Literal["v1", "v2"]
     evidence_kind: Literal["SYNTHETIC_UNSIGNED"] = "SYNTHETIC_UNSIGNED"
     official_activation: Literal["UNAVAILABLE"] = "UNAVAILABLE"
-    proposal: MonthlyEvaluationProposal
+    proposal: MonthlyEvaluationProposalContent
     approved_by: Identity
     approved_at: UtcInstant
     claims_digest: Digest
@@ -191,10 +197,8 @@ class MonthlyEvaluationApproval(StrictAuthorityModel):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_independent_exact_approval(self) -> MonthlyEvaluationApproval:
-        self.proposal = MonthlyEvaluationProposal.model_validate(
-            self.proposal.model_dump(mode="json")
-        )
+    def require_independent_exact_approval(self) -> MonthlyEvaluationApprovalContent:
+        self.proposal = type(self.proposal).model_validate(self.proposal.model_dump(mode="json"))
         if self.approved_by == self.proposal.proposed_by:
             raise ValueError("COMPOSITE_ELIGIBILITY_SELF_APPROVAL_FORBIDDEN")
         if datetime.fromisoformat(self.approved_at) < datetime.fromisoformat(
@@ -213,3 +217,10 @@ class MonthlyEvaluationApproval(StrictAuthorityModel):
             raise ValueError("COMPOSITE_ELIGIBILITY_EVALUATION_APPROVAL_CONTENT_MISMATCH")
         self.content_hash = expected
         return self
+
+
+class MonthlyEvaluationApproval(MonthlyEvaluationApprovalContent):
+    """Frozen ordinary approval; only the ordinary proposal is admissible."""
+
+    product_version: Literal["v1"] = "v1"
+    proposal: MonthlyEvaluationProposal

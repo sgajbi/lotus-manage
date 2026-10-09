@@ -4,10 +4,12 @@ from typing import Any
 
 from src.core.composite_definition_versions import decode_composite_definition
 from src.core.composite_eligibility.monthly_evidence import (
-    MonthlyEligibilityPublicationReceipt,
+    MonthlyPublicationReceipt,
     published_monthly_receipt,
+    require_monthly_receipt_lineage,
 )
 from src.core.composite_membership import DpmCompositeMembershipRevision
+from src.core.composite_eligibility.monthly_amendment import MonthlyAmendmentApproval
 from src.core.composite_repository import DpmCompositeConflictError
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.infrastructure.composites import evaluation_control, policy_control, publication
@@ -64,7 +66,26 @@ def resolve(
     connection: Any,
     key: tuple[str, str, str, str],
     approval_content_hash: str,
-) -> MonthlyEligibilityPublicationReceipt | None:
+) -> MonthlyPublicationReceipt | None:
+    receipt = _resolve_single(connection, key, approval_content_hash)
+    if receipt is not None:
+        try:
+            require_monthly_receipt_lineage(
+                receipt,
+                lambda binding: _resolve_single(
+                    connection, (*key[:3], binding.revision), binding.digest
+                ),
+            )
+        except ValueError as error:
+            raise _conflict() from error
+    return receipt
+
+
+def _resolve_single(
+    connection: Any,
+    key: tuple[str, str, str, str],
+    approval_content_hash: str,
+) -> MonthlyPublicationReceipt | None:
     approval = evaluation_control.get_approval(connection, key)
     if approval is None or approval.proposal.publication_evidence_version is None:
         return None
@@ -110,6 +131,19 @@ def resolve(
     )
     if published is None:
         raise _conflict()
+    parent_publication = None
+    if isinstance(approval, MonthlyAmendmentApproval):
+        parent_row = connection.execute(
+            """SELECT sequence FROM dpm_composite_membership_publications
+            WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s
+            AND membership_revision=%s""",
+            (*key[:3], proposal.parent_membership_revision),
+        ).fetchone()
+        if parent_row is None:
+            raise _conflict()
+        parent_publication = publication.get_publication(
+            connection=connection, tenant_id=key[0], sequence=parent_row["sequence"]
+        )
     return published_monthly_receipt(
         definition=definition,
         approval=approval,
@@ -120,4 +154,5 @@ def resolve(
         membership=member,
         universe=universe,
         publication=published,
+        parent_publication=parent_publication,
     )

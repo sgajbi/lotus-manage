@@ -1,11 +1,19 @@
 """Project one approved month into the existing immutable membership wire."""
 
 from datetime import date, datetime, timedelta
+from typing import overload
 
 from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApproval,
     MonthlyEvaluationProposal,
     monthly_evaluation_approval_claims_hash,
+)
+from src.core.composite_eligibility.monthly_amendment import (
+    MonthlyAmendmentApproval,
+    MonthlyAmendmentProposal,
+    MonthlyApproval,
+    MonthlyProposal,
+    decode_monthly_proposal,
 )
 from src.core.composite_eligibility.policy import month_window
 from src.core.composite_eligibility.evaluation import MonthlyEligibilityEvaluation
@@ -21,6 +29,7 @@ from src.core.composite_universe import (
 from src.core.composite_universe_resolution import reconcile_composite_universe
 
 
+@overload
 def build_monthly_publication(
     proposal: MonthlyEvaluationProposal,
     parent: DpmCompositeMembershipRevision,
@@ -29,8 +38,29 @@ def build_monthly_publication(
     approved_at: str,
 ) -> tuple[
     MonthlyEvaluationApproval, DpmCompositeMembershipRevision, DpmCompositeUniverseAttestation
-]:
-    proposal = MonthlyEvaluationProposal.model_validate(proposal.model_dump(mode="json"))
+]: ...
+
+
+@overload
+def build_monthly_publication(
+    proposal: MonthlyAmendmentProposal,
+    parent: DpmCompositeMembershipRevision,
+    *,
+    approved_by: str,
+    approved_at: str,
+) -> tuple[
+    MonthlyAmendmentApproval, DpmCompositeMembershipRevision, DpmCompositeUniverseAttestation
+]: ...
+
+
+def build_monthly_publication(
+    proposal: MonthlyProposal,
+    parent: DpmCompositeMembershipRevision,
+    *,
+    approved_by: str,
+    approved_at: str,
+) -> tuple[MonthlyApproval, DpmCompositeMembershipRevision, DpmCompositeUniverseAttestation]:
+    proposal = decode_monthly_proposal(proposal.model_dump(mode="json"))
     parent = DpmCompositeMembershipRevision.model_validate(parent.model_dump(mode="json"))
     _require_publishable_month(proposal, parent)
     first_text, last_text = month_window(proposal.evaluation.month)
@@ -60,13 +90,8 @@ def build_monthly_publication(
         affected_to=last_text,
     )
     universe = _published_universe(proposal, revision, approved_by, approved_at)
-    approval = MonthlyEvaluationApproval(
-        proposal=proposal,
-        approved_by=approved_by,
-        approved_at=approved_at,
-        claims_digest=claims,
-        membership_content_hash=revision.content_hash,
-        published_universe_content_hash=universe.content_hash,
+    approval = _projected_approval(
+        proposal, approved_by, approved_at, claims, revision.content_hash, universe.content_hash
     )
     if proposal.publication_evidence_version == "v1":
         linked = _published_universe(
@@ -80,14 +105,40 @@ def build_monthly_publication(
     return approval, revision, universe
 
 
+def _projected_approval(
+    proposal: MonthlyProposal,
+    actor: str,
+    instant: str,
+    claims: str,
+    membership_hash: str,
+    universe_hash: str,
+) -> MonthlyApproval:
+    wire = {
+        "proposal": proposal.model_dump(mode="json"),
+        "approved_by": actor,
+        "approved_at": instant,
+        "claims_digest": claims,
+        "membership_content_hash": membership_hash,
+        "published_universe_content_hash": universe_hash,
+    }
+    model = (
+        MonthlyAmendmentApproval
+        if isinstance(proposal, MonthlyAmendmentProposal)
+        else MonthlyEvaluationApproval
+    )
+    return model.model_validate(wire)
+
+
 def _require_publishable_month(
-    proposal: MonthlyEvaluationProposal, parent: DpmCompositeMembershipRevision
+    proposal: MonthlyProposal, parent: DpmCompositeMembershipRevision
 ) -> None:
     if (parent.membership_revision, parent.content_hash) != (
         proposal.parent_membership_revision,
         proposal.parent_membership_content_hash,
     ):
         raise ValueError("COMPOSITE_ELIGIBILITY_STALE_MEMBERSHIP")
+    if isinstance(proposal, MonthlyAmendmentProposal):
+        proposal.require_parent_clock(parent.decided_at)
     if (
         proposal.universe.posture != "COMPLETE"
         or proposal.evaluation.declared_universe_coverage != "COMPLETE"
@@ -172,7 +223,7 @@ def monthly_decisions(
 
 
 def _published_universe(
-    proposal: MonthlyEvaluationProposal,
+    proposal: MonthlyProposal,
     revision: DpmCompositeMembershipRevision,
     approved_by: str,
     approved_at: str,
@@ -205,7 +256,7 @@ def _published_universe(
             DpmCompositeUniverseSourceProduct(
                 owner_service="lotus-manage",
                 product_name="CompositeMonthlyEvaluationApproval",
-                contract_version="v1",
+                contract_version=proposal.product_version,
                 authority_scope="POLICY_INPUT",
                 source_cut_id=revision.source_cut_id,
                 source_watermark=proposal.evaluation_revision,

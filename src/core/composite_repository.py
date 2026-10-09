@@ -16,10 +16,7 @@ from src.core.composite_publication import (
 )
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
-from src.core.composite_eligibility.evaluation_control import (
-    MonthlyEvaluationApproval,
-    MonthlyEvaluationProposal,
-)
+from src.core.composite_eligibility.monthly_amendment import MonthlyApproval, MonthlyProposal
 from src.core.composite_eligibility.staged_ports import StagedCompositeRepository
 
 
@@ -39,7 +36,7 @@ class DpmCompositeResultPage(Generic[ItemT]):
 
 
 class DpmCompositeRepository(StagedCompositeRepository, Protocol):
-    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
+    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyProposal) -> None:
         """Retain reproducible evaluation against the current published parent and pinned policy/universe."""
 
     def get_monthly_evaluation_proposal(
@@ -49,10 +46,10 @@ class DpmCompositeRepository(StagedCompositeRepository, Protocol):
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationProposal | None:
+    ) -> MonthlyProposal | None:
         """Read immutable evaluated inputs and complete rule evidence within tenant scope."""
 
-    def save_monthly_evaluation_approval(self, *, approval: MonthlyEvaluationApproval) -> None:
+    def save_monthly_evaluation_approval(self, *, approval: MonthlyApproval) -> None:
         """Atomically retain approval, canonical membership/universe and the existing publication record."""
 
     def get_monthly_evaluation_approval(
@@ -62,7 +59,7 @@ class DpmCompositeRepository(StagedCompositeRepository, Protocol):
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationApproval | None:
+    ) -> MonthlyApproval | None:
         """Return approval only with matching durable canonical publication and universe evidence."""
 
     def save_monthly_policy_proposal(self, *, proposal: MonthlyPolicyProposal) -> None:

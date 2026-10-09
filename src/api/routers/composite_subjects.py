@@ -30,10 +30,19 @@ from src.core.composite_eligibility.staged_publication import (
     SubjectFinalizationReceipt,
     authority_approval_follows_evaluation,
 )
-from src.core.composite_eligibility.monthly_evidence import MonthlyEligibilityPublicationReceipt
+from src.core.composite_eligibility.monthly_evidence import (
+    MonthlyEligibilityPublicationReceipt,
+    MonthlyAmendmentPublicationReceipt,
+    MonthlyPublicationReceipt,
+)
+from src.core.composite_eligibility.monthly_amendment import MonthlyApprovalBinding
+
+MonthlyReceiptResponse = Annotated[
+    MonthlyPublicationReceipt, Field(discriminator="product_version")
+]
 
 PublishedEligibilityReceipt = Annotated[
-    SubjectFinalizationReceipt | MonthlyEligibilityPublicationReceipt,
+    SubjectFinalizationReceipt | MonthlyReceiptResponse,
     Field(discriminator="product_name"),
 ]
 
@@ -340,7 +349,7 @@ def get_finalization(
 def resolve_evidence(
     composite_id: str,
     definition_version: str,
-    binding: EvidenceBinding,
+    binding: EvidenceBinding | MonthlyApprovalBinding,
     response: Response,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
@@ -350,7 +359,9 @@ def resolve_evidence(
             identity.tenant_id, composite_id, definition_version, binding
         )
     )
-    if isinstance(receipt, MonthlyEligibilityPublicationReceipt):
+    if isinstance(
+        receipt, (MonthlyEligibilityPublicationReceipt, MonthlyAmendmentPublicationReceipt)
+    ):
         return receipt
     return _historical_receipt_response(receipt, response)
 

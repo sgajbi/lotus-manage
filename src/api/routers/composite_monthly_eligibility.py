@@ -1,7 +1,9 @@
 """Registered monthly policy control and read-only eligibility assessment."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 from src.api.composite_identity import (
     CompositeTrustedIdentity,
     composite_trusted_identity_required,
@@ -12,11 +14,17 @@ from src.api.dependencies import get_composite_monthly_evaluation_service
 from src.api.services.composite_monthly_evaluation import (
     CompositeMonthlyEvaluationApplicationService,
     MonthlyEvaluationRequest,
+    MonthlyAmendmentRequest,
 )
 from src.core.composite_eligibility.evaluation_control import (
-    MonthlyEvaluationApproval,
     MonthlyEvaluationProposal,
 )
+from src.core.composite_eligibility.monthly_amendment import (
+    MonthlyAmendmentProposal,
+    MonthlyProposal,
+    MonthlyApproval,
+)
+
 from src.api.services.composite_monthly_eligibility import (
     CompositeMonthlyEligibilityApplicationService,
     MonthlyPolicyValidationRequest,
@@ -29,6 +37,9 @@ from src.core.composite_eligibility.approval import MonthlyPolicyApproval, Month
 from src.core.composite_eligibility.diff import MonthlyEligibilityDiff
 from src.core.composite_eligibility.policy import ResolvedMonthlyPolicy
 from src.core.composite_eligibility.evaluation import MonthlyEligibilityEvaluation
+
+MonthlyProposalResponse = Annotated[MonthlyProposal, Field(discriminator="product_version")]
+MonthlyApprovalResponse = Annotated[MonthlyApproval, Field(discriminator="product_version")]
 
 router = APIRouter(
     prefix="/rebalance/composites", tags=["lotus-manage Composite Monthly Eligibility"]
@@ -253,7 +264,36 @@ def propose_monthly_evaluation(
     service: CompositeMonthlyEvaluationApplicationService = Depends(
         get_composite_monthly_evaluation_service
     ),
-) -> MonthlyEvaluationProposal:
+) -> MonthlyProposal:
+    try:
+        return service.propose(
+            tenant_id=identity.tenant_id,
+            composite_id=composite_id,
+            definition_version=definition_version,
+            evaluation_revision=evaluation_revision,
+            actor_id=identity.actor_id,
+            command=request,
+        )
+    except ValueError as exc:
+        raise _monthly_domain_error(exc) from exc
+
+
+@router.put(
+    "/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}/source-amendment",
+    response_model=MonthlyAmendmentProposal,
+    summary="Propose a source correction to one exact approved membership month",
+    description="Binds the selected original/predecessor approval, exact predecessor receipt, current projection and publication sequence. Observations come from configured source owners. Same approved policy only; staged roots and corrections with later approved months are unsupported. Independent approval uses the existing evaluation approval operation.",
+)
+def propose_monthly_source_amendment(
+    composite_id: str,
+    definition_version: str,
+    evaluation_revision: str,
+    request: MonthlyAmendmentRequest,
+    identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
+    service: CompositeMonthlyEvaluationApplicationService = Depends(
+        get_composite_monthly_evaluation_service
+    ),
+) -> MonthlyProposal:
     try:
         return service.propose(
             tenant_id=identity.tenant_id,
@@ -269,7 +309,7 @@ def propose_monthly_evaluation(
 
 @router.put(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}/approval",
-    response_model=MonthlyEvaluationApproval,
+    response_model=MonthlyApprovalResponse,
     summary="Independently approve and atomically publish one evaluated membership month",
     description="Atomic approval, canonical membership/universe and publication custody. Synthetic unsigned control is not bank IAM or official activation.",
 )
@@ -282,7 +322,7 @@ def approve_monthly_evaluation(
     service: CompositeMonthlyEvaluationApplicationService = Depends(
         get_composite_monthly_evaluation_service
     ),
-) -> MonthlyEvaluationApproval:
+) -> MonthlyApproval:
     try:
         return service.approve(
             tenant_id=identity.tenant_id,
@@ -298,7 +338,7 @@ def approve_monthly_evaluation(
 
 @router.get(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}",
-    response_model=MonthlyEvaluationProposal,
+    response_model=MonthlyProposalResponse,
     summary="Read exact retained monthly inputs and all-rule evidence",
 )
 def get_monthly_evaluation(
@@ -309,7 +349,7 @@ def get_monthly_evaluation(
     service: CompositeMonthlyEvaluationApplicationService = Depends(
         get_composite_monthly_evaluation_service
     ),
-) -> MonthlyEvaluationProposal:
+) -> MonthlyProposal:
     try:
         return service.get_proposal(
             tenant_id=identity.tenant_id,
@@ -323,7 +363,7 @@ def get_monthly_evaluation(
 
 @router.get(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}/approval",
-    response_model=MonthlyEvaluationApproval,
+    response_model=MonthlyApprovalResponse,
     summary="Read approval bound to the canonical published membership and universe",
 )
 def get_monthly_evaluation_approval(
@@ -334,7 +374,7 @@ def get_monthly_evaluation_approval(
     service: CompositeMonthlyEvaluationApplicationService = Depends(
         get_composite_monthly_evaluation_service
     ),
-) -> MonthlyEvaluationApproval:
+) -> MonthlyApproval:
     try:
         return service.get_approval(
             tenant_id=identity.tenant_id,
@@ -349,6 +389,35 @@ def get_monthly_evaluation_approval(
 def _monthly_domain_error(exc: ValueError) -> HTTPException:
     raw = str(exc)
     public_codes = {
+        "COMPOSITE_MONTHLY_AMENDMENT_CLOCK_MISMATCH",
+        "COMPOSITE_MONTHLY_AUTHORITY_HISTORY_UNAVAILABLE",
+        "COMPOSITE_MONTHLY_AUTHORITY_HISTORY_LIMIT",
+        "COMPOSITE_MONTHLY_AUTHORITY_SCOPE_MISMATCH",
+        "COMPOSITE_MONTHLY_AUTHORITY_ROOT_AMBIGUOUS",
+        "COMPOSITE_MONTHLY_AUTHORITY_RECORD_AMBIGUOUS",
+        "COMPOSITE_MONTHLY_AUTHORITY_PREDECESSOR_MISMATCH",
+        "COMPOSITE_MONTHLY_AUTHORITY_ORIGINAL_MISMATCH",
+        "COMPOSITE_MONTHLY_AUTHORITY_FORK_FORBIDDEN",
+        "COMPOSITE_MONTHLY_AUTHORITY_HISTORY_DISCONNECTED",
+        "COMPOSITE_MONTHLY_AUTHORITY_HISTORY_CYCLE",
+        "COMPOSITE_MONTHLY_AMENDMENT_STALE_AUTHORITY",
+        "COMPOSITE_MONTHLY_AMENDMENT_STALE_PROJECTION",
+        "COMPOSITE_MONTHLY_AMENDMENT_PREDECESSOR_RECEIPT_MISMATCH",
+        "COMPOSITE_MONTHLY_AMENDMENT_DEPENDENT_MONTH_UNSUPPORTED",
+        "COMPOSITE_MONTHLY_AMENDMENT_STAGED_ROOT_UNSUPPORTED",
+        "COMPOSITE_MONTHLY_AMENDMENT_POLICY_CHANGE_UNSUPPORTED",
+        "COMPOSITE_MONTHLY_AMENDMENT_POPULATION_CHANGE_UNSUPPORTED",
+        "COMPOSITE_MONTHLY_AMENDMENT_SOURCE_UNCHANGED",
+        "COMPOSITE_MONTHLY_AMENDMENT_REASON_REQUIRED",
+        "COMPOSITE_MONTHLY_AMENDMENT_AUTHORITY_MISMATCH",
+        "COMPOSITE_MONTHLY_AMENDMENT_PREDECESSOR_MISMATCH",
+        "COMPOSITE_MONTHLY_AMENDMENT_PREDECESSOR_VERSION_MISMATCH",
+        "COMPOSITE_MONTHLY_AMENDMENT_PROJECTION_PARENT_INVALID",
+        "COMPOSITE_MONTHLY_AMENDMENT_EVIDENCE_AMBIGUOUS",
+        "COMPOSITE_MONTHLY_AMENDMENT_WINDOW_MISMATCH",
+        "COMPOSITE_MONTHLY_AMENDMENT_PROJECTION_PARENT_MISMATCH",
+        "COMPOSITE_MONTHLY_AMENDMENT_REVISION_REUSED",
+        "COMPOSITE_MONTHLY_AMENDMENT_SOURCE_EVIDENCE_REQUIRED",
         "COMPOSITE_SOURCE_TRANSPORT_UNAVAILABLE",
         "COMPOSITE_SOURCE_TRANSPORT_REJECTED",
         "COMPOSITE_SOURCE_RESPONSE_INVALID",
@@ -415,6 +484,10 @@ def _monthly_domain_error(exc: ValueError) -> HTTPException:
     if code.endswith("NOT_FOUND"):
         return _problem(status.HTTP_404_NOT_FOUND, code)
     if code.endswith("CONFLICT") or code in {
+        "COMPOSITE_MONTHLY_AMENDMENT_STALE_AUTHORITY",
+        "COMPOSITE_MONTHLY_AMENDMENT_STALE_PROJECTION",
+        "COMPOSITE_MONTHLY_AMENDMENT_DEPENDENT_MONTH_UNSUPPORTED",
+        "COMPOSITE_MONTHLY_AUTHORITY_HISTORY_LIMIT",
         "COMPOSITE_ELIGIBILITY_STALE_PROPOSAL",
         "COMPOSITE_ELIGIBILITY_STALE_MEMBERSHIP",
     }:

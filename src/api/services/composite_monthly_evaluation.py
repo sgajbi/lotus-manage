@@ -13,9 +13,12 @@ from src.core.composite_authority_models import (
     StrictAuthorityModel,
 )
 from src.core.composite_eligibility.evaluation import evaluate_monthly_eligibility
-from src.core.composite_eligibility.evaluation_control import (
-    MonthlyEvaluationApproval,
-    MonthlyEvaluationProposal,
+from src.core.composite_eligibility.monthly_amendment import (
+    MonthlyAmendmentProposal,
+    MonthlyApproval,
+    MonthlyProposal,
+    MonthlySourceAmendment,
+    decode_monthly_proposal,
 )
 from src.core.composite_eligibility.publication import build_monthly_publication
 from src.core.composite_repository import DpmCompositeConflictError
@@ -32,6 +35,10 @@ class MonthlyEvaluationRequest(StrictAuthorityModel):
     correlation_id: Identity
 
 
+class MonthlyAmendmentRequest(MonthlyEvaluationRequest):
+    amendment: MonthlySourceAmendment
+
+
 @dataclass(frozen=True)
 class CompositeMonthlyEvaluationApplicationService:
     configuration: CompositeMonthlyEligibilityApplicationService
@@ -43,7 +50,7 @@ class CompositeMonthlyEvaluationApplicationService:
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationProposal:
+    ) -> MonthlyProposal:
         result = self.configuration.repository.get_monthly_evaluation_proposal(
             tenant_id=tenant_id,
             composite_id=composite_id,
@@ -61,7 +68,7 @@ class CompositeMonthlyEvaluationApplicationService:
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationApproval:
+    ) -> MonthlyApproval:
         result = self.configuration.repository.get_monthly_evaluation_approval(
             tenant_id=tenant_id,
             composite_id=composite_id,
@@ -80,9 +87,9 @@ class CompositeMonthlyEvaluationApplicationService:
         definition_version: str,
         evaluation_revision: str,
         actor_id: str,
-        command: MonthlyEvaluationRequest,
-    ) -> MonthlyEvaluationProposal:
-        command = MonthlyEvaluationRequest.model_validate(command.model_dump(mode="json"))
+        command: MonthlyEvaluationRequest | MonthlyAmendmentRequest,
+    ) -> MonthlyProposal:
+        command = type(command).model_validate(command.model_dump(mode="json"))
         repository = self.configuration.repository
         retained = repository.get_monthly_evaluation_proposal(
             tenant_id=tenant_id,
@@ -139,7 +146,7 @@ class CompositeMonthlyEvaluationApplicationService:
             evaluated_at=instant,
             universe_content_hash=universe.content_hash,
         )
-        proposal = MonthlyEvaluationProposal(
+        proposal_wire: dict[str, object] = dict(
             publication_evidence_version="v1",
             source_assembly_evidence=source_evidence,
             evaluation_revision=evaluation_revision,
@@ -154,6 +161,9 @@ class CompositeMonthlyEvaluationApplicationService:
             proposed_at=instant,
             correlation_id=command.correlation_id,
         )
+        if isinstance(command, MonthlyAmendmentRequest):
+            proposal_wire.update(product_version="v2", amendment=command.amendment)
+        proposal = decode_monthly_proposal(proposal_wire)
         try:
             repository.save_monthly_evaluation_proposal(proposal=proposal)
         except DpmCompositeConflictError:
@@ -178,7 +188,7 @@ class CompositeMonthlyEvaluationApplicationService:
         evaluation_revision: str,
         actor_id: str,
         command: MonthlyApprovalRequest,
-    ) -> MonthlyEvaluationApproval:
+    ) -> MonthlyApproval:
         command = MonthlyApprovalRequest.model_validate(command.model_dump(mode="json"))
         proposal = self.get_proposal(
             tenant_id=tenant_id,
@@ -228,8 +238,17 @@ class CompositeMonthlyEvaluationApplicationService:
 
 
 def _require_same_proposal_command(
-    proposal: MonthlyEvaluationProposal, command: MonthlyEvaluationRequest, actor_id: str
+    proposal: MonthlyProposal, command: MonthlyEvaluationRequest, actor_id: str
 ) -> None:
+    if isinstance(proposal, MonthlyAmendmentProposal) != isinstance(
+        command, MonthlyAmendmentRequest
+    ):
+        raise ValueError("COMPOSITE_ELIGIBILITY_EVALUATION_PROPOSAL_IMMUTABLE_CONFLICT")
+    if isinstance(proposal, MonthlyAmendmentProposal) and isinstance(
+        command, MonthlyAmendmentRequest
+    ):
+        if proposal.amendment != command.amendment:
+            raise ValueError("COMPOSITE_ELIGIBILITY_EVALUATION_PROPOSAL_IMMUTABLE_CONFLICT")
     if (
         proposal.evaluation.month,
         proposal.policy_approval.content_hash,
@@ -255,7 +274,7 @@ def _require_same_proposal_command(
 
 
 def _require_same_approval(
-    approval: MonthlyEvaluationApproval, proposal: MonthlyEvaluationProposal, actor_id: str
+    approval: MonthlyApproval, proposal: MonthlyProposal, actor_id: str
 ) -> None:
     if approval.proposal.content_hash != proposal.content_hash or approval.approved_by != actor_id:
         raise ValueError("COMPOSITE_ELIGIBILITY_ACTIVE_EVALUATION_CONFLICT")

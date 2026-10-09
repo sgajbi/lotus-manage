@@ -33,6 +33,16 @@ from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationProposal,
     evaluation_key as _evaluation_key,
 )
+from src.core.composite_eligibility.monthly_amendment import (
+    MonthlyAmendmentApproval,
+    MonthlyAmendmentProposal,
+    MonthlyApproval,
+    MonthlyProposal,
+    MonthlyReceiptBinding,
+    decode_monthly_approval,
+    decode_monthly_proposal,
+)
+from src.core.composite_eligibility.monthly_authority import require_amendment_authority
 from src.core.composite_eligibility.publication import build_monthly_publication
 from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
 from src.core.composite_eligibility.staged_controls import StagedControl
@@ -44,8 +54,9 @@ from src.core.composite_eligibility.staged_publication import (
 from src.infrastructure.composites.staged_memory import StagedMemoryCustody
 from src.core.composite_eligibility.staged_custody import require_finalized_custody
 from src.core.composite_eligibility.monthly_evidence import (
-    MonthlyEligibilityPublicationReceipt,
+    MonthlyPublicationReceipt,
     published_monthly_receipt,
+    require_monthly_receipt_lineage,
 )
 
 
@@ -59,10 +70,8 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         self._definitions: dict[tuple[str, str, str], CompositeDefinition] = {}
         self._monthly_proposals: dict[tuple[str, str, str, str, str], MonthlyPolicyProposal] = {}
         self._monthly_approvals: dict[tuple[str, str, str], MonthlyPolicyApproval] = {}
-        self._monthly_evaluations: dict[tuple[str, str, str, str], MonthlyEvaluationProposal] = {}
-        self._monthly_evaluation_approvals: dict[
-            tuple[str, str, str], MonthlyEvaluationApproval
-        ] = {}
+        self._monthly_evaluations: dict[tuple[str, str, str, str], MonthlyProposal] = {}
+        self._monthly_evaluation_approvals: dict[tuple[str, ...], MonthlyApproval] = {}
         self._membership_revisions: dict[
             tuple[str, str, str, str], DpmCompositeMembershipRevision
         ] = {}
@@ -165,12 +174,21 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 raise DpmCompositeConflictError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
             return receipt
 
-    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
-        proposal = MonthlyEvaluationProposal.model_validate(proposal.model_dump(mode="json"))
+    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyProposal) -> None:
+        proposal = decode_monthly_proposal(proposal.model_dump(mode="json"))
         key = _evaluation_key(proposal)
         with self._lock:
+            retained = self._monthly_evaluations.get(key)
+            if retained is not None:
+                if retained != proposal:
+                    raise DpmCompositeConflictError(
+                        "COMPOSITE_ELIGIBILITY_EVALUATION_PROPOSAL_IMMUTABLE_CONFLICT"
+                    )
+                return
             self._require_monthly_inputs(proposal)
             self._require_current_monthly_parent(proposal)
+            if isinstance(proposal, MonthlyAmendmentProposal):
+                self._require_amendment(proposal)
             _save_immutable(
                 values=self._monthly_evaluations,
                 key=key,
@@ -185,37 +203,45 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationProposal | None:
+    ) -> MonthlyProposal | None:
         with self._lock:
             result = self._monthly_evaluations.get(
                 (tenant_id, composite_id, definition_version, evaluation_revision)
             )
-            if result is not None and not isinstance(result, MonthlyEvaluationProposal):
+            if result is not None and not isinstance(
+                result, (MonthlyEvaluationProposal, MonthlyAmendmentProposal)
+            ):
                 return None
             return (
-                MonthlyEvaluationProposal.model_validate(result.model_dump(mode="json"))
+                decode_monthly_proposal(result.model_dump(mode="json"))
                 if result is not None
                 else None
             )
 
-    def save_monthly_evaluation_approval(self, *, approval: MonthlyEvaluationApproval) -> None:
-        approval = MonthlyEvaluationApproval.model_validate(approval.model_dump(mode="json"))
+    def save_monthly_evaluation_approval(self, *, approval: MonthlyApproval) -> None:
+        approval = decode_monthly_approval(approval.model_dump(mode="json"))
         proposal = approval.proposal
         key = _evaluation_key(proposal)
-        approval_key = (*key[:2], proposal.evaluation.month)
+        approval_key = (
+            key
+            if isinstance(proposal, MonthlyAmendmentProposal)
+            else (*key[:2], proposal.evaluation.month)
+        )
         with self._lock:
             existing = self._monthly_evaluation_approvals.get(approval_key)
             if existing is not None:
-                if not isinstance(existing, MonthlyEvaluationApproval):
+                if not isinstance(existing, (MonthlyEvaluationApproval, MonthlyAmendmentApproval)):
                     raise DpmCompositeConflictError(
                         "COMPOSITE_ELIGIBILITY_ACTIVE_EVALUATION_CONFLICT"
                     )
-                if existing.content_hash != approval.content_hash:
+                if existing != approval:
                     raise DpmCompositeConflictError(
                         "COMPOSITE_ELIGIBILITY_ACTIVE_EVALUATION_CONFLICT"
                     )
                 self._assert_monthly_publication(existing)
                 return
+            if isinstance(proposal, MonthlyAmendmentProposal):
+                self._require_amendment(proposal)
             retained = self._monthly_evaluations.get(key)
             if retained is None or retained.content_hash != proposal.content_hash:
                 raise DpmCompositeConflictError(
@@ -260,13 +286,13 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationApproval | None:
+    ) -> MonthlyApproval | None:
         with self._lock:
             result = next(
                 (
                     item
                     for item in self._monthly_evaluation_approvals.values()
-                    if isinstance(item, MonthlyEvaluationApproval)
+                    if isinstance(item, (MonthlyEvaluationApproval, MonthlyAmendmentApproval))
                     and _evaluation_key(item.proposal)
                     == (tenant_id, composite_id, definition_version, evaluation_revision)
                 ),
@@ -274,11 +300,11 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             )
             if result is None:
                 return None
-            result = MonthlyEvaluationApproval.model_validate(result.model_dump(mode="json"))
+            result = decode_monthly_approval(result.model_dump(mode="json"))
             self._assert_monthly_publication(result)
             return result
 
-    def _require_monthly_inputs(self, proposal: MonthlyEvaluationProposal) -> None:
+    def _require_monthly_inputs(self, proposal: MonthlyProposal) -> None:
         key = _evaluation_key(proposal)
         policy = self._monthly_approvals.get((*key[:2], proposal.evaluation.month))
         if policy is None or policy.content_hash != proposal.policy_approval.content_hash:
@@ -297,84 +323,134 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         definition_version: str,
         evaluation_revision: str,
         approval_content_hash: str,
-    ) -> MonthlyEligibilityPublicationReceipt | None:
+    ) -> MonthlyPublicationReceipt | None:
         key = (tenant_id, composite_id, definition_version, evaluation_revision)
-        # This lock is non-reentrant: read the stores directly, never call getters
-        # that acquire another lock or observe a different snapshot.
         with self._lock:
-            approval = next(
-                (
-                    item
-                    for item in self._monthly_evaluation_approvals.values()
-                    if isinstance(item, MonthlyEvaluationApproval)
-                    and _evaluation_key(item.proposal) == key
-                ),
-                None,
-            )
-            if approval is None or approval.proposal.publication_evidence_version is None:
-                return None
-            if approval.content_hash != approval_content_hash:
-                raise DpmCompositeConflictError("COMPOSITE_MONTHLY_EVIDENCE_BINDING_MISMATCH")
-            proposal = self._monthly_evaluations.get(key)
-            definition = self._definitions.get(key[:3])
-            policy = self._monthly_approvals.get((*key[:2], approval.proposal.evaluation.month))
-            policy_proposal = self._monthly_proposals.get(
-                (
-                    *key[:3],
-                    approval.proposal.evaluation.month,
-                    approval.proposal.policy_approval.proposal.proposal_revision,
+            return self._validated_monthly_receipt(key, approval_content_hash)
+
+    def _validated_monthly_receipt(
+        self, key: tuple[str, str, str, str], approval_content_hash: str
+    ) -> MonthlyPublicationReceipt | None:
+        receipt = self._monthly_receipt(key, approval_content_hash)
+        if receipt is not None:
+            try:
+                require_monthly_receipt_lineage(
+                    receipt,
+                    lambda binding: self._monthly_receipt(
+                        (*key[:3], binding.revision), binding.digest
+                    ),
                 )
-            )
-            parent = self._membership_revisions.get(
-                (*key[:3], approval.proposal.parent_membership_revision)
-            )
-            target = approval.proposal.target_membership_revision
-            member = self._membership_revisions.get((*key[:3], target))
-            universe = self._universe_attestations.get((*key[:3], target, key[3]))
-            publication = next(
-                (
-                    item
-                    for item in self._publications.values()
-                    if (
-                        item.tenant_id,
-                        item.composite_id,
-                        item.definition_version,
-                        item.membership_revision,
-                    )
-                    == (*key[:3], target)
-                ),
-                None,
-            )
-            if (
-                proposal is None
-                or definition is None
-                or policy is None
-                or policy_proposal is None
-                or parent is None
-                or member is None
-                or universe is None
-                or publication is None
-            ):
+            except ValueError as error:
                 raise DpmCompositeConflictError(
                     "COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT"
-                )
-            self._require_monthly_inputs(proposal)
-            receipt = published_monthly_receipt(
-                definition=definition,
-                approval=approval,
-                retained_policy=policy,
-                retained_policy_proposal=policy_proposal,
-                retained_proposal=proposal,
-                parent=parent,
-                membership=member,
-                universe=universe,
-                publication=publication,
+                ) from error
+        return receipt
+
+    def _monthly_receipt(
+        self, key: tuple[str, str, str, str], approval_content_hash: str
+    ) -> MonthlyPublicationReceipt | None:
+        """Caller owns the lock; no getter may acquire it a second time."""
+        approval = next(
+            (
+                item
+                for item in self._monthly_evaluation_approvals.values()
+                if isinstance(item, (MonthlyEvaluationApproval, MonthlyAmendmentApproval))
+                and _evaluation_key(item.proposal) == key
+            ),
+            None,
+        )
+        if approval is None or approval.proposal.publication_evidence_version is None:
+            return None
+        if approval.content_hash != approval_content_hash:
+            raise DpmCompositeConflictError("COMPOSITE_MONTHLY_EVIDENCE_BINDING_MISMATCH")
+        proposal = self._monthly_evaluations.get(key)
+        definition = self._definitions.get(key[:3])
+        policy = self._monthly_approvals.get((*key[:2], approval.proposal.evaluation.month))
+        policy_proposal = self._monthly_proposals.get(
+            (
+                *key[:3],
+                approval.proposal.evaluation.month,
+                approval.proposal.policy_approval.proposal.proposal_revision,
             )
-            return MonthlyEligibilityPublicationReceipt.model_validate(
-                receipt.model_dump(mode="json")
+        )
+        parent = self._membership_revisions.get(
+            (*key[:3], approval.proposal.parent_membership_revision)
+        )
+        target = approval.proposal.target_membership_revision
+        member = self._membership_revisions.get((*key[:3], target))
+        universe = self._universe_attestations.get((*key[:3], target, key[3]))
+        publication = self._publication_for_membership((*key[:3], target))
+        if (
+            proposal is None
+            or definition is None
+            or policy is None
+            or policy_proposal is None
+            or parent is None
+            or member is None
+            or universe is None
+            or publication is None
+        ):
+            raise DpmCompositeConflictError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
+        self._require_monthly_inputs(proposal)
+        parent_publication = self._publication_for_membership(
+            (*key[:3], proposal.parent_membership_revision)
+        )
+        receipt = published_monthly_receipt(
+            definition=definition,
+            approval=approval,
+            retained_policy=policy,
+            retained_policy_proposal=policy_proposal,
+            retained_proposal=proposal,
+            parent=parent,
+            membership=member,
+            universe=universe,
+            publication=publication,
+            parent_publication=parent_publication,
+        )
+        return receipt
+
+    def _require_amendment(self, proposal: MonthlyAmendmentProposal) -> None:
+        key = _evaluation_key(proposal)
+        approvals = [
+            item
+            for item in self._monthly_evaluation_approvals.values()
+            if isinstance(item, (MonthlyEvaluationApproval, MonthlyAmendmentApproval))
+            and _evaluation_key(item.proposal)[:2] == key[:2]
+            and item.proposal.evaluation.month == proposal.evaluation.month
+        ]
+        if not approvals and (*key[:2], proposal.evaluation.month) in (
+            self._monthly_evaluation_approvals
+        ):
+            raise DpmCompositeConflictError("COMPOSITE_MONTHLY_AMENDMENT_STAGED_ROOT_UNSUPPORTED")
+        binding = proposal.amendment.predecessor_approval_binding
+        receipt = self._validated_monthly_receipt((*key[:3], binding.revision), binding.digest)
+        if receipt is None:
+            raise DpmCompositeConflictError(
+                "COMPOSITE_MONTHLY_AMENDMENT_PREDECESSOR_RECEIPT_MISMATCH"
+            )
+        try:
+            require_amendment_authority(
+                proposal,
+                approvals,
+                MonthlyReceiptBinding(
+                    product_version=receipt.product_version,
+                    revision=binding.revision,
+                    digest=receipt.content_hash,
+                ),
+            )
+        except ValueError as error:
+            raise DpmCompositeConflictError(str(error)) from error
+        if any(
+            len(stored_key) == 3
+            and stored_key[:2] == key[:2]
+            and stored_key[2] > proposal.evaluation.month
+            for stored_key in self._monthly_evaluation_approvals
+        ):
+            raise DpmCompositeConflictError(
+                "COMPOSITE_MONTHLY_AMENDMENT_DEPENDENT_MONTH_UNSUPPORTED"
             )
 
-    def _require_current_monthly_parent(self, proposal: MonthlyEvaluationProposal) -> None:
+    def _require_current_monthly_parent(self, proposal: MonthlyProposal) -> None:
         key = _evaluation_key(proposal)
         current = next(
             (
@@ -390,13 +466,17 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         ):
             raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_STALE_MEMBERSHIP")
         self._assert_publication_integrity(current)
+        if isinstance(proposal, MonthlyAmendmentProposal) and current.sequence != (
+            proposal.amendment.expected_current_publication_sequence
+        ):
+            raise DpmCompositeConflictError("COMPOSITE_MONTHLY_AMENDMENT_STALE_PROJECTION")
+        if isinstance(proposal, MonthlyAmendmentProposal):
+            proposal.require_parent_clock(current.decided_at)
 
-    def _assert_monthly_publication(self, approval: MonthlyEvaluationApproval) -> None:
-        key = _evaluation_key(approval.proposal)
-        target = approval.proposal.target_membership_revision
-        revision = self._membership_revisions.get((*key[:3], target))
-        universe = self._universe_attestations.get((*key[:3], target, key[3]))
-        publication = next(
+    def _publication_for_membership(
+        self, key: tuple[str, str, str, str]
+    ) -> DpmCompositeMembershipPublication | None:
+        return next(
             (
                 item
                 for item in self._publications.values()
@@ -406,10 +486,17 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                     item.definition_version,
                     item.membership_revision,
                 )
-                == (*key[:3], target)
+                == key
             ),
             None,
         )
+
+    def _assert_monthly_publication(self, approval: MonthlyApproval) -> None:
+        key = _evaluation_key(approval.proposal)
+        target = approval.proposal.target_membership_revision
+        revision = self._membership_revisions.get((*key[:3], target))
+        universe = self._universe_attestations.get((*key[:3], target, key[3]))
+        publication = self._publication_for_membership((*key[:3], target))
         if revision is None or revision.content_hash != approval.membership_content_hash:
             raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_APPROVED_PUBLICATION_MISMATCH")
         if (
