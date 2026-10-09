@@ -118,9 +118,19 @@ def test_monthly_unqualified_or_unmarked_custody_cannot_invent_published_proof(
         "universe",
         "publication",
         "input_universe",
+        "policy_rehashed",
+        "evaluation_rehashed",
+        "publication_count",
     ],
 )
 def test_monthly_memory_resolver_joins_independent_custody(evaluation_api, corruption):
+    approval = approve_with_complete_source(evaluation_api)
+    proposal = approval["proposal"]
+    repository = evaluation_api[1]
+    check_monthly_custody(evaluation_api, repository, proposal, approval, corruption)
+
+
+def approve_with_complete_source(evaluation_api):
     from src.core.composite_eligibility.source_assembly import (
         MonthlySourceAssembly,
         VerifiedMonthlySourceAssembly,
@@ -141,7 +151,10 @@ def test_monthly_memory_resolver_joins_independent_custody(evaluation_api, corru
     response = approve(evaluation_api, proposal)
     assert response.status_code == 200, response.text
     approval = response.json()
-    repository = evaluation_api[1]
+    return approval
+
+
+def check_monthly_custody(evaluation_api, repository, proposal, approval, corruption):
     arguments = dict(
         tenant_id="synthetic-tenant",
         composite_id="synthetic-composite",
@@ -197,6 +210,9 @@ def test_monthly_memory_resolver_joins_independent_custody(evaluation_api, corru
         "universe": repository._universe_attestations,
         "input_universe": repository._universe_attestations,
         "publication": repository._publications,
+        "policy_rehashed": repository._monthly_proposals,
+        "evaluation_rehashed": repository._monthly_evaluations,
+        "publication_count": repository._publications,
     }
     if corruption is not None:
         store = stores[corruption]
@@ -206,6 +222,15 @@ def test_monthly_memory_resolver_joins_independent_custody(evaluation_api, corru
             else next(reversed(store))
         )
         retained = store.pop(key)
+        if corruption in ("policy_rehashed", "evaluation_rehashed"):
+            changed = retained.model_dump(mode="json")
+            changed["proposed_by" if corruption == "policy_rehashed" else "correlation_id"] = (
+                "other-valid-retained-input"
+            )
+            changed["content_hash"] = ""
+            store[key] = type(retained).model_validate(changed)
+        elif corruption == "publication_count":
+            store[key] = retained.model_copy(update={"decision_count": retained.decision_count + 1})
         try:
             with pytest.raises((DpmCompositeConflictError, ValueError)):
                 repository.resolve_monthly_eligibility_evidence(**arguments)
@@ -214,6 +239,124 @@ def test_monthly_memory_resolver_joins_independent_custody(evaluation_api, corru
         assert repository.resolve_monthly_eligibility_evidence(**arguments) == receipt
     assert len(publications(evaluation_api)) == 2
     assert len(evaluation_api[6]) == 1
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        None,
+        "proposal",
+        "policy",
+        "policy_proposal",
+        "definition",
+        "definition_hash",
+        "publication",
+        "publication_body",
+        "digest",
+    ],
+)
+def test_monthly_sql_join_fails_closed_on_partial_snapshot(evaluation_api, monkeypatch, fault):
+    from src.infrastructure.composites import monthly_evidence
+
+    wire = approve_with_complete_source(evaluation_api)
+    repository = evaluation_api[1]
+    key = (
+        "synthetic-tenant",
+        "synthetic-composite",
+        "synthetic-definition",
+        wire["proposal"]["evaluation_revision"],
+    )
+    approval = repository.get_monthly_evaluation_approval(
+        tenant_id=key[0], composite_id=key[1], definition_version=key[2], evaluation_revision=key[3]
+    )
+    proposal = approval.proposal
+    definition = repository.get_definition(
+        tenant_id=key[0], composite_id=key[1], definition_version=key[2]
+    )
+    rows = [
+        None
+        if fault == "definition"
+        else {
+            "payload_json": definition.model_dump(mode="json"),
+            "content_hash": "sha256:" + "e" * 64
+            if fault == "definition_hash"
+            else definition.content_hash,
+        },
+        None if fault == "publication" else {"sequence": 2},
+    ]
+
+    class ReadSnapshot:
+        def execute(self, query, parameters):
+            assert parameters == (
+                key[:3]
+                if "dpm_composite_definitions" in query
+                else (*key[:3], proposal.target_membership_revision)
+            )
+            return self
+
+        def fetchone(self):
+            return rows.pop(0)
+
+    monkeypatch.setattr(
+        monthly_evidence.evaluation_control, "get_approval", lambda connection, requested: approval
+    )
+    monkeypatch.setattr(
+        monthly_evidence.evaluation_control,
+        "get_proposal",
+        lambda connection, requested: None if fault == "proposal" else proposal,
+    )
+    monkeypatch.setattr(
+        monthly_evidence.policy_control,
+        "get_approval",
+        lambda connection, requested: None if fault == "policy" else proposal.policy_approval,
+    )
+    monkeypatch.setattr(
+        monthly_evidence.policy_control,
+        "get_proposal",
+        lambda connection, requested: (
+            None if fault == "policy_proposal" else proposal.policy_approval.proposal
+        ),
+    )
+    monkeypatch.setattr(
+        monthly_evidence,
+        "_membership",
+        lambda connection, requested: repository.get_membership_revision(
+            tenant_id=requested[0],
+            composite_id=requested[1],
+            definition_version=requested[2],
+            membership_revision=requested[3],
+        ),
+    )
+    monkeypatch.setattr(
+        monthly_evidence,
+        "_universe",
+        lambda connection, requested: repository.get_universe_attestation(
+            tenant_id=requested[0],
+            composite_id=requested[1],
+            definition_version=requested[2],
+            membership_revision=requested[3],
+            attestation_version=requested[4],
+        ),
+    )
+    monkeypatch.setattr(
+        monthly_evidence.publication,
+        "get_publication",
+        lambda **kwargs: (
+            None
+            if fault == "publication_body"
+            else repository.get_publication(tenant_id=key[0], sequence=2)
+        ),
+    )
+    digest = "sha256:" + "e" * 64 if fault == "digest" else approval.content_hash
+    if fault is None:
+        resolved = monthly_evidence.resolve(ReadSnapshot(), key, digest)
+        assert resolved.approval == approval and resolved.publication_sequence == 2
+    else:
+        with pytest.raises(
+            DpmCompositeConflictError,
+            match="BINDING_MISMATCH" if fault == "digest" else "CUSTODY_INTEGRITY_CONFLICT",
+        ):
+            monthly_evidence.resolve(ReadSnapshot(), key, digest)
 
 
 def test_monthly_publication_marker_is_server_owned_and_legacy_omission_is_preserved(
@@ -285,6 +428,126 @@ def test_monthly_publication_marker_is_server_owned_and_legacy_omission_is_prese
     ]
     assert field["const"] == "v1" and field["type"] == "string"
     assert "default" not in field and "anyOf" not in field
+
+
+@pytest.mark.parametrize("fault", ["unfinalized_source", "parent_coverage_gap"])
+def test_publication_refuses_individually_valid_unfinalized_or_incomplete_history(
+    evaluation_api, fault
+):
+    from src.core.composite_eligibility.evaluation import evaluate_monthly_eligibility
+    from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
+    from src.core.composite_eligibility.publication import build_monthly_publication
+    from src.core.composite_membership import DpmCompositeMembershipRevision
+
+    wire = propose(evaluation_api)
+    parent = evaluation_api[1].get_membership_revision(
+        tenant_id="synthetic-tenant",
+        composite_id="synthetic-composite",
+        definition_version="synthetic-definition",
+        membership_revision=wire["parent_membership_revision"],
+    )
+    if fault == "unfinalized_source":
+        wire["observations"]["source_generated_at"] = "2026-09-30T23:59:00.000000Z"
+        product = next(
+            item
+            for item in wire["universe"]["source_products"]
+            if item["product_name"] == "CompositeMonthlyEligibilityObservations"
+        )
+        product["content_hash"] = hash_canonical_payload(wire["observations"])
+        expected = "COMPOSITE_ELIGIBILITY_PUBLICATION_SOURCE_NOT_FINALIZED"
+    else:
+        parent_wire = parent.model_dump(mode="json")
+        parent_wire["decisions"][0]["effective_to"] = "2026-09-29"
+        parent_wire["content_hash"] = ""
+        parent = DpmCompositeMembershipRevision.model_validate(parent_wire)
+        wire["parent_membership_content_hash"] = parent.content_hash
+        wire["universe"]["membership_content_hash"] = parent.content_hash
+        expected = "COMPOSITE_ELIGIBILITY_PUBLICATION_UNIVERSE_INCOMPLETE"
+    wire["universe"]["content_hash"] = ""
+    universe = DpmCompositeUniverseAttestation.model_validate(wire["universe"])
+    wire["universe"] = universe.model_dump(mode="json")
+    original = MonthlyEvaluationProposal.model_validate(propose(evaluation_api))
+    wire["evaluation"] = evaluate_monthly_eligibility(
+        original.policy_approval.proposal.policy,
+        MonthlyEligibilityObservations.model_validate(wire["observations"]),
+        evaluated_at=wire["proposed_at"],
+        universe_content_hash=universe.content_hash,
+    ).model_dump(mode="json")
+    wire["content_hash"] = ""
+    proposal = MonthlyEvaluationProposal.model_validate(wire)
+    with pytest.raises(ValueError, match=expected):
+        build_monthly_publication(
+            proposal, parent, approved_by="synthetic-checker", approved_at=proposal.proposed_at
+        )
+    assert len(publications(evaluation_api)) == 1
+
+
+def test_projected_universe_refuses_valid_revision_missing_one_business_day(evaluation_api):
+    from src.core.composite_eligibility.publication import _published_universe
+    from src.core.composite_membership import DpmCompositeMembershipRevision
+
+    proposal = MonthlyEvaluationProposal.model_validate(propose(evaluation_api))
+    parent = evaluation_api[1].get_membership_revision(
+        tenant_id="synthetic-tenant",
+        composite_id="synthetic-composite",
+        definition_version="synthetic-definition",
+        membership_revision=proposal.parent_membership_revision,
+    )
+    wire = parent.model_dump(mode="json")
+    wire["decisions"][0]["effective_to"] = "2026-09-29"
+    wire["content_hash"] = ""
+    missing_day = DpmCompositeMembershipRevision.model_validate(wire)
+    with pytest.raises(ValueError, match="COMPOSITE_ELIGIBILITY_PROJECTED_UNIVERSE_MISMATCH"):
+        _published_universe(proposal, missing_day, "synthetic-checker", proposal.proposed_at)
+    assert len(publications(evaluation_api)) == 1
+
+
+def test_publication_refuses_hash_convention_change_that_creates_approval_cycle(
+    evaluation_api, monkeypatch
+):
+    import src.core.composite_universe as universe_models
+    from src.core.composite_eligibility.evaluation import evaluate_monthly_eligibility
+    from src.core.composite_eligibility.publication import build_monthly_publication
+
+    wire = propose(evaluation_api)
+    original = MonthlyEvaluationProposal.model_validate(wire)
+    parent = evaluation_api[1].get_membership_revision(
+        tenant_id="synthetic-tenant",
+        composite_id="synthetic-composite",
+        definition_version="synthetic-definition",
+        membership_revision=original.parent_membership_revision,
+    )
+    # Current hashing accepts the acyclic locator. Including nested approval hashes
+    # would create a cycle; the publisher must reject that convention change.
+    build_monthly_publication(
+        original, parent, approved_by="synthetic-checker", approved_at=original.proposed_at
+    )
+    monkeypatch.setattr(
+        universe_models,
+        "composite_universe_attestation_hash",
+        lambda value: hash_canonical_payload(
+            value.model_dump(mode="json", exclude={"content_hash"})
+        ),
+    )
+    wire["universe"]["content_hash"] = ""
+    universe = DpmCompositeUniverseAttestation.model_validate(wire["universe"])
+    wire["universe"] = universe.model_dump(mode="json")
+    wire["evaluation"] = evaluate_monthly_eligibility(
+        original.policy_approval.proposal.policy,
+        original.observations,
+        evaluated_at=original.proposed_at,
+        universe_content_hash=universe.content_hash,
+    ).model_dump(mode="json")
+    wire["content_hash"] = ""
+    valid_under_changed_convention = MonthlyEvaluationProposal.model_validate(wire)
+    with pytest.raises(ValueError, match="COMPOSITE_ELIGIBILITY_PUBLICATION_LOCATOR_HASH_CYCLE"):
+        build_monthly_publication(
+            valid_under_changed_convention,
+            parent,
+            approved_by="synthetic-checker",
+            approved_at=original.proposed_at,
+        )
+    assert len(publications(evaluation_api)) == 1
 
 
 @pytest.mark.parametrize("stage", ["proposal", "approval"])
