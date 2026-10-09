@@ -25,6 +25,7 @@ def post_json_with_retries(
     rejected_error: str,
     invalid_response_error: str,
     source_service: str = "unknown",
+    maximum_response_bytes: int | None = None,
 ) -> dict[str, Any]:
     started_at = time.perf_counter()
     last_error: Exception | None = None
@@ -35,8 +36,18 @@ def post_json_with_retries(
             payload=payload,
             headers=headers,
             unavailable_error=unavailable_error,
+            invalid_response_error=invalid_response_error,
+            maximum_response_bytes=maximum_response_bytes,
         )
         if isinstance(response, AuthorityHttpError):
+            if response.code != unavailable_error:
+                _record_source_http_request(
+                    source_service=source_service,
+                    method="post",
+                    outcome="invalid_response",
+                    elapsed_seconds=time.perf_counter() - started_at,
+                )
+                raise response
             last_error = response.cause
             if attempt + 1 >= attempts:
                 _record_source_http_request(
@@ -68,6 +79,7 @@ def post_json_with_retries(
             body = _json_object_body(
                 response=response,
                 invalid_response_error=invalid_response_error,
+                maximum_response_bytes=maximum_response_bytes,
             )
         except AuthorityHttpError as exc:
             _record_source_http_request(
@@ -100,8 +112,34 @@ def _post_json_attempt(
     payload: dict[str, Any],
     headers: dict[str, str],
     unavailable_error: str,
+    invalid_response_error: str,
+    maximum_response_bytes: int | None,
 ) -> httpx.Response | AuthorityHttpError:
     try:
+        if maximum_response_bytes is not None:
+            with client.stream(
+                "POST", url, json=payload, headers=headers, follow_redirects=False
+            ) as response:
+                if response.status_code >= 300:
+                    return httpx.Response(response.status_code)
+                if response.headers.get("content-encoding", "identity") != "identity":
+                    return AuthorityHttpError(invalid_response_error)
+                chunks: list[bytes] = []
+                size = 0
+                for chunk in response.iter_bytes():
+                    size += len(chunk)
+                    if size > maximum_response_bytes:
+                        return AuthorityHttpError(invalid_response_error)
+                    chunks.append(chunk)
+                return httpx.Response(
+                    response.status_code,
+                    content=b"".join(chunks),
+                    headers={
+                        name: value
+                        for name, value in response.headers.items()
+                        if name.lower() not in {"content-encoding", "content-length"}
+                    },
+                )
         return client.post(url, json=payload, headers=headers)
     except (httpx.TimeoutException, httpx.TransportError) as exc:
         return AuthorityHttpError(unavailable_error, cause=exc)
@@ -119,7 +157,7 @@ def _raise_for_status(
 ) -> None:
     if response.status_code >= 500:
         raise AuthorityHttpError(unavailable_error)
-    if response.status_code >= 400:
+    if response.status_code >= 300:
         raise AuthorityHttpError(rejected_error)
 
 
@@ -127,7 +165,10 @@ def _json_object_body(
     *,
     response: httpx.Response,
     invalid_response_error: str,
+    maximum_response_bytes: int | None = None,
 ) -> dict[str, Any]:
+    if maximum_response_bytes is not None and len(response.content) > maximum_response_bytes:
+        raise AuthorityHttpError(invalid_response_error)
     try:
         body = response.json()
     except ValueError as exc:

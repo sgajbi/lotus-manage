@@ -79,6 +79,14 @@ qualified population and institutional applicability remain separate; synthetic 
 activate official eligibility. Use the
 [monthly eligibility guide](docs/guides/composite-monthly-eligibility.md) for APIs and owning tests.
 
+Configured candidate, monthly assembly and verifier ports use the normal dependency factory in
+`src/api/composition/composite_source_service.py`, shared bounded HTTP transport, deployment-pinned
+Platform Ed25519 credentials and purpose-specific synthetic verification bindings. The Manage-local
+`CompositeMonthlyEligibilityAssembly/v1` retains five constituent cut bindings and independent
+`COMPOSITE_MONTHLY_SOURCE_CUT` verification with staged evaluations. Default sources remain
+unavailable, Core unqualified inputs refuse, and legacy hashes omit absent new provenance fields.
+See [configured source guide](docs/guides/composite-configured-sources.md) for contract and proof.
+
 Staged v2 finalization reserves an immutable subject before any definition or membership exists.
 `staged_*` core modules reuse the monthly engine; adapters reuse all four policy/evaluation stores.
 Migration `0042` adds subject/finalization custody and non-null mode/exact-hash predecessor FKs;

@@ -257,7 +257,8 @@ class CompositeSubjectApplicationService:
             expected_portfolio_ids=tuple(member.member_id for member in subject.universe.members),
             reporting_currency=subject.reporting_currency,
         )
-        snapshot = admitted_source_snapshot(request, self.observations.resolve(request))
+        resolution = self.observations.resolve(request)
+        snapshot = admitted_source_snapshot(request, resolution)
         instant = self.clock()
         evaluation = evaluate_monthly_eligibility(
             policy.approval.proposal.policy,
@@ -275,6 +276,7 @@ class CompositeSubjectApplicationService:
             content_hash=command.source_content_hash,
         )
         proposal = SubjectEvaluationProposal(
+            source_assembly_evidence=resolution.source_assembly_evidence,
             policy_approval=policy,
             evaluation_revision=revision,
             target_membership_revision=command.target_membership_revision,

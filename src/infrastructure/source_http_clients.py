@@ -7,7 +7,7 @@ from typing import Literal
 
 import httpx
 
-SourceHttpClientName = Literal["core", "risk", "advise"]
+SourceHttpClientName = Literal["core", "risk", "advise", "composite"]
 
 
 @dataclass(frozen=True)
@@ -117,6 +117,7 @@ def _source_env_prefix(source: SourceHttpClientName) -> str:
         "core": "DPM_CORE",
         "risk": "DPM_RISK",
         "advise": "DPM_ADVISE",
+        "composite": "DPM_COMPOSITE",
     }[source]
 
 
