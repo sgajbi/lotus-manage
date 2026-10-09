@@ -4,9 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 import psycopg
+import pytest
 from psycopg.rows import dict_row
 
 from src.core.composite_membership import DpmCompositeMembershipRevision
+from src.core.composite_repository import DpmCompositeConflictError
 from src.infrastructure.composites import publication
 from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository
 from src.infrastructure.mandates.serialization import dump_model_json
@@ -225,3 +227,74 @@ def test_retained_legacy_wrong_window_replays_without_certifying_a_new_correctio
             assert client.get(f"{BASE}/membership/new", headers=HEADERS).status_code == 404
             assert get(client, PUBLICATIONS) == publications
             assert get(client, f"{BASE}/membership/legacy") == retained
+
+
+def test_postgres_correction_rollback_preserves_original_and_allows_a_valid_retry():
+    with disposable_database() as dsn:
+        with native_api(dsn) as (client, _):
+            put(client, BASE, definition_body())
+            original = put(client, f"{BASE}/membership/m1", original_body())
+        repository = PostgresDpmCompositeRepository(dsn=dsn)
+        key = {
+            "tenant_id": HEADERS["X-Tenant-Id"],
+            "composite_id": "synthetic-correction",
+            "definition_version": "d1",
+            "membership_revision": "m2",
+        }
+        bad = correction_body() | {"decisions": [correction_body()["decisions"][1]]}
+        invalid = DpmCompositeMembershipRevision(**key, **bad, decided_by=HEADERS["X-Actor-Id"])
+        before = repository.list_publications(
+            tenant_id=key["tenant_id"], after_sequence=0, limit=10
+        )
+        with pytest.raises(
+            DpmCompositeConflictError, match="COMPOSITE_MEMBERSHIP_CORRECTION_OUTSIDE_WINDOW"
+        ):
+            repository.save_membership_revision(revision=invalid)
+        assert repository.get_membership_revision(**key) is None
+        assert (
+            repository.list_publications(tenant_id=key["tenant_id"], after_sequence=0, limit=10)
+            == before
+        )
+        corrected = DpmCompositeMembershipRevision(
+            **key, **correction_body(), decided_by=HEADERS["X-Actor-Id"]
+        )
+        repository.save_membership_revision(revision=corrected)
+        repository.save_membership_revision(revision=corrected)
+        assert repository.get_membership_revision(**key) == corrected
+        retained = repository.get_membership_revision(**(key | {"membership_revision": "m1"}))
+        assert retained is not None
+        assert retained.model_dump(mode="json") == original
+        assert (
+            len(
+                repository.list_publications(
+                    tenant_id=key["tenant_id"], after_sequence=0, limit=10
+                ).items
+            )
+            == 2
+        )
+
+        # A deliberately corrupting storage trigger must not leave a partial publication.
+        with psycopg.connect(dsn) as connection:
+            connection.execute("""CREATE FUNCTION synthetic_corrupt_membership_hash()
+                RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+                NEW.content_hash := 'sha256:deliberately-corrupted'; RETURN NEW; END $$""")
+            connection.execute("""CREATE TRIGGER synthetic_membership_hash_fault
+                BEFORE INSERT ON dpm_composite_membership_revisions
+                FOR EACH ROW EXECUTE FUNCTION synthetic_corrupt_membership_hash()""")
+        next_key = key | {"membership_revision": "m3"}
+        next_revision = DpmCompositeMembershipRevision(
+            **next_key, **correction_body(), decided_by=HEADERS["X-Actor-Id"]
+        )
+        with pytest.raises(
+            DpmCompositeConflictError, match="COMPOSITE_MEMBERSHIP_REVISION_IMMUTABLE_CONFLICT"
+        ):
+            repository.save_membership_revision(revision=next_revision)
+        assert repository.get_membership_revision(**next_key) is None
+        assert (
+            len(
+                repository.list_publications(
+                    tenant_id=key["tenant_id"], after_sequence=0, limit=10
+                ).items
+            )
+            == 2
+        )
