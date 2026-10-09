@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from decimal import Decimal, localcontext
+from decimal import Context, Decimal, DivisionByZero, InvalidOperation, Overflow, ROUND_HALF_EVEN
+from decimal import localcontext
 from typing import Literal
 
 from pydantic import Field, TypeAdapter
@@ -50,10 +51,21 @@ def evaluate_monthly_rules(
     if generated.date().isoformat() <= end:
         return _not_finalized_rules("SOURCE_CUT_NOT_FINALIZED")
     # Bound money has at most 36 digits, 250 flows add at most 3, and thresholds
-    # have at most 12. Precision 80 keeps the breach cross-products exact and
-    # isolates arithmetic from process-global Decimal context changes.
-    with localcontext() as context:
-        context.prec = 80
+    # have at most 12. Precision 80 keeps breach cross-products exact. Specify
+    # the entire context: inherited rounding, traps or exponent limits must not
+    # change a displayed ratio, its approval digest, or whether evaluation succeeds.
+    with localcontext(
+        Context(
+            prec=80,
+            rounding=ROUND_HALF_EVEN,
+            Emin=-999999,
+            Emax=999999,
+            capitals=1,
+            clamp=0,
+            flags=[],
+            traps=[InvalidOperation, DivisionByZero, Overflow],
+        )
+    ):
         return [
             _flow_rule(policy, observation, start, end, evaluated, generated),
             _cash_rule(policy, observation, end),

@@ -79,6 +79,11 @@ qualified population and institutional applicability remain separate; synthetic 
 activate official eligibility. Use the
 [monthly eligibility guide](docs/guides/composite-monthly-eligibility.md) for APIs and owning tests.
 
+Monthly rule arithmetic creates a fully specified 80-digit `ROUND_HALF_EVEN` Decimal context;
+never inherit caller rounding, exponent limits, traps, flags or mutable `DefaultContext` values.
+Default result wires/hashes remain unchanged. Hostile-context regressions cover repeating ratios,
+caller-state preservation and registered proposal/approval replay; threshold cross-products stay exact.
+
 Configured candidate, monthly assembly and verifier ports use the normal dependency factory in
 `src/api/composition/composite_source_service.py`, shared bounded HTTP transport, deployment-pinned
 Platform Ed25519 credentials and purpose-specific synthetic verification bindings. The Manage-local

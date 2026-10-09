@@ -1,10 +1,10 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-10-09T07:11:10+00:00`
+- Generated at: `2026-10-09T07:59:35+00:00`
 
-- Baseline source snapshot: `5cc3f29c84d06b9c7cb72c09dfe92d3574b179c8`
+- Baseline source snapshot: `6ffe417d3d4dbe82017ce0643b18f8eed5339a3d`
 
-- Report source snapshot: `063c3e8f+worktree`
+- Report source snapshot: `6ffe417d+worktree`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -13,8 +13,8 @@
 | Metric | Value |
 | --- | --- |
 | Python files | 1113 |
-| Total Python LOC | 279094 |
-| Test functions | 3848 |
+| Total Python LOC | 279199 |
+| Test functions | 3851 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
 

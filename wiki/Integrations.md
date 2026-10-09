@@ -25,6 +25,11 @@ rehashed nested locator cannot evade the legacy universe hash. Earlier unmarked 
 remains readable/replayable and unresolved by this new proof. The monthly eligibility guide owns
 the marker, hashing, scope and authority boundaries; each month still requires separate approval.
 
+Monthly rules use an explicit fresh 80-digit `ROUND_HALF_EVEN` decimal context. Caller rounding,
+exponent limits, traps, flags and mutable defaults cannot change ratio wires, approval hashes or
+evaluation success. Threshold comparisons remain exact cross-products. The monthly guide and
+owning hostile-context/proposal/approval replay tests retain this deterministic boundary.
+
 ## Current scope
 
 Current scope: this page maps implementation-backed `lotus-manage` integration boundaries for

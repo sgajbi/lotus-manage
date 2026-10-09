@@ -1,6 +1,6 @@
 """Independent monthly policy oracles; synthetic choices are not bank approval."""
 
-from decimal import Decimal
+from decimal import Decimal, DefaultContext, Inexact, Rounded, ROUND_DOWN, ROUND_UP, Subnormal
 from decimal import localcontext
 
 import pytest
@@ -523,3 +523,62 @@ def test_threshold_comparison_is_exact_and_independent_of_global_decimal_context
         "FAIL",
         "PASS",
     ]
+
+
+@pytest.mark.parametrize("fault", ["rounding", "traps", "exponents", "combined"])
+def test_recurring_ratio_wire_and_hash_ignore_caller_decimal_configuration(fault) -> None:
+    policy = resolve_monthly_policy([layer()], month="2026-09")
+    material = scenario(
+        observations(
+            "1",
+            prior_month_end_assets="300",
+            month_end_assets="300",
+            settled_unencumbered_cash="1",
+        )
+    )
+    expected = evaluate_monthly_eligibility(policy, material)
+    assert expected.content_hash == (
+        "sha256:b3cc1167a2b17826f8fe9e954e3e190d868246dc6b33eb483976338e9bc68bd5"
+    )
+    assert expected.portfolios[0].assessments[0].ratio == "0.00" + "3" * 80
+    with localcontext() as caller:
+        caller.prec = 6
+        if fault in ("rounding", "combined"):
+            caller.rounding = ROUND_UP
+        if fault in ("traps", "combined"):
+            caller.traps[Inexact] = caller.traps[Rounded] = True
+        if fault in ("exponents", "combined"):
+            caller.Emin, caller.Emax, caller.clamp = -2, 2, 1
+            caller.traps[Subnormal] = True
+        caller.flags[Inexact] = True
+        retained = _decimal_context_state(caller)
+        actual = evaluate_monthly_eligibility(policy, material)
+        assert actual.model_dump(mode="json") == expected.model_dump(mode="json")
+        assert _decimal_context_state(caller) == retained
+
+
+def test_monthly_context_does_not_inherit_mutable_decimal_defaults(monkeypatch) -> None:
+    policy = resolve_monthly_policy([layer()], month="2026-09")
+    material = scenario(observations("1", prior_month_end_assets="300"))
+    expected = evaluate_monthly_eligibility(policy, material)
+    monkeypatch.setattr(DefaultContext, "rounding", ROUND_UP)
+    monkeypatch.setitem(DefaultContext.traps, Inexact, True)
+    with localcontext() as caller:
+        caller.rounding = ROUND_DOWN
+        caller.traps[Inexact] = True
+        retained = _decimal_context_state(caller)
+        assert evaluate_monthly_eligibility(policy, material) == expected
+        assert _decimal_context_state(caller) == retained
+
+
+def _decimal_context_state(context):
+    return (
+        context.prec,
+        context.rounding,
+        context.Emin,
+        context.Emax,
+        context.capitals,
+        context.clamp,
+        dict(context.traps),
+        dict(context.flags),
+    )
