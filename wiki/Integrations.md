@@ -25,6 +25,18 @@ rehashed nested locator cannot evade the legacy universe hash. Earlier unmarked 
 remains readable/replayable and unresolved by this new proof. The monthly eligibility guide owns
 the marker, hashing, scope and authority boundaries; each month still requires separate approval.
 
+Explicit source corrections use monthly proposal, approval and publication receipt v2 products
+within that same API family. The new receipt binds original and predecessor authority, predecessor
+receipt, affected month, reason/evidence and current projection/sequence. Ordinary receipt v1 stays
+unchanged for embedded definitions v1 and v2. One bounded immutable chain selects authority under
+the publication lock; one owning transaction publishes each independently approved correction.
+Later approved months, policy/population changes and staged-root amendments refuse. Original and
+corrected receipts remain independently retrievable after restart; consumers need explicit v2
+support rather than a silent dataset upgrade. Migration0044 preserves existing/staged custody and
+enforces one ordinary/staged root and one successor per predecessor in the existing tables.
+The monthly guide owns the request,64-record bound, recovery commands and synthetic proof limits.
+This does not qualify sources, establish bank IAM or activate official eligibility.
+
 Monthly rules use an explicit fresh 80-digit `ROUND_HALF_EVEN` decimal context. Caller rounding,
 exponent limits, traps, flags and mutable defaults cannot change ratio wires, approval hashes or
 evaluation success. Threshold comparisons remain exact cross-products. The monthly guide and

@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_eligibility.policy import month_window
-from tests.unit.dpm.infrastructure.test_composite_monthly_source_assembly import assembly_material
+from tests.composite_monthly_source_helpers import assembly_material
 
 
 def economic_cases():

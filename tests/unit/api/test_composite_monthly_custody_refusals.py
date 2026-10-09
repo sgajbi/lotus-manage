@@ -393,7 +393,7 @@ def test_postgres_proposal_refuses_missing_immutable_inputs_before_insert(
         )
     if lost == "parent":
         rows.append(None)
-    connection = StoredRows(*rows)
+    connection = StoredRows(None, *rows)  # No existing proposal for the initial retry lookup.
     with pytest.raises(DpmCompositeConflictError, match=code):
         evaluation_control.save_proposal(connection, proposal)
     assert not any("INSERT INTO" in statement for statement, _ in connection.statements)

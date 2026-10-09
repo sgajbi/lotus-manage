@@ -127,6 +127,22 @@ excluded by that older hash convention. Unmarked monthly proofs remain unresolve
 or new authority is inferred. Native tests cover actual current locators, all three months,
 restart/replay and rehashed independent-row/nested-locator refusal.
 
+Source amendments add explicit monthly proposal/approval/receipt v2 products while ordinary monthly
+products remain v1, independently of the embedded definition version. The existing monthly family
+owns `evaluations/{evaluation_revision}/source-amendment`; approval uses the existing operation.
+`monthly_amendment.py` owns strict claims and local versioned bindings, `monthly_authority.py`
+owns the immutable chain and64-record bound. Keep global `EvidenceBinding` v1. Migration0044 uses
+the same approval table with revision identity, one ordinary/staged monthly root, exact predecessor
+and original foreign keys, and one successor per predecessor. LEGACY/STAGED custody mode remains
+unchanged. Memory retains the existing monthly root key and revision keys for amendments in the
+same shared collection; do not add a mutable selected-authority ledger. Selection and projection
+CAS run under the existing tenant publication lock. Later approved months, policy/population
+changes and staged-root corrections refuse. The resolver verifies exact ancestor receipts and
+parent publication sequence under the existing read snapshot. The monthly eligibility guide owns
+the command/compatibility/recovery contract; native amendment, upgrade and transaction tests own
+proof. Qualified sources, institutional authority, historical cascade and consumer admission remain
+separate dependencies.
+
 Staged v2 finalization reserves an immutable subject before any definition or membership exists.
 `staged_*` core modules reuse the monthly engine; adapters reuse all four policy/evaluation stores.
 Migration `0042` adds subject/finalization custody and non-null mode/exact-hash predecessor FKs;

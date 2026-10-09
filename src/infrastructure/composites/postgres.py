@@ -27,11 +27,8 @@ from src.core.composite_publication import (
 )
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
-from src.core.composite_eligibility.evaluation_control import (
-    MonthlyEvaluationApproval,
-    MonthlyEvaluationProposal,
-)
-from src.core.composite_eligibility.monthly_evidence import MonthlyEligibilityPublicationReceipt
+from src.core.composite_eligibility.monthly_amendment import MonthlyApproval, MonthlyProposal
+from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationReceipt
 from src.infrastructure.composites import (
     policy_control,
     membership_store,
@@ -134,7 +131,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         definition_version: str,
         evaluation_revision: str,
         approval_content_hash: str,
-    ) -> MonthlyEligibilityPublicationReceipt | None:
+    ) -> MonthlyPublicationReceipt | None:
         with closing(self._connect()) as connection:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             return monthly_evidence.resolve(
@@ -143,7 +140,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
                 approval_content_hash,
             )
 
-    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyEvaluationProposal) -> None:
+    def save_monthly_evaluation_proposal(self, *, proposal: MonthlyProposal) -> None:
         with closing(self._connect()) as connection:
             evaluation_control.save_proposal(connection, proposal)
             connection.commit()
@@ -155,13 +152,13 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationProposal | None:
+    ) -> MonthlyProposal | None:
         with closing(self._connect()) as connection:
             return evaluation_control.get_proposal(
                 connection, (tenant_id, composite_id, definition_version, evaluation_revision)
             )
 
-    def save_monthly_evaluation_approval(self, *, approval: MonthlyEvaluationApproval) -> None:
+    def save_monthly_evaluation_approval(self, *, approval: MonthlyApproval) -> None:
         with closing(self._connect()) as connection:
             evaluation_control.save_approval(connection, approval)
             connection.commit()
@@ -173,7 +170,7 @@ class PostgresDpmCompositeRepository(DpmCompositeRepository):
         composite_id: str,
         definition_version: str,
         evaluation_revision: str,
-    ) -> MonthlyEvaluationApproval | None:
+    ) -> MonthlyApproval | None:
         with closing(self._connect()) as connection:
             return evaluation_control.get_approval(
                 connection, (tenant_id, composite_id, definition_version, evaluation_revision)

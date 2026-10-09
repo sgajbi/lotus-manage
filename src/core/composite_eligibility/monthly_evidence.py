@@ -1,5 +1,6 @@
 """Exact published monthly evidence; no financial admission or new approval engine."""
 
+from collections.abc import Callable
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -9,10 +10,24 @@ from src.core.composite_authority_models import EvidenceBinding, Identity, Stric
 from src.core.composite_definition_versions import CompositeDefinition, decode_composite_definition
 from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
 from src.core.composite_eligibility.evaluation_control import (
+    MonthlyEvaluationApprovalContent,
     MonthlyEvaluationApproval,
-    MonthlyEvaluationProposal,
+)
+from src.core.composite_eligibility.monthly_amendment import (
+    MonthlyAmendmentApproval,
+    MonthlyApproval,
+    MonthlyApprovalBinding,
+    MonthlyProposal,
+    MonthlySourceAmendment,
 )
 from src.core.composite_eligibility.publication import build_monthly_publication
+from src.core.composite_eligibility.monthly_authority import (
+    MAX_MONTHLY_AUTHORITY_RECORDS,
+    approval_binding,
+    selected_monthly_approval,
+    require_source_correction,
+)
+from src.core.composite_eligibility.evaluation_control import evaluation_key
 from src.core.composite_membership import (
     DpmCompositeMembershipRevision,
     DpmCompositeDefinition,
@@ -22,13 +37,13 @@ from src.core.composite_publication import DpmCompositeMembershipPublication
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 
 
-class MonthlyEligibilityPublicationReceipt(StrictAuthorityModel):
+class MonthlyEligibilityReceiptContent(StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEligibilityPublicationReceipt"] = (
         "CompositeMonthlyEligibilityPublicationReceipt"
     )
-    product_version: Literal["v1"] = "v1"
+    product_version: Literal["v1", "v2"]
     definition: CompositeDefinition
-    approval: MonthlyEvaluationApproval
+    approval: MonthlyEvaluationApprovalContent
     membership_binding: EvidenceBinding
     universe_binding: EvidenceBinding
     source_cut_id: Identity
@@ -51,11 +66,9 @@ class MonthlyEligibilityPublicationReceipt(StrictAuthorityModel):
         return wire
 
     @model_validator(mode="after")
-    def require_exact_bound_content(self) -> "MonthlyEligibilityPublicationReceipt":
+    def require_exact_bound_content(self) -> "MonthlyEligibilityReceiptContent":
         self.definition = decode_composite_definition(self.definition.model_dump(mode="json"))
-        self.approval = MonthlyEvaluationApproval.model_validate(
-            self.approval.model_dump(mode="json")
-        )
+        self.approval = type(self.approval).model_validate(self.approval.model_dump(mode="json"))
         proposal = self.approval.proposal
         scope = proposal.policy_approval.proposal.policy.scope
         if (
@@ -104,18 +117,74 @@ class MonthlyEligibilityPublicationReceipt(StrictAuthorityModel):
         return self
 
 
+class MonthlyEligibilityPublicationReceipt(MonthlyEligibilityReceiptContent):
+    """Frozen ordinary receipt, including embedded definition product v1 or v2."""
+
+    product_version: Literal["v1"] = "v1"
+    approval: MonthlyEvaluationApproval
+
+
+class MonthlyAmendmentPublicationReceipt(MonthlyEligibilityReceiptContent):
+    """Exact approved replacement graph with bounded predecessor locators."""
+
+    product_version: Literal["v2"] = "v2"
+    approval: MonthlyAmendmentApproval
+    lineage: MonthlySourceAmendment
+
+    @model_validator(mode="after")
+    def require_approved_lineage(self) -> "MonthlyAmendmentPublicationReceipt":
+        if self.lineage != self.approval.proposal.amendment:
+            raise ValueError("COMPOSITE_MONTHLY_AMENDMENT_RECEIPT_LINEAGE_MISMATCH")
+        return self
+
+
+MonthlyPublicationReceipt = (
+    MonthlyEligibilityPublicationReceipt | MonthlyAmendmentPublicationReceipt
+)
+
+
+def require_monthly_receipt_lineage(
+    receipt: MonthlyPublicationReceipt,
+    load: Callable[[MonthlyApprovalBinding], MonthlyPublicationReceipt | None],
+) -> None:
+    """Validate a bounded retained predecessor path under the caller's read snapshot."""
+    approvals: list[MonthlyApproval] = [receipt.approval]
+    current = receipt
+    while isinstance(current.approval, MonthlyAmendmentApproval):
+        if len(approvals) >= MAX_MONTHLY_AUTHORITY_RECORDS:
+            raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
+        lineage = current.approval.proposal.amendment
+        binding = lineage.predecessor_approval_binding
+        predecessor = load(binding)
+        if predecessor is None or (
+            predecessor.content_hash != lineage.predecessor_receipt_binding.digest
+            or predecessor.product_version != lineage.predecessor_receipt_binding.product_version
+            or approval_binding(predecessor.approval) != binding
+        ):
+            raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
+        require_source_correction(current.approval.proposal, predecessor.approval)
+        approvals.append(predecessor.approval)
+        current = predecessor
+    selected_monthly_approval(
+        approvals,
+        scope=evaluation_key(receipt.approval.proposal)[:3],
+        month=receipt.approval.proposal.evaluation.month,
+    )
+
+
 def published_monthly_receipt(
     *,
     definition: CompositeDefinition,
-    approval: MonthlyEvaluationApproval,
+    approval: MonthlyApproval,
     retained_policy: MonthlyPolicyApproval,
     retained_policy_proposal: MonthlyPolicyProposal,
-    retained_proposal: MonthlyEvaluationProposal,
+    retained_proposal: MonthlyProposal,
     parent: DpmCompositeMembershipRevision,
     membership: DpmCompositeMembershipRevision,
     universe: DpmCompositeUniverseAttestation,
     publication: DpmCompositeMembershipPublication,
-) -> MonthlyEligibilityPublicationReceipt:
+    parent_publication: DpmCompositeMembershipPublication | None = None,
+) -> MonthlyPublicationReceipt:
     """Call only with custody loaded under one repository read snapshot/lock."""
     if retained_policy.proposal != retained_policy_proposal or (
         approval.proposal != retained_proposal
@@ -160,7 +229,7 @@ def published_monthly_receipt(
         membership.decided_at,
     ):
         raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
-    return MonthlyEligibilityPublicationReceipt(
+    content = dict(
         definition=definition,
         approval=approval,
         membership_binding=EvidenceBinding(
@@ -178,3 +247,24 @@ def published_monthly_receipt(
         source_cut_id=universe.source_cut_id,
         publication_sequence=publication.sequence,
     )
+    if isinstance(approval, MonthlyAmendmentApproval):
+        if parent_publication is None or (
+            parent_publication.tenant_id,
+            parent_publication.composite_id,
+            parent_publication.definition_version,
+            parent_publication.membership_revision,
+            parent_publication.membership_content_hash,
+            parent_publication.sequence,
+        ) != (
+            parent.tenant_id,
+            parent.composite_id,
+            parent.definition_version,
+            parent.membership_revision,
+            parent.content_hash,
+            approval.proposal.amendment.expected_current_publication_sequence,
+        ):
+            raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
+        return MonthlyAmendmentPublicationReceipt.model_validate(
+            content | {"lineage": approval.proposal.amendment}
+        )
+    return MonthlyEligibilityPublicationReceipt.model_validate(content)

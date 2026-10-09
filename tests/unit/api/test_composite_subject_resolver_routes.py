@@ -93,4 +93,8 @@ def test_registered_resolver_rejects_unsupported_binding_version_at_schema_bound
     binding["product_version"] = "v2"
     response = client.post(RESOLVE, json=binding, headers=HEADERS)
     assert response.status_code == 422
-    assert any(error["loc"] == ["body", "product_version"] for error in response.json()["detail"])
+    # The resolver now has two schema variants; the subject binding still admits v1 only.
+    assert any(
+        error["loc"][0] == "body" and error["loc"][-1] == "product_version"
+        for error in response.json()["detail"]
+    )

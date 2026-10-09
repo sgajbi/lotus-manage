@@ -28,7 +28,7 @@ from tests.composite_staged_eligibility_helpers import (
 from tests.integration.dpm.network_runtime import disposable_database, native_api
 from tests.unit.api.test_composite_subject_lifecycle_routes import subject_body, evaluation_body
 from tests.unit.dpm.infrastructure.test_composite_configured_sources import encoded, signed
-from tests.unit.dpm.infrastructure.test_composite_monthly_source_assembly import assembly_material
+from tests.composite_monthly_source_helpers import assembly_material
 from src.infrastructure.composites.source_configuration import (
     SourceBinding,
     CompositeSourceConfiguration,

@@ -62,7 +62,7 @@ Policy proposal revision identifies configuration custody; `eligibility_policy_v
 the immutable definition and remains the membership/universe/consumer policy identity. They are
 not interchangeable. Approval binds exact policy, attachments, inputs, all-rule results, parent,
 target revision and month. Maker/time and checker/time are server-admitted, not body fields.
-Self-approval, changed material, stale parent/content and competing active month approvals refuse.
+Self-approval, changed material, stale parent/content and competing ordinary month approvals refuse.
 Configuration must be proposed and approved before M starts; retrospective policy improvement is
 not permitted. Publication requires a finalized source generated after M ends; draft evaluation
 retains unresolved timing as unknown rather than certifying a complete month.
@@ -161,6 +161,77 @@ Replace hash placeholders with exact `sha256:` digests. Never send source observ
 tenant, evaluation time or activation fields in the body. The registered-route tests below are
 executable complete request/response examples, including configuration attachments and re-entry.
 
+## Approved-Month Source Corrections
+
+An ordinary monthly approval remains the unique root for its composite/month. A source correction
+retains a new `CompositeMonthlyEvaluationProposal/v2` and independent
+`CompositeMonthlyEvaluationApproval/v2`; it never edits or replaces the original retained products.
+This version is independent of the embedded definition's product version: either definition v1
+or v2 can appear in an ordinary receipt v1 or an amendment receipt v2.
+
+Use `PUT E/source-amendment`, where
+`E = /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{new_evaluation_revision}`.
+The body contains the ordinary evaluation command's month, approved-policy hash, exact parent
+membership/hash, input universe revision/hash, new target revision and correlation ID, plus
+`amendment` with these claims:
+
+| Claim | Required binding |
+| --- | --- |
+| `correction_kind` | Exactly `SOURCE_CORRECTION` |
+| `predecessor_approval_binding` and `expected_authority_binding` | Identical product/version/revision/digest for the selected chain tip |
+| `predecessor_receipt_binding` | Exact monthly receipt product/version/revision/digest for that predecessor |
+| `original_approval_binding` | Exact ordinary v1 root approval, retained through every later correction |
+| `projection_parent_membership_binding` | Current canonical membership revision/hash, separately from the selected monthly authority |
+| `expected_current_publication_sequence` | Positive sequence of that current parent publication |
+| `affected_from`, `affected_to` | The complete evaluated calendar month |
+| `reason_code`, `reason`, `evidence_bindings` | Explicit reason code, nonblank reason up to 2,048 characters, and 1–32 distinct versioned evidence bindings |
+
+The server obtains observations and complete verified assembly from the configured source ports;
+the command cannot supply financial facts, actors or clocks. Proposal time must follow both the
+selected predecessor approval and current projection decision. The approved policy and expected
+population must match the predecessor exactly. A changed generation clock alone is insufficient.
+Propose against the selected authority and independently approve the exact proposal hash with
+`PUT E/approval`. GET evaluation and approval operations discriminate the product version.
+
+The existing publication lock protects authority selection, current parent and sequence checks,
+and the owning approval/membership/universe/publication transaction. There is one immutable chain,
+one child per predecessor, and at most 64 approvals including the original. Selection follows exact
+links rather than timestamps. Stale authority or projection, forks, a full history, or any later
+approved month refuse; the latter requires a governed cascade that this profile does not support.
+Policy changes, population changes and staged-finalization root amendments remain unsupported.
+An ordinary second approval still refuses. Exact retries remain readable and idempotent after
+subsequent publications, and retain the original publication sequence.
+
+The published universe locates the amendment approval as v2. POST its exact binding to the existing
+eligibility evidence resolver to obtain `CompositeMonthlyEligibilityPublicationReceipt/v2`, with
+the complete new graph and `lineage` equal to the approved amendment claims. Resolution verifies
+every predecessor receipt, original root, parent publication sequence and full projected objects
+under one read snapshot. Original receipt v1 lookup remains unchanged. Global authority
+`EvidenceBinding` remains v1; only the monthly resolver binding admits monthly approval v2.
+Consumers must explicitly support these v2 products; an existing v1-only dataset is not silently
+upgraded. Report selection and financial admission remain independently governed.
+
+Migration `0044` preserves existing payloads and staged foreign keys, replaces the monthly approval
+primary key with revision identity, and adds monthly-root uniqueness, predecessor/original custody
+foreign keys and successor uniqueness in the existing tables. Deploy compatible readers before
+admitting amendment traffic. Keep issued v2 products and their schema during recovery; do not
+downgrade or delete the chain to make an older reader accept it.
+
+From the `lotus-manage` root, using the project Python environment, these commands work in
+PowerShell and POSIX shells:
+
+```text
+python -m pytest tests/unit/dpm/composites/test_monthly_amendment_controls.py tests/unit/dpm/composites/test_monthly_amendment_custody.py -q
+python -m pytest tests/integration/dpm/composites/test_composite_monthly_amendment_upgrade_postgres.py tests/integration/dpm/composites/test_composite_monthly_amendment_postgres.py tests/integration/dpm/composites/test_composite_monthly_amendment_http_postgres.py -q
+```
+
+The second command requires an owned isolated `DPM_POSTGRES_INTEGRATION_DSN` and
+`DPM_POSTGRES_INTEGRATION_REQUIRED=1`. Its native proof retains explicitly synthetic initial
+history, then runs configured signed HTTP sources, registered correction/approval/resolver routes,
+PostgreSQL custody and a new API process. These products remain `UNVERIFIED`; source correction
+does not qualify financial facts, establish bank IAM, extend economic authority dates or activate
+official eligibility. Broader eligibility and historical-cascade acceptance remain open.
+
 ## Independent Examples And Regression
 
 | Case | Independent Result |
@@ -257,7 +328,7 @@ profile for July–September; it does not promote fixture authority into financi
 | Stale published parent | Reconcile the latest publication and create a new explicitly pinned evaluation |
 | Lost acknowledgement | Retry the exact command; retained approval/publication replay is idempotent |
 | Write failure | Verify no partial publication; retry exact retained proposal after recovery |
-| New source correction | Retain a separately governed revision; do not mutate approved monthly truth |
+| New source correction | Use the explicit source-amendment operation with exact authority, receipt, parent and sequence pins |
 
 Migrations `0040`/`0041` add immutable policy/evaluation custody; membership authority stays in the
 existing ledger. Manage does not mark receipt as materialization, fills or authoritative Core booking.

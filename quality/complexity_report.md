@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-09T14:13:26+00:00`
+- Generated at: `2026-10-09T17:03:18+00:00`
 
-- Baseline source snapshot: `79525fa65f869f5d806e4ea635998bb6ed3c05ce`
+- Baseline source snapshot: `566d32fe6dd77eeb8e3121bee900b4853bd73a8b`
 
-- Report source snapshot: `79525fa6+worktree`
+- Report source snapshot: `fc72750b+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -40,10 +40,10 @@
 | 4 | _validate_summary_invocation_parents | src/infrastructure/pm_quality/in_memory.py | 19 | 50 |
 | 5 | _admit_wave_simulation_operation | src/api/services/wave_simulation_operations.py | 17 | 174 |
 | 6 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 17 | 79 |
-| 7 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
-| 8 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
-| 9 | resolve_monthly_eligibility_evidence | src/infrastructure/composites/in_memory.py | 13 | 84 |
-| 10 | resolve | src/infrastructure/composites/monthly_evidence.py | 13 | 61 |
+| 7 | _resolve_single | src/infrastructure/composites/monthly_evidence.py | 15 | 75 |
+| 8 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
+| 9 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
+| 10 | _monthly_receipt | src/infrastructure/composites/in_memory.py | 13 | 62 |
 
 ### Most Complex Current Test Functions
 

@@ -171,7 +171,7 @@ def approve_with_complete_source(evaluation_api):
         assembly_verification_request,
     )
     from tests.composite_staged_eligibility_helpers import synthetic_verification
-    from tests.unit.dpm.infrastructure.test_composite_monthly_source_assembly import (
+    from tests.composite_monthly_source_helpers import (
         assembly_material,
     )
 
@@ -186,6 +186,167 @@ def approve_with_complete_source(evaluation_api):
     assert response.status_code == 200, response.text
     approval = response.json()
     return approval
+
+
+@pytest.fixture
+def amendment_projection(evaluation_api):
+    from src.core.composite_eligibility.publication import build_monthly_publication
+    from tests.composite_monthly_amendment_helpers import corrected_monthly_proposal
+
+    original = approve_with_complete_source(evaluation_api)
+    repository = evaluation_api[1]
+    scope = dict(
+        tenant_id="synthetic-tenant",
+        composite_id="synthetic-composite",
+        definition_version="synthetic-definition",
+    )
+    resolver = scope | {
+        "evaluation_revision": original["proposal"]["evaluation_revision"],
+        "approval_content_hash": original["content_hash"],
+    }
+    receipt = repository.resolve_monthly_eligibility_evidence(**resolver)
+    retained_wire = receipt.model_dump(mode="json")
+    parent = repository.get_membership_revision(
+        **scope, membership_revision=original["proposal"]["target_membership_revision"]
+    )
+    proposal = corrected_monthly_proposal(receipt, parent, sequence=receipt.publication_sequence)
+    result = build_monthly_publication(
+        proposal,
+        parent,
+        approved_by="synthetic-correction-checker",
+        approved_at="2026-10-02T02:00:00.000000Z",
+    )
+    return original, repository, scope, resolver, receipt, retained_wire, parent, proposal, result
+
+
+def test_domain_source_amendment_binds_changed_facts_and_preserves_original_custody(
+    amendment_projection,
+):
+    from src.core.composite_eligibility.monthly_amendment import (
+        MonthlyAmendmentApproval,
+        decode_monthly_proposal,
+        decode_monthly_approval,
+    )
+    from src.core.composite_eligibility.publication import build_monthly_publication
+    from src.core.composite_eligibility.monthly_evidence import (
+        MonthlyAmendmentPublicationReceipt,
+        MonthlyEligibilityPublicationReceipt,
+    )
+
+    original, repository, _, resolver, receipt, retained_wire, parent, proposal, result = (
+        amendment_projection
+    )
+    approval, member, universe = result
+    assert isinstance(approval, MonthlyAmendmentApproval)
+    assert proposal.evaluation.included_count == 0
+    assert original["proposal"]["evaluation"]["included_count"] == 1
+    assert member.supersedes_membership_revision == parent.membership_revision
+    locator = next(
+        item for item in universe.source_products if item.product_name == approval.product_name
+    )
+    assert locator.contract_version == "v2" and locator.content_hash == approval.content_hash
+    assert decode_monthly_proposal(proposal.model_dump(mode="json")) == proposal
+    assert decode_monthly_approval(approval.model_dump(mode="json")) == approval
+    amended_receipt = MonthlyAmendmentPublicationReceipt(
+        definition=receipt.definition,
+        approval=approval,
+        membership_binding={
+            "product_name": "CompositeMembership",
+            "product_version": "v1",
+            "revision": member.membership_revision,
+            "digest": member.content_hash,
+        },
+        universe_binding={
+            "product_name": "CompositeUniverseAttestation",
+            "product_version": "v1",
+            "revision": universe.attestation_version,
+            "digest": universe.content_hash,
+        },
+        source_cut_id=universe.source_cut_id,
+        publication_sequence=receipt.publication_sequence + 1,
+        lineage=proposal.amendment,
+    )
+    assert (
+        MonthlyAmendmentPublicationReceipt.model_validate(amended_receipt.model_dump(mode="json"))
+        == amended_receipt
+    )
+    with pytest.raises(ValidationError):
+        MonthlyEligibilityPublicationReceipt.model_validate(amended_receipt.model_dump(mode="json"))
+    altered_lineage = amended_receipt.model_dump(mode="json")
+    altered_lineage["content_hash"] = ""
+    altered_lineage["lineage"]["reason"] = "Not approved with this replacement graph"
+    with pytest.raises(ValidationError, match="RECEIPT_LINEAGE_MISMATCH"):
+        MonthlyAmendmentPublicationReceipt.model_validate(altered_lineage)
+    assert (
+        build_monthly_publication(
+            proposal, parent, approved_by=approval.approved_by, approved_at=approval.approved_at
+        )
+        == result
+    )
+    assert (
+        repository.resolve_monthly_eligibility_evidence(**resolver).model_dump(mode="json")
+        == retained_wire
+    )
+    for model, value in (
+        (MonthlyEvaluationProposal, proposal),
+        (MonthlyEvaluationApproval, approval),
+    ):
+        with pytest.raises(ValidationError):
+            model.model_validate(value.model_dump(mode="json"))
+    with pytest.raises(ValueError, match="SELF_APPROVAL_FORBIDDEN"):
+        build_monthly_publication(
+            proposal, parent, approved_by=proposal.proposed_by, approved_at=approval.approved_at
+        )
+    tampered = approval.model_dump(mode="json")
+    tampered["proposal"]["amendment"]["reason"] = "Changed after independent approval"
+    with pytest.raises(ValidationError, match="CONTENT_MISMATCH"):
+        decode_monthly_approval(tampered)
+
+
+def test_monthly_authority_selects_chain_tip_and_refuses_forks_and_stale_scope(
+    amendment_projection,
+):
+    from src.core.composite_eligibility.monthly_amendment import MonthlyAmendmentProposal
+    from src.core.composite_eligibility.monthly_authority import (
+        selected_monthly_approval,
+        require_source_correction,
+        MAX_MONTHLY_AUTHORITY_RECORDS,
+    )
+    from src.core.composite_eligibility.publication import build_monthly_publication
+
+    _, _, scope, _, receipt, _, parent, proposal, result = amendment_projection
+    root, corrected = receipt.approval, result[0]
+    query = dict(scope=tuple(scope.values()), month="2026-09")
+    assert selected_monthly_approval([corrected, root], **query) == corrected
+    assert selected_monthly_approval([root], **query) == root
+    require_source_correction(proposal, root)
+    with pytest.raises(ValueError, match="STALE_AUTHORITY"):
+        require_source_correction(proposal, corrected)
+    fork_wire = proposal.model_dump(mode="json")
+    fork_wire.update(
+        evaluation_revision="competing.correction.r2",
+        target_membership_revision="competing.membership.r2",
+        content_hash="",
+    )
+    competing, _, _ = build_monthly_publication(
+        MonthlyAmendmentProposal.model_validate(fork_wire),
+        parent,
+        approved_by="synthetic-other-checker",
+        approved_at=corrected.approved_at,
+    )
+    with pytest.raises(ValueError, match="FORK_FORBIDDEN"):
+        selected_monthly_approval([root, corrected, competing], **query)
+    for rows, expected in (
+        ([], "HISTORY_UNAVAILABLE"),
+        ([corrected], "ROOT_AMBIGUOUS"),
+        ([root] * (MAX_MONTHLY_AUTHORITY_RECORDS + 1), "HISTORY_UNAVAILABLE"),
+    ):
+        with pytest.raises(ValueError, match=expected):
+            selected_monthly_approval(rows, **query)
+    with pytest.raises(ValueError, match="SCOPE_MISMATCH"):
+        selected_monthly_approval(
+            [root, corrected], scope=("foreign-tenant", *query["scope"][1:]), month="2026-09"
+        )
 
 
 def check_monthly_custody(evaluation_api, repository, proposal, approval, corruption):
@@ -715,7 +876,7 @@ def test_recurring_proposal_source_custody_preserves_legacy_hash_and_binds_obser
         assembly_verification_request,
     )
     from tests.composite_staged_eligibility_helpers import synthetic_verification
-    from tests.unit.dpm.infrastructure.test_composite_monthly_source_assembly import (
+    from tests.composite_monthly_source_helpers import (
         assembly_material,
     )
 
