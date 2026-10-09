@@ -149,6 +149,57 @@ def test_evaluation_proposal_exact_binding_refuses_tampering(evaluation_api, fie
     assert len(publications(evaluation_api)) == 1
 
 
+def test_recurring_proposal_source_custody_preserves_legacy_hash_and_binds_observations(
+    evaluation_api,
+):
+    from src.core.composite_eligibility.source_assembly import (
+        MonthlySourceAssembly,
+        VerifiedMonthlySourceAssembly,
+        assembly_verification_request,
+    )
+    from tests.composite_staged_eligibility_helpers import synthetic_verification
+    from tests.unit.dpm.infrastructure.test_composite_monthly_source_assembly import (
+        assembly_material,
+    )
+
+    legacy = propose(evaluation_api)
+    assert "source_assembly_evidence" not in legacy
+    assert MonthlyEvaluationProposal.model_validate(legacy).model_dump(mode="json") == legacy
+    _, material = assembly_material()
+    assembly = MonthlySourceAssembly.model_validate(material)
+    evidence = VerifiedMonthlySourceAssembly(
+        assembly=assembly,
+        verification=synthetic_verification(assembly_verification_request(assembly)),
+    )
+    retained = MonthlyEvaluationProposal.model_validate(
+        {**legacy, "source_assembly_evidence": evidence.model_dump(mode="json"), "content_hash": ""}
+    )
+    assert retained.source_assembly_evidence == evidence
+    assert retained.content_hash != legacy["content_hash"]
+    assert MonthlyEvaluationProposal.model_validate(retained.model_dump(mode="json")) == retained
+    material["observations"]["portfolios"][0]["funded"] = False
+    material["compatibility_binding"]["digest"] = hash_canonical_payload(
+        {"observations": material["observations"], "inputs": material["inputs"]}
+    )
+    changed = MonthlySourceAssembly.model_validate(material)
+    changed_evidence = VerifiedMonthlySourceAssembly(
+        assembly=changed,
+        verification=synthetic_verification(assembly_verification_request(changed)),
+    )
+    wire = retained.model_dump(mode="json")
+    wire["source_assembly_evidence"] = changed_evidence.model_dump(mode="json")
+    wire["content_hash"] = ""
+    with pytest.raises(ValidationError, match="COMPOSITE_SOURCE_ASSEMBLY_OBSERVATIONS_MISMATCH"):
+        MonthlyEvaluationProposal.model_validate(wire)
+    wire = retained.model_dump(mode="json")
+    wire["source_assembly_evidence"]["verification"]["request"]["claims_digest"] = (
+        "sha256:" + "f" * 64
+    )
+    wire["source_assembly_evidence"]["verification"]["content_hash"] = ""
+    with pytest.raises(ValidationError, match="COMPOSITE_SOURCE_ASSEMBLY_VERIFICATION_MISMATCH"):
+        MonthlyEvaluationProposal.model_validate(wire)
+
+
 @pytest.mark.parametrize(
     "field,value,code",
     [

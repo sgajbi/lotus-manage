@@ -238,7 +238,7 @@ def lifecycle_material():
     )
 
 
-def final_definition(subject, approval):
+def final_definition(subject, approval, *, authority_approved_at=None):
     provider_binding = EvidenceBinding(
         product_name="SyntheticProviderRegistration",
         product_version="v1",
@@ -346,7 +346,7 @@ def final_definition(subject, approval):
         "effective_from": profile["effective_from"],
         "effective_to": profile["effective_to"],
         "approving_identity": CHECKER,
-        "approved_at": OBSERVED,
+        "approved_at": authority_approved_at or approval.approved_at,
         "eligibility_evidence_digest": approval.content_hash,
         "method_evidence_digest": method.digest,
     }

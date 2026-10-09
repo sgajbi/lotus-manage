@@ -83,12 +83,17 @@ Configured candidate, monthly assembly and verifier ports use the normal depende
 `src/api/composition/composite_source_service.py`, shared bounded HTTP transport, deployment-pinned
 Platform Ed25519 credentials and purpose-specific synthetic verification bindings. The Manage-local
 `CompositeMonthlyEligibilityAssembly/v1` retains five constituent cut bindings and independent
-`COMPOSITE_MONTHLY_SOURCE_CUT` verification with staged evaluations. Default sources remain
+`COMPOSITE_MONTHLY_SOURCE_CUT` verification with staged and recurring monthly evaluations. Recurring
+simulation/diff use the same configured source admission. Every month retains its own prospective
+policy approval; first-definition or prior-month approval does not grant future-month authority.
+Final definition authority approval cannot precede its bound evaluation approval. Default sources remain
 unavailable, Core unqualified inputs refuse, and legacy hashes omit absent new provenance fields.
 See [configured source guide](docs/guides/composite-configured-sources.md) for contract and proof.
 Its native HTTP/PostgreSQL proof follows retained provenance through finalization, publication,
 exact-digest evidence resolution and restart; the actual receipt is retained in pytest temporary
 artifacts for downstream compatibility investigation. Synthetic publication stays UNVERIFIED.
+The recurring native pack also covers 17 economic scenarios and three successive monthly
+publications proving exclusion history and full-rule re-entry after restart.
 
 Staged v2 finalization reserves an immutable subject before any definition or membership exists.
 `staged_*` core modules reuse the monthly engine; adapters reuse all four policy/evaluation stores.

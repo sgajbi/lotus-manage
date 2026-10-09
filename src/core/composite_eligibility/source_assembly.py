@@ -89,3 +89,16 @@ class VerifiedMonthlySourceAssembly(StrictAuthorityModel):
         ):
             raise ValueError("COMPOSITE_SOURCE_ASSEMBLY_VERIFICATION_MISMATCH")
         return self
+
+
+def retained_source_assembly(
+    evidence: VerifiedMonthlySourceAssembly | None,
+    observations: MonthlyEligibilityObservations,
+) -> VerifiedMonthlySourceAssembly | None:
+    """Revalidate complete custody without certifying legacy history lacking a manifest."""
+    if evidence is None:
+        return None
+    verified = VerifiedMonthlySourceAssembly.model_validate(evidence.model_dump(mode="json"))
+    if verified.assembly.observations != observations:
+        raise ValueError("COMPOSITE_SOURCE_ASSEMBLY_OBSERVATIONS_MISMATCH")
+    return verified

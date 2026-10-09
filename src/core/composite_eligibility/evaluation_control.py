@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import Digest, Identity, StrictAuthorityModel
@@ -16,6 +16,10 @@ from src.core.composite_eligibility.evaluation import (
 )
 from src.core.composite_eligibility.observations import MonthlyEligibilityObservations, UtcInstant
 from src.core.composite_eligibility.policy import month_window
+from src.core.composite_eligibility.source_assembly import (
+    VerifiedMonthlySourceAssembly,
+    retained_source_assembly,
+)
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 
 
@@ -31,6 +35,9 @@ class MonthlyEvaluationProposal(StrictAuthorityModel):
     policy_approval: MonthlyPolicyApproval
     universe: DpmCompositeUniverseAttestation
     observations: MonthlyEligibilityObservations
+    source_assembly_evidence: VerifiedMonthlySourceAssembly | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     evaluation: MonthlyEligibilityEvaluation
     proposed_by: Identity
     proposed_at: UtcInstant
@@ -47,6 +54,9 @@ class MonthlyEvaluationProposal(StrictAuthorityModel):
         )
         self.observations = MonthlyEligibilityObservations.model_validate(
             self.observations.model_dump(mode="json")
+        )
+        self.source_assembly_evidence = retained_source_assembly(
+            self.source_assembly_evidence, self.observations
         )
         self.evaluation = MonthlyEligibilityEvaluation.model_validate(
             self.evaluation.model_dump(mode="json")
