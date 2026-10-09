@@ -53,7 +53,7 @@ class CompositeSourceTransport:
                 unavailable_error="COMPOSITE_SOURCE_TRANSPORT_UNAVAILABLE",
                 rejected_error="COMPOSITE_SOURCE_TRANSPORT_REJECTED",
                 invalid_response_error="COMPOSITE_SOURCE_RESPONSE_INVALID",
-                source_service="composite",
+                source_service=binding.owner_service,
                 maximum_response_bytes=self.configuration.maximum_response_bytes,
             )
         except AuthorityHttpError as exc:
