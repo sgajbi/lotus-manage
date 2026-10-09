@@ -41,7 +41,7 @@ RUNTIME_HEADERS = HEADERS | {
 }
 
 
-def resolve_published_month(client, approval, *, captured=None):
+def resolve_published_month(client, approval, *, captured=None, repository=None):
     """Use the actual published locator, then verify the complete HTTP proof."""
     root = BASE.removesuffix("/monthly-eligibility")
     proposal = approval["proposal"]
@@ -85,6 +85,15 @@ def resolve_published_month(client, approval, *, captured=None):
     )
     assert response.status_code == 200, response.text
     receipt = response.json()
+    if repository is not None:
+        direct = repository.resolve_monthly_eligibility_evidence(
+            tenant_id="synthetic-tenant",
+            composite_id="synthetic-composite",
+            definition_version="synthetic-definition",
+            evaluation_revision=binding["revision"],
+            approval_content_hash=binding["digest"],
+        )
+        assert direct.model_dump(mode="json") == receipt
     assert receipt["approval"] == approval
     assert receipt["universe_binding"]["digest"] == universe["content_hash"]
     assert receipt["membership_binding"]["digest"] == approval["membership_content_hash"]
@@ -112,7 +121,7 @@ def resolve_published_month(client, approval, *, captured=None):
     return receipt
 
 
-def refuse_rehashed_custody_corruption(client, dsn, approval):
+def refuse_rehashed_custody_corruption(client, dsn, approval, repository):
     """Valid rehashed payloads cannot evade retained hashes or full-object joins."""
     from src.core.composite_eligibility.approval import MonthlyPolicyProposal
     from src.core.composite_eligibility.evaluation_control import MonthlyEvaluationProposal
@@ -211,6 +220,14 @@ def refuse_rehashed_custody_corruption(client, dsn, approval):
                     root + "/eligibility-evidence/resolve", json=binding, headers=RUNTIME_HEADERS
                 )
                 assert refused.status_code in (409, 422), (table, refused.text)
+                with pytest.raises(ValueError):
+                    repository.resolve_monthly_eligibility_evidence(
+                        tenant_id="synthetic-tenant",
+                        composite_id="synthetic-composite",
+                        definition_version="synthetic-definition",
+                        evaluation_revision=binding["revision"],
+                        approval_content_hash=binding["digest"],
+                    )
                 assert (
                     connection.execute(
                         "SELECT count(*) AS total FROM dpm_composite_membership_publications WHERE tenant_id=%s",
@@ -221,10 +238,10 @@ def refuse_rehashed_custody_corruption(client, dsn, approval):
             finally:
                 connection.execute(update, (json.dumps(original), row["content_hash"], *key))
                 connection.commit()
-            resolve_published_month(client, approval)
+            resolve_published_month(client, approval, repository=repository)
 
 
-def refuse_rehashed_v2_definition_scope(client, dsn, approval):
+def refuse_rehashed_v2_definition_scope(client, dsn, approval, repository):
     from src.core.composite_definition_versions import decode_composite_definition
     from tests.composite_authority_helpers import rebind_definition
 
@@ -257,10 +274,18 @@ def refuse_rehashed_v2_definition_scope(client, dsn, approval):
             )
             assert response.status_code == 422, response.text
             assert response.json()["detail"]["code"] == "COMPOSITE_MONTHLY_EVIDENCE_SCOPE_MISMATCH"
+            with pytest.raises(ValueError, match="COMPOSITE_MONTHLY_EVIDENCE_SCOPE_MISMATCH"):
+                repository.resolve_monthly_eligibility_evidence(
+                    tenant_id="synthetic-tenant",
+                    composite_id="synthetic-composite",
+                    definition_version="synthetic-definition",
+                    evaluation_revision=approval["proposal"]["evaluation_revision"],
+                    approval_content_hash=approval["content_hash"],
+                )
         finally:
             connection.execute(update, (row["content_hash"], json.dumps(row["payload_json"]), *key))
             connection.commit()
-        resolve_published_month(client, approval)
+        resolve_published_month(client, approval, repository=repository)
 
 
 def seed_recurring(repository, *, coverage_from="2026-09-01", definition_version="v1"):
@@ -369,8 +394,8 @@ def test_registered_recurring_simulation_uses_configured_verified_monthly_source
             approval = approved.json()
             assert approval["proposal"] == proposal
             assert approval["official_activation"] == "UNAVAILABLE"
-            receipt = resolve_published_month(client, approval)
-            refuse_rehashed_custody_corruption(client, dsn, approval)
+            receipt = resolve_published_month(client, approval, repository=repository)
+            refuse_rehashed_custody_corruption(client, dsn, approval, repository)
             future = client.put(
                 BASE + "/evaluations/unapproved.future.month",
                 json={**body, "month": "2026-10"},
@@ -612,13 +637,15 @@ def test_registered_recurring_exclusion_history_requires_full_monthly_reentry(
                 assert approved.status_code == 200, approved.text
                 approval = approved.json()
                 captured = {}
-                receipt = resolve_published_month(client, approval, captured=captured)
+                receipt = resolve_published_month(
+                    client, approval, captured=captured, repository=repository
+                )
                 if prior_locator is not None:
                     assert prior_locator in proposal["universe"]["source_products"]
                 assert receipt["definition"]["product_version"] == definition_version
                 if definition_version == "v2":
-                    refuse_rehashed_custody_corruption(client, dsn, approval)
-                    refuse_rehashed_v2_definition_scope(client, dsn, approval)
+                    refuse_rehashed_custody_corruption(client, dsn, approval, repository)
+                    refuse_rehashed_v2_definition_scope(client, dsn, approval, repository)
                 parent = repository.get_membership_revision(
                     **scope, membership_revision=body["target_membership_revision"]
                 )
