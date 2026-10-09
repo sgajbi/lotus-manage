@@ -5,7 +5,9 @@
 This page maps implemented service boundaries, not production certification. For composite
 onboarding, use the [source-authority guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-source-authority.md).
 Manage's v2 schema separates economic authority from publishing; provider trust defaults unavailable
-and institutional-attestation references refuse until a qualified verifier exists. Frozen synthetic
+and direct institutional definition registration refuses. Staged institutional finalization uses
+the separately configured verifier described in [Integrations](Integrations), with exact original
+and related artifact bindings checked again on retained reads. Frozen synthetic
 fixtures do not establish bank approval, live population or consumer acceptance.
 
 | Reader | Start Here |

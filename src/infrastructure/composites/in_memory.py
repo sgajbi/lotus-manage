@@ -48,8 +48,9 @@ from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
 from src.core.composite_eligibility.staged_controls import StagedControl
 from src.core.composite_eligibility.staged_subject import EligibilitySubject
 from src.core.composite_eligibility.staged_publication import (
-    SubjectFinalization,
-    SubjectFinalizationReceipt,
+    SubjectFinalizationRecord,
+    decode_subject_receipt,
+    SubjectFinalizationProof,
 )
 from src.infrastructure.composites.staged_memory import StagedMemoryCustody
 from src.core.composite_eligibility.staged_custody import require_finalized_custody
@@ -108,8 +109,8 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             return self._staged.get_control(key, kind, revision)
 
     def finalize_eligibility_subject(
-        self, *, finalization: SubjectFinalization
-    ) -> SubjectFinalizationReceipt:
+        self, *, finalization: SubjectFinalizationRecord
+    ) -> SubjectFinalizationProof:
         with self._lock:
             receipt = self._staged.finalize(
                 finalization,
@@ -121,15 +122,15 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             self._last_sequence = max(self._last_sequence, receipt.publication_sequence)
             return receipt
 
-    def get_eligibility_finalization(self, *, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+    def get_eligibility_finalization(self, *, key: SubjectKey) -> SubjectFinalizationProof | None:
         with self._lock:
             return self._finalization_receipt(key)
 
-    def _finalization_receipt(self, key: SubjectKey) -> SubjectFinalizationReceipt | None:
+    def _finalization_receipt(self, key: SubjectKey) -> SubjectFinalizationProof | None:
         receipt = self._staged.receipts.get(key)
         if receipt is None:
             return None
-        receipt = SubjectFinalizationReceipt.model_validate(receipt.model_dump(mode="json"))
+        receipt = decode_subject_receipt(receipt.model_dump(mode="json"))
         approval = receipt.finalization.evaluation_approval
         target = approval.proposal.target_membership_revision
         require_finalized_custody(
@@ -155,7 +156,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         definition_version: str,
         evaluation_revision: str,
         approval_content_hash: str,
-    ) -> SubjectFinalizationReceipt | None:
+    ) -> SubjectFinalizationProof | None:
         with self._lock:
             keys = [
                 key

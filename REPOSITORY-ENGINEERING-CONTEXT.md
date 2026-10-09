@@ -14,6 +14,16 @@ security requirements.
 
 ## Repository Role
 
+Configured institutional attestation verification is a separate staged-finalization channel:
+`DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON`. It uses existing Ed25519 verification, bounded HTTP
+clients and atomic staged custody without a runtime split or new ledger. Finalization/receipt v2
+retains the original artifact/signature and fresh admission; v1 retains its original hashes and
+semantics. The deployment owns current signer/verifier trust and bounded revocation snapshots.
+Both fresh admission and retained v2 decoding require every related artifact revision/digest to
+equal its request binding; rehashed unrelated artifacts refuse before joined custody is accepted.
+See `docs/guides/composite-institutional-verification.md`. Direct institutional definition writes,
+external historical monthly-policy admission and official activation remain unavailable.
+
 `lotus-manage` is the discretionary mandate portfolio-management execution and operational
 supportability service.
 

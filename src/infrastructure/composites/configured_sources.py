@@ -36,6 +36,12 @@ class CompositeSourceTransport:
     def resolve(
         self, *, tenant_id: str, operation: SourceOperation, request: dict[str, Any]
     ) -> dict[str, Any] | None:
+        result = self.resolve_signed(tenant_id=tenant_id, operation=operation, request=request)
+        return result[0] if result is not None else None
+
+    def resolve_signed(
+        self, *, tenant_id: str, operation: SourceOperation, request: dict[str, Any]
+    ) -> tuple[dict[str, Any], str] | None:
         """Resolve only a deployment-pinned endpoint and a signed bound response."""
         binding = self.configuration.binding(tenant_id, operation)
         if binding is None:
@@ -67,7 +73,7 @@ class CompositeSourceTransport:
         verified_artifact(
             body["credential"], binding=binding, request=request, payload=body["payload"]
         )
-        return body["payload"]
+        return body["payload"], body["credential"]
 
 
 @dataclass(frozen=True)

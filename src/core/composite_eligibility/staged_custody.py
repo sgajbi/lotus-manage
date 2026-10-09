@@ -11,7 +11,7 @@ from src.core.composite_eligibility.staged_controls import (
 )
 from src.core.composite_eligibility.staged_publication import (
     initial_projection,
-    SubjectFinalizationReceipt,
+    SubjectFinalizationProof,
 )
 from src.core.composite_eligibility.staged_subject import EligibilitySubject, subject_key
 from src.core.composite_eligibility.staged_ports import ControlKind
@@ -63,7 +63,7 @@ def require_control_custody(
 
 
 def require_finalized_custody(
-    receipt: SubjectFinalizationReceipt,
+    receipt: SubjectFinalizationProof,
     *,
     subject: EligibilitySubject | None,
     approval: StagedControl | None,

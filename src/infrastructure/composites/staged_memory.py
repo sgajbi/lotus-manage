@@ -14,8 +14,10 @@ from src.core.composite_eligibility.staged_controls import (
 from src.core.composite_eligibility.staged_custody import predecessor, require_control_custody
 from src.core.composite_eligibility.staged_ports import SubjectKey, ControlKind
 from src.core.composite_eligibility.staged_publication import (
-    SubjectFinalization,
-    SubjectFinalizationReceipt,
+    SubjectFinalizationRecord,
+    decode_subject_finalization,
+    finalization_receipt,
+    SubjectFinalizationProof,
     initial_projection,
 )
 from src.core.composite_eligibility.staged_subject import EligibilitySubject, subject_key
@@ -39,7 +41,7 @@ class StagedMemoryCustody:
         evaluation_approvals: Any,
     ) -> None:
         self.subjects: dict[SubjectKey, EligibilitySubject] = {}
-        self.receipts: dict[SubjectKey, SubjectFinalizationReceipt] = {}
+        self.receipts: dict[SubjectKey, SubjectFinalizationProof] = {}
         self.definitions = definitions
         self.controls = {
             "CompositeSubjectPolicyProposal": policies,
@@ -106,14 +108,14 @@ class StagedMemoryCustody:
 
     def finalize(
         self,
-        finalization: SubjectFinalization,
+        finalization: SubjectFinalizationRecord,
         *,
         memberships: dict[tuple[str, str, str, str], DpmCompositeMembershipRevision],
         universes: dict[tuple[str, str, str, str, str], DpmCompositeUniverseAttestation],
         publications: dict[int, DpmCompositeMembershipPublication],
         last_sequence: int,
-    ) -> SubjectFinalizationReceipt:
-        finalization = SubjectFinalization.model_validate(finalization.model_dump(mode="json"))
+    ) -> SubjectFinalizationProof:
+        finalization = decode_subject_finalization(finalization.model_dump(mode="json"))
         key = subject_key(finalization.subject)
         retained = self.receipts.get(key)
         if retained is not None:
@@ -137,7 +139,7 @@ class StagedMemoryCustody:
         publication = publication_from_revision(
             revision=revision, sequence=last_sequence + 1, published_at=datetime.now(timezone.utc)
         )
-        receipt = SubjectFinalizationReceipt(
+        receipt = finalization_receipt(
             finalization=finalization,
             publication_sequence=publication.sequence,
             membership_content_hash=revision.content_hash,

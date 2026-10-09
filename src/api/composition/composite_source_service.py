@@ -1,4 +1,4 @@
-"""Deployment composition for synthetic source adapters; absent configuration fails closed."""
+"""Separate configured synthetic sources and institutional verification; default unavailable."""
 
 import os
 
@@ -15,6 +15,16 @@ from src.infrastructure.composites.configured_sources import (
     ConfiguredMonthlyEligibilitySource,
 )
 from src.infrastructure.composites.source_configuration import CompositeSourceConfiguration
+from src.core.composite_eligibility.institutional_verification import (
+    InstitutionalEvidenceVerifier,
+    UnavailableInstitutionalEvidenceVerifier,
+)
+from src.infrastructure.composites.institutional_configuration import (
+    InstitutionalVerificationConfiguration,
+)
+from src.infrastructure.composites.institutional_verifier import (
+    ConfiguredInstitutionalEvidenceVerifier,
+)
 from src.infrastructure.source_http_clients import (
     build_source_http_client_policy,
     get_shared_source_http_client,
@@ -27,11 +37,14 @@ def build_composite_subject_service(
     """Requests cannot choose endpoints, source identities, credentials or trust posture."""
     transport = _configured_transport()
     if transport is None:
-        return CompositeSubjectApplicationService(repository=repository)
+        return CompositeSubjectApplicationService(
+            repository=repository, attestations=_configured_attestations()
+        )
     return CompositeSubjectApplicationService(
         repository=repository,
         candidates=ConfiguredCandidateUniverseSource(transport),
         verifier=ConfiguredCompositeEvidenceVerifier(transport),
+        attestations=_configured_attestations(),
         observations=ConfiguredMonthlyEligibilitySource(
             transport, ConfiguredCompositeEvidenceVerifier(transport)
         ),
@@ -57,6 +70,8 @@ def _configured_transport() -> CompositeSourceTransport | None:
     if not raw or not raw.strip():
         return None
     configuration = CompositeSourceConfiguration.model_validate_json(raw)
+    if any(item.evidence_posture != "SYNTHETIC_NON_CERTIFYING" for item in configuration.bindings):
+        raise ValueError("COMPOSITE_SOURCE_INSTITUTIONAL_CHANNEL_REQUIRED")
     client = get_shared_source_http_client(
         "composite",
         policy=build_source_http_client_policy(
@@ -64,3 +79,17 @@ def _configured_transport() -> CompositeSourceTransport | None:
         ),
     )
     return CompositeSourceTransport(configuration=configuration, client=client)
+
+
+def _configured_attestations() -> InstitutionalEvidenceVerifier:
+    raw = os.getenv("DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON")
+    if not raw or not raw.strip():
+        return UnavailableInstitutionalEvidenceVerifier()
+    configuration = InstitutionalVerificationConfiguration.model_validate_json(raw)
+    client = get_shared_source_http_client(
+        "composite",
+        policy=build_source_http_client_policy(
+            "composite", request_timeout_seconds=configuration.timeout_seconds
+        ),
+    )
+    return ConfiguredInstitutionalEvidenceVerifier(configuration, client)
