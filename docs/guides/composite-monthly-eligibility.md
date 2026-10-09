@@ -36,6 +36,14 @@ original, matching currency and the exact opposite amount. In-kind, unresolved r
 receipt and incomplete flow coverage remain unknown rather than receiving an invented policy.
 Threshold decisions use exact cross-products, not rounded displayed ratios.
 
+Monthly arithmetic uses a fresh decimal context with 80 significant digits, `ROUND_HALF_EVEN`,
+exponent bounds -999999 to 999999, no clamping and only invalid-operation, division-by-zero and
+overflow traps. This preserves the default ratio wire while isolating evaluation/approval hashes
+from caller precision, rounding, exponent limits, traps, flags and mutable decimal defaults.
+Repeating ratios are deterministic evidence; they do not replace exact threshold cross-products.
+The owning monthly eligibility tests pin the default `1/300` wire/hash and replay it under hostile
+contexts; the registered proposal/approval test also verifies immutable replay and publication count.
+
 ## Configuration, Approval And Time
 
 Layers resolve in order `PLATFORM → TENANT → STRATEGY → COMPOSITE → RUN`. Each binds scope,

@@ -1,6 +1,7 @@
 """Registered custody/publication proof using explicitly unqualified synthetic inputs."""
 
 import pytest
+from decimal import Inexact, ROUND_UP, Rounded, localcontext
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_composite_monthly_eligibility_service
@@ -25,6 +26,39 @@ from tests.composite_monthly_eligibility_helpers import (
 
 CHECKER = HEADERS | {"X-Actor-Id": "synthetic-checker"}
 URL = BASE + "/evaluations/synthetic-evaluation-r1"
+
+
+@pytest.mark.parametrize(
+    "evaluation_api",
+    [{"prior_month_end_assets": "300", "month_end_assets": "300"}],
+    indirect=True,
+)
+def test_registered_proposal_approval_and_replay_preserve_hash_under_hostile_context(
+    evaluation_api,
+):
+    normal = propose(evaluation_api)
+    client, _, _, _, _, body, resolutions = evaluation_api
+    hostile_url = BASE + "/evaluations/synthetic-hostile-context"
+    with localcontext() as caller:
+        caller.rounding = ROUND_UP
+        caller.prec = 6
+        caller.traps[Inexact] = caller.traps[Rounded] = True
+        retained = client.get(URL, headers=HEADERS)
+        assert retained.status_code == 200 and retained.json() == normal
+        response = client.put(hostile_url, headers=HEADERS, json=body)
+        assert response.status_code == 200, response.text
+        proposal = response.json()
+        assert proposal["evaluation"] == normal["evaluation"]
+        expected = {"expected_proposal_content_hash": proposal["content_hash"]}
+        approved = client.put(hostile_url + "/approval", headers=CHECKER, json=expected)
+        assert approved.status_code == 200, approved.text
+        replay = client.put(hostile_url + "/approval", headers=CHECKER, json=expected)
+        assert replay.status_code == 200 and replay.json() == approved.json()
+        retained_approval = client.get(hostile_url + "/approval", headers=HEADERS)
+        assert retained_approval.status_code == 200 and retained_approval.json() == approved.json()
+        assert caller.rounding == ROUND_UP and caller.prec == 6
+        assert caller.traps[Inexact] and caller.traps[Rounded]
+    assert len(resolutions) == 2 and len(publications(evaluation_api)) == 2
 
 
 def test_exact_resolver_openapi_declares_both_receipt_products_without_new_route():
