@@ -96,6 +96,15 @@ current portfolio-book membership for historical eligibility.
 - `GET .../membership/{membership_revision}/as-of?as_of_date=YYYY-MM-DD` returns only the decisions
   effective on that date from the explicitly pinned revision, retaining exclusions and terminated
   periods for historical consumers.
+- `GET .../membership/{membership_revision}/range?effective_from=YYYY-MM-DD&effective_to=YYYY-MM-DD`
+  returns all original decision intervals intersecting the inclusive calendar-date window, retaining
+  include/exclude/pending statuses and original evidence. Both dates are required; invalid or
+  reversed windows refuse. `count` counts intervals, not portfolios; `membership_content_hash`
+  identifies the complete pinned revision. Intervals are not clipped, gaps are not filled, and an
+  empty result does not certify population completeness. Reads preserve full/as-of wires and do
+  not advance publication. Explicit `tenant_id` retains admitted scope and `completeness=UNVERIFIED`
+  preserves the source posture. See the worked correction and executable examples in
+  `docs/guides/composite-membership-corrections.md`.
 - Definition and membership-revision list `count` values are total records in the admitted scope,
   evaluated in the same read snapshot as the bounded page. Offset pages are not stable across
   concurrent writes; use the publication cursor/high watermark for ordered handoff. A count does

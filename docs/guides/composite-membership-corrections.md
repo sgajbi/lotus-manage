@@ -48,6 +48,37 @@ transaction, before canonical membership/publication writes. Parent evidence is 
 exact tenant/composite/definition/revision key. Existing stored corrections are preserved and remain
 readable; this change does not retroactively certify their declared impact windows.
 
+## Pinned Date-Range Reads
+
+`GET P/membership/{membership_revision}/range?effective_from=YYYY-MM-DD&effective_to=YYYY-MM-DD`
+returns every original decision interval intersecting the inclusive requested range. Both calendar
+dates are required; a reversed window or invalid calendar date returns 422. Missing or foreign
+tenant revisions return 404. The same admitted identity required for full-revision and single-date
+reads applies here.
+
+For the worked example, request `effective_from=2026-01-05&effective_to=2026-01-05` from `m1` and
+`m2`. Each response contains three decision intervals, but A is included in the original and
+excluded in the correction. `membership_content_hash` identifies the complete immutable revision,
+not a newly hashed projection. The response also retains `tenant_id`, `source_cut_id`, exact revision identity,
+requested boundaries and `count` of matching intervals. Intervals and evidence are returned without
+clipping; a member with adjacent include/exclude intervals can appear twice in a wider range.
+`count` therefore counts intervals, not distinct portfolios or financially included members.
+
+For `2026-01-31` through `2026-02-01`, the original read includes both B's closing included interval
+and its prospective excluded interval. C's terminated interval does not overlap this range but
+remains retrievable for earlier dates. A requested gap returns no matching intervals for that
+member; the API never fills it or turns it into an exclusion. An empty range response is not a
+population-completeness assertion. Use the separately pinned universe attestation for coverage.
+The response explicitly reports `completeness=UNVERIFIED`; selection is not an attestation.
+
+This bounded read returns all matches from one pinned revision without offset pagination or a
+latest-revision lookup. Revision admission already bounds the stored decision list. Full-revision
+and existing `/as-of` wires remain unchanged. Reads do not publish revisions or advance the
+publication cursor. Registered API cases are in
+`tests/unit/api/test_composite_membership_range_routes.py`; actual PostgreSQL and application/client
+restart proof is in `tests/integration/dpm/composites/test_composite_membership_range_postgres.py`.
+These supplied synthetic decisions do not establish authoritative population or financial results.
+
 Exact retries of retained pre-fix revisions return their original content and publication identity;
 this is historical replay, not approval of a new correction. New revision identities always pass
 the current guard, including when they copy a formerly accepted wrong-window decision.

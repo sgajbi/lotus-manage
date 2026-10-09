@@ -45,6 +45,12 @@ class DpmCompositeNotFoundError(ValueError):
 
 
 @dataclass(frozen=True)
+class DpmCompositeMembershipRange:
+    revision: DpmCompositeMembershipRevision
+    decisions: list[DpmCompositeMembershipDecision]
+
+
+@dataclass(frozen=True)
 class DpmCompositeDefinitionCommand:
     tenant_id: str
     composite_id: str
@@ -293,6 +299,38 @@ class DpmCompositeMembershipApplicationService:
                 or requested <= date.fromisoformat(decision.effective_to)
             )
         ]
+
+    def membership_in_range(
+        self,
+        *,
+        tenant_id: str,
+        composite_id: str,
+        definition_version: str,
+        membership_revision: str,
+        effective_from: str,
+        effective_to: str,
+    ) -> DpmCompositeMembershipRange:
+        revision = self.get_membership_revision(
+            tenant_id=tenant_id,
+            composite_id=composite_id,
+            definition_version=definition_version,
+            membership_revision=membership_revision,
+        )
+        first, last = date.fromisoformat(effective_from), date.fromisoformat(effective_to)
+        if first > last:
+            raise ValueError("COMPOSITE_MEMBERSHIP_RANGE_INVALID")
+        return DpmCompositeMembershipRange(
+            revision=revision,
+            decisions=[
+                decision
+                for decision in revision.decisions
+                if date.fromisoformat(decision.effective_from) <= last
+                and (
+                    decision.effective_to is None
+                    or first <= date.fromisoformat(decision.effective_to)
+                )
+            ],
+        )
 
     def get_publication(
         self, *, tenant_id: str, sequence: int

@@ -40,6 +40,10 @@ This repository owns:
    Equivalent adjacent interval splits are accepted; changed status, scope, source/approval evidence
    or removed history outside the window refuses before publication. Retained historical revisions
    remain readable; the guard does not rewrite legacy rows.
+   Pinned membership `/range` reads select original decision intervals intersecting an inclusive
+   calendar-date window from one immutable revision. They retain every status/evidence and return
+   an interval count plus the complete revision's explicitly named `membership_content_hash`.
+   They do not clip intervals, fill gaps, qualify population or change full/as-of wires/publication.
    Definition decoding now dispatches v1/v2 through `src/core/composite_definition_versions.py`.
    v2 authority models/policy bind separate profile/business/wire digests; existing JSONB keys and
    all membership/publication wires are unchanged. `CompositeProviderTrustPort` defaults unavailable;
