@@ -153,6 +153,7 @@ def assert_published_custody(client, headers, receipt, retained):
     response = client.get(BASE + "/finalization", headers=headers)
     assert response.status_code == 200, response.text
     assert response.json() == receipt
+    assert "X-Composite-Evidence-Diagnostic" not in response.headers
     assert receipt["completeness"] == "UNVERIFIED"
     proposal = receipt["finalization"]["evaluation_approval"]["proposal"]
     assert proposal == retained

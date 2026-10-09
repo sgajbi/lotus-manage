@@ -102,6 +102,12 @@ prior month's policy approval does not approve later months. Final definition ec
 approval must occur at or after its bound evaluation approval; premature approval refuses before
 verification or publication. This chronology differs from monthly policy approval, which must
 precede the month being evaluated.
+The chronology guard applies to a fresh finalization command, not immutable archival decoding.
+Previously sealed synthetic receipts with premature authority timing remain exactly retrievable
+and replayable with their original hashes, `UNVERIFIED` completeness and unavailable activation.
+Their finalization GET, exact resolver and replay responses include
+`X-Composite-Evidence-Diagnostic: HISTORICAL_AUTHORITY_CLOCK_MISMATCH`. Archival retrieval is not
+new approval or financial admission; the consumer must still refuse unsuitable authority timing.
 
 ## Owning proof
 
@@ -134,6 +140,9 @@ refusal, and persisted replay after restart with default unavailable sources. Th
 directory retains the actual HTTP finalization graph as `configured-source-finalization.json` for
 consumer compatibility investigation. It proves executable adapter behavior, not bank IAM,
 qualified financial products, official Composite membership or Performance materialization.
+`test_composite_historical_finalization_postgres.py` restores the original sealed historical graph,
+checks repeated migration initialization and two fresh API processes, exact read/resolution/replay,
+changed digest/tenant/approval refusal and unchanged database payload/hash/publication count.
 
 The recurring pack uses registered HTTP and disposable PostgreSQL without dependency overrides.
 It covers forged credentials, mixed cuts, stale source revisions, verifier outage, recovery,

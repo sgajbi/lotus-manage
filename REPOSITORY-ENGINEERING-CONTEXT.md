@@ -86,7 +86,10 @@ Platform Ed25519 credentials and purpose-specific synthetic verification binding
 `COMPOSITE_MONTHLY_SOURCE_CUT` verification with staged and recurring monthly evaluations. Recurring
 simulation/diff use the same configured source admission. Every month retains its own prospective
 policy approval; first-definition or prior-month approval does not grant future-month authority.
-Final definition authority approval cannot precede its bound evaluation approval. Default sources remain
+Fresh final definition authority approval cannot precede its bound evaluation approval. Archival
+receipt decoding preserves exact historical bodies/hashes; premature historical timing emits the
+`X-Composite-Evidence-Diagnostic: HISTORICAL_AUTHORITY_CLOCK_MISMATCH` response header rather than
+granting new authority. Consumer financial admission remains separately strict. Default sources remain
 unavailable, Core unqualified inputs refuse, and legacy hashes omit absent new provenance fields.
 See [configured source guide](docs/guides/composite-configured-sources.md) for contract and proof.
 Its native HTTP/PostgreSQL proof follows retained provenance through finalization, publication,

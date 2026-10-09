@@ -91,6 +91,11 @@ the same signed assembly and independent `COMPOSITE_MONTHLY_SOURCE_CUT` verifica
 fields preserve hashes. Each month requires a separate prospective policy approval. Definition
 economic-authority approval must follow its bound evaluation approval; premature claims refuse
 before verification or publication. These are synthetic controls, with official activation unavailable.
+Fresh-command chronology validation preserves archival reads of previously sealed premature
+synthetic receipts. Exact GET/resolver/replay retains the original body/hash and emits
+`X-Composite-Evidence-Diagnostic: HISTORICAL_AUTHORITY_CLOCK_MISMATCH`; this is historical custody,
+not renewed authority or financial admission. The original sealed graph has a native PostgreSQL
+restore/migration/restart regression with unchanged payload and publication count.
 
 The registered HTTP/PostgreSQL pack includes 17 independent economic scenarios, forged/mixed/stale
 source refusals, checker publication, and a July–September exclusion/re-entry campaign. Clearing

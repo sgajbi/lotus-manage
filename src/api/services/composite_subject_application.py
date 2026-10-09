@@ -49,6 +49,7 @@ from src.core.composite_eligibility.staged_publication import (
     initial_projection,
     finalization_verification_requests,
     require_definition_subject,
+    authority_approval_follows_evaluation,
 )
 from src.core.composite_eligibility.verification import (
     CompositeEvidenceVerifier,
@@ -354,6 +355,8 @@ class CompositeSubjectApplicationService:
                 raise ValueError("COMPOSITE_SUBJECT_IMMUTABLE_CONFLICT")
             return retained
         requests = finalization_verification_requests(definition, subject)
+        if not authority_approval_follows_evaluation(definition, approval):
+            raise ValueError("COMPOSITE_ELIGIBILITY_CLOCK_MISMATCH")
         verifications = [require_verification(self.verifier, request) for request in requests]
         finalization = SubjectFinalization(
             subject=subject,
