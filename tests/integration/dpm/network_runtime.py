@@ -73,6 +73,7 @@ def _serve(
     composite_read_grants=None,
     institutional_config=None,
     historical_test_admission=False,
+    historical_config=None,
 ):
     # Spawned interpreters do not inherit parent's in-process dependency overrides.
     for name in list(os.environ):
@@ -103,6 +104,8 @@ def _serve(
         os.environ["DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON"] = composite_read_grants
     if institutional_config is not None:
         os.environ["DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON"] = institutional_config
+    if historical_config is not None:
+        os.environ["DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON"] = historical_config
     import uvicorn
     from src.api.main import app
 
@@ -136,6 +139,7 @@ def native_api(
     composite_read_grants: str | None = None,
     institutional_config: str | None = None,
     historical_test_admission: bool = False,
+    historical_config: str | None = None,
 ):
     if os.environ.get("DPM_NETWORK_IMAGE_ID"):
         if historical_test_admission or any(
@@ -146,6 +150,7 @@ def native_api(
                 composite_config,
                 composite_read_grants,
                 institutional_config,
+                historical_config,
             )
         ):
             raise ValueError("Controlled source proof requires the native installed API.")
@@ -169,6 +174,7 @@ def native_api(
             composite_read_grants,
             institutional_config,
             historical_test_admission,
+            historical_config,
         ),
     )
     process.start()

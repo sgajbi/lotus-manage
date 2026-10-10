@@ -1,0 +1,17 @@
+{
+  "endpoint": "https://historical-verifier.example.invalid/monthly-policy/verify",
+  "credential_env": "MANAGE_HISTORICAL_PROVIDER_AUTH",
+  "trust": {
+    "tenant_id": "example-tenant",
+    "signing_contract": "SOURCE_OWNER_ORIGINAL_CONTRACT_V1",
+    "signer_principal_id": "example-original-signer",
+    "verifier_principal_id": "example-independent-verifier",
+    "signer_key_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "verifier_key_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "configuration_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "posture": "SYNTHETIC_NON_CERTIFYING"
+  },
+  "timeout_seconds": 2,
+  "attempts": 1,
+  "maximum_response_bytes": 8000000
+}

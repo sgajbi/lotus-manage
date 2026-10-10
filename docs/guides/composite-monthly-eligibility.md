@@ -291,11 +291,14 @@ remain original; current maker/checker times remain current. The normalized proo
 Ed25519 verifier credentials, exact operation/scope/revision/actor/intent binding, server-pinned
 keys/configuration, independent principals and a maximum five-minute admission interval.
 
-Production has no supported original-format adapter. The default port returns unavailable; setting
-`DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` raises
-`COMPOSITE_HISTORICAL_POLICY_ORIGINAL_FORMAT_UNSUPPORTED`. The controlled raw-byte Ed25519 format in
-test helpers is explicitly synthetic and cannot enable production. Actual source format and trust
-owner evidence are required before an adapter can be implemented or deployed.
+Production composition supports a dedicated configured normalized-provider HTTPS adapter through
+`DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON`; blank configuration remains unavailable.
+The independent provider owns actual original-format verification and fresh revocation evidence.
+Manage admits only the frozen signed response against deployment trust. See
+[provider protocol, configuration and activation conditions](composite-historical-provider.md).
+Controlled test keys/formats never auto-enable a provider. Genuine original-format/provider
+conformance, trust ownership and institutional acceptance remain separate activation gates.
+This transport implements no original-format verifier inside Manage.
 
 Exact replay returns retained custody before consulting current sources. Read-only receipt resolution
 validates the recorded admission interval and all immutable bindings without renewing authority,

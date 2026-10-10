@@ -4,22 +4,13 @@ Fixture controls are not genuine historical institutional approvals. The API own
 fresh finalization, publication and subsequent exact persisted reads/replay.
 """
 
-import ipaddress
 import json
-import socket
-import ssl
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 
 import pytest
 
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import NameOID
 
 from src.core.composite_eligibility.verification import VerificationReceipt, VerificationRequest
 from src.infrastructure.composites.institutional_configuration import (
@@ -34,38 +25,12 @@ from tests.composite_institutional_helpers import (
 )
 from tests.composite_staged_eligibility_helpers import BASE, CHECKER, HEADERS
 from tests.integration.dpm.network_runtime import disposable_database, native_api
+from tests.integration.dpm.https_runtime import trusted_https_server
 
 
 @contextmanager
 def controlled_https_verifier(tmp_path, monkeypatch, request, artifact):
     configuration, signer, verifier = configuration_material()
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "controlled-loopback-test")])
-    now = datetime.now(timezone.utc)
-    certificate = (
-        x509.CertificateBuilder()
-        .subject_name(name)
-        .issuer_name(name)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(now - timedelta(minutes=1))
-        .not_valid_after(now + timedelta(hours=1))
-        .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
-        .add_extension(
-            x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]),
-            critical=False,
-        )
-        .sign(key, hashes.SHA256())
-    )
-    cert_path, key_path = tmp_path / "controlled-ca.pem", tmp_path / "controlled-tls-key.pem"
-    cert_path.write_bytes(certificate.public_bytes(serialization.Encoding.PEM))
-    key_path.write_bytes(
-        key.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.PKCS8,
-            serialization.NoEncryption(),
-        )
-    )
     state = {"calls": [], "deny": False}
 
     class Handler(BaseHTTPRequestHandler):
@@ -104,29 +69,12 @@ def controlled_https_verifier(tmp_path, monkeypatch, request, artifact):
             self.end_headers()
             self.wfile.write(raw)
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    port = server.server_port
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(cert_path, key_path)
-    server.socket = context.wrap_socket(server.socket, server_side=True)
-    wire = configuration.model_dump(mode="json")
-    wire["verifier"]["endpoint"] = f"https://127.0.0.1:{port}/verification"
-    configuration = InstitutionalVerificationConfiguration.model_validate(wire)
-    monkeypatch.setenv("SSL_CERT_FILE", str(cert_path))
     monkeypatch.setenv(configuration.verifier.credential_env, "controlled-test-only")
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
+    with trusted_https_server(Handler, tmp_path, monkeypatch) as server:
+        wire = configuration.model_dump(mode="json")
+        wire["verifier"]["endpoint"] = f"https://127.0.0.1:{server.server_port}/verification"
+        configuration = InstitutionalVerificationConfiguration.model_validate(wire)
         yield configuration.model_dump_json(), state
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(10)
-        assert not thread.is_alive()
-        with socket.socket() as probe:
-            probe.settimeout(1)
-            assert probe.connect_ex(("127.0.0.1", port)) != 0
-        key_path.unlink(missing_ok=True)
 
 
 def capture(tmp_path, name, response):
