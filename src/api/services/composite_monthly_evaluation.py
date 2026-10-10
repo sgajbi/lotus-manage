@@ -13,11 +13,20 @@ from src.core.composite_authority_models import (
     StrictAuthorityModel,
 )
 from src.core.composite_eligibility.evaluation import evaluate_monthly_eligibility
+from src.core.common.canonical import hash_canonical_payload
+from src.core.composite_eligibility.evaluation_control import MonthlyEvaluationProposalContent
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalMonthlyPolicyApproval,
+    HistoricalPolicyVerificationRequest,
+    admitted_historical_policy,
+)
 from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyAmendmentProposal,
+    MonthlyAmendmentProposalContent as MonthlyAmendmentProposal,
+    MonthlyAmendmentProposalContent,
     MonthlyApproval,
     MonthlyProposal,
     MonthlySourceAmendment,
+    HistoricalMonthlySourceAmendment,
     decode_monthly_proposal,
 )
 from src.core.composite_eligibility.publication import build_monthly_publication
@@ -36,7 +45,7 @@ class MonthlyEvaluationRequest(StrictAuthorityModel):
 
 
 class MonthlyAmendmentRequest(MonthlyEvaluationRequest):
-    amendment: MonthlySourceAmendment
+    amendment: MonthlySourceAmendment | HistoricalMonthlySourceAmendment
 
 
 @dataclass(frozen=True)
@@ -163,6 +172,33 @@ class CompositeMonthlyEvaluationApplicationService:
         )
         if isinstance(command, MonthlyAmendmentRequest):
             proposal_wire.update(product_version="v2", amendment=command.amendment)
+        if isinstance(policy, HistoricalMonthlyPolicyApproval):
+            proposal_wire["product_version"] = (
+                "v4" if isinstance(command, MonthlyAmendmentRequest) else "v3"
+            )
+            model = (
+                MonthlyAmendmentProposalContent
+                if isinstance(command, MonthlyAmendmentRequest)
+                else MonthlyEvaluationProposalContent
+            )
+            unsigned = model.model_validate(proposal_wire).model_dump(
+                mode="json", exclude={"content_hash"}
+            )
+            verification_request = HistoricalPolicyVerificationRequest.model_validate(
+                policy.verification.request.model_dump(mode="json")
+                | {
+                    "operation": "EVALUATION_PROPOSAL",
+                    "revision": evaluation_revision,
+                    "actor_id": actor_id,
+                    "requested_at": instant,
+                    "intent_digest": hash_canonical_payload(unsigned),
+                }
+            )
+            proposal_wire = unsigned | {
+                "operation_verification": admitted_historical_policy(
+                    self.configuration.historical_admission, verification_request
+                )
+            }
         proposal = decode_monthly_proposal(proposal_wire)
         try:
             repository.save_monthly_evaluation_proposal(proposal=proposal)
@@ -218,8 +254,28 @@ class CompositeMonthlyEvaluationApplicationService:
         )
         if parent is None:
             raise ValueError("COMPOSITE_ELIGIBILITY_STALE_MEMBERSHIP")
+        instant = self.configuration.clock()
+        verification = None
+        if isinstance(proposal.policy_approval, HistoricalMonthlyPolicyApproval):
+            request = HistoricalPolicyVerificationRequest.model_validate(
+                proposal.policy_approval.verification.request.model_dump(mode="json")
+                | {
+                    "operation": "EVALUATION_APPROVAL",
+                    "revision": evaluation_revision,
+                    "actor_id": actor_id,
+                    "requested_at": instant,
+                    "intent_digest": proposal.content_hash,
+                }
+            )
+            verification = admitted_historical_policy(
+                self.configuration.historical_admission, request
+            )
         approval, _, _ = build_monthly_publication(
-            proposal, parent, approved_by=actor_id, approved_at=self.configuration.clock()
+            proposal,
+            parent,
+            approved_by=actor_id,
+            approved_at=instant,
+            operation_verification=verification,
         )
         try:
             repository.save_monthly_evaluation_approval(approval=approval)

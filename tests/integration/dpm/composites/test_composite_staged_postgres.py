@@ -271,7 +271,9 @@ def test_direct_sql_legacy_child_cannot_reference_staged_predecessor_through_nul
         # NULL subject selectors recreate the exact MATCH SIMPLE hole: the mode FK must reject it.
         with pytest.raises(psycopg.errors.ForeignKeyViolation) as failure:
             if kind == "policy_approval":
-                control = controls[1]
+                # A valid ordinary v1 wire isolates the mode FK from historical wire checks.
+                # Its relational selector deliberately points at the retained staged predecessor.
+                control = controls[1].approval
                 connection.execute(
                     f"INSERT INTO {tables[kind]} (tenant_id,composite_id,definition_version,month,proposal_revision,proposal_content_hash,content_hash,payload_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
                     (

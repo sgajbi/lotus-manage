@@ -68,7 +68,10 @@ from src.core.composite_eligibility.institutional_verification import (
 )
 from src.core.composite_universe import DpmCompositeUniverseSourceProduct
 from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationReceipt
-from src.core.composite_eligibility.monthly_amendment import MonthlyApprovalBinding
+from src.core.composite_eligibility.monthly_amendment import (
+    MonthlyApprovalBinding,
+    HistoricalMonthlyApprovalBinding,
+)
 
 ControlT = TypeVar(
     "ControlT",
@@ -429,7 +432,7 @@ class CompositeSubjectApplicationService:
         tenant_id: str,
         composite_id: str,
         definition_version: str,
-        binding: EvidenceBinding | MonthlyApprovalBinding,
+        binding: EvidenceBinding | MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding,
     ) -> SubjectFinalizationProof | MonthlyPublicationReceipt:
         if binding.product_name == "CompositeMonthlyEvaluationApproval":
             result_monthly = self.repository.resolve_monthly_eligibility_evidence(

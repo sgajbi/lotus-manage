@@ -22,7 +22,17 @@ semantics. The deployment owns current signer/verifier trust and bounded revocat
 Both fresh admission and retained v2 decoding require every related artifact revision/digest to
 equal its request binding; rehashed unrelated artifacts refuse before joined custody is accepted.
 See `docs/guides/composite-institutional-verification.md`. Direct institutional definition writes,
-external historical monthly-policy admission and official activation remain unavailable.
+production historical monthly-policy admission and official activation remain unavailable.
+
+Historical monthly-policy admission has an additive reference-only operation and an unavailable
+production port. `historical_policy.py` owns exact original bytes/opaque original credentials,
+normalized mapping and fresh independently signed operation proofs. Policy v2 selects ordinary
+evaluation/receipt v3 and source correction v4, reusing existing custody, locks and publication
+without a runtime split. The original signing format remains source-owned; the controlled test
+adapter cannot enable production. Forward migration0045 preserves earlier rows/checksums.
+See `docs/guides/composite-monthly-eligibility.md` and the generated schemas/examples under
+`docs/contracts/composite-historical-policy/`. Genuine authority and downstream consumer admission
+remain separate acceptance gates.
 
 `lotus-manage` is the discretionary mandate portfolio-management execution and operational
 supportability service.

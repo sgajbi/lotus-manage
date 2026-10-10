@@ -13,6 +13,16 @@ from src.core.composite_authority_models import (
     StrictAuthorityModel,
 )
 from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApprovalVariant,
+    MonthlyPolicyProposalVariant,
+)
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalPolicyAdmissionPort,
+    UnavailableHistoricalPolicyAdmission,
+    HistoricalMonthlyPolicyProposal,
+)
+from src.api.services.historical_policy_admission import HistoricalPolicyAdmissionApplicationService
 from src.core.composite_eligibility.evaluation import (
     MonthlyEligibilityEvaluation,
     evaluate_monthly_eligibility,
@@ -73,6 +83,9 @@ class CompositeMonthlyEligibilityApplicationService:
         default_factory=UnavailableMonthlyEligibilitySource
     )
     clock: Callable[[], str] = _utc_now
+    historical_admission: HistoricalPolicyAdmissionPort = field(
+        default_factory=UnavailableHistoricalPolicyAdmission
+    )
 
     def get_policy_proposal(
         self,
@@ -82,7 +95,7 @@ class CompositeMonthlyEligibilityApplicationService:
         definition_version: str,
         month: str,
         proposal_revision: str,
-    ) -> MonthlyPolicyProposal:
+    ) -> MonthlyPolicyProposalVariant:
         result = self.repository.get_monthly_policy_proposal(
             tenant_id=tenant_id,
             composite_id=composite_id,
@@ -101,7 +114,7 @@ class CompositeMonthlyEligibilityApplicationService:
         composite_id: str,
         definition_version: str,
         month: str,
-    ) -> MonthlyPolicyApproval:
+    ) -> MonthlyPolicyApprovalVariant:
         result = self.repository.get_monthly_policy_approval(
             tenant_id=tenant_id,
             composite_id=composite_id,
@@ -138,6 +151,8 @@ class CompositeMonthlyEligibilityApplicationService:
             proposal_revision=proposal_revision,
         )
         if retained is not None:
+            if not isinstance(retained, MonthlyPolicyProposal):
+                raise ValueError("COMPOSITE_ELIGIBILITY_PROPOSAL_IMMUTABLE_CONFLICT")
             if (
                 retained.policy,
                 retained.attachments,
@@ -169,7 +184,7 @@ class CompositeMonthlyEligibilityApplicationService:
                 month=month,
                 proposal_revision=proposal_revision,
             )
-            if winner is None or (
+            if not isinstance(winner, MonthlyPolicyProposal) or (
                 winner.policy,
                 winner.attachments,
                 winner.proposed_by,
@@ -194,7 +209,7 @@ class CompositeMonthlyEligibilityApplicationService:
         proposal_revision: str,
         actor_id: str,
         command: MonthlyApprovalRequest,
-    ) -> MonthlyPolicyApproval:
+    ) -> MonthlyPolicyApprovalVariant:
         command = MonthlyApprovalRequest.model_validate(command.model_dump(mode="json"))
         proposal = self.repository.get_monthly_policy_proposal(
             tenant_id=tenant_id,
@@ -222,8 +237,14 @@ class CompositeMonthlyEligibilityApplicationService:
             ):
                 raise ValueError("COMPOSITE_ELIGIBILITY_ACTIVE_POLICY_CONFLICT")
             return retained
-        approval = MonthlyPolicyApproval(
-            proposal=proposal, approved_by=actor_id, approved_at=self.clock()
+        approval = (
+            HistoricalPolicyAdmissionApplicationService(
+                self.repository, self.historical_admission, self.clock
+            ).approved(proposal, actor_id)
+            if isinstance(proposal, HistoricalMonthlyPolicyProposal)
+            else MonthlyPolicyApproval(
+                proposal=proposal, approved_by=actor_id, approved_at=self.clock()
+            )
         )
         try:
             self.repository.save_monthly_policy_approval(approval=approval)

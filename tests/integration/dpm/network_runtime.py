@@ -72,6 +72,7 @@ def _serve(
     composite_config=None,
     composite_read_grants=None,
     institutional_config=None,
+    historical_test_admission=False,
 ):
     # Spawned interpreters do not inherit parent's in-process dependency overrides.
     for name in list(os.environ):
@@ -106,6 +107,10 @@ def _serve(
     from src.api.main import app
 
     assert not app.dependency_overrides
+    if historical_test_admission:
+        from tests.integration.dpm.composites.historical_test_application import configure_app
+
+        configure_app(app)
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", log_level="warning"))
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -130,9 +135,10 @@ def native_api(
     composite_config: str | None = None,
     composite_read_grants: str | None = None,
     institutional_config: str | None = None,
+    historical_test_admission: bool = False,
 ):
     if os.environ.get("DPM_NETWORK_IMAGE_ID"):
-        if any(
+        if historical_test_admission or any(
             value is not None
             for value in (
                 core_url,
@@ -162,6 +168,7 @@ def native_api(
             composite_config,
             composite_read_grants,
             institutional_config,
+            historical_test_admission,
         ),
     )
     process.start()

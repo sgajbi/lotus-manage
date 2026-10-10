@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, model_validator
 
@@ -11,6 +11,10 @@ from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import EvidenceBinding, Identity, StrictAuthorityModel
 from src.core.composite_eligibility.observations import UtcInstant
 from src.core.composite_eligibility.policy import ResolvedMonthlyPolicy, month_window
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalMonthlyPolicyProposal,
+    HistoricalMonthlyPolicyApproval,
+)
 
 
 class MonthlyPolicyProposal(StrictAuthorityModel):
@@ -68,3 +72,25 @@ class MonthlyPolicyApproval(StrictAuthorityModel):
             raise ValueError("COMPOSITE_ELIGIBILITY_APPROVAL_CONTENT_MISMATCH")
         self.content_hash = expected
         return self
+
+
+MonthlyPolicyProposalVariant = MonthlyPolicyProposal | HistoricalMonthlyPolicyProposal
+MonthlyPolicyApprovalVariant = MonthlyPolicyApproval | HistoricalMonthlyPolicyApproval
+
+
+def decode_policy_proposal(wire: dict[str, Any]) -> MonthlyPolicyProposalVariant:
+    version = wire.get("product_version", "v1")
+    if version == "v1":
+        return MonthlyPolicyProposal.model_validate(wire)
+    if version == "v2":
+        return HistoricalMonthlyPolicyProposal.model_validate(wire)
+    raise ValueError("COMPOSITE_MONTHLY_POLICY_VERSION_UNSUPPORTED")
+
+
+def decode_policy_approval(wire: dict[str, Any]) -> MonthlyPolicyApprovalVariant:
+    version = wire.get("product_version", "v1")
+    if version == "v1":
+        return MonthlyPolicyApproval.model_validate(wire)
+    if version == "v2":
+        return HistoricalMonthlyPolicyApproval.model_validate(wire)
+    raise ValueError("COMPOSITE_MONTHLY_POLICY_VERSION_UNSUPPORTED")

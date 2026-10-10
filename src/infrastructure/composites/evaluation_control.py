@@ -6,10 +6,11 @@ from src.core.composite_eligibility.evaluation_control import (
     evaluation_key,
 )
 from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyAmendmentProposal,
+    MonthlyAmendmentProposalContent as MonthlyAmendmentProposal,
     MonthlyApproval,
     MonthlyProposal,
     MonthlyReceiptBinding,
+    HistoricalMonthlyReceiptBinding,
     decode_monthly_approval,
     decode_monthly_proposal,
 )
@@ -161,6 +162,7 @@ def save_approval(connection: Any, approval: MonthlyApproval) -> None:
         parent,
         approved_by=approval.approved_by,
         approved_at=approval.approved_at,
+        operation_verification=getattr(approval, "operation_verification", None),
     )
     if expected_approval != approval:
         raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_APPROVED_PUBLICATION_MISMATCH")
@@ -257,10 +259,16 @@ def _require_amendment(connection: Any, proposal: MonthlyAmendmentProposal) -> N
         require_amendment_authority(
             proposal,
             [item for item in approvals if item is not None],
-            MonthlyReceiptBinding(
-                product_version=receipt.product_version,
-                revision=binding.revision,
-                digest=receipt.content_hash,
+            (
+                HistoricalMonthlyReceiptBinding
+                if receipt.product_version in {"v3", "v4"}
+                else MonthlyReceiptBinding
+            ).model_validate(
+                dict(
+                    product_version=receipt.product_version,
+                    revision=binding.revision,
+                    digest=receipt.content_hash,
+                )
             ),
         )
     except ValueError as error:

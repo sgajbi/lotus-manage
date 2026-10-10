@@ -10,7 +10,15 @@ from pydantic.json_schema import SkipJsonSchema
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import Digest, Identity, StrictAuthorityModel
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApproval,
+    MonthlyPolicyApprovalVariant,
+    decode_policy_approval,
+)
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalMonthlyPolicyApproval,
+    HistoricalPolicyVerification,
+)
 from src.core.composite_eligibility.evaluation import (
     MonthlyEligibilityEvaluation,
     evaluate_monthly_eligibility,
@@ -33,12 +41,12 @@ class MonthlyEvaluationProposalContent(StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEvaluationProposal"] = (
         "CompositeMonthlyEvaluationProposal"
     )
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3", "v4"]
     evaluation_revision: Identity
     target_membership_revision: Identity
     parent_membership_revision: Identity
     parent_membership_content_hash: Digest
-    policy_approval: MonthlyPolicyApproval
+    policy_approval: MonthlyPolicyApprovalVariant
     universe: DpmCompositeUniverseAttestation
     observations: MonthlyEligibilityObservations
     source_assembly_evidence: VerifiedMonthlySourceAssembly | None = Field(
@@ -68,9 +76,7 @@ class MonthlyEvaluationProposalContent(StrictAuthorityModel):
 
     @model_validator(mode="after")
     def require_reproducible_bound_evaluation(self) -> MonthlyEvaluationProposalContent:
-        self.policy_approval = MonthlyPolicyApproval.model_validate(
-            self.policy_approval.model_dump(mode="json")
-        )
+        self.policy_approval = decode_policy_approval(self.policy_approval.model_dump(mode="json"))
         self.universe = DpmCompositeUniverseAttestation.model_validate(
             self.universe.model_dump(mode="json")
         )
@@ -107,6 +113,61 @@ class MonthlyEvaluationProposal(MonthlyEvaluationProposalContent):
     """Frozen ordinary monthly evaluation wire and digest."""
 
     product_version: Literal["v1"] = "v1"
+    policy_approval: MonthlyPolicyApproval
+
+
+class HistoricalMonthlyProposalContent(MonthlyEvaluationProposalContent):
+    policy_approval: HistoricalMonthlyPolicyApproval
+    operation_verification: HistoricalPolicyVerification
+
+    @model_validator(mode="after")
+    def require_current_policy_verification(self) -> "HistoricalMonthlyProposalContent":
+        require_operation_verification(
+            self,
+            self.operation_verification,
+            "EVALUATION_PROPOSAL",
+            self.proposed_by,
+            self.proposed_at,
+        )
+        return self
+
+
+class HistoricalMonthlyEvaluationProposal(HistoricalMonthlyProposalContent):
+    product_version: Literal["v3"] = "v3"
+
+
+def require_operation_verification(
+    proposal: MonthlyEvaluationProposalContent,
+    proof: HistoricalPolicyVerification,
+    operation: str,
+    actor: str,
+    instant: str,
+) -> None:
+    if not isinstance(proposal.policy_approval, HistoricalMonthlyPolicyApproval):
+        raise ValueError("COMPOSITE_HISTORICAL_POLICY_REQUEST_MISMATCH")
+    proof = HistoricalPolicyVerification.model_validate(proof.model_dump(mode="json"))
+    if datetime.fromisoformat(instant) < datetime.fromisoformat(
+        proposal.policy_approval.approved_at
+    ):
+        raise ValueError("COMPOSITE_ELIGIBILITY_APPROVAL_BEFORE_PROPOSAL")
+    if proof.mapping != proposal.policy_approval.verification.mapping:
+        raise ValueError("COMPOSITE_HISTORICAL_POLICY_MAPPING_MISMATCH")
+    intent = (
+        hash_canonical_payload(
+            proposal.model_dump(mode="json", exclude={"content_hash", "operation_verification"})
+        )
+        if operation == "EVALUATION_PROPOSAL"
+        else proposal.content_hash
+    )
+    request = proof.request
+    if (
+        request.operation,
+        request.revision,
+        request.actor_id,
+        request.requested_at,
+        request.intent_digest,
+    ) != (operation, proposal.evaluation_revision, actor, instant, intent):
+        raise ValueError("COMPOSITE_HISTORICAL_POLICY_INTENT_MISMATCH")
 
 
 def _require_universe_binding(proposal: MonthlyEvaluationProposalContent) -> None:
@@ -185,7 +246,7 @@ class MonthlyEvaluationApprovalContent(StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEvaluationApproval"] = (
         "CompositeMonthlyEvaluationApproval"
     )
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3", "v4"]
     evidence_kind: Literal["SYNTHETIC_UNSIGNED"] = "SYNTHETIC_UNSIGNED"
     official_activation: Literal["UNAVAILABLE"] = "UNAVAILABLE"
     proposal: MonthlyEvaluationProposalContent
@@ -224,3 +285,23 @@ class MonthlyEvaluationApproval(MonthlyEvaluationApprovalContent):
 
     product_version: Literal["v1"] = "v1"
     proposal: MonthlyEvaluationProposal
+
+
+class HistoricalMonthlyApprovalContent(MonthlyEvaluationApprovalContent):
+    operation_verification: HistoricalPolicyVerification
+
+    @model_validator(mode="after")
+    def require_current_policy_verification(self) -> "HistoricalMonthlyApprovalContent":
+        require_operation_verification(
+            self.proposal,
+            self.operation_verification,
+            "EVALUATION_APPROVAL",
+            self.approved_by,
+            self.approved_at,
+        )
+        return self
+
+
+class HistoricalMonthlyEvaluationApproval(HistoricalMonthlyApprovalContent):
+    product_version: Literal["v3"] = "v3"
+    proposal: HistoricalMonthlyEvaluationProposal

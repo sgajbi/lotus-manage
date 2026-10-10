@@ -597,6 +597,14 @@ Endpoint certification details are tracked in [Endpoint Certification](Endpoint-
 
 ## Monthly Composite Eligibility
 
+An additive reference-only `PUT policies/{month}/proposals/{proposal_revision}/historical-admission`
+under the monthly family supports policy v2, ordinary evaluation/receipt v3 and correction v4.
+Original raw evidence and original event times remain separate from fresh current-operation
+verification. The production original-format adapter remains unavailable; controlled test formats
+do not enable it. Existing v1/v2 wires and staged-root refusals remain unchanged. See the
+[historical admission contract](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md#historical-original-policy-admission)
+for version selection, exact schema examples and acceptance boundaries.
+
 The composite `monthly-eligibility` family supports policy validation/simulation/diff, immutable
 prospective policy proposals, independent checking, retained monthly evaluations and atomic
 approved membership publication. Its default source is unavailable; synthetic controls do not

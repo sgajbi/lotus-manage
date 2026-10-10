@@ -5,14 +5,18 @@ from datetime import datetime
 
 from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApproval,
+    HistoricalMonthlyEvaluationApproval,
     evaluation_key,
 )
 from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyAmendmentApproval,
-    MonthlyAmendmentProposal,
+    MonthlyAmendmentApprovalContent as MonthlyAmendmentApproval,
+    MonthlyAmendmentProposalContent as MonthlyAmendmentProposal,
     MonthlyApproval,
+    MonthlyCorrectionApproval,
     MonthlyApprovalBinding,
     MonthlyReceiptBinding,
+    HistoricalMonthlyApprovalBinding,
+    HistoricalMonthlyReceiptBinding,
 )
 
 MAX_MONTHLY_AUTHORITY_RECORDS = 64
@@ -21,7 +25,7 @@ MAX_MONTHLY_AUTHORITY_RECORDS = 64
 def require_amendment_authority(
     proposal: MonthlyAmendmentProposal,
     approvals: Sequence[MonthlyApproval],
-    predecessor_receipt: MonthlyReceiptBinding,
+    predecessor_receipt: MonthlyReceiptBinding | HistoricalMonthlyReceiptBinding,
 ) -> None:
     """Caller holds the owning publication lock and supplies the exact retained graph."""
     selected = selected_monthly_approval(
@@ -30,18 +34,31 @@ def require_amendment_authority(
     require_source_correction(proposal, selected)
     if len(approvals) >= MAX_MONTHLY_AUTHORITY_RECORDS:
         raise ValueError("COMPOSITE_MONTHLY_AUTHORITY_HISTORY_LIMIT")
-    root = next(item for item in approvals if isinstance(item, MonthlyEvaluationApproval))
+    root = next(
+        item
+        for item in approvals
+        if isinstance(item, (MonthlyEvaluationApproval, HistoricalMonthlyEvaluationApproval))
+    )
     if proposal.amendment.original_approval_binding != approval_binding(root):
         raise ValueError("COMPOSITE_MONTHLY_AUTHORITY_ORIGINAL_MISMATCH")
     if proposal.amendment.predecessor_receipt_binding != predecessor_receipt:
         raise ValueError("COMPOSITE_MONTHLY_AMENDMENT_PREDECESSOR_RECEIPT_MISMATCH")
 
 
-def approval_binding(approval: MonthlyApproval) -> MonthlyApprovalBinding:
-    return MonthlyApprovalBinding(
-        product_version=approval.product_version,
-        revision=approval.proposal.evaluation_revision,
-        digest=approval.content_hash,
+def approval_binding(
+    approval: MonthlyApproval,
+) -> MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding:
+    model = (
+        HistoricalMonthlyApprovalBinding
+        if approval.product_version in {"v3", "v4"}
+        else MonthlyApprovalBinding
+    )
+    return model.model_validate(
+        dict(
+            product_version=approval.product_version,
+            revision=approval.proposal.evaluation_revision,
+            digest=approval.content_hash,
+        )
     )
 
 
@@ -59,7 +76,11 @@ def selected_monthly_approval(
         for item in approvals
     ):
         raise ValueError("COMPOSITE_MONTHLY_AUTHORITY_SCOPE_MISMATCH")
-    roots = [item for item in approvals if isinstance(item, MonthlyEvaluationApproval)]
+    roots = [
+        item
+        for item in approvals
+        if isinstance(item, (MonthlyEvaluationApproval, HistoricalMonthlyEvaluationApproval))
+    ]
     if len(roots) != 1:
         raise ValueError("COMPOSITE_MONTHLY_AUTHORITY_ROOT_AMBIGUOUS")
     by_hash = {item.content_hash: item for item in approvals}
@@ -82,8 +103,8 @@ def selected_monthly_approval(
 def _validated_children(
     approvals: Sequence[MonthlyApproval],
     by_hash: dict[str, MonthlyApproval],
-    root: MonthlyApprovalBinding,
-) -> dict[str, MonthlyAmendmentApproval]:
+    root: MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding,
+) -> dict[str, MonthlyCorrectionApproval]:
     children = {}
     for item in approvals:
         if not isinstance(item, MonthlyAmendmentApproval):

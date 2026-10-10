@@ -262,6 +262,66 @@ refusals, atomic first publication and an authenticated resolver in a fresh API 
 
 ## Operations And Remaining Boundaries
 
+### Historical original policy admission
+
+The additive `PUT policies/{month}/proposals/{proposal_revision}/historical-admission`
+operation is relative to the registered monthly-eligibility base above. Its command contains only
+`reference`: `issuer_id`, `artifact_id`, `revision`, `raw_digest` and `signing_contract`. Tenant,
+actor, current operation time and normalized mapping come from admitted server dependencies.
+Callers cannot submit historical event times, raw artifacts, credentials or trust configuration.
+Existing policy checking and evaluation operations then select the explicit product families:
+
+| Policy proposal/approval | Evaluation proposal/approval/receipt | Purpose |
+| --- | --- | --- |
+| v1 | v1 | Existing prospective ordinary evaluation |
+| v1 | v2 | Existing source correction |
+| v2 | v3 | Admitted historical policy, ordinary evaluation |
+| v2 | v4 | Source correction of a v3 root or v4 predecessor |
+
+Existing wires remain frozen. Explicit unknown/null versions and mixed families refuse; missing
+versions retain only the existing v1 interpretation. A staged root remains unsupported for ordinary
+source correction. Definition product versions are independent of this table.
+
+`historical_policy.py` separates exact original raw bytes and their digest/opaque original
+credential from normalized policy fields and present-operation verification. The trusted admission
+port must verify the authentic artifact using its actual original signing format, original signer
+authority and historical approval time. It must also prove current revocation clearance and fresh
+independent admission for each policy/evaluation proposal and approval. Original maker/checker times
+remain original; current maker/checker times remain current. The normalized proof carries separate
+Ed25519 verifier credentials, exact operation/scope/revision/actor/intent binding, server-pinned
+keys/configuration, independent principals and a maximum five-minute admission interval.
+
+Production has no supported original-format adapter. The default port returns unavailable; setting
+`DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` raises
+`COMPOSITE_HISTORICAL_POLICY_ORIGINAL_FORMAT_UNSUPPORTED`. The controlled raw-byte Ed25519 format in
+test helpers is explicitly synthetic and cannot enable production. Actual source format and trust
+owner evidence are required before an adapter can be implemented or deployed.
+
+Exact replay returns retained custody before consulting current sources. Read-only receipt resolution
+validates the recorded admission interval and all immutable bindings without renewing authority,
+rechecking today's revocation or changing original evidence. A fresh write requires fresh admission;
+unavailable, changed mapping/trust, stale projection and changed command refuse atomically.
+The existing monthly UOW, locks, one-root/one-successor constraints and publication ledger apply.
+Forward migration `0045` admits the explicit wire families without rewriting old rows or migration
+checksums; apply it before enabling new writers. No separate runtime or authority ledger is introduced.
+
+Actual schemas and controlled examples live in
+[`docs/contracts/composite-historical-policy`](../contracts/composite-historical-policy/README.md).
+From the `lotus-manage` root, verify their exact bytes and canonical content on either OS:
+
+```text
+python -m tests.composite_historical_policy_contracts docs/contracts/composite-historical-policy --check
+python -m tests.composite_historical_policy_graph tests/fixtures/composite_historical_policy_graph --check
+python -m pytest tests/unit/dpm/composites/test_historical_policy_admission.py tests/unit/dpm/composites/test_historical_monthly_custody.py tests/unit/api/test_historical_policy_routes.py -q
+```
+
+The owning PostgreSQL lane runs `test_composite_historical_policy_postgres.py` and
+`test_composite_historical_policy_upgrade_postgres.py` in `tests/integration/dpm/composites`.
+Local runs without an isolated DSN explicitly skip those proofs; skips are not storage qualification.
+These contracts do not admit downstream Report/Render/Archive consumers, genuine institutional
+authority, production sources, bank IAM, methodology or official activation. Those acceptance gates
+remain separate and open.
+
 ### Exact monthly published evidence
 
 Fresh monthly proposals carry the server-owned `publication_evidence_version: "v1"` marker.

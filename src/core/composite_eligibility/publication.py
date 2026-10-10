@@ -1,20 +1,18 @@
 """Project one approved month into the existing immutable membership wire."""
 
 from datetime import date, datetime, timedelta
-from typing import overload
 
 from src.core.composite_eligibility.evaluation_control import (
-    MonthlyEvaluationApproval,
-    MonthlyEvaluationProposal,
     monthly_evaluation_approval_claims_hash,
 )
 from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyAmendmentApproval,
-    MonthlyAmendmentProposal,
+    MonthlyAmendmentProposalContent as MonthlyAmendmentProposal,
     MonthlyApproval,
     MonthlyProposal,
     decode_monthly_proposal,
+    decode_monthly_approval,
 )
+from src.core.composite_eligibility.historical_policy import HistoricalPolicyVerification
 from src.core.composite_eligibility.policy import month_window
 from src.core.composite_eligibility.evaluation import MonthlyEligibilityEvaluation
 from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
@@ -29,36 +27,13 @@ from src.core.composite_universe import (
 from src.core.composite_universe_resolution import reconcile_composite_universe
 
 
-@overload
-def build_monthly_publication(
-    proposal: MonthlyEvaluationProposal,
-    parent: DpmCompositeMembershipRevision,
-    *,
-    approved_by: str,
-    approved_at: str,
-) -> tuple[
-    MonthlyEvaluationApproval, DpmCompositeMembershipRevision, DpmCompositeUniverseAttestation
-]: ...
-
-
-@overload
-def build_monthly_publication(
-    proposal: MonthlyAmendmentProposal,
-    parent: DpmCompositeMembershipRevision,
-    *,
-    approved_by: str,
-    approved_at: str,
-) -> tuple[
-    MonthlyAmendmentApproval, DpmCompositeMembershipRevision, DpmCompositeUniverseAttestation
-]: ...
-
-
 def build_monthly_publication(
     proposal: MonthlyProposal,
     parent: DpmCompositeMembershipRevision,
     *,
     approved_by: str,
     approved_at: str,
+    operation_verification: HistoricalPolicyVerification | None = None,
 ) -> tuple[MonthlyApproval, DpmCompositeMembershipRevision, DpmCompositeUniverseAttestation]:
     proposal = decode_monthly_proposal(proposal.model_dump(mode="json"))
     parent = DpmCompositeMembershipRevision.model_validate(parent.model_dump(mode="json"))
@@ -91,7 +66,13 @@ def build_monthly_publication(
     )
     universe = _published_universe(proposal, revision, approved_by, approved_at)
     approval = _projected_approval(
-        proposal, approved_by, approved_at, claims, revision.content_hash, universe.content_hash
+        proposal,
+        approved_by,
+        approved_at,
+        claims,
+        revision.content_hash,
+        universe.content_hash,
+        operation_verification,
     )
     if proposal.publication_evidence_version == "v1":
         linked = _published_universe(
@@ -112,6 +93,7 @@ def _projected_approval(
     claims: str,
     membership_hash: str,
     universe_hash: str,
+    operation_verification: HistoricalPolicyVerification | None,
 ) -> MonthlyApproval:
     wire = {
         "proposal": proposal.model_dump(mode="json"),
@@ -121,12 +103,10 @@ def _projected_approval(
         "membership_content_hash": membership_hash,
         "published_universe_content_hash": universe_hash,
     }
-    model = (
-        MonthlyAmendmentApproval
-        if isinstance(proposal, MonthlyAmendmentProposal)
-        else MonthlyEvaluationApproval
-    )
-    return model.model_validate(wire)
+    wire["product_version"] = proposal.product_version
+    if operation_verification is not None:
+        wire["operation_verification"] = operation_verification.model_dump(mode="json")
+    return decode_monthly_approval(wire)
 
 
 def _require_publishable_month(

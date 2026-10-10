@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-09T22:44:38+00:00`
+- Generated at: `2026-10-10T01:41:07+00:00`
 
-- Baseline source snapshot: `545269b3d356630680da7c692d90613a5c28f99c`
+- Baseline source snapshot: `9224d85664fb07e8074ef21681b88449d05193e8`
 
-- Report source snapshot: `c56e2ab0+worktree`
+- Report source snapshot: `cd5f33aa+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -42,8 +42,8 @@
 | 6 | admit_simulation_operation | src/infrastructure/waves/simulation_postgres.py | 17 | 79 |
 | 7 | _resolve_single | src/infrastructure/composites/monthly_evidence.py | 15 | 75 |
 | 8 | _load_releaseable_run | src/api/services/instruction_package_application.py | 14 | 39 |
-| 9 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
-| 10 | _monthly_receipt | src/infrastructure/composites/in_memory.py | 13 | 62 |
+| 9 | propose | src/api/services/composite_monthly_evaluation.py | 13 | 126 |
+| 10 | record_run | src/core/rebalance_runs/service.py | 13 | 99 |
 
 ### Most Complex Current Test Functions
 

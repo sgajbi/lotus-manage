@@ -27,18 +27,26 @@ from src.core.composite_publication import (
     publication_from_revision,
 )
 from src.core.composite_universe import DpmCompositeUniverseAttestation
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApprovalVariant as MonthlyPolicyApproval,
+    MonthlyPolicyProposalVariant as MonthlyPolicyProposal,
+    decode_policy_proposal,
+    decode_policy_approval,
+)
 from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApproval,
+    HistoricalMonthlyEvaluationApproval,
     MonthlyEvaluationProposal,
+    HistoricalMonthlyEvaluationProposal,
     evaluation_key as _evaluation_key,
 )
 from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyAmendmentApproval,
-    MonthlyAmendmentProposal,
+    MonthlyAmendmentApprovalContent as MonthlyAmendmentApproval,
+    MonthlyAmendmentProposalContent as MonthlyAmendmentProposal,
     MonthlyApproval,
     MonthlyProposal,
     MonthlyReceiptBinding,
+    HistoricalMonthlyReceiptBinding,
     decode_monthly_approval,
     decode_monthly_proposal,
 )
@@ -210,7 +218,12 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 (tenant_id, composite_id, definition_version, evaluation_revision)
             )
             if result is not None and not isinstance(
-                result, (MonthlyEvaluationProposal, MonthlyAmendmentProposal)
+                result,
+                (
+                    MonthlyEvaluationProposal,
+                    HistoricalMonthlyEvaluationProposal,
+                    MonthlyAmendmentProposal,
+                ),
             ):
                 return None
             return (
@@ -231,7 +244,14 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         with self._lock:
             existing = self._monthly_evaluation_approvals.get(approval_key)
             if existing is not None:
-                if not isinstance(existing, (MonthlyEvaluationApproval, MonthlyAmendmentApproval)):
+                if not isinstance(
+                    existing,
+                    (
+                        MonthlyEvaluationApproval,
+                        HistoricalMonthlyEvaluationApproval,
+                        MonthlyAmendmentApproval,
+                    ),
+                ):
                     raise DpmCompositeConflictError(
                         "COMPOSITE_ELIGIBILITY_ACTIVE_EVALUATION_CONFLICT"
                     )
@@ -256,6 +276,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 parent,
                 approved_by=approval.approved_by,
                 approved_at=approval.approved_at,
+                operation_verification=getattr(approval, "operation_verification", None),
             )
             if expected != approval:
                 raise DpmCompositeConflictError(
@@ -293,7 +314,14 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
                 (
                     item
                     for item in self._monthly_evaluation_approvals.values()
-                    if isinstance(item, (MonthlyEvaluationApproval, MonthlyAmendmentApproval))
+                    if isinstance(
+                        item,
+                        (
+                            MonthlyEvaluationApproval,
+                            HistoricalMonthlyEvaluationApproval,
+                            MonthlyAmendmentApproval,
+                        ),
+                    )
                     and _evaluation_key(item.proposal)
                     == (tenant_id, composite_id, definition_version, evaluation_revision)
                 ),
@@ -355,7 +383,14 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             (
                 item
                 for item in self._monthly_evaluation_approvals.values()
-                if isinstance(item, (MonthlyEvaluationApproval, MonthlyAmendmentApproval))
+                if isinstance(
+                    item,
+                    (
+                        MonthlyEvaluationApproval,
+                        HistoricalMonthlyEvaluationApproval,
+                        MonthlyAmendmentApproval,
+                    ),
+                )
                 and _evaluation_key(item.proposal) == key
             ),
             None,
@@ -415,7 +450,14 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         approvals = [
             item
             for item in self._monthly_evaluation_approvals.values()
-            if isinstance(item, (MonthlyEvaluationApproval, MonthlyAmendmentApproval))
+            if isinstance(
+                item,
+                (
+                    MonthlyEvaluationApproval,
+                    HistoricalMonthlyEvaluationApproval,
+                    MonthlyAmendmentApproval,
+                ),
+            )
             and _evaluation_key(item.proposal)[:2] == key[:2]
             and item.proposal.evaluation.month == proposal.evaluation.month
         ]
@@ -433,10 +475,16 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             require_amendment_authority(
                 proposal,
                 approvals,
-                MonthlyReceiptBinding(
-                    product_version=receipt.product_version,
-                    revision=binding.revision,
-                    digest=receipt.content_hash,
+                (
+                    HistoricalMonthlyReceiptBinding
+                    if receipt.product_version in {"v3", "v4"}
+                    else MonthlyReceiptBinding
+                ).model_validate(
+                    dict(
+                        product_version=receipt.product_version,
+                        revision=binding.revision,
+                        digest=receipt.content_hash,
+                    )
                 ),
             )
         except ValueError as error:
@@ -509,7 +557,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
         self._assert_publication_integrity(publication)
 
     def save_monthly_policy_proposal(self, *, proposal: MonthlyPolicyProposal) -> None:
-        proposal = MonthlyPolicyProposal.model_validate(proposal.model_dump(mode="json"))
+        proposal = decode_policy_proposal(proposal.model_dump(mode="json"))
         scope = proposal.policy.scope
         key = (
             scope.tenant_id,
@@ -552,7 +600,7 @@ class InMemoryDpmCompositeRepository(DpmCompositeRepository):
             return deepcopy(result) if result is not None else None
 
     def save_monthly_policy_approval(self, *, approval: MonthlyPolicyApproval) -> None:
-        approval = MonthlyPolicyApproval.model_validate(approval.model_dump(mode="json"))
+        approval = decode_policy_approval(approval.model_dump(mode="json"))
         proposal = approval.proposal
         scope = proposal.policy.scope
         proposal_key = (
