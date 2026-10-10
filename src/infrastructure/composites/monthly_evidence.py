@@ -9,7 +9,9 @@ from src.core.composite_eligibility.monthly_evidence import (
     require_monthly_receipt_lineage,
 )
 from src.core.composite_membership import DpmCompositeMembershipRevision
-from src.core.composite_eligibility.monthly_amendment import MonthlyAmendmentApproval
+from src.core.composite_eligibility.monthly_amendment import (
+    MonthlyAmendmentApprovalContent as MonthlyAmendmentApproval,
+)
 from src.core.composite_repository import DpmCompositeConflictError
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 from src.infrastructure.composites import evaluation_control, policy_control, publication

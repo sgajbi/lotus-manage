@@ -15,7 +15,10 @@ from src.core.composite_publication import (
     DpmCompositePublicationReceipt,
 )
 from src.core.composite_universe import DpmCompositeUniverseAttestation
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApprovalVariant as MonthlyPolicyApproval,
+    MonthlyPolicyProposalVariant as MonthlyPolicyProposal,
+)
 from src.core.composite_eligibility.monthly_amendment import MonthlyApproval, MonthlyProposal
 from src.core.composite_eligibility.staged_ports import StagedCompositeRepository
 

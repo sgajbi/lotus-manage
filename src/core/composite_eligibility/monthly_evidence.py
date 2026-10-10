@@ -8,17 +8,25 @@ from pydantic import Field, model_validator
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import EvidenceBinding, Identity, StrictAuthorityModel
 from src.core.composite_definition_versions import CompositeDefinition, decode_composite_definition
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApprovalVariant as MonthlyPolicyApproval,
+    MonthlyPolicyProposalVariant as MonthlyPolicyProposal,
+)
 from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApprovalContent,
     MonthlyEvaluationApproval,
+    HistoricalMonthlyEvaluationApproval,
 )
 from src.core.composite_eligibility.monthly_amendment import (
     MonthlyAmendmentApproval,
+    MonthlyAmendmentApprovalContent,
+    HistoricalMonthlyAmendmentApproval,
     MonthlyApproval,
     MonthlyApprovalBinding,
     MonthlyProposal,
     MonthlySourceAmendment,
+    HistoricalMonthlySourceAmendment,
+    HistoricalMonthlyApprovalBinding,
 )
 from src.core.composite_eligibility.publication import build_monthly_publication
 from src.core.composite_eligibility.monthly_authority import (
@@ -41,7 +49,7 @@ class MonthlyEligibilityReceiptContent(StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEligibilityPublicationReceipt"] = (
         "CompositeMonthlyEligibilityPublicationReceipt"
     )
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3", "v4"]
     definition: CompositeDefinition
     approval: MonthlyEvaluationApprovalContent
     membership_binding: EvidenceBinding
@@ -124,33 +132,57 @@ class MonthlyEligibilityPublicationReceipt(MonthlyEligibilityReceiptContent):
     approval: MonthlyEvaluationApproval
 
 
-class MonthlyAmendmentPublicationReceipt(MonthlyEligibilityReceiptContent):
+class MonthlyAmendmentReceiptContent(MonthlyEligibilityReceiptContent):
+    lineage: MonthlySourceAmendment | HistoricalMonthlySourceAmendment
+
+    @model_validator(mode="after")
+    def require_approved_lineage(self) -> "MonthlyAmendmentReceiptContent":
+        if (
+            not isinstance(self.approval, MonthlyAmendmentApprovalContent)
+            or self.lineage != self.approval.proposal.amendment
+        ):
+            raise ValueError("COMPOSITE_MONTHLY_AMENDMENT_RECEIPT_LINEAGE_MISMATCH")
+        return self
+
+
+class MonthlyAmendmentPublicationReceipt(MonthlyAmendmentReceiptContent):
     """Exact approved replacement graph with bounded predecessor locators."""
 
     product_version: Literal["v2"] = "v2"
     approval: MonthlyAmendmentApproval
     lineage: MonthlySourceAmendment
 
-    @model_validator(mode="after")
-    def require_approved_lineage(self) -> "MonthlyAmendmentPublicationReceipt":
-        if self.lineage != self.approval.proposal.amendment:
-            raise ValueError("COMPOSITE_MONTHLY_AMENDMENT_RECEIPT_LINEAGE_MISMATCH")
-        return self
+
+class HistoricalMonthlyPublicationReceipt(MonthlyEligibilityReceiptContent):
+    product_version: Literal["v3"] = "v3"
+    approval: HistoricalMonthlyEvaluationApproval
+
+
+class HistoricalMonthlyAmendmentReceipt(MonthlyAmendmentReceiptContent):
+    product_version: Literal["v4"] = "v4"
+    approval: HistoricalMonthlyAmendmentApproval
+    lineage: HistoricalMonthlySourceAmendment
 
 
 MonthlyPublicationReceipt = (
-    MonthlyEligibilityPublicationReceipt | MonthlyAmendmentPublicationReceipt
+    MonthlyEligibilityPublicationReceipt
+    | MonthlyAmendmentPublicationReceipt
+    | HistoricalMonthlyPublicationReceipt
+    | HistoricalMonthlyAmendmentReceipt
 )
 
 
 def require_monthly_receipt_lineage(
     receipt: MonthlyPublicationReceipt,
-    load: Callable[[MonthlyApprovalBinding], MonthlyPublicationReceipt | None],
+    load: Callable[
+        [MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding],
+        MonthlyPublicationReceipt | None,
+    ],
 ) -> None:
     """Validate a bounded retained predecessor path under the caller's read snapshot."""
     approvals: list[MonthlyApproval] = [receipt.approval]
     current = receipt
-    while isinstance(current.approval, MonthlyAmendmentApproval):
+    while isinstance(current.approval, MonthlyAmendmentApprovalContent):
         if len(approvals) >= MAX_MONTHLY_AUTHORITY_RECORDS:
             raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
         lineage = current.approval.proposal.amendment
@@ -196,6 +228,7 @@ def published_monthly_receipt(
         parent,
         approved_by=approval.approved_by,
         approved_at=approval.approved_at,
+        operation_verification=getattr(approval, "operation_verification", None),
     )
     if (approval, membership, universe) != (expected_approval, expected_member, expected_universe):
         raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
@@ -247,7 +280,7 @@ def published_monthly_receipt(
         source_cut_id=universe.source_cut_id,
         publication_sequence=publication.sequence,
     )
-    if isinstance(approval, MonthlyAmendmentApproval):
+    if isinstance(approval, MonthlyAmendmentApprovalContent):
         if parent_publication is None or (
             parent_publication.tenant_id,
             parent_publication.composite_id,
@@ -264,7 +297,15 @@ def published_monthly_receipt(
             approval.proposal.amendment.expected_current_publication_sequence,
         ):
             raise ValueError("COMPOSITE_MONTHLY_EVIDENCE_CUSTODY_INTEGRITY_CONFLICT")
-        return MonthlyAmendmentPublicationReceipt.model_validate(
-            content | {"lineage": approval.proposal.amendment}
+        model = (
+            HistoricalMonthlyAmendmentReceipt
+            if approval.product_version == "v4"
+            else MonthlyAmendmentPublicationReceipt
         )
-    return MonthlyEligibilityPublicationReceipt.model_validate(content)
+        return model.model_validate(content | {"lineage": approval.proposal.amendment})
+    root_model = (
+        HistoricalMonthlyPublicationReceipt
+        if approval.product_version == "v3"
+        else MonthlyEligibilityPublicationReceipt
+    )
+    return root_model.model_validate(content)

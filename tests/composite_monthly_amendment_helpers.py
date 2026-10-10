@@ -27,7 +27,12 @@ from tests.composite_staged_eligibility_helpers import lifecycle_material, synth
 
 
 def seed_complete_monthly_root(
-    repository, *, definition_product_version="v1", coverage_to="2026-09-30", approved_at=None
+    repository,
+    *,
+    definition_product_version="v1",
+    coverage_to="2026-09-30",
+    approved_at=None,
+    parent_decided_at=None,
 ):
     snapshot = source_snapshot()
     retained, universe = retained_repository(snapshot, coverage_to=coverage_to)
@@ -37,9 +42,22 @@ def seed_complete_monthly_root(
         definition_version=snapshot.definition_version,
     )
     definition = retained.get_definition(**scope)
+    if parent_decided_at is not None:
+        definition = type(definition).model_validate(
+            definition.model_dump(mode="json")
+            | {"created_at": parent_decided_at, "content_hash": ""}
+        )
     if definition_product_version == "v2":
         definition = synthetic_monthly_v2_definition(definition)
     parent = retained.get_membership_revision(**scope, membership_revision="synthetic-membership")
+    if parent_decided_at is not None:
+        parent = type(parent).model_validate(
+            parent.model_dump(mode="json") | {"decided_at": parent_decided_at, "content_hash": ""}
+        )
+        universe = type(universe).model_validate(
+            universe.model_dump(mode="json")
+            | {"membership_content_hash": parent.content_hash, "content_hash": ""}
+        )
     repository.save_definition(definition=definition)
     repository.save_membership_revision(revision=parent)
     repository.save_universe_attestation(attestation=universe)
@@ -200,6 +218,7 @@ def corrected_monthly_proposal(
     revision=2,
     proposed_at_override=None,
     source_revision_override=None,
+    historical_verifier=None,
 ):
     predecessor = receipt.approval
     prior = predecessor.proposal
@@ -262,7 +281,7 @@ def corrected_monthly_proposal(
         "revision": prior.evaluation_revision,
         "digest": predecessor.content_hash,
     }
-    return MonthlyAmendmentProposal(
+    wire = dict(
         evaluation_revision=f"synthetic.corrected.evaluation.r{revision}",
         target_membership_revision=f"synthetic.corrected.membership.r{revision}",
         parent_membership_revision=parent.membership_revision,
@@ -309,4 +328,34 @@ def corrected_monthly_proposal(
             "reason": "Synthetic source owner corrected September settled unencumbered cash.",
             "evidence_bindings": [cash_input["evidence"]],
         },
+    )
+    if historical_verifier is None:
+        return MonthlyAmendmentProposal(**wire)
+    import json
+    from src.core.composite_eligibility.monthly_amendment import (
+        HistoricalMonthlyAmendmentProposal,
+        MonthlyAmendmentProposalContent,
+    )
+    from src.core.composite_eligibility.historical_policy import HistoricalPolicyVerificationRequest
+
+    if isinstance(prior, MonthlyAmendmentProposalContent):
+        wire["amendment"]["original_approval_binding"] = prior.amendment.original_approval_binding
+    wire["product_version"] = "v4"
+    raw = json.loads(json.dumps(wire, default=lambda item: item.model_dump(mode="json")))
+    raw = MonthlyAmendmentProposalContent.model_validate(raw).model_dump(
+        mode="json", exclude={"content_hash"}
+    )
+    initial = prior.policy_approval.verification.request.model_dump(mode="json")
+    request = HistoricalPolicyVerificationRequest.model_validate(
+        initial
+        | {
+            "operation": "EVALUATION_PROPOSAL",
+            "revision": wire["evaluation_revision"],
+            "actor_id": wire["proposed_by"],
+            "requested_at": instant,
+            "intent_digest": hash_canonical_payload(raw),
+        }
+    )
+    return HistoricalMonthlyAmendmentProposal.model_validate(
+        raw | {"operation_verification": historical_verifier.verify(request)}
     )

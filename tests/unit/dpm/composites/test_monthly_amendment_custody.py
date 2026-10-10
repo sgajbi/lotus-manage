@@ -230,7 +230,7 @@ def test_new_monthly_decoders_refuse_unknown_contract_versions():
 
     for decode in (decode_monthly_approval, decode_monthly_proposal):
         with pytest.raises(ValueError, match="VERSION_UNSUPPORTED"):
-            decode({"product_version": "v3"})
+            decode({"product_version": "v5"})
 
 
 def test_amended_receipt_requires_its_retained_predecessor_graph(correction):

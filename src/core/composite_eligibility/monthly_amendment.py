@@ -1,5 +1,7 @@
 """Explicit immutable source correction claims; no retrospective policy authority."""
 
+from __future__ import annotations
+
 from typing import Any, Literal
 from datetime import datetime
 
@@ -17,7 +19,12 @@ from src.core.composite_eligibility.evaluation_control import (
     MonthlyEvaluationApproval,
     MonthlyEvaluationProposalContent,
     MonthlyEvaluationProposal,
+    HistoricalMonthlyEvaluationProposal,
+    HistoricalMonthlyEvaluationApproval,
+    HistoricalMonthlyProposalContent,
+    HistoricalMonthlyApprovalContent,
 )
+from src.core.composite_eligibility.approval import MonthlyPolicyApproval
 from src.core.composite_eligibility.policy import month_window
 
 
@@ -41,12 +48,12 @@ class MonthlyReceiptBinding(StrictAuthorityModel):
     digest: Digest
 
 
-class MonthlySourceAmendment(StrictAuthorityModel):
+class MonthlySourceAmendmentContent(StrictAuthorityModel):
     correction_kind: Literal["SOURCE_CORRECTION"]
-    predecessor_approval_binding: MonthlyApprovalBinding
-    predecessor_receipt_binding: MonthlyReceiptBinding
-    original_approval_binding: MonthlyApprovalBinding
-    expected_authority_binding: MonthlyApprovalBinding
+    predecessor_approval_binding: MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding
+    predecessor_receipt_binding: MonthlyReceiptBinding | HistoricalMonthlyReceiptBinding
+    original_approval_binding: MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding
+    expected_authority_binding: MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding
     projection_parent_membership_binding: EvidenceBinding
     expected_current_publication_sequence: int = Field(gt=0)
     affected_from: BusinessDate
@@ -56,7 +63,7 @@ class MonthlySourceAmendment(StrictAuthorityModel):
     evidence_bindings: list[EvidenceBinding] = Field(min_length=1, max_length=32)
 
     @model_validator(mode="after")
-    def require_explicit_unambiguous_claims(self) -> "MonthlySourceAmendment":
+    def require_explicit_unambiguous_claims(self) -> "MonthlySourceAmendmentContent":
         if not self.reason.strip():
             raise ValueError("COMPOSITE_MONTHLY_AMENDMENT_REASON_REQUIRED")
         if self.expected_authority_binding != self.predecessor_approval_binding:
@@ -79,16 +86,53 @@ class MonthlySourceAmendment(StrictAuthorityModel):
         return self
 
 
-class MonthlyAmendmentProposal(MonthlyEvaluationProposalContent):
-    product_version: Literal["v2"] = "v2"
-    amendment: MonthlySourceAmendment
+class HistoricalMonthlyApprovalBinding(StrictAuthorityModel):
+    product_name: Literal["CompositeMonthlyEvaluationApproval"] = (
+        "CompositeMonthlyEvaluationApproval"
+    )
+    product_version: Literal["v3", "v4"]
+    revision: Identity
+    digest: Digest
+
+
+class HistoricalMonthlyReceiptBinding(StrictAuthorityModel):
+    product_name: Literal["CompositeMonthlyEligibilityPublicationReceipt"] = (
+        "CompositeMonthlyEligibilityPublicationReceipt"
+    )
+    product_version: Literal["v3", "v4"]
+    revision: Identity
+    digest: Digest
+
+
+class MonthlySourceAmendment(MonthlySourceAmendmentContent):
+    predecessor_approval_binding: MonthlyApprovalBinding
+    predecessor_receipt_binding: MonthlyReceiptBinding
+    original_approval_binding: MonthlyApprovalBinding
+    expected_authority_binding: MonthlyApprovalBinding
+
+
+class HistoricalMonthlySourceAmendment(MonthlySourceAmendmentContent):
+    predecessor_approval_binding: HistoricalMonthlyApprovalBinding
+    predecessor_receipt_binding: HistoricalMonthlyReceiptBinding
+    original_approval_binding: HistoricalMonthlyApprovalBinding
+    expected_authority_binding: HistoricalMonthlyApprovalBinding
+
+    @model_validator(mode="after")
+    def require_historical_root(self) -> "HistoricalMonthlySourceAmendment":
+        if self.original_approval_binding.product_version != "v3":
+            raise ValueError("COMPOSITE_MONTHLY_AUTHORITY_ORIGINAL_MISMATCH")
+        return self
+
+
+class MonthlyAmendmentProposalContent(MonthlyEvaluationProposalContent):
+    amendment: MonthlySourceAmendment | HistoricalMonthlySourceAmendment
 
     def require_parent_clock(self, decided_at: datetime) -> None:
         if datetime.fromisoformat(self.proposed_at) < decided_at:
             raise ValueError("COMPOSITE_MONTHLY_AMENDMENT_CLOCK_MISMATCH")
 
     @model_validator(mode="after")
-    def require_complete_month_projection(self) -> "MonthlyAmendmentProposal":
+    def require_complete_month_projection(self) -> "MonthlyAmendmentProposalContent":
         if (self.amendment.affected_from, self.amendment.affected_to) != month_window(
             self.evaluation.month
         ):
@@ -109,13 +153,48 @@ class MonthlyAmendmentProposal(MonthlyEvaluationProposalContent):
         return self
 
 
-class MonthlyAmendmentApproval(MonthlyEvaluationApprovalContent):
+class MonthlyAmendmentProposal(MonthlyAmendmentProposalContent):
+    product_version: Literal["v2"] = "v2"
+    policy_approval: MonthlyPolicyApproval
+    amendment: MonthlySourceAmendment
+
+
+class HistoricalMonthlyAmendmentProposal(
+    HistoricalMonthlyProposalContent, MonthlyAmendmentProposalContent
+):
+    product_version: Literal["v4"] = "v4"
+    amendment: HistoricalMonthlySourceAmendment
+
+
+class MonthlyAmendmentApprovalContent(MonthlyEvaluationApprovalContent):
+    proposal: MonthlyAmendmentProposalContent
+
+
+class MonthlyAmendmentApproval(MonthlyAmendmentApprovalContent):
     product_version: Literal["v2"] = "v2"
     proposal: MonthlyAmendmentProposal
 
 
-MonthlyProposal = MonthlyEvaluationProposal | MonthlyAmendmentProposal
-MonthlyApproval = MonthlyEvaluationApproval | MonthlyAmendmentApproval
+class HistoricalMonthlyAmendmentApproval(
+    HistoricalMonthlyApprovalContent, MonthlyAmendmentApprovalContent
+):
+    product_version: Literal["v4"] = "v4"
+    proposal: HistoricalMonthlyAmendmentProposal
+
+
+MonthlyProposal = (
+    MonthlyEvaluationProposal
+    | MonthlyAmendmentProposal
+    | HistoricalMonthlyEvaluationProposal
+    | HistoricalMonthlyAmendmentProposal
+)
+MonthlyApproval = (
+    MonthlyEvaluationApproval
+    | MonthlyAmendmentApproval
+    | HistoricalMonthlyEvaluationApproval
+    | HistoricalMonthlyAmendmentApproval
+)
+MonthlyCorrectionApproval = MonthlyAmendmentApproval | HistoricalMonthlyAmendmentApproval
 
 
 def decode_monthly_proposal(wire: dict[str, Any]) -> MonthlyProposal:
@@ -125,6 +204,10 @@ def decode_monthly_proposal(wire: dict[str, Any]) -> MonthlyProposal:
         return MonthlyEvaluationProposal.model_validate(wire)
     if version == "v2":
         return MonthlyAmendmentProposal.model_validate(wire)
+    if version == "v3":
+        return HistoricalMonthlyEvaluationProposal.model_validate(wire)
+    if version == "v4":
+        return HistoricalMonthlyAmendmentProposal.model_validate(wire)
     raise ValueError("COMPOSITE_MONTHLY_EVALUATION_VERSION_UNSUPPORTED")
 
 
@@ -134,4 +217,8 @@ def decode_monthly_approval(wire: dict[str, Any]) -> MonthlyApproval:
         return MonthlyEvaluationApproval.model_validate(wire)
     if version == "v2":
         return MonthlyAmendmentApproval.model_validate(wire)
+    if version == "v3":
+        return HistoricalMonthlyEvaluationApproval.model_validate(wire)
+    if version == "v4":
+        return HistoricalMonthlyAmendmentApproval.model_validate(wire)
     raise ValueError("COMPOSITE_MONTHLY_APPROVAL_VERSION_UNSUPPORTED")

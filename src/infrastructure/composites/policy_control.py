@@ -2,10 +2,15 @@
 
 from typing import Any
 
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApprovalVariant as MonthlyPolicyApproval,
+    MonthlyPolicyProposalVariant as MonthlyPolicyProposal,
+    decode_policy_proposal,
+    decode_policy_approval,
+)
 from src.core.composite_repository import DpmCompositeConflictError
 from src.core.composite_definition_versions import decode_composite_definition
-from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
+from src.infrastructure.mandates.serialization import dump_model_json
 
 
 def proposal_key(proposal: MonthlyPolicyProposal) -> tuple[str, str, str, str, str]:
@@ -20,7 +25,7 @@ def proposal_key(proposal: MonthlyPolicyProposal) -> tuple[str, str, str, str, s
 
 
 def save_proposal(connection: Any, proposal: MonthlyPolicyProposal) -> None:
-    proposal = MonthlyPolicyProposal.model_validate(proposal.model_dump(mode="json"))
+    proposal = decode_policy_proposal(proposal.model_dump(mode="json"))
     key = proposal_key(proposal)
     definition = connection.execute(
         "SELECT payload_json FROM dpm_composite_definitions WHERE tenant_id=%s AND composite_id=%s AND definition_version=%s",
@@ -57,14 +62,14 @@ def get_proposal(
     ).fetchone()
     if row is None:
         return None
-    result = load_model_json(MonthlyPolicyProposal, row["payload_json"])
+    result = decode_policy_proposal(row["payload_json"])
     if result.content_hash != row["content_hash"] or proposal_key(result) != key:
         raise DpmCompositeConflictError("COMPOSITE_ELIGIBILITY_PROPOSAL_INTEGRITY_CONFLICT")
     return result
 
 
 def save_approval(connection: Any, approval: MonthlyPolicyApproval) -> None:
-    approval = MonthlyPolicyApproval.model_validate(approval.model_dump(mode="json"))
+    approval = decode_policy_approval(approval.model_dump(mode="json"))
     key = proposal_key(approval.proposal)
     proposal = get_proposal(connection, key)
     if proposal is None or proposal.content_hash != approval.proposal.content_hash:
@@ -90,7 +95,7 @@ def get_approval(connection: Any, key: tuple[str, str, str, str]) -> MonthlyPoli
     ).fetchone()
     if row is None:
         return None
-    result = load_model_json(MonthlyPolicyApproval, row["payload_json"])
+    result = decode_policy_approval(row["payload_json"])
     if (result.content_hash, result.proposal.content_hash, proposal_key(result.proposal)[:4]) != (
         row["content_hash"],
         row["proposal_content_hash"],

@@ -16,11 +16,7 @@ from src.api.services.composite_monthly_evaluation import (
     MonthlyEvaluationRequest,
     MonthlyAmendmentRequest,
 )
-from src.core.composite_eligibility.evaluation_control import (
-    MonthlyEvaluationProposal,
-)
 from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyAmendmentProposal,
     MonthlyProposal,
     MonthlyApproval,
 )
@@ -33,13 +29,28 @@ from src.api.services.composite_monthly_eligibility import (
     MonthlyProposalRequest,
     MonthlyApprovalRequest,
 )
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApprovalVariant,
+    MonthlyPolicyProposalVariant,
+)
+from src.core.composite_eligibility.historical_policy import HistoricalMonthlyPolicyProposal
+from src.api.services.historical_policy_admission import (
+    HistoricalPolicyAdmissionRequest,
+    HistoricalPolicyAdmissionApplicationService,
+)
 from src.core.composite_eligibility.diff import MonthlyEligibilityDiff
 from src.core.composite_eligibility.policy import ResolvedMonthlyPolicy
 from src.core.composite_eligibility.evaluation import MonthlyEligibilityEvaluation
 
 MonthlyProposalResponse = Annotated[MonthlyProposal, Field(discriminator="product_version")]
 MonthlyApprovalResponse = Annotated[MonthlyApproval, Field(discriminator="product_version")]
+MonthlyPolicyProposalResponse = Annotated[
+    MonthlyPolicyProposalVariant, Field(discriminator="product_version")
+]
+MonthlyPolicyApprovalResponse = Annotated[
+    MonthlyPolicyApprovalVariant, Field(discriminator="product_version")
+]
 
 router = APIRouter(
     prefix="/rebalance/composites", tags=["lotus-manage Composite Monthly Eligibility"]
@@ -168,7 +179,7 @@ def propose_monthly_policy(
 
 @router.put(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}/approval",
-    response_model=MonthlyPolicyApproval,
+    response_model=MonthlyPolicyApprovalResponse,
     summary="Independently approve exact prospective synthetic configuration content",
     description="A synthetic control decision; does not verify bank IAM, activate official eligibility or publish membership.",
 )
@@ -182,7 +193,7 @@ def approve_monthly_policy(
     service: CompositeMonthlyEligibilityApplicationService = Depends(
         get_composite_monthly_eligibility_service
     ),
-) -> MonthlyPolicyApproval:
+) -> MonthlyPolicyApprovalVariant:
     try:
         return service.approve_policy(
             tenant_id=identity.tenant_id,
@@ -197,9 +208,42 @@ def approve_monthly_policy(
         raise _monthly_domain_error(exc) from exc
 
 
+@router.put(
+    "/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}/historical-admission",
+    response_model=HistoricalMonthlyPolicyProposal,
+    summary="Retain a present admission proposal for an exact original historical policy",
+    description="The server-owned verifier resolves original bytes and their actual signing contract. The normalized mapping and present verification remain separate. Default unavailable; no caller trust, original timestamp override or institutional activation.",
+)
+def propose_historical_monthly_policy(
+    composite_id: str,
+    definition_version: str,
+    month: str,
+    proposal_revision: str,
+    request: HistoricalPolicyAdmissionRequest,
+    identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
+    service: CompositeMonthlyEligibilityApplicationService = Depends(
+        get_composite_monthly_eligibility_service
+    ),
+) -> HistoricalMonthlyPolicyProposal:
+    try:
+        return HistoricalPolicyAdmissionApplicationService(
+            service.repository, service.historical_admission, service.clock
+        ).propose(
+            tenant_id=identity.tenant_id,
+            composite_id=composite_id,
+            definition_version=definition_version,
+            month=month,
+            proposal_revision=proposal_revision,
+            actor_id=identity.actor_id,
+            command=request,
+        )
+    except ValueError as exc:
+        raise _monthly_domain_error(exc) from exc
+
+
 @router.get(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}",
-    response_model=MonthlyPolicyProposal,
+    response_model=MonthlyPolicyProposalResponse,
     summary="Read one exact tenant-scoped monthly policy proposal",
 )
 def get_monthly_policy_proposal(
@@ -211,7 +255,7 @@ def get_monthly_policy_proposal(
     service: CompositeMonthlyEligibilityApplicationService = Depends(
         get_composite_monthly_eligibility_service
     ),
-) -> MonthlyPolicyProposal:
+) -> MonthlyPolicyProposalVariant:
     try:
         return service.get_policy_proposal(
             tenant_id=identity.tenant_id,
@@ -226,7 +270,7 @@ def get_monthly_policy_proposal(
 
 @router.get(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/approval",
-    response_model=MonthlyPolicyApproval,
+    response_model=MonthlyPolicyApprovalResponse,
     summary="Read retained synthetic monthly configuration approval",
 )
 def get_monthly_policy_approval(
@@ -237,7 +281,7 @@ def get_monthly_policy_approval(
     service: CompositeMonthlyEligibilityApplicationService = Depends(
         get_composite_monthly_eligibility_service
     ),
-) -> MonthlyPolicyApproval:
+) -> MonthlyPolicyApprovalVariant:
     try:
         return service.get_policy_approval(
             tenant_id=identity.tenant_id,
@@ -251,7 +295,7 @@ def get_monthly_policy_approval(
 
 @router.put(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}",
-    response_model=MonthlyEvaluationProposal,
+    response_model=MonthlyProposalResponse,
     summary="Retain a reproducible monthly evaluation of the exact approved prospective policy",
     description="Uses pinned source-owned observations, retained universe and current published parent. No caller-owned financial facts or clock.",
 )
@@ -280,7 +324,7 @@ def propose_monthly_evaluation(
 
 @router.put(
     "/{composite_id}/definitions/{definition_version}/monthly-eligibility/evaluations/{evaluation_revision}/source-amendment",
-    response_model=MonthlyAmendmentProposal,
+    response_model=MonthlyProposalResponse,
     summary="Propose a source correction to one exact approved membership month",
     description="Binds the selected original/predecessor approval, exact predecessor receipt, current projection and publication sequence. Observations come from configured source owners. Same approved policy only; staged roots and corrections with later approved months are unsupported. Independent approval uses the existing evaluation approval operation.",
 )
@@ -447,6 +491,18 @@ def _monthly_domain_error(exc: ValueError) -> HTTPException:
         "COMPOSITE_ELIGIBILITY_SOURCE_SCOPE_MISMATCH",
         "COMPOSITE_ELIGIBILITY_SOURCE_CUT_MISMATCH",
         "COMPOSITE_ELIGIBILITY_SOURCE_REVISION_MISMATCH",
+        "COMPOSITE_HISTORICAL_POLICY_ADMISSION_UNAVAILABLE",
+        "COMPOSITE_HISTORICAL_POLICY_CONTENT_MISMATCH",
+        "COMPOSITE_HISTORICAL_POLICY_VERIFIER_SIGNATURE_INVALID",
+        "COMPOSITE_HISTORICAL_POLICY_TRUST_MISMATCH",
+        "COMPOSITE_HISTORICAL_POLICY_RAW_INVALID",
+        "COMPOSITE_HISTORICAL_POLICY_RAW_MISMATCH",
+        "COMPOSITE_HISTORICAL_POLICY_ORIGINAL_CLOCK_INVALID",
+        "COMPOSITE_HISTORICAL_POLICY_MAPPING_MISMATCH",
+        "COMPOSITE_HISTORICAL_POLICY_INDEPENDENCE_REQUIRED",
+        "COMPOSITE_HISTORICAL_POLICY_ADMISSION_WINDOW_INVALID",
+        "COMPOSITE_HISTORICAL_POLICY_REQUEST_MISMATCH",
+        "COMPOSITE_HISTORICAL_POLICY_INTENT_MISMATCH",
         "COMPOSITE_ELIGIBILITY_SOURCE_MONTH_MISMATCH",
         "COMPOSITE_ELIGIBILITY_SOURCE_CURRENCY_MISMATCH",
         "COMPOSITE_ELIGIBILITY_SOURCE_UNIVERSE_MISMATCH",

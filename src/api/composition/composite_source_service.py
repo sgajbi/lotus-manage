@@ -55,6 +55,8 @@ def build_composite_monthly_service(
     repository: DpmCompositeRepository,
 ) -> CompositeMonthlyEligibilityApplicationService:
     """Recurring months use the same deployed source and independent verifier admission."""
+    if os.getenv("DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON", "").strip():
+        raise ValueError("COMPOSITE_HISTORICAL_POLICY_ORIGINAL_FORMAT_UNSUPPORTED")
     transport = _configured_transport()
     if transport is None:
         return CompositeMonthlyEligibilityApplicationService(repository=repository)

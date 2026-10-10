@@ -1,5 +1,19 @@
 # Endpoint Certification
 
+## Historical Monthly Policy Admission
+
+Registered path:
+`/api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}/historical-admission`
+
+The registered reference-only historical-admission operation has controlled API/core tests for
+default-unavailable behavior, independent checking, v2 policy/v3 evaluation custody, exact resolver
+reads and retained replay. Source-owned PostgreSQL tests cover v3/v4 history, atomic correction
+races/rollback, direct wire refusals and populated0044→0045 upgrades; their successful owning-lane
+execution is required for release qualification. This test inventory does not itself certify
+PostgreSQL or production admission. Authentic original signing format, trust/source owners, bank
+IAM, methodology and downstream consumer admission remain open. See the
+[monthly guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md#historical-original-policy-admission).
+
 ## Staged Composite Eligibility: Bounded Proof
 
 Configured institutional finalization adds explicit v2 responses on the existing finalization and
