@@ -13,12 +13,23 @@ and retained v2 decoding; recomputed hashes do not bypass that binding. The resu
 existing atomic custody. Synthetic v1 evidence and hashes remain unchanged.
 
 This setting supplies no caller grants, bank identity, financial-source qualification or official
-activation. Direct institutional definition PUT and historical monthly-policy admission remain
-unavailable. See `docs/guides/composite-institutional-verification.md` for the wire and operational
+activation. Direct institutional definition PUT remains unavailable. Historical monthly-policy
+verification uses the separate channel below; this setting does not enable it.
+See `docs/guides/composite-institutional-verification.md` for the wire and operational
 contract. Deployment must retain the public configuration and revocation snapshot addressed by
 the receipt digests; configuration rotation does not rewrite existing proofs.
 
 ## Configured Composite eligibility sources
+
+Historical monthly-policy admission has the separate `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON`
+channel, pinning one tenant/trust tuple and HTTPS provider. Normal composition sends exactly the
+existing `HistoricalPolicyVerificationRequest/v1` and admits the independently signed normalized
+`HistoricalPolicyVerification/v1`. The provider owns actual original verification and genuinely
+observed revocation evidence. Strict bounded JSON decoding rejects duplicates; blank configuration
+remains unavailable. No fixture, JWS wrapper or global purpose expansion is selected automatically.
+See [configuration and API guidance](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-historical-provider.md).
+Synthetic HTTPS/API/PostgreSQL restart proof preserves original v3/correction v4 with providers off;
+genuine provider/source authority, bank IAM, financial applicability and consumer admission stay open.
 
 Normal Manage composition supports deployment-configured synthetic candidate, monthly assembly
 and independent verifier HTTP ports. They reuse the monthly engine, staged custody and shared

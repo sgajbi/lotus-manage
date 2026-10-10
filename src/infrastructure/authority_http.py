@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import json
 from typing import Any
 
 import httpx
@@ -26,6 +27,7 @@ def post_json_with_retries(
     invalid_response_error: str,
     source_service: str = "unknown",
     maximum_response_bytes: int | None = None,
+    reject_duplicate_members: bool = False,
 ) -> dict[str, Any]:
     started_at = time.perf_counter()
     last_error: Exception | None = None
@@ -80,6 +82,7 @@ def post_json_with_retries(
                 response=response,
                 invalid_response_error=invalid_response_error,
                 maximum_response_bytes=maximum_response_bytes,
+                reject_duplicate_members=reject_duplicate_members,
             )
         except AuthorityHttpError as exc:
             _record_source_http_request(
@@ -166,16 +169,30 @@ def _json_object_body(
     response: httpx.Response,
     invalid_response_error: str,
     maximum_response_bytes: int | None = None,
+    reject_duplicate_members: bool = False,
 ) -> dict[str, Any]:
     if maximum_response_bytes is not None and len(response.content) > maximum_response_bytes:
         raise AuthorityHttpError(invalid_response_error)
     try:
-        body = response.json()
+        body = (
+            json.loads(response.content, object_pairs_hook=_unique_json_members)
+            if reject_duplicate_members
+            else response.json()
+        )
     except ValueError as exc:
         raise AuthorityHttpError(invalid_response_error, cause=exc) from exc
     if not isinstance(body, dict):
         raise AuthorityHttpError(invalid_response_error)
     return body
+
+
+def _unique_json_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for name, value in pairs:
+        if name in result:
+            raise ValueError("Duplicate JSON member")
+        result[name] = value
+    return result
 
 
 def _authority_http_outcome(code: str, unavailable_error: str, rejected_error: str) -> str:

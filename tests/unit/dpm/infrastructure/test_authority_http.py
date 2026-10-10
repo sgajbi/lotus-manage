@@ -7,6 +7,30 @@ import src.observability.metrics as observability_module
 from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
 
 
+@pytest.mark.parametrize("strict", [False, True])
+def test_duplicate_json_opt_in_preserves_existing_callers(strict):
+    arguments = dict(
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(200, content=b'{"outer":{"x":1,"x":2}}')
+            )
+        ),
+        url="https://authority.test/post",
+        payload={},
+        headers={},
+        attempts=1,
+        unavailable_error="UNAVAILABLE",
+        rejected_error="REJECTED",
+        invalid_response_error="INVALID",
+        maximum_response_bytes=1024,
+    )
+    if strict:
+        with pytest.raises(AuthorityHttpError, match="INVALID"):
+            post_json_with_retries(**arguments, reject_duplicate_members=True)
+    else:
+        assert post_json_with_retries(**arguments) == {"outer": {"x": 2}}
+
+
 def test_post_json_with_retries_retries_transport_failure_and_status() -> None:
     calls = 0
 

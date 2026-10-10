@@ -1,5 +1,9 @@
 # Configured Composite eligibility sources
 
+Historical monthly-policy verification uses its own
+[normalized provider configuration and protocol](composite-historical-provider.md).
+It does not widen the source operations or verification purposes described here.
+
 Manage owns immutable candidate selection, monthly assembly identity, eligibility rules and
 retained membership evidence. Source services own the supplied facts. Configured adapters reuse
 the existing candidate, monthly observation and evidence-verifier ports, existing monthly engine,

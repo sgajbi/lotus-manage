@@ -22,14 +22,19 @@ semantics. The deployment owns current signer/verifier trust and bounded revocat
 Both fresh admission and retained v2 decoding require every related artifact revision/digest to
 equal its request binding; rehashed unrelated artifacts refuse before joined custody is accepted.
 See `docs/guides/composite-institutional-verification.md`. Direct institutional definition writes,
-production historical monthly-policy admission and official activation remain unavailable.
+genuine historical monthly-policy authority and official activation remain unavailable.
 
-Historical monthly-policy admission has an additive reference-only operation and an unavailable
-production port. `historical_policy.py` owns exact original bytes/opaque original credentials,
+Historical monthly-policy admission has an additive reference-only operation and a dedicated
+normalized-provider HTTPS adapter, defaulting unavailable without configuration.
+`historical_policy.py` owns exact original bytes/opaque original credentials,
 normalized mapping and fresh independently signed operation proofs. Policy v2 selects ordinary
 evaluation/receipt v3 and source correction v4, reusing existing custody, locks and publication
 without a runtime split. The original signing format remains source-owned; the controlled test
-adapter cannot enable production. Forward migration0045 preserves earlier rows/checksums.
+adapter cannot auto-enable production. `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` pins one
+tenant/trust tuple and endpoint; original verification remains provider-owned. See
+`docs/guides/composite-historical-provider.md` for timing and genuine activation conditions.
+Strict duplicate JSON decoding is opt-in in the shared bounded HTTP helper. No storage/wire migration
+accompanies this transport. Forward migration0045 preserves earlier rows/checksums.
 See `docs/guides/composite-monthly-eligibility.md` and the generated schemas/examples under
 `docs/contracts/composite-historical-policy/`. Genuine authority and downstream consumer admission
 remain separate acceptance gates.

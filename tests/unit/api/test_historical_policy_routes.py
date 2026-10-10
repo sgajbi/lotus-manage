@@ -182,5 +182,5 @@ def test_production_historical_configuration_cannot_enable_controlled_reference_
         "DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON",
         '{"signing_contract":"CONTROLLED_ED25519_RAW_BYTES_V1"}',
     )
-    with pytest.raises(ValueError, match="ORIGINAL_FORMAT_UNSUPPORTED"):
+    with pytest.raises(ValueError, match="validation error"):
         build_composite_monthly_service(InMemoryDpmCompositeRepository())

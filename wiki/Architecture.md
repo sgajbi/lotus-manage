@@ -10,6 +10,13 @@ the separately configured verifier described in [Integrations](Integrations), wi
 and related artifact bindings checked again on retained reads. Frozen synthetic
 fixtures do not establish bank approval, live population or consumer acceptance.
 
+Historical monthly-policy admission uses dedicated configured HTTPS transport over its frozen
+normalized request/response and server trust tuple, defaulting unavailable. Original-format
+verification stays with the independent provider. Existing bounded clients, application port and
+custody are reused; no service, ledger, wire or storage migration is added. See
+[provider guidance](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-historical-provider.md)
+for observed revocation timing and separate genuine activation gates.
+
 | Reader | Start Here |
 | --- | --- |
 | Engineering | Runtime and source boundaries below |

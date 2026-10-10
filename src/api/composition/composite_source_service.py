@@ -25,6 +25,12 @@ from src.infrastructure.composites.institutional_configuration import (
 from src.infrastructure.composites.institutional_verifier import (
     ConfiguredInstitutionalEvidenceVerifier,
 )
+from src.infrastructure.composites.historical_configuration import HistoricalPolicyConfiguration
+from src.infrastructure.composites.historical_verifier import ConfiguredHistoricalPolicyVerifier
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalPolicyAdmissionPort,
+    UnavailableHistoricalPolicyAdmission,
+)
 from src.infrastructure.source_http_clients import (
     build_source_http_client_policy,
     get_shared_source_http_client,
@@ -55,16 +61,32 @@ def build_composite_monthly_service(
     repository: DpmCompositeRepository,
 ) -> CompositeMonthlyEligibilityApplicationService:
     """Recurring months use the same deployed source and independent verifier admission."""
-    if os.getenv("DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON", "").strip():
-        raise ValueError("COMPOSITE_HISTORICAL_POLICY_ORIGINAL_FORMAT_UNSUPPORTED")
+    historical = _configured_historical_admission()
     transport = _configured_transport()
     if transport is None:
-        return CompositeMonthlyEligibilityApplicationService(repository=repository)
+        return CompositeMonthlyEligibilityApplicationService(
+            repository=repository, historical_admission=historical
+        )
     verifier = ConfiguredCompositeEvidenceVerifier(transport)
     return CompositeMonthlyEligibilityApplicationService(
         repository=repository,
         source=ConfiguredMonthlyEligibilitySource(transport, verifier),
+        historical_admission=historical,
     )
+
+
+def _configured_historical_admission() -> HistoricalPolicyAdmissionPort:
+    raw = os.getenv("DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON", "")
+    if not raw.strip():
+        return UnavailableHistoricalPolicyAdmission()
+    configuration = HistoricalPolicyConfiguration.model_validate_json(raw)
+    client = get_shared_source_http_client(
+        "composite",
+        policy=build_source_http_client_policy(
+            "composite", request_timeout_seconds=configuration.timeout_seconds
+        ),
+    )
+    return ConfiguredHistoricalPolicyVerifier(configuration, client)
 
 
 def _configured_transport() -> CompositeSourceTransport | None:
