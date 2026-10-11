@@ -15,6 +15,7 @@ _RESOLVER = re.compile(_DEFINITION + r"/eligibility-evidence/resolve")
 _READ_PATHS = tuple(
     re.compile(pattern)
     for pattern in (
+        _DEFINITION,
         _DEFINITION + r"/membership/" + _SEGMENT,
         _DEFINITION + r"/membership/" + _SEGMENT + r"/universe-attestations/" + _SEGMENT,
         _DEFINITION + r"/monthly-eligibility/evaluations/" + _SEGMENT,

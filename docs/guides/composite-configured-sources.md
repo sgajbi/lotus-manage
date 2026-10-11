@@ -49,6 +49,7 @@ letters/digits/dots/underscores/hyphens beginning with a letter or digit:
 
 | Method | Path | Meaning |
 | --- | --- | --- |
+| GET | `D` | Pinned immutable definition for Report source context |
 | GET | `D/membership/{membership_revision}` | Pinned membership or its full parent |
 | GET | `D/membership/{membership_revision}/universe-attestations/{attestation_version}` | Published universe |
 | GET | `D/monthly-eligibility/evaluations/{evaluation_revision}` | Exact retained evaluated-only proposal |
@@ -62,7 +63,7 @@ the exact tenant, product, revision, digest, membership, universe and publicatio
 enrollment does not change source qualification or grant approval authority.
 
 `tests/unit/api/test_composite_read_authority.py` covers valid and adversarial admission. The existing
-three-month v1/v2 native PostgreSQL history test also performs all five reads, foreign/missing
+three-month v1/v2 native PostgreSQL history test also performs all six reads, foreign/missing
 assertion refusals, same-reader mutation denials and publication equality before/after reads and
 refusals. The native economic matrix also checks exact evaluated-only proposal reads and refuses
 approval/suffix and mutation paths for the same service. Those direct HTTP tests prove Manage behavior; actual configured Report-client transport
