@@ -45,6 +45,7 @@ def configured_reader(monkeypatch):
     "method,path",
     [
         ("POST", RESOLVER),
+        ("GET", ROOT),
         ("GET", MEMBERSHIP),
         ("GET", MEMBERSHIP + "/universe-attestations/evaluation-1"),
         ("GET", ROOT + "/membership/parent-1"),
@@ -60,6 +61,13 @@ def test_reader_exact_custody_operations_precede_broad_write_rule(method, path):
     "method,path",
     [
         ("PUT", ROOT),
+        ("POST", ROOT),
+        ("PATCH", ROOT),
+        ("GET", ROOT + "/"),
+        ("GET", ROOT + "/extra"),
+        ("GET", ROOT.replace("v2", "..")),
+        ("GET", ROOT.replace("v2", "%76%32")),
+        ("GET", ROOT.replace("composite-A", "encoded%2Fsegment")),
         ("PUT", MEMBERSHIP),
         ("PUT", ROOT + "/monthly-eligibility/policies/proposal-1"),
         ("PUT", ROOT + "/monthly-eligibility/evaluations/evaluation-1/approval"),
@@ -95,16 +103,17 @@ def test_read_service_cannot_mutate_or_use_near_matching_paths(method, path):
         ("x-role", "REPORT_COMPOSITE_READER,DPM_COMPOSITE_ADMIN"),
     ],
 )
-@pytest.mark.parametrize("method,path", [("POST", RESOLVER), ("GET", MEMBERSHIP)])
+@pytest.mark.parametrize("method,path", [("POST", RESOLVER), ("GET", MEMBERSHIP), ("GET", ROOT)])
 def test_read_service_scope_and_privilege_assertions_fail_closed(name, value, method, path):
     assert authorize_write_request(method, path, HEADERS | {name: value})[0] is False
 
 
 @pytest.mark.parametrize("name", IDENTITY_HEADERS)
-def test_missing_reader_assertion_refuses(name):
+@pytest.mark.parametrize("method,path", [("POST", RESOLVER), ("GET", ROOT)])
+def test_missing_reader_assertion_refuses(name, method, path):
     headers = dict(HEADERS)
     del headers[name]
-    assert authorize_write_request("POST", RESOLVER, headers)[0] is False
+    assert authorize_write_request(method, path, headers)[0] is False
 
 
 @pytest.mark.parametrize(
@@ -121,9 +130,12 @@ def test_missing_reader_assertion_refuses(name):
         json.dumps([GRANT | {"extra": "unrecognized"}]),
     ],
 )
-def test_invalid_or_absent_enrollment_never_supplies_read_authority(monkeypatch, configuration):
+@pytest.mark.parametrize("method,path", [("POST", RESOLVER), ("GET", ROOT)])
+def test_invalid_or_absent_enrollment_never_supplies_read_authority(
+    monkeypatch, configuration, method, path
+):
     monkeypatch.setenv(GRANTS_ENV, configuration)
-    assert authorize_write_request("POST", RESOLVER, HEADERS)[0] is False
+    assert authorize_write_request(method, path, HEADERS)[0] is False
 
 
 def test_enrolled_reader_cannot_impersonate_writer_with_asserted_write_capability():
@@ -140,6 +152,7 @@ def _app():
 
     @app.api_route(RESOLVER, methods=["POST"])
     @app.api_route(MEMBERSHIP, methods=["GET"])
+    @app.api_route(ROOT, methods=["GET"])
     def read():
         return {"read": True}
 
@@ -148,24 +161,29 @@ def _app():
 
 @pytest.mark.parametrize("name", IDENTITY_HEADERS)
 @pytest.mark.parametrize("reader_first", [True, False])
-def test_duplicate_headers_refuse_before_custody_lookup(name, reader_first):
+@pytest.mark.parametrize("method,path", [("POST", RESOLVER), ("GET", ROOT)])
+def test_duplicate_headers_refuse_before_custody_lookup(name, reader_first, method, path):
     headers = [(key, value) for key, value in HEADERS.items() if key != name]
     pair = [(name, HEADERS[name]), (name, "foreign")]
     headers.extend(pair if reader_first else pair[::-1])
     with TestClient(_app()) as client:
-        response = client.post(RESOLVER, headers=headers, json={})
+        response = client.request(method, path, headers=headers, json={})
     assert response.status_code == 403
 
 
 def test_http_encoded_path_refuses_and_reads_emit_existing_audit_envelope(caplog):
     with TestClient(_app()) as client, caplog.at_level("INFO", logger="enterprise_readiness"):
+        assert client.get(ROOT, headers=HEADERS).status_code == 200
         assert client.get(MEMBERSHIP, headers=HEADERS).status_code == 200
         assert client.post(RESOLVER, headers=HEADERS, json={}).status_code == 200
         assert client.post(RESOLVER.replace("v2", "%76%32"), headers=HEADERS).status_code == 403
+        assert client.get(ROOT.replace("v2", "%76%32"), headers=HEADERS).status_code == 403
     audits = [record.audit for record in caplog.records if hasattr(record, "audit")]
     assert [audit["action"] for audit in audits] == [
+        "GET " + ROOT,
         "GET " + MEMBERSHIP,
         "POST " + RESOLVER,
         "DENY POST " + RESOLVER,
+        "DENY GET " + ROOT,
     ]
     assert all(audit["service"] == "lotus-manage" for audit in audits)

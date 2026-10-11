@@ -73,6 +73,7 @@ def read_operations(receipt):
             "/api/v1/rebalance/composites/publications/" + str(receipt["publication_sequence"]),
             None,
         ),
+        ("definition", "GET", root, None),
     ]
 
 
@@ -84,6 +85,7 @@ def assert_read_service_capture(client, receipt, captured):
         assert response.status_code == 200, response.text
         responses[meaning] = response.json()
     assert responses["receipt"] == receipt
+    assert responses["definition"] == receipt["definition"]
     assert responses["membership"] == captured["canonical_membership"]
     assert responses["universe"] == captured["canonical_universe"]
     assert (

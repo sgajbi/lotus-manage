@@ -129,7 +129,8 @@ granting new authority. Consumer financial admission remains separately strict. 
 unavailable, Core unqualified inputs refuse, and legacy hashes omit absent new provenance fields.
 See [configured source guide](docs/guides/composite-configured-sources.md) for contract and proof.
 Composite read services use deployment-owned `DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON` enrollment
-with fixed `REPORT_COMPOSITE_READER`/`manage.read`, exact custody GETs and the read-only resolver
+with fixed `REPORT_COMPOSITE_READER`/`manage.read`, exact pinned definition, membership, universe,
+evaluation and publication GETs and the read-only resolver
 POST. No default grant exists. The same enrolled service cannot mutate or claim writer authority;
 legacy writer prefix rules remain unchanged. This trusted-ingress assertion boundary is not bank
 IAM certification. See the guide for exact header, identifier and denial contracts. Direct native

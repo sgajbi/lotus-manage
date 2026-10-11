@@ -25,7 +25,7 @@ scope unless a future source-owning service publishes and certifies that capabil
 
 - enroll Report custody readers explicitly with `DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON` and
   fixed `REPORT_COMPOSITE_READER`/`manage.read`; default enrollment is empty. Use a distinct service
-  identity bound to one actor and tenant. Exact membership, universe, publication, evaluated-only
+  identity bound to one actor and tenant. Exact definition, membership, universe, publication, evaluated-only
   proposal and resolver reads
   retain custody checks and enterprise audit; that service cannot mutate, including with asserted
   writer privileges. This is trusted-ingress header admission, not bank IAM verification. See the
