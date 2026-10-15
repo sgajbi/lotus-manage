@@ -1,6 +1,9 @@
+import json
+from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import TypeAdapter, ValidationError
 
 from scripts.api_vocabulary_inventory import (
     _extract_fields,
@@ -9,7 +12,138 @@ from scripts.api_vocabulary_inventory import (
     _schema_type,
     app,
     build_inventory,
+    validate_inventory,
 )
+from src.core.rebalance_runs import models as run_models
+
+
+@pytest.mark.parametrize("name", ["artifact", "async_operation", "idempotency_history"])
+def test_native_declared_null_examples_survive_inventory_extraction(name: str) -> None:
+    components = app.openapi()["components"]
+    schema = components["schemas"]["DpmRunSupportBundleResponse"]
+    declaration = schema["properties"][name]
+    assert declaration["examples"] == [None]
+    assert "example" in declaration and declaration["example"] is None
+    assert {"type": "null"} in declaration["anyOf"]
+    adapter = TypeAdapter(
+        run_models.DpmRunSupportBundleResponse.model_fields[name].rebuild_annotation()
+    )
+    adapter.rebuild(_types_namespace=vars(run_models))
+    assert adapter.validate_json("null", strict=True) is None
+    with pytest.raises(ValidationError):
+        adapter.validate_json('"STANDARD_VALUE"', strict=True)
+
+    fields = _extract_fields(schema, components=components)
+    assert next(field for field in fields if field["name"] == name)["example"] is None
+    attributes = {row["semanticId"]: row for row in build_inventory()["attributeCatalog"]}
+    assert attributes[f"lotus.{name}"]["example"] is None
+
+
+@pytest.mark.parametrize(
+    ("declaration", "expected"),
+    [
+        ({"type": "string", "example": ""}, ""),
+        ({"type": "boolean", "example": False}, False),
+        ({"type": "integer", "example": 0}, 0),
+        ({"type": "array", "example": []}, []),
+        ({"type": "object", "example": {}}, {}),
+        ({"anyOf": [{"type": "string"}, {"type": "null"}], "example": None}, None),
+        ({"anyOf": [{"type": "number"}, {"type": "string"}], "example": "100"}, "100"),
+    ],
+)
+def test_fallback_preserves_present_examples_before_synthesis(
+    declaration: dict[str, Any], expected: Any
+) -> None:
+    actual = _fallback_example("option", declaration)
+    assert actual == expected
+    assert type(actual) is type(expected)
+
+
+@pytest.mark.parametrize("composition", ["anyOf", "oneOf"])
+def test_nullable_fallback_preserves_branch_and_array_item_null_examples(composition: str) -> None:
+    item = {composition: [{"type": "integer"}, {"type": "null"}], "example": None}
+    assert (
+        _fallback_example(
+            "option", {composition: [{"type": "integer", "example": None}, {"type": "null"}]}
+        )
+        is None
+    )
+    assert _fallback_example(
+        "option",
+        {composition: [{"type": "array", "items": item}, {"type": "null"}]},
+    ) == [None]
+    assert _fallback_example(
+        "option",
+        {
+            composition: [
+                {"type": "array", "items": {"type": "array", "items": item}},
+                {"type": "null"},
+            ]
+        },
+    ) == [[None]]
+
+
+def test_nested_reference_extraction_preserves_resolved_declared_null() -> None:
+    components = {
+        "schemas": {
+            "NullableValue": {
+                "anyOf": [{"type": "string"}, {"type": "null"}],
+                "example": None,
+            },
+            "Container": {
+                "type": "object",
+                "properties": {"value": {"$ref": "#/components/schemas/NullableValue"}},
+            },
+        }
+    }
+    fields = _extract_fields(
+        {"type": "object", "properties": {"nested": {"$ref": "#/components/schemas/Container"}}},
+        components=components,
+    )
+    assert next(field for field in fields if field["name"] == "nested.value")["example"] is None
+
+
+@pytest.mark.parametrize(
+    ("parameter_example", "schema_example", "expected"),
+    [
+        ({"example": None}, {"example": "SCHEMA"}, None),
+        ({}, {"example": None}, None),
+        ({"example": False}, {"example": True}, False),
+        ({"example": 0}, {"example": 1}, 0),
+        ({"example": ""}, {"example": "SCHEMA"}, ""),
+        ({"example": []}, {"example": [1]}, []),
+    ],
+)
+def test_request_controls_distinguish_example_presence_and_precedence(
+    parameter_example: dict[str, Any], schema_example: dict[str, Any], expected: Any
+) -> None:
+    primitive = {bool: "boolean", int: "integer", list: "array"}.get(type(expected), "string")
+    _, controls = _extract_request_fields(
+        {
+            "parameters": [
+                {
+                    "name": "option",
+                    "in": "query",
+                    **parameter_example,
+                    "schema": {"anyOf": [{"type": primitive}, {"type": "null"}], **schema_example},
+                }
+            ]
+        },
+        {},
+    )
+    assert controls[0]["example"] == expected
+    assert type(controls[0]["example"]) is type(expected)
+
+
+def test_absent_examples_still_use_existing_fallbacks() -> None:
+    schema = {"anyOf": [{"type": "boolean"}, {"type": "null"}]}
+    assert "example" not in schema
+    fields = _extract_fields({"type": "object", "properties": {"option": schema}}, components={})
+    assert fields[0]["example"] is True
+    _, controls = _extract_request_fields(
+        {"parameters": [{"name": "option", "in": "query", "schema": schema}]}, {}
+    )
+    assert controls[0]["example"] is True
 
 
 @pytest.mark.parametrize("composition", ["anyOf", "oneOf"])
@@ -263,3 +397,175 @@ def test_native_nullable_query_controls_publish_examples_of_the_declared_type(
     controls = [item for item in build_inventory()["controlsCatalog"] if item["name"] == name]
     assert controls
     assert all(type(item["example"]) is example_type for item in controls)
+
+
+def _usage_field(**overrides: Any) -> dict[str, Any]:
+    return {
+        "name": "shared",
+        "location": "body",
+        "required": True,
+        "type": "string",
+        "semanticId": "lotus.shared",
+        "attributeRef": "#/attributeCatalog/lotus.shared",
+        **overrides,
+    }
+
+
+@pytest.mark.parametrize("composition", ["anyOf", "oneOf"])
+def test_inventory_publishes_unique_variant_usages_and_preserves_first_metadata(
+    monkeypatch: pytest.MonkeyPatch, composition: str
+) -> None:
+    amount = {
+        "anyOf": [{"type": "number"}, {"type": "string"}, {"type": "null"}],
+        "example": "100",
+    }
+    schemas = {
+        "First": {
+            "type": "object",
+            "required": ["shared"],
+            "properties": {
+                "shared": {"type": "string", "description": "First branch.", "example": "FIRST"},
+                "count": {"type": "integer", "example": 0},
+                "amount": amount,
+            },
+        },
+        "Second": {
+            "type": "object",
+            "required": ["shared"],
+            "properties": {
+                "shared": {"type": "string", "description": "Second branch.", "example": "SECOND"},
+                "enabled": {"type": "boolean", "example": False},
+                "amount": {**amount, "example": "200"},
+            },
+        },
+        "Optional": {"type": "object", "properties": {"shared": {"type": "string"}}},
+    }
+    variants = {
+        composition: [
+            {
+                "oneOf": [
+                    {"$ref": "#/components/schemas/First"},
+                    {"$ref": "#/components/schemas/Second"},
+                ]
+            },
+            {"$ref": "#/components/schemas/First"},
+            {"$ref": "#/components/schemas/Optional"},
+        ]
+    }
+    operation = {
+        "parameters": [
+            {
+                "name": "optional_note",
+                "in": "query",
+                "schema": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "example": None,
+            }
+        ],
+        "requestBody": {"content": {"application/json": {"schema": variants}}},
+        "responses": {"200": {"content": {"application/json": {"schema": variants}}}},
+    }
+    monkeypatch.setattr(
+        app,
+        "openapi",
+        lambda: {
+            "components": {"schemas": schemas},
+            "paths": {"/first": {"post": operation}, "/second": {"post": operation}},
+        },
+    )
+
+    inventory = build_inventory()
+    body_usages = [
+        ("shared", True, "string"),
+        ("count", False, "integer"),
+        ("amount", False, "object"),
+        ("enabled", False, "boolean"),
+        ("shared", False, "string"),
+    ]
+    assert len(inventory["endpoints"]) == 2
+    for endpoint in inventory["endpoints"]:
+        assert [
+            (field["name"], field["required"], field["type"])
+            for field in endpoint["response"]["fields"]
+        ] == body_usages
+        assert [
+            (field["name"], field["required"], field["type"])
+            for field in endpoint["request"]["fields"]
+        ] == [("optional_note", False, "string"), *body_usages]
+
+    attributes = {row["semanticId"]: row for row in inventory["attributeCatalog"]}
+    assert attributes["lotus.shared"]["description"] == "First branch."
+    assert attributes["lotus.shared"]["example"] == "FIRST"
+    assert attributes["lotus.count"]["example"] == 0
+    assert attributes["lotus.enabled"]["example"] is False
+    assert attributes["lotus.amount"]["example"] == "100"
+    assert attributes["lotus.optional_note"]["example"] is None
+    assert validate_inventory(inventory) == []
+
+
+@pytest.mark.parametrize("direction", ["request", "response"])
+def test_inventory_validator_rejects_exact_duplicate_endpoint_usages(direction: str) -> None:
+    field = _usage_field()
+    inventory = {
+        "endpoints": [
+            {"method": "POST", "path": "/example", direction: {"fields": [field, dict(field)]}}
+        ]
+    }
+
+    assert validate_inventory(inventory) == [
+        f"duplicate endpoint {direction} field usage: POST /example::shared"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("name", "another"),
+        ("location", "query"),
+        ("required", False),
+        ("type", "integer"),
+        ("semanticId", "lotus.another"),
+        ("attributeRef", "#/attributeCatalog/lotus.another"),
+    ],
+)
+def test_inventory_validator_accepts_distinct_usage_mappings_and_scopes(
+    key: str, value: Any
+) -> None:
+    fields = [_usage_field(), _usage_field(**{key: value})]
+    inventory = {
+        "endpoints": [
+            {
+                "method": method,
+                "path": path,
+                "request": {"fields": fields},
+                "response": {"fields": fields},
+            }
+            for method, path in [("GET", "/first"), ("POST", "/first"), ("GET", "/second")]
+        ]
+    }
+
+    assert validate_inventory(inventory) == []
+
+
+def test_native_inventory_preserves_every_distinct_usage_in_first_occurrence_order() -> None:
+    baseline = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "docs/standards/api-vocabulary/lotus-manage-api-vocabulary.v1.json"
+        ).read_text(encoding="utf-8")
+    )
+    inventory = build_inventory()
+
+    assert inventory["attributeCatalog"] == baseline["attributeCatalog"]
+    assert inventory["controlsCatalog"] == baseline["controlsCatalog"]
+    assert len(inventory["endpoints"]) == len(baseline["endpoints"])
+    for actual, previous in zip(inventory["endpoints"], baseline["endpoints"], strict=True):
+        assert {
+            key: value for key, value in actual.items() if key not in ("request", "response")
+        } == {key: value for key, value in previous.items() if key not in ("request", "response")}
+        for direction in ("request", "response"):
+            expected: list[dict[str, Any]] = []
+            for field in previous[direction]["fields"]:
+                if field not in expected:
+                    expected.append(field)
+            assert actual[direction]["fields"] == expected
+    assert validate_inventory(inventory) == []

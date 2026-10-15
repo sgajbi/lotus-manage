@@ -218,3 +218,5 @@ python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_d
 
 If `make check` rewrites `docs/standards/api-vocabulary/lotus-manage-api-vocabulary.v1.json`,
 inspect the diff before committing. Timestamp-only `generatedAt` churn is not meaningful docs work.
+
+API vocabulary publication practice: property examples use the existing declaration/reference/composition/collection resolver, preserving valid Decimal strings and explicit false, zero, empty and nullable values. Endpoint usages retain one copy of each complete six-field mapping (`name`, `location`, `required`, `type`, `semanticId`, `attributeRef`) per request or response side, in first occurrence order; attribute metadata keeps its first source occurrence. From the repository root with the supported Python environment active, `python scripts/api_vocabulary_inventory.py` generates the native catalog and `make api-vocabulary-gate` rejects duplicate usages and stale output. Run the owning suites with `make test-unit UNIT_TESTS="tests/unit/test_api_vocabulary_inventory.py tests/unit/api/test_openapi_enrichment_helpers.py"` in PowerShell or a POSIX shell.

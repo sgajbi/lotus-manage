@@ -1,3 +1,15 @@
+from copy import deepcopy
+import json
+from typing import Any
+
+from pydantic import BaseModel, TypeAdapter, ValidationError
+import pytest
+
+from src.api.routers.wave_request_models import (
+    DpmWavePortfolioInput,
+    DpmWaveSimulationRetryRequest,
+)
+from src.core.models import EngineOptions, LineageData
 from src.api.openapi_enrichment import (
     _array_example_from_schema,
     _composite_example_from_schema,
@@ -800,11 +812,13 @@ def test_openapi_enrichment_property_documentation_preserves_existing_values() -
         model_name="Payload",
         prop_name="customId",
         prop_schema=existing,
+        schemas={},
     )
     _ensure_property_documentation(
         model_name="Payload",
         prop_name="customId",
         prop_schema=generated,
+        schemas={},
     )
 
     assert existing == {
@@ -814,6 +828,114 @@ def test_openapi_enrichment_property_documentation_preserves_existing_values() -
     }
     assert generated["description"] == "Unique custom identifier."
     assert generated["example"] == "CUSTOM_001"
+
+
+@pytest.mark.parametrize("null_first", [False, True])
+@pytest.mark.parametrize(
+    ("model", "field_name", "expected", "invalid"),
+    [
+        (DpmWavePortfolioInput, "discretionary_mandate", True, "2026-03-02"),
+        (LineageData, "source_mandate_binding_version", 10, "2026-03-02"),
+        (
+            DpmWaveSimulationRetryRequest,
+            "wave_item_ids",
+            ["sample_wave_item_ids_item"],
+            "wave_item_ids_example",
+        ),
+        (EngineOptions, "max_realized_capital_gains", "100", "amount_example"),
+    ],
+)
+def test_openapi_enrichment_property_examples_match_model_contracts(
+    model: type[BaseModel],
+    field_name: str,
+    expected: Any,
+    invalid: Any,
+    null_first: bool,
+) -> None:
+    model_schema = model.model_json_schema()
+    property_schema = model_schema["properties"][field_name]
+    property_schema["anyOf"].sort(key=lambda option: option.get("type") != "null")
+    if not null_first:
+        property_schema["anyOf"].reverse()
+    schema = {
+        "components": {"schemas": {model.__name__: model_schema, **model_schema.get("$defs", {})}}
+    }
+    adapter = TypeAdapter(model.model_fields[field_name].rebuild_annotation())
+
+    # Strict JSON admission uses the same field contract that emits the schema,
+    # including Decimal's supported JSON string representation.
+    adapter.validate_json(json.dumps(expected), strict=True)
+    adapter.validate_json("null", strict=True)
+    with pytest.raises(ValidationError):
+        adapter.validate_json(json.dumps(invalid), strict=True)
+
+    enrich_openapi_schema(schema, service_name="lotus-manage")
+
+    assert property_schema["example"] == expected
+    assert type(property_schema["example"]) is type(expected)
+    adapter.validate_json(json.dumps(property_schema["example"]), strict=True)
+
+
+@pytest.mark.parametrize("example_key", ["example", "examples"])
+@pytest.mark.parametrize(
+    ("property_schema", "value"),
+    [
+        ({"type": "boolean"}, False),
+        ({"type": "integer"}, 0),
+        ({"type": "string"}, ""),
+        ({"type": "array", "items": {"type": "integer"}}, []),
+        ({"type": "object"}, {}),
+        ({"anyOf": [{"type": "boolean"}, {"type": "null"}]}, None),
+        ({"type": "string", "enum": ["READY", "BLOCKED"]}, "BLOCKED"),
+        ({"anyOf": [{"type": "number"}, {"type": "string"}]}, "100"),
+        ({"anyOf": [{"type": "number"}, {"type": "string"}]}, 100),
+    ],
+)
+def test_openapi_enrichment_property_examples_preserve_declared_values(
+    property_schema: dict[str, Any], value: Any, example_key: str
+) -> None:
+    property_schema = deepcopy(property_schema)
+    property_schema[example_key] = [value] if example_key == "examples" else value
+    original = deepcopy(property_schema)
+    schema = {"components": {"schemas": {"Payload": {"properties": {"value": property_schema}}}}}
+
+    enrich_openapi_schema(schema, service_name="lotus-manage")
+
+    assert property_schema["example"] == value
+    assert type(property_schema["example"]) is type(value)
+    assert all(property_schema[key] == declared for key, declared in original.items())
+
+
+@pytest.mark.parametrize("composite_key", ["allOf", "oneOf", "anyOf"])
+@pytest.mark.parametrize("null_first", [False, True])
+def test_openapi_enrichment_property_examples_resolve_components_and_array_items(
+    composite_key: str, null_first: bool
+) -> None:
+    reference = {"$ref": "#/components/schemas/WaveItemIds"}
+    options = [reference]
+    if composite_key != "allOf":
+        options.insert(0 if null_first else 1, {"type": "null"})
+    properties = {
+        "wave_item_ids": {composite_key: options},
+        "direct_reference": deepcopy(reference),
+    }
+    schema = {
+        "components": {
+            "schemas": {
+                "Payload": {"type": "object", "properties": properties},
+                "WaveItemIds": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/WaveItemState"},
+                },
+                "WaveItemState": {"type": "string", "enum": ["FAILED", "RETRYABLE"]},
+            }
+        }
+    }
+
+    enrich_openapi_schema(schema, service_name="lotus-manage")
+
+    assert properties["wave_item_ids"]["example"] == ["FAILED"]
+    assert properties["direct_reference"]["example"] == ["FAILED"]
 
 
 def test_openapi_enrichment_metrics_helper_adds_prometheus_and_error_examples() -> None:
