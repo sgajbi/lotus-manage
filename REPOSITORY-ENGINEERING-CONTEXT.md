@@ -22,6 +22,20 @@ security requirements.
 
 ## Repository Role
 
+### Composite configuration delivery practice
+
+Tracked base/production application Compose and isolated `ci-local` environment blocks forward
+the existing `DPM_COMPOSITE_SOURCES_JSON`, `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` and
+`DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON` settings with blank defaults. Unconfigured channels
+remain unavailable; source, historical and attestation trust stay separate. The controlled profile
+also forwards `MANAGE_COMPOSITE_SOURCE_AUTH`, `MANAGE_HISTORICAL_PROVIDER_AUTH` and
+`MANAGE_COMPOSITE_ATTESTATION_AUTH`, blank by default. Its reviewed JSON must explicitly name
+the matching `credential_env`; the operator separately supplies actual values. Arbitrary host
+credential variables are not implicitly forwarded. See
+`docs/guides/composite-configured-sources.md` for operator delivery and native contract checks.
+Canonical refresh still requires the existing reviewed reservation, evaluated Compose digest,
+port8001/Core bindings and migration-first startup; configuration alone is not live acceptance.
+
 Configured institutional attestation verification is a separate staged-finalization channel:
 `DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON`. It uses existing Ed25519 verification, bounded HTTP
 clients and atomic staged custody without a runtime split or new ledger. Finalization/receipt v2

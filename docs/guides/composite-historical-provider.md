@@ -9,6 +9,12 @@ identity, methodology or official activation.
 ## Deployment and trust
 
 `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` contains strict `HistoricalPolicyConfiguration`.
+The tracked application Compose environment forwards this operator-supplied JSON with a blank
+default. See [configuration delivery](composite-configured-sources.md#tracked-compose-configuration-delivery)
+for the three separate channels, credential delivery boundary and deployment evidence requirements.
+The documented controlled profile explicitly names `MANAGE_HISTORICAL_PROVIDER_AUTH` as
+`credential_env`; tracked Compose forwards that variable with a blank default. An actual
+operator-provisioned value and reviewed provider trust remain required; blank refuses before HTTP.
 Absent/blank configuration selects the unavailable port; malformed configuration refuses. No test
 adapter or fixture key is selected automatically. The [configuration example](../examples/composite-historical-provider-configuration.json)
 uses a non-routable endpoint and placeholder pins. Replace these with deployment/provider evidence;
