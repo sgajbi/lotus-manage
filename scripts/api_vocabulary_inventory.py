@@ -58,10 +58,40 @@ def _semantic_id(name: str) -> str:
     return f"lotus.{_canonical_term(name)}"
 
 
+def _single_primitive_variant(schema: dict[str, Any]) -> dict[str, Any] | None:
+    if "$ref" in schema or "type" in schema:
+        return None
+    for composition in ("anyOf", "oneOf"):
+        variants = schema.get(composition)
+        if not isinstance(variants, list):
+            continue
+        non_null = [
+            variant
+            for variant in variants
+            if not isinstance(variant, dict) or variant.get("type") != "null"
+        ]
+        if len(non_null) != 1 or not isinstance(non_null[0], dict):
+            continue
+        variant = non_null[0]
+        primitive_type = variant.get("type")
+        if "$ref" not in variant and primitive_type in (
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "array",
+        ):
+            return variant
+    return None
+
+
 def _schema_type(schema: dict[str, Any]) -> str:
     if "$ref" in schema:
         return str(schema["$ref"]).rsplit("/", 1)[-1]
-    return str(schema.get("type", "object"))
+    if "type" in schema:
+        return str(schema["type"])
+    variant = _single_primitive_variant(schema)
+    return str(variant["type"]) if variant is not None else "object"
 
 
 def _resolve_schema(schema: dict[str, Any], components: dict[str, Any]) -> dict[str, Any]:
@@ -100,6 +130,16 @@ def _fallback_description(name: str) -> str:
 
 
 def _fallback_example(name: str, schema: dict[str, Any]) -> Any:
+    variant = _single_primitive_variant(schema)
+    if variant is not None:
+        effective = {**variant, **schema, "type": variant["type"]}
+        if effective.get("example") is not None:
+            return effective["example"]
+        items = effective.get("items")
+        if effective["type"] == "array" and not effective.get("enum") and isinstance(items, dict):
+            return [_array_item_example(items)]
+        return _fallback_example(name if effective["type"] == "string" else "value", effective)
+
     canonical = _canonical_term(name)
     schema_type = schema.get("type")
     schema_format = schema.get("format")
@@ -125,6 +165,15 @@ def _fallback_example(name: str, schema: dict[str, Any]) -> Any:
     if schema_type == "object":
         return {"key": "value"}
     return "STANDARD_VALUE"
+
+
+def _array_item_example(schema: dict[str, Any]) -> Any:
+    if schema.get("example") is not None:
+        return schema["example"]
+    items = schema.get("items")
+    if schema.get("type") == "array" and not schema.get("enum") and isinstance(items, dict):
+        return [_array_item_example(items)]
+    return _fallback_example("value", schema)
 
 
 def _extract_fields(
