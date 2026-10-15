@@ -163,22 +163,37 @@ class DpmInstructionPackageApplicationService:
     def release(
         self, *, command: DpmInstructionPackageReleaseCommand
     ) -> tuple[DpmApprovedInstructionPackage, bool]:
-        existing = self.repository.get_package(
-            tenant_id=command.tenant_id,
-            package_id=command.package_id,
-            package_version=command.package_version,
-        )
+        existing = self._immutable_release_winner(command=command)
         if existing is not None:
-            if not _matches_immutable_replay(existing=existing, command=command):
-                raise DpmInstructionPackageConflictError("INSTRUCTION_PACKAGE_IMMUTABLE_CONFLICT")
             return existing, False
 
-        package, approved_material_hash = self._build_package(command=command)
+        try:
+            package, approved_material_hash = self._build_package(command=command)
+        except DpmInstructionPackageReleaseRefusedError as exc:
+            if str(exc) != "INSTRUCTION_PACKAGE_SUPERSESSION_REQUIRED":
+                raise
+            # An identical release may commit after the first exact-key read but before
+            # supersession is checked. It is a replay, not a replacement approved set.
+            winner = self._immutable_release_winner(command=command)
+            if winner is None:
+                raise
+            return winner, False
         if command.approval_evidence.approved_material_hash != approved_material_hash:
             raise DpmInstructionPackageReleaseRefusedError(
                 "INSTRUCTION_PACKAGE_APPROVAL_MATERIAL_MISMATCH"
             )
-        created = self.repository.save_package(package=package)
+        try:
+            created = self.repository.save_package(package=package)
+        except DpmInstructionPackageConflictError as exc:
+            if str(exc) != "INSTRUCTION_PACKAGE_IMMUTABLE_CONFLICT":
+                raise
+            # Independently built exact commands have different creation timestamps.
+            # Compare the command's immutable intent with the retained winner, never
+            # overwrite that winner or waive conflicts for changed release material.
+            winner = self._immutable_release_winner(command=command)
+            if winner is None:
+                raise
+            return winner, False
         if created:
             return package, True
         replayed = self.repository.get_package(
@@ -189,6 +204,20 @@ class DpmInstructionPackageApplicationService:
         if replayed is None:
             raise DpmInstructionPackageReleaseRefusedError("INSTRUCTION_PACKAGE_REPLAY_UNAVAILABLE")
         return replayed, False
+
+    def _immutable_release_winner(
+        self, *, command: DpmInstructionPackageReleaseCommand
+    ) -> DpmApprovedInstructionPackage | None:
+        existing = self.repository.get_package(
+            tenant_id=command.tenant_id,
+            package_id=command.package_id,
+            package_version=command.package_version,
+        )
+        if existing is not None and not _matches_immutable_replay(
+            existing=existing, command=command
+        ):
+            raise DpmInstructionPackageConflictError("INSTRUCTION_PACKAGE_IMMUTABLE_CONFLICT")
+        return existing
 
     def get_package(
         self, *, tenant_id: str, package_id: str, package_version: str

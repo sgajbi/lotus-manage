@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 import sys
 from types import SimpleNamespace
 from unittest.mock import Mock
+from threading import Event, current_thread
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -434,17 +436,221 @@ def test_release_refuses_changed_approval_material_stale_model_and_insufficient_
     assert package.package_id == "dip-instruction-001"
 
 
-def test_release_refuses_missing_mapping_and_converges_concurrent_exact_retries() -> None:
+def test_release_refuses_missing_mapping_without_creating_custody() -> None:
     service, command = _service_and_command()
+    incomplete = replace(command, mappings=command.mappings[:-1])
     with pytest.raises(DpmInstructionPackageReleaseRefusedError, match="MAPPING_COVERAGE_REQUIRED"):
-        service.preview_release(command=replace(command, mappings=command.mappings[:-1]))
+        service.preview_release(command=incomplete)
+    with pytest.raises(DpmInstructionPackageReleaseRefusedError, match="MAPPING_COVERAGE_REQUIRED"):
+        service.release(command=incomplete)
+    assert (
+        service.repository.get_package_by_wave_item(
+            tenant_id=command.tenant_id, wave_id=command.wave_id, wave_item_id=command.wave_item_id
+        )
+        == []
+    )
 
+
+def test_concurrent_release_exact_retries_converge() -> None:
+    service, command = _service_and_command()
     approved = _approved_command(service, command)
     with ThreadPoolExecutor(max_workers=4) as executor:
         results = list(executor.map(lambda _: service.release(command=approved), range(4)))
     packages = [package for package, _ in results]
     assert len({package.content_hash for package in packages}) == 1
     assert sum(created for _, created in results) == 1
+
+
+def _force_release_race(
+    monkeypatch: pytest.MonkeyPatch,
+    service: DpmInstructionPackageApplicationService,
+    approved: DpmInstructionPackageReleaseCommand,
+    race: str,
+    *,
+    loser_command: DpmInstructionPackageReleaseCommand | None = None,
+) -> tuple[
+    tuple[DpmApprovedInstructionPackage, bool],
+    tuple[DpmApprovedInstructionPackage, bool] | DpmInstructionPackageConflictError,
+    list[DpmApprovedInstructionPackage],
+]:
+    """Force the two actual service windows, shared with the native PostgreSQL proof."""
+    assert race in {"supersession", "insert"}
+    paused, committed = Event(), Event()
+    get_package, save_package = service.repository.get_package, service.repository.save_package
+    from_material = DpmApprovedInstructionPackage.from_material
+    timestamps = iter((_NOW, _NOW + timedelta(microseconds=1)))
+    candidates: list[DpmApprovedInstructionPackage] = []
+    first_read = True
+
+    def candidate(
+        _cls: type[DpmApprovedInstructionPackage], **values: Any
+    ) -> DpmApprovedInstructionPackage:
+        # Different receipt creation instants are intentional; they are not approved intent.
+        package = from_material(**(values | {"created_at": next(timestamps)}))
+        candidates.append(package)
+        return package
+
+    def delayed_get(**selectors: Any) -> DpmApprovedInstructionPackage | None:
+        nonlocal first_read
+        retained = get_package(**selectors)
+        if current_thread().name.startswith("loser") and first_read:
+            first_read = False
+            assert retained is None
+            if race == "supersession":
+                paused.set()
+                assert committed.wait(timeout=10), "winner did not commit"
+        return retained
+
+    def delayed_save(*, package: DpmApprovedInstructionPackage) -> bool:
+        if current_thread().name.startswith("loser") and race == "insert":
+            paused.set()
+            assert committed.wait(timeout=10), "winner did not commit"
+        return save_package(package=package)
+
+    with monkeypatch.context() as controlled:
+        controlled.setattr(service.repository, "get_package", delayed_get)
+        controlled.setattr(service.repository, "save_package", delayed_save)
+        controlled.setattr(DpmApprovedInstructionPackage, "from_material", classmethod(candidate))
+        with ThreadPoolExecutor(max_workers=1, thread_name_prefix="loser") as executor:
+            loser = executor.submit(service.release, command=loser_command or approved)
+            try:
+                assert paused.wait(timeout=10), "loser did not reach the intended service window"
+                winner = service.release(command=approved)
+            finally:
+                committed.set()
+            try:
+                result: (
+                    tuple[DpmApprovedInstructionPackage, bool] | DpmInstructionPackageConflictError
+                ) = loser.result(timeout=10)
+            except DpmInstructionPackageConflictError as exc:
+                result = exc
+    return winner, result, candidates
+
+
+@pytest.mark.parametrize("race", ["supersession", "insert"])
+def test_release_reconciles_exact_winner_in_each_service_race(
+    monkeypatch: pytest.MonkeyPatch, race: str
+) -> None:
+    service, command = _service_and_command()
+    approved = _approved_command(service, command)
+    winner, replay, candidates = _force_release_race(monkeypatch, service, approved, race)
+    assert winner[1] is True
+    assert replay == (winner[0], False)
+    assert (
+        service.get_package(
+            tenant_id=command.tenant_id,
+            package_id=command.package_id,
+            package_version=command.package_version,
+        )
+        == winner[0]
+    )
+    assert service.repository.get_package_by_wave_item(
+        tenant_id=command.tenant_id, wave_id=command.wave_id, wave_item_id=command.wave_item_id
+    ) == [winner[0]]
+    assert winner[0].external_execution_claimed is False
+    if race == "insert":
+        assert len(candidates) == 2
+        assert candidates[0].created_at != candidates[1].created_at
+        assert candidates[0].content_hash != candidates[1].content_hash
+
+
+@pytest.mark.parametrize("race", ["supersession", "insert"])
+@pytest.mark.parametrize("material", ["mapping", "approval", "source", "funding"])
+def test_release_race_never_replays_changed_immutable_material(
+    monkeypatch: pytest.MonkeyPatch, race: str, material: str
+) -> None:
+    service, command = _service_and_command()
+    approved = _approved_command(service, command)
+    if material == "mapping":
+        changed = replace(
+            command,
+            mappings=[
+                command.mappings[0].model_copy(update={"mapping_revision": "changed"}),
+                *command.mappings[1:],
+            ],
+        )
+    elif material == "approval":
+        changed = replace(
+            command,
+            approval_evidence=command.approval_evidence.model_copy(
+                update={"approval_id": "changed"}
+            ),
+        )
+    elif material == "source":
+        changed = replace(
+            command,
+            source_revisions=[
+                command.source_revisions[0].model_copy(update={"content_hash": "sha256:changed"})
+            ],
+        )
+    else:
+        changed = replace(
+            command,
+            funding_evidence=command.funding_evidence.model_copy(
+                update={"evidence_hash": "sha256:changed"}
+            ),
+        )
+    separately_approved = _approved_command(service, changed)
+    winner, loser, _ = _force_release_race(
+        monkeypatch, service, approved, race, loser_command=separately_approved
+    )
+    assert isinstance(loser, DpmInstructionPackageConflictError)
+    assert str(loser) == "INSTRUCTION_PACKAGE_IMMUTABLE_CONFLICT"
+    assert winner[1] is True
+    assert (
+        service.get_package(
+            tenant_id=command.tenant_id,
+            package_id=command.package_id,
+            package_version=command.package_version,
+        )
+        == winner[0]
+    )
+
+
+def test_release_winner_recovery_preserves_supersession_and_tenant_fences() -> None:
+    service, command = _service_and_command()
+    approved = _approved_command(service, command)
+    winner, _ = service.release(command=approved)
+    with pytest.raises(DpmInstructionPackageReleaseRefusedError, match="SUPERSESSION_REQUIRED"):
+        service.release(command=replace(approved, package_id="different-package"))
+    with pytest.raises(DpmInstructionPackageNotFoundError, match="WAVE_NOT_FOUND"):
+        service.release(command=replace(approved, tenant_id="foreign-tenant"))
+    assert service.repository.get_package_by_wave_item(
+        tenant_id=command.tenant_id, wave_id=command.wave_id, wave_item_id=command.wave_item_id
+    ) == [winner]
+    assert (
+        service.repository.get_package(
+            tenant_id="foreign-tenant",
+            package_id=command.package_id,
+            package_version=command.package_version,
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "code", ["INSTRUCTION_PACKAGE_IMMUTABLE_CONFLICT", "controlled-store-conflict"]
+)
+def test_release_store_conflict_without_winner_preserves_original_failure(
+    monkeypatch: pytest.MonkeyPatch, code: str
+) -> None:
+    service, command = _service_and_command()
+    approved = _approved_command(service, command)
+    failure = DpmInstructionPackageConflictError(code)
+
+    def fail(**kwargs: Any) -> bool:
+        raise failure
+
+    monkeypatch.setattr(service.repository, "save_package", fail)
+    with pytest.raises(DpmInstructionPackageConflictError) as refused:
+        service.release(command=approved)
+    assert refused.value is failure
+    assert (
+        service.repository.get_package_by_wave_item(
+            tenant_id=command.tenant_id, wave_id=command.wave_id, wave_item_id=command.wave_item_id
+        )
+        == []
+    )
 
 
 def test_limit_instruction_mapping_replays_with_exact_decimal_material() -> None:

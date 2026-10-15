@@ -18,6 +18,27 @@ to `main`.
 | Did docs or wiki truth change? | Repo docs tests; `Sync-RepoWikis.ps1 -CheckOnly -AllowUnpublishedSourceChanges` before merge when the branch intentionally changes `wiki/`; publish after merge; rerun strict `Sync-RepoWikis.ps1 -CheckOnly` after publication | Repo-local `wiki/` is source truth; GitHub wiki is a publication target. |
 | Is live source integration claimed? | `make live-api-validate-core`, `make demo-certify` where applicable | Live proof is required before claiming stateful Core-backed readiness or demo certification. |
 
+## Instruction-package concurrent release controls
+
+From the repository root, in PowerShell or Bash with Make and the project Python environment:
+
+```text
+make test-unit UNIT_TESTS=tests/unit/dpm/instruction_packages/test_instruction_package_application.py
+```
+
+These controls force two service races: an exact-key miss followed by the winner's publication
+before supersession is checked, and independently built candidates reaching insertion with distinct
+creation timestamps. Exact retries must return the original winner once; changed mapping, approval,
+source or funding must conflict. Missing mapping, other-package supersession, absent winner and
+tenant fences remain separately identifiable refusals. Tests use event coordination without sleeps.
+
+The admitted PostgreSQL lane runs the same application-service interleavings in
+`tests/integration/dpm/instruction_packages/test_instruction_packages_postgres.py`, including fresh
+repository reads and material/tenant/supersession controls. Its prerequisite source and approval
+stores are synthetic in-memory fixtures; PostgreSQL package custody is real. Collection alone does
+not prove database behavior, complete bank workflow, external execution or booking. Existing
+repository-only concurrency tests remain useful and do not replace this service-level proof.
+
 ## Architecture gate
 
 From the repository root (PowerShell or Bash with Make and the project Python environment), run

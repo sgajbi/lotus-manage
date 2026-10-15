@@ -836,6 +836,17 @@ Most relevant current governance:
     numeric amounts. Diagnostics preserve the configured threshold, normalized threshold, observed
     quote, applied conversion rate, direction, candidate side, and outcome.
 
+## Instruction-package retry practice
+
+Instruction-package release retries reconcile an exact-key committed winner when it arrives
+between the initial read and supersession check, or when independently created candidate timestamps
+cause an insert conflict. The existing immutable command predicate must match; changed mapping,
+approval, source or funding remains a conflict, and another package for the wave item still requires
+explicit supersession. Do not weaken these guards or serialize unrelated releases to hide a race.
+The existing instruction-package unit and PostgreSQL modules force both windows with events and
+distinct candidate timestamps. PostgreSQL repository-only replay of one prebuilt object does not
+prove concurrent application-service release. Execute database controls only in the admitted lane.
+
 ## Context Maintenance Rule
 
 Update this document when:

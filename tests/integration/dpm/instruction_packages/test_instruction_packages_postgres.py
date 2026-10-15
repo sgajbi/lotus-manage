@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from dataclasses import replace
 from decimal import Decimal
 import uuid
 
@@ -20,9 +21,81 @@ from src.core.instruction_packages import (
 )
 from src.infrastructure.instruction_packages import PostgresDpmInstructionPackageRepository
 from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
+from tests.integration.dpm.network_runtime import disposable_database
+from tests.unit.dpm.instruction_packages.test_instruction_package_application import (
+    _service_and_command,
+    _approved_command,
+    _force_release_race,
+)
+from src.api.services.instruction_package_application import (
+    DpmInstructionPackageReleaseRefusedError,
+)
 
 
 _PROOF = "approved instruction package PostgreSQL restart and concurrency proof"
+
+
+@pytest.mark.parametrize("race", ["supersession", "insert"])
+@pytest.mark.parametrize("changed_mapping", [False, True])
+def test_postgres_application_release_race_returns_exact_winner_or_material_conflict(
+    monkeypatch: pytest.MonkeyPatch, race: str, changed_mapping: bool
+) -> None:
+    # Only package custody is PostgreSQL here; source/approval prerequisites are native
+    # synthetic in-memory fixtures. This does not certify a complete bank workflow.
+    with disposable_database() as dsn:
+        source_service, command = _service_and_command()
+        service = replace(
+            source_service, repository=PostgresDpmInstructionPackageRepository(dsn=dsn)
+        )
+        approved = _approved_command(service, command)
+        loser_command = None
+        if changed_mapping:
+            loser_command = _approved_command(
+                service,
+                replace(
+                    command,
+                    mappings=[
+                        command.mappings[0].model_copy(update={"mapping_revision": "changed"}),
+                        *command.mappings[1:],
+                    ],
+                ),
+            )
+        winner, loser, candidates = _force_release_race(
+            monkeypatch, service, approved, race, loser_command=loser_command
+        )
+        assert winner[1] is True
+        if changed_mapping:
+            assert isinstance(loser, DpmInstructionPackageConflictError)
+            assert str(loser) == "INSTRUCTION_PACKAGE_IMMUTABLE_CONFLICT"
+        else:
+            assert loser == (winner[0], False)
+        if race == "insert":
+            assert len(candidates) == 2
+            assert candidates[0].created_at != candidates[1].created_at
+            assert candidates[0].content_hash != candidates[1].content_hash
+        restarted = PostgresDpmInstructionPackageRepository(dsn=dsn)
+        assert (
+            restarted.get_package(
+                tenant_id=command.tenant_id,
+                package_id=command.package_id,
+                package_version=command.package_version,
+            )
+            == winner[0]
+        )
+        assert restarted.get_package_by_wave_item(
+            tenant_id=command.tenant_id, wave_id=command.wave_id, wave_item_id=command.wave_item_id
+        ) == [winner[0]]
+        assert (
+            restarted.get_package(
+                tenant_id="foreign-tenant",
+                package_id=command.package_id,
+                package_version=command.package_version,
+            )
+            is None
+        )
+        with pytest.raises(DpmInstructionPackageReleaseRefusedError, match="SUPERSESSION_REQUIRED"):
+            service.release(command=replace(approved, package_id="different-package"))
+        assert winner[0].external_execution_claimed is False
 
 
 def _package(
