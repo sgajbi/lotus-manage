@@ -494,6 +494,26 @@ Boundary rules:
 
 ## Repo-Native Commands
 
+### Immutable image and build metadata practice
+
+The production Dockerfile fixes the original Official Images Python `3.12.15-slim-trixie`
+index `a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1` and
+`linux/amd64` platform. Platform main `842b80eb33d93a40f7318f5d97d92541440c43e6` retains
+the independently approved original/index/child/config selection under
+[Platform945/6186826582](https://github.com/sgajbi/lotus-platform/issues/945#issuecomment-6186826582).
+No base build argument or mutable fallback is supported. `make docker-supply-chain-gate` uses
+the existing image-evidence script without registry or daemon access; static quality and
+`docker-build` both require it. Native image evidence records the admitted Dockerfile input/hash,
+approved tuple, inspected final platform, source revision and final image identity. That input
+record is not a base-layer attestation, cold-transfer capacity proof or financial qualification.
+
+Base Compose forwards only `GIT_SHA`, `GIT_BRANCH` and `BUILD_TIMESTAMP` build inputs, defaulting
+to `unknown` when absent/blank. Existing Dockerfile OCI labels and `LOTUS_IMAGE_*` consumers
+remain authoritative for the built image. Host variables and rendered Compose metadata do not
+prove an existing image or running application was rebuilt. See
+[the image operating procedure](docs/operations-runbook.md#immutable-python-base-and-image-evidence)
+for refresh, rollback and the required PR/Main image financial evidence boundaries.
+
 Use these commands as the primary local contract:
 
 1. install

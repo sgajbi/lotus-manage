@@ -479,6 +479,23 @@ python scripts/openapi_quality_gate.py
 
 ## Docker production readiness
 
+The production base is the independently selected Official Images Python `3.12.15-slim-trixie`
+index `sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`, fixed to
+`linux/amd64`. Its approved child/config and refresh/rollback procedure are in the
+[image operating procedure](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations-runbook.md#immutable-python-base-and-image-evidence),
+bound to [Platform original-source approval](https://github.com/sgajbi/lotus-platform/issues/945#issuecomment-6186826582).
+Run `make docker-supply-chain-gate` from this repository root in PowerShell or POSIX with the
+supported Python environment active for offline pin admission. Static quality and Docker build
+require it; mutable/parameterized bases and unapproved source/platform selections refuse.
+
+Base Compose forwards `GIT_SHA`, `GIT_BRANCH` and `BUILD_TIMESTAMP` through existing build arguments,
+defaulting to `unknown` when absent/blank. Host values or rendered Compose arguments do not prove
+the current image or running application's identity. Existing OCI/`LOTUS_IMAGE_*` consumers and
+actual image/runtime evidence establish that identity. Native image evidence records the admitted
+base tuple/Dockerfile hash, final inspected platform, source revision and immutable image ID;
+that is build-input evidence, not base-layer attestation, availability, capacity or financial proof.
+PR/Main image startup, migrations and financial recovery remain separate required acceptance.
+
 - Compose waits for the internal PostgreSQL service to be healthy before starting
   `lotus-manage`.
 - The application command runs `python scripts/postgres_migrate.py --target dpm` before `uvicorn`.

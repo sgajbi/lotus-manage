@@ -1,5 +1,5 @@
-# Use the official Python 3.12 slim image to match project runtime requirements
-FROM python:3.12-slim
+# Same Python 3.12.15 slim-trixie content approved in Platform #945; no base ARG override.
+FROM --platform=linux/amd64 docker.io/library/python:3.12.15-slim-trixie@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
 
 ARG GIT_SHA=unknown
 ARG GIT_BRANCH=unknown

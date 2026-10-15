@@ -1,5 +1,75 @@
 # Lotus Manage Operations Runbook
 
+## Immutable Python base and image evidence
+
+The production image fixes the same observed Python `3.12.15-slim-trixie` content, without changing
+the interpreter family or distribution. Its literal `FROM` uses `docker.io/library/python` and
+`linux/amd64`; base build-argument overrides and mutable fallback are unsupported.
+
+| Selection field | Approved value |
+| --- | --- |
+| Index | `sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1` |
+| Linux/amd64 child | `sha256:2b4f19dae3a777dfc3b76730bda1e82e1f66ab2a2686fa93ca78edbfb4f04ffe` |
+| Config | `sha256:df18428df8a0f9189c84e7424d214b4c50092af1f9dca5842a00c41c39bda316` |
+
+[Original-source selection approval](https://github.com/sgajbi/lotus-platform/issues/945#issuecomment-6186826582)
+is distinct from distribution equivalence. The complete record, including the equivalence to
+`public.ecr.aws/docker/library/python`, is committed at
+[Platform842 policy](https://github.com/sgajbi/lotus-platform/blob/842b80eb33d93a40f7318f5d97d92541440c43e6/platform-contracts/technology-governance/lotus-technology-governance-policy.v1.json).
+That distribution record does not select a different registry for this Dockerfile. Cached raw
+config/RootFS proof qualifies the selected content, not cold availability, capacity or the
+application's image/runtime behavior.
+
+Working directory: the root of the intended `lotus-manage` checkout, with its supported Python
+environment active. The following offline gate is runnable in PowerShell and POSIX shells:
+
+```text
+make docker-supply-chain-gate
+```
+
+It fails before image inspection for a changed, mutable, malformed or parameterized base, extra
+`FROM`, wrong source or unsupported platform. Both static quality and `make docker-build` require
+the gate. The existing `make docker-image-evidence` additionally builds and inspects the final
+image; run it only within an authorized image-validation scope. Its release manifest and
+provenance summary retain the selected base tuple and Dockerfile SHA256 alongside source revision,
+final immutable image identity and inspected platform. The record explicitly identifies a
+validated build input, not a cryptographic base-layer attestation. Optional SBOM, vulnerability
+and signature tools remain report-only when unavailable; their absence is not a successful scan.
+
+Base Compose now forwards the existing `GIT_SHA`, `GIT_BRANCH` and `BUILD_TIMESTAMP` build arguments.
+Absent or blank values use `unknown`. To inspect supplied metadata without contacting a daemon,
+from this repository root use PowerShell:
+
+```powershell
+$env:GIT_SHA = git rev-parse HEAD
+$env:GIT_BRANCH = git branch --show-current
+$env:BUILD_TIMESTAMP = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+docker compose -f docker-compose.yml config --format json
+```
+
+POSIX shell:
+
+```bash
+GIT_SHA="$(git rev-parse HEAD)" GIT_BRANCH="$(git branch --show-current)" \
+BUILD_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+docker compose -f docker-compose.yml config --format json
+```
+
+Rendered build arguments and host values are model/input evidence only. Existing built-image OCI
+labels, `LOTUS_IMAGE_*` environment and application `/version` identity require separate actual
+image/runtime validation. Do not infer a refresh from Compose rendering or add a second runtime
+metadata mechanism. Runtime settings, ports, volumes, DSNs, migration-first startup and non-root
+execution retain their existing behavior.
+
+Refresh the pin only through a separately reviewed Platform original-source selection that binds
+the index, platform child and raw config, followed by this repository's literal pin, existing
+guard/evidence record, meaningful refusal tests and documentation. Required PR and exact-main image
+lanes must retain startup/migration/readiness and `make test-image-financial-runtime` recovery
+proof before operational acceptance. Roll back by deploying a previously qualified immutable
+application image and its recorded approved base/source revision through the governed runtime
+owner; do not restore a floating tag or alter financial stores. Offline/source proof alone does
+not satisfy #806 or #778 acceptance.
+
 ## Local proof posture
 
 - Install dependencies: `make install`

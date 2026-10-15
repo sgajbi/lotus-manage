@@ -1,4 +1,4 @@
-.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate test-family-inventory coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-idea-management-action-postgres test-e2e test-unit-coverage test-integration-coverage test-e2e-coverage test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply quarantine-inventory pre-commit docker-build docker-image-evidence docker-up docker-down
+.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate test-family-inventory coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-idea-management-action-postgres test-e2e test-unit-coverage test-integration-coverage test-e2e-coverage test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply quarantine-inventory pre-commit docker-build docker-image-evidence docker-supply-chain-gate docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 IMAGE_NAME ?= lotus-manage
@@ -37,7 +37,7 @@ pre-commit:
 static-quality-gates: lint no-alias-gate typecheck typecheck-tests-critical openapi-gate api-vocabulary-gate \
 	service-boundary-gate router-infrastructure-gate mesh-contract-validate architecture-gate complexity-gate \
 	duplicate-implementation-gate dependency-hygiene-gate dead-code-gate workflow-policy-gate quality-report-gate \
-	test-family-inventory
+	test-family-inventory docker-supply-chain-gate
 
 check: static-quality-gates test
 
@@ -233,8 +233,11 @@ security-audit:
 	python -m bandit -q -r src -c pyproject.toml --severity-level high
 	python -m pip_audit . --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969
 
-docker-build:
-	docker build \
+docker-supply-chain-gate:
+	python scripts/docker_image_evidence.py --validate-base-only
+
+docker-build: docker-supply-chain-gate
+	docker build --platform linux/amd64 \
 		--build-arg GIT_SHA=$(GIT_SHA) \
 		--build-arg GIT_BRANCH=$(GIT_BRANCH) \
 		--build-arg BUILD_TIMESTAMP=$(BUILD_TIMESTAMP) \
