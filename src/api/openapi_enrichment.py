@@ -521,11 +521,13 @@ def _operation_has_error_response(responses: dict[str, Any]) -> bool:
 
 
 def _ensure_schema_documentation(schema: dict[str, Any]) -> None:
+    schemas = _schema_component_schemas(schema) or {}
     for model_name, prop_name, prop_schema in _schema_documentable_properties(schema):
         _ensure_property_documentation(
             model_name=model_name,
             prop_name=prop_name,
             prop_schema=prop_schema,
+            schemas=schemas,
         )
 
 
@@ -580,12 +582,12 @@ def _documentable_property_schema(
 
 
 def _ensure_property_documentation(
-    *, model_name: str, prop_name: str, prop_schema: dict[str, Any]
+    *, model_name: str, prop_name: str, prop_schema: dict[str, Any], schemas: dict[str, Any]
 ) -> None:
     if not prop_schema.get("description"):
         prop_schema["description"] = infer_openapi_description(model_name, prop_name, prop_schema)
     if "example" not in prop_schema:
-        prop_schema["example"] = infer_openapi_example(prop_name, prop_schema)
+        prop_schema["example"] = _example_from_schema(prop_name, prop_schema, schemas)
 
 
 def enrich_openapi_schema(schema: dict[str, Any], *, service_name: str) -> dict[str, Any]:

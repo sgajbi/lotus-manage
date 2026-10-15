@@ -40,6 +40,7 @@ LEGACY_TERM_MAP: dict[str, str] = {
     "cif_id": "client_id",
     "booking_center": "booking_center_code",
 }
+USAGE_FIELD_KEYS = ("name", "location", "required", "type", "semanticId", "attributeRef")
 
 
 def _to_snake_case(value: str) -> str:
@@ -130,10 +131,12 @@ def _fallback_description(name: str) -> str:
 
 
 def _fallback_example(name: str, schema: dict[str, Any]) -> Any:
+    if "example" in schema:
+        return schema["example"]
     variant = _single_primitive_variant(schema)
     if variant is not None:
         effective = {**variant, **schema, "type": variant["type"]}
-        if effective.get("example") is not None:
+        if "example" in effective:
             return effective["example"]
         items = effective.get("items")
         if effective["type"] == "array" and not effective.get("enum") and isinstance(items, dict):
@@ -168,7 +171,7 @@ def _fallback_example(name: str, schema: dict[str, Any]) -> Any:
 
 
 def _array_item_example(schema: dict[str, Any]) -> Any:
-    if schema.get("example") is not None:
+    if "example" in schema:
         return schema["example"]
     items = schema.get("items")
     if schema.get("type") == "array" and not schema.get("enum") and isinstance(items, dict):
@@ -219,7 +222,7 @@ def _extract_fields(
             "description": prop_resolved.get("description") or _fallback_description(field_name),
             "example": (
                 prop_resolved.get("example")
-                if prop_resolved.get("example") is not None
+                if "example" in prop_resolved
                 else _fallback_example(field_name, prop_resolved)
             ),
         }
@@ -295,7 +298,7 @@ def _extract_request_fields(
                 or schema.get("description")
                 or _fallback_description(name),
                 "example": parameter.get("example")
-                if parameter.get("example") is not None
+                if "example" in parameter
                 else _fallback_example(name, schema),
                 "allowedValues": schema.get("enum", []),
                 "semanticId": _semantic_id(name),
@@ -338,6 +341,19 @@ def _domain(path: str, tags: list[str]) -> str:
         return _to_snake_case(tags[0])
     root = path.strip("/").split("/")[0] if path.strip("/") else "operational"
     return _to_snake_case(root)
+
+
+def _usage_field_key(field: dict[str, Any]) -> str:
+    return json.dumps(
+        [field.get(key) for key in USAGE_FIELD_KEYS], sort_keys=True, separators=(",", ":")
+    )
+
+
+def _unique_usage_fields(fields: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    unique: dict[str, dict[str, Any]] = {}
+    for field in fields:
+        unique.setdefault(_usage_field_key(field), field)
+    return list(unique.values())
 
 
 def build_inventory() -> dict[str, Any]:
@@ -413,8 +429,8 @@ def build_inventory() -> dict[str, Any]:
                     "path": path,
                     "operationId": operation.get("operationId"),
                     "summary": operation.get("summary") or "",
-                    "request": {"fields": endpoint_request_fields},
-                    "response": {"fields": endpoint_response_fields},
+                    "request": {"fields": _unique_usage_fields(endpoint_request_fields)},
+                    "response": {"fields": _unique_usage_fields(endpoint_response_fields)},
                 }
             )
             controls_catalog.extend(controls)
@@ -448,6 +464,22 @@ def _is_placeholder_example(value: Any) -> bool:
     return False
 
 
+def _duplicate_usage_errors(
+    endpoint: dict[str, Any], direction: str, fields: list[dict[str, Any]]
+) -> list[str]:
+    errors: list[str] = []
+    seen: set[str] = set()
+    for field in fields:
+        key = _usage_field_key(field)
+        if key in seen:
+            errors.append(
+                f"duplicate endpoint {direction} field usage: "
+                f"{endpoint.get('method')} {endpoint.get('path')}::{field.get('name')}"
+            )
+        seen.add(key)
+    return errors
+
+
 def validate_inventory(inventory: dict[str, Any]) -> list[str]:
     errors: list[str] = []
 
@@ -476,6 +508,8 @@ def validate_inventory(inventory: dict[str, Any]) -> list[str]:
     for endpoint in inventory.get("endpoints", []):
         request_fields = endpoint.get("request", {}).get("fields", [])
         response_fields = endpoint.get("response", {}).get("fields", [])
+        errors.extend(_duplicate_usage_errors(endpoint, "request", request_fields))
+        errors.extend(_duplicate_usage_errors(endpoint, "response", response_fields))
         for field in [*request_fields, *response_fields]:
             for forbidden in ("description", "example", "canonicalTerm", "preferredName"):
                 if forbidden in field:
