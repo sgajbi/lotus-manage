@@ -11,6 +11,7 @@ from src.core.composite_authority_models import (
 )
 from src.core.composite_eligibility.observations import Currency
 from src.core.composite_eligibility.policy import MonthlyPolicyLayer
+from src.core.composite_eligibility.historical_policy import HistoricalPolicyReference
 
 
 class SubjectRequest(StrictAuthorityModel):
@@ -33,6 +34,11 @@ class SubjectPolicyRequest(StrictAuthorityModel):
 
 class SubjectApprovalRequest(StrictAuthorityModel):
     expected_proposal_content_hash: Digest
+
+
+class SubjectHistoricalPolicyRequest(StrictAuthorityModel):
+    expected_subject_content_hash: Digest
+    reference: HistoricalPolicyReference
 
 
 class SubjectEvaluationRequest(StrictAuthorityModel):

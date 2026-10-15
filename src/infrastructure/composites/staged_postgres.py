@@ -8,9 +8,9 @@ from src.core.composite_definition_versions import decode_composite_definition
 from src.core.composite_eligibility.staged_controls import (
     STAGED_CONTROL_ADAPTER,
     StagedControl,
-    SubjectPolicyProposal,
-    SubjectPolicyApproval,
-    SubjectEvaluationProposal,
+    SubjectPolicyProposalContent,
+    SubjectPolicyApprovalContent,
+    SubjectEvaluationProposalContent,
     control_subject,
     control_revision,
 )
@@ -160,21 +160,21 @@ def save_control(connection: Any, control: StagedControl) -> None:
         raise DpmCompositeConflictError("COMPOSITE_SUBJECT_ALREADY_FINALIZED_CONFLICT")
     base = (*key[:3], subject.month)
     tail = (control.content_hash, dump_model_json(control), key[3], subject.content_hash)
-    if isinstance(control, SubjectPolicyProposal):
+    if isinstance(control, SubjectPolicyProposalContent):
         connection.execute(
             """INSERT INTO dpm_composite_monthly_policy_proposals
             (tenant_id,composite_id,definition_version,month,proposal_revision,content_hash,payload_json,subject_revision,subject_content_hash)
             VALUES (%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s) ON CONFLICT DO NOTHING""",
             (*base, control_revision(control), *tail),
         )
-    elif isinstance(control, SubjectPolicyApproval):
+    elif isinstance(control, SubjectPolicyApprovalContent):
         connection.execute(
             """INSERT INTO dpm_composite_monthly_policy_approvals
             (tenant_id,composite_id,definition_version,month,proposal_revision,proposal_content_hash,content_hash,payload_json,subject_revision,subject_content_hash)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s) ON CONFLICT DO NOTHING""",
             (*base, control_revision(control), control.proposal.content_hash, *tail),
         )
-    elif isinstance(control, SubjectEvaluationProposal):
+    elif isinstance(control, SubjectEvaluationProposalContent):
         connection.execute(
             """INSERT INTO dpm_composite_monthly_evaluation_proposals
             (tenant_id,composite_id,definition_version,month,evaluation_revision,parent_membership_revision,content_hash,payload_json,subject_revision,subject_content_hash,staged_policy_content_hash)

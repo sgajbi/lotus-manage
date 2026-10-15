@@ -17,14 +17,21 @@ from src.api.services.composite_subject_requests import (
     SubjectApprovalRequest,
     SubjectEvaluationRequest,
     SubjectFinalizationRequest,
+    SubjectHistoricalPolicyRequest,
 )
-from src.core.composite_authority_models import EvidenceBinding
+from src.core.composite_authority_models import EvidenceBinding, HistoricalSubjectApprovalBinding
 from src.core.composite_eligibility.staged_subject import EligibilitySubject
 from src.core.composite_eligibility.staged_controls import (
     SubjectPolicyProposal,
-    SubjectPolicyApproval,
-    SubjectEvaluationProposal,
-    SubjectEvaluationApproval,
+    SubjectPolicyProposalVariant,
+    SubjectPolicyApprovalVariant,
+    SubjectEvaluationProposalVariant,
+    SubjectEvaluationApprovalVariant,
+    SubjectPolicyProposalContent,
+    SubjectPolicyApprovalContent,
+    SubjectEvaluationProposalContent,
+    SubjectEvaluationApprovalContent,
+    HistoricalSubjectPolicyProposal,
 )
 from src.core.composite_eligibility.staged_publication import (
     SubjectFinalizationProof,
@@ -125,7 +132,7 @@ def propose_policy(
     request: SubjectPolicyRequest,
     identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectPolicyProposal:
+) -> SubjectPolicyProposalContent:
     return _call(
         lambda: service.propose_policy(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
@@ -136,9 +143,34 @@ def propose_policy(
     )
 
 
+@router.put(
+    PREFIX + "/policies/{proposal_revision}/historical-admission",
+    response_model=HistoricalSubjectPolicyProposal,
+    summary="Admit verified historical policy for one exact unpublished subject",
+    description="Current server admission is separate from original signed historical dates. Synthetic only; source and trust default unavailable.",
+)
+def propose_historical_policy(
+    composite_id: str,
+    definition_version: str,
+    subject_revision: str,
+    proposal_revision: str,
+    request: SubjectHistoricalPolicyRequest,
+    identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
+    service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
+) -> HistoricalSubjectPolicyProposal:
+    return _call(
+        lambda: service.propose_historical_policy(
+            (identity.tenant_id, composite_id, definition_version, subject_revision),
+            proposal_revision,
+            identity.actor_id,
+            request,
+        )
+    )
+
+
 @router.get(
     PREFIX + "/policies/{proposal_revision}",
-    response_model=SubjectPolicyProposal,
+    response_model=SubjectPolicyProposalVariant,
     summary="Read exact subject-bound policy proposal",
 )
 def get_policy(
@@ -148,19 +180,19 @@ def get_policy(
     proposal_revision: str,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectPolicyProposal:
+) -> SubjectPolicyProposalContent:
     return _call(
         lambda: service.control(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
             proposal_revision,
-            SubjectPolicyProposal,
+            SubjectPolicyProposalContent,
         )
     )
 
 
 @router.put(
     PREFIX + "/policies/{proposal_revision}/approval",
-    response_model=SubjectPolicyApproval,
+    response_model=SubjectPolicyApprovalVariant,
     summary="Independently approve exact prospective subject policy",
     description="Requires a server-owned verification receipt; default verifier is unavailable. Synthetic receipts are non-certifying.",
 )
@@ -172,7 +204,7 @@ def approve_policy(
     request: SubjectApprovalRequest,
     identity: CompositeTrustedIdentity = Depends(checker),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectPolicyApproval:
+) -> SubjectPolicyApprovalContent:
     return _call(
         lambda: service.approve_policy(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
@@ -185,7 +217,7 @@ def approve_policy(
 
 @router.get(
     PREFIX + "/policies/{proposal_revision}/approval",
-    response_model=SubjectPolicyApproval,
+    response_model=SubjectPolicyApprovalVariant,
     summary="Read exact retained policy verification evidence",
 )
 def get_policy_approval(
@@ -195,19 +227,19 @@ def get_policy_approval(
     proposal_revision: str,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectPolicyApproval:
+) -> SubjectPolicyApprovalContent:
     return _call(
         lambda: service.control(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
             proposal_revision,
-            SubjectPolicyApproval,
+            SubjectPolicyApprovalContent,
         )
     )
 
 
 @router.put(
     PREFIX + "/evaluations/{evaluation_revision}",
-    response_model=SubjectEvaluationProposal,
+    response_model=SubjectEvaluationProposalVariant,
     summary="Freeze actual source observations and evaluate an approved subject policy",
     description="Source selectors identify immutable cuts; no caller financial facts. All monthly rules are retained. No membership is published.",
 )
@@ -219,7 +251,7 @@ def evaluate_subject(
     request: SubjectEvaluationRequest,
     identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectEvaluationProposal:
+) -> SubjectEvaluationProposalContent:
     return _call(
         lambda: service.evaluate(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
@@ -232,7 +264,7 @@ def evaluate_subject(
 
 @router.get(
     PREFIX + "/evaluations/{evaluation_revision}",
-    response_model=SubjectEvaluationProposal,
+    response_model=SubjectEvaluationProposalVariant,
     summary="Read exact subject evaluation and all-rule evidence",
 )
 def get_evaluation(
@@ -242,19 +274,19 @@ def get_evaluation(
     evaluation_revision: str,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectEvaluationProposal:
+) -> SubjectEvaluationProposalContent:
     return _call(
         lambda: service.control(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
             evaluation_revision,
-            SubjectEvaluationProposal,
+            SubjectEvaluationProposalContent,
         )
     )
 
 
 @router.put(
     PREFIX + "/evaluations/{evaluation_revision}/approval",
-    response_model=SubjectEvaluationApproval,
+    response_model=SubjectEvaluationApprovalVariant,
     summary="Independently approve frozen evaluation and canonical first-member projection",
     description="Approval remains NOT_PUBLISHED and official activation UNAVAILABLE. Finalization is a separate atomic operation.",
 )
@@ -266,7 +298,7 @@ def approve_evaluation(
     request: SubjectApprovalRequest,
     identity: CompositeTrustedIdentity = Depends(checker),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectEvaluationApproval:
+) -> SubjectEvaluationApprovalContent:
     return _call(
         lambda: service.approve_evaluation(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
@@ -279,7 +311,7 @@ def approve_evaluation(
 
 @router.get(
     PREFIX + "/evaluations/{evaluation_revision}/approval",
-    response_model=SubjectEvaluationApproval,
+    response_model=SubjectEvaluationApprovalVariant,
     summary="Read immutable unpublished eligibility approval",
 )
 def get_evaluation_approval(
@@ -289,12 +321,12 @@ def get_evaluation_approval(
     evaluation_revision: str,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> SubjectEvaluationApproval:
+) -> SubjectEvaluationApprovalContent:
     return _call(
         lambda: service.control(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
             evaluation_revision,
-            SubjectEvaluationApproval,
+            SubjectEvaluationApprovalContent,
         )
     )
 
@@ -354,7 +386,10 @@ def get_finalization(
 def resolve_evidence(
     composite_id: str,
     definition_version: str,
-    binding: EvidenceBinding | MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding,
+    binding: EvidenceBinding
+    | HistoricalSubjectApprovalBinding
+    | MonthlyApprovalBinding
+    | HistoricalMonthlyApprovalBinding,
     response: Response,
     identity: CompositeTrustedIdentity = Depends(composite_trusted_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
@@ -381,6 +416,17 @@ def _historical_receipt_response(
 
 
 PUBLIC_CODES = {
+    "COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH",
+    "COMPOSITE_SUBJECT_HISTORICAL_POLICY_POSTURE_UNAVAILABLE",
+    "COMPOSITE_HISTORICAL_POLICY_ADMISSION_UNAVAILABLE",
+    "COMPOSITE_HISTORICAL_POLICY_RESPONSE_INVALID",
+    "COMPOSITE_HISTORICAL_POLICY_PROVIDER_REJECTED",
+    "COMPOSITE_HISTORICAL_POLICY_REQUEST_MISMATCH",
+    "COMPOSITE_HISTORICAL_POLICY_TRUST_MISMATCH",
+    "COMPOSITE_HISTORICAL_POLICY_MAPPING_MISMATCH",
+    "COMPOSITE_HISTORICAL_POLICY_INTENT_MISMATCH",
+    "COMPOSITE_HISTORICAL_POLICY_VERIFIER_SIGNATURE_INVALID",
+    "COMPOSITE_HISTORICAL_POLICY_ADMISSION_WINDOW_INVALID",
     "COMPOSITE_ATTESTATION_REVOCATION_UNAVAILABLE",
     "COMPOSITE_ATTESTATION_ORIGINAL_UNAVAILABLE",
     "COMPOSITE_ATTESTATION_RELATED_ARTIFACT_MISMATCH",

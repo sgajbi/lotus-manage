@@ -11,7 +11,19 @@ from src.core.composite_eligibility.source_assembly import (
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import Digest, Identity, StrictAuthorityModel
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApproval,
+    MonthlyPolicyProposal,
+    MonthlyPolicyApprovalVariant,
+    MonthlyPolicyProposalVariant,
+    decode_policy_approval,
+    decode_policy_proposal,
+)
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalMonthlyPolicyProposal,
+    HistoricalMonthlyPolicyApproval,
+    HistoricalPolicyVerification,
+)
 from src.core.composite_eligibility.evaluation import (
     MonthlyEligibilityEvaluation,
     evaluate_monthly_eligibility,
@@ -26,17 +38,17 @@ from src.core.composite_eligibility.verification import (
 from src.core.composite_universe import DpmCompositeUniverseSourceProduct
 
 
-class SubjectPolicyProposal(StrictAuthorityModel):
+class SubjectPolicyProposalContent(StrictAuthorityModel):
     product_name: Literal["CompositeSubjectPolicyProposal"] = "CompositeSubjectPolicyProposal"
-    product_version: Literal["v1"] = "v1"
+    product_version: Literal["v1", "v2"]
     subject: EligibilitySubject
-    proposal: MonthlyPolicyProposal
+    proposal: MonthlyPolicyProposalVariant
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_subject_policy(self) -> "SubjectPolicyProposal":
+    def require_subject_policy(self) -> "SubjectPolicyProposalContent":
         self.subject = EligibilitySubject.model_validate(self.subject.model_dump(mode="json"))
-        self.proposal = MonthlyPolicyProposal.model_validate(self.proposal.model_dump(mode="json"))
+        self.proposal = decode_policy_proposal(self.proposal.model_dump(mode="json"))
         scope, subject = self.proposal.policy.scope, self.subject
         if (
             scope.tenant_id,
@@ -63,18 +75,63 @@ class SubjectPolicyProposal(StrictAuthorityModel):
         return self
 
 
-class SubjectPolicyApproval(StrictAuthorityModel):
-    product_name: Literal["CompositeSubjectPolicyApproval"] = "CompositeSubjectPolicyApproval"
+class SubjectPolicyProposal(SubjectPolicyProposalContent):
     product_version: Literal["v1"] = "v1"
-    proposal: SubjectPolicyProposal
-    approval: MonthlyPolicyApproval
+    proposal: MonthlyPolicyProposal
+
+
+class HistoricalSubjectPolicyProposal(SubjectPolicyProposalContent):
+    product_version: Literal["v2"] = "v2"
+    proposal: HistoricalMonthlyPolicyProposal
+    verification: VerificationReceipt
+
+    @model_validator(mode="after")
+    def require_historical_subject_admission(self) -> "HistoricalSubjectPolicyProposal":
+        require_synthetic_history(self.proposal.verification)
+        if self.proposal.verification.mapping.reporting_currency != self.subject.reporting_currency:
+            raise ValueError("COMPOSITE_SUBJECT_POLICY_MISMATCH")
+        require_synthetic_receipt(self.verification)
+        require_verification_scope(
+            self.verification.request,
+            self.subject,
+            "ELIGIBILITY_POLICY",
+            hash_canonical_payload(
+                {
+                    "subject_content_hash": self.subject.content_hash,
+                    "proposal_content_hash": self.proposal.content_hash,
+                }
+            ),
+        )
+        return self
+
+
+SubjectPolicyProposalVariant = Annotated[
+    SubjectPolicyProposal | HistoricalSubjectPolicyProposal, Field(discriminator="product_version")
+]
+POLICY_PROPOSAL_ADAPTER: TypeAdapter[SubjectPolicyProposalVariant] = TypeAdapter(
+    SubjectPolicyProposalVariant
+)
+
+
+class SubjectPolicyApprovalContent(StrictAuthorityModel):
+    product_name: Literal["CompositeSubjectPolicyApproval"] = "CompositeSubjectPolicyApproval"
+    product_version: Literal["v1", "v2"]
+    proposal: SubjectPolicyProposalVariant
+    approval: MonthlyPolicyApprovalVariant
     verification: VerificationReceipt
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_exact_policy_approval(self) -> "SubjectPolicyApproval":
-        self.proposal = SubjectPolicyProposal.model_validate(self.proposal.model_dump(mode="json"))
-        self.approval = MonthlyPolicyApproval.model_validate(self.approval.model_dump(mode="json"))
+    def require_exact_policy_approval(self) -> "SubjectPolicyApprovalContent":
+        self.proposal = POLICY_PROPOSAL_ADAPTER.validate_python(
+            self.proposal.model_dump(mode="json")
+        )
+        self.approval = decode_policy_approval(self.approval.model_dump(mode="json"))
+        if (
+            self.product_version != self.proposal.product_version
+            or self.product_version != self.approval.product_version
+        ):
+            raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
         if self.approval.proposal != self.proposal.proposal:
             raise ValueError("COMPOSITE_SUBJECT_POLICY_APPROVAL_MISMATCH")
         subject = self.proposal.subject
@@ -90,13 +147,39 @@ class SubjectPolicyApproval(StrictAuthorityModel):
         return self
 
 
-class SubjectEvaluationProposal(StrictAuthorityModel):
+class SubjectPolicyApproval(SubjectPolicyApprovalContent):
+    product_version: Literal["v1"] = "v1"
+    proposal: SubjectPolicyProposal
+    approval: MonthlyPolicyApproval
+
+
+class HistoricalSubjectPolicyApproval(SubjectPolicyApprovalContent):
+    product_version: Literal["v2"] = "v2"
+    proposal: HistoricalSubjectPolicyProposal
+    approval: HistoricalMonthlyPolicyApproval
+
+    @model_validator(mode="after")
+    def require_noncertifying_approval(self) -> "HistoricalSubjectPolicyApproval":
+        require_synthetic_history(self.approval.verification)
+        require_synthetic_receipt(self.verification)
+        return self
+
+
+SubjectPolicyApprovalVariant = Annotated[
+    SubjectPolicyApproval | HistoricalSubjectPolicyApproval, Field(discriminator="product_version")
+]
+POLICY_APPROVAL_ADAPTER: TypeAdapter[SubjectPolicyApprovalVariant] = TypeAdapter(
+    SubjectPolicyApprovalVariant
+)
+
+
+class SubjectEvaluationProposalContent(StrictAuthorityModel):
     product_name: Literal["CompositeSubjectEvaluationProposal"] = (
         "CompositeSubjectEvaluationProposal"
     )
-    product_version: Literal["v1"] = "v1"
+    product_version: Literal["v1", "v2"]
     evaluation_kind: Literal["INITIAL"] = "INITIAL"
-    policy_approval: SubjectPolicyApproval
+    policy_approval: SubjectPolicyApprovalVariant
     evaluation_revision: Identity
     target_membership_revision: Identity
     observations: MonthlyEligibilityObservations
@@ -110,10 +193,12 @@ class SubjectEvaluationProposal(StrictAuthorityModel):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_reproducible_evaluation(self) -> "SubjectEvaluationProposal":
-        self.policy_approval = SubjectPolicyApproval.model_validate(
+    def require_reproducible_evaluation(self) -> "SubjectEvaluationProposalContent":
+        self.policy_approval = POLICY_APPROVAL_ADAPTER.validate_python(
             self.policy_approval.model_dump(mode="json")
         )
+        if self.product_version != self.policy_approval.product_version:
+            raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
         subject = self.policy_approval.proposal.subject
         observations = MonthlyEligibilityObservations.model_validate(
             self.observations.model_dump(mode="json")
@@ -160,7 +245,40 @@ class SubjectEvaluationProposal(StrictAuthorityModel):
         return self
 
 
-def subject_approval_claims(proposal: SubjectEvaluationProposal, actor: str, instant: str) -> str:
+class SubjectEvaluationProposal(SubjectEvaluationProposalContent):
+    product_version: Literal["v1"] = "v1"
+    policy_approval: SubjectPolicyApproval
+
+
+class HistoricalSubjectEvaluationProposal(SubjectEvaluationProposalContent):
+    product_version: Literal["v2"] = "v2"
+    policy_approval: HistoricalSubjectPolicyApproval
+    operation_verification: HistoricalPolicyVerification
+
+    @model_validator(mode="after")
+    def require_historical_operation(self) -> "HistoricalSubjectEvaluationProposal":
+        require_subject_operation(
+            self,
+            self.operation_verification,
+            "EVALUATION_PROPOSAL",
+            self.proposed_by,
+            self.proposed_at,
+        )
+        return self
+
+
+SubjectEvaluationProposalVariant = Annotated[
+    SubjectEvaluationProposal | HistoricalSubjectEvaluationProposal,
+    Field(discriminator="product_version"),
+]
+EVALUATION_PROPOSAL_ADAPTER: TypeAdapter[SubjectEvaluationProposalVariant] = TypeAdapter(
+    SubjectEvaluationProposalVariant
+)
+
+
+def subject_approval_claims(
+    proposal: SubjectEvaluationProposalContent, actor: str, instant: str
+) -> str:
     subject = proposal.policy_approval.proposal.subject
     return hash_canonical_payload(
         {
@@ -173,15 +291,15 @@ def subject_approval_claims(proposal: SubjectEvaluationProposal, actor: str, ins
     )
 
 
-class SubjectEvaluationApproval(StrictAuthorityModel):
+class SubjectEvaluationApprovalContent(StrictAuthorityModel):
     product_name: Literal["CompositeSubjectEvaluationApproval"] = (
         "CompositeSubjectEvaluationApproval"
     )
-    product_version: Literal["v1"] = "v1"
+    product_version: Literal["v1", "v2"]
     evidence_kind: Literal["SYNTHETIC_UNSIGNED", "QUALIFIED_VERIFICATION_RECEIPT"]
     official_activation: Literal["UNAVAILABLE"] = "UNAVAILABLE"
     publication_posture: Literal["NOT_PUBLISHED"] = "NOT_PUBLISHED"
-    proposal: SubjectEvaluationProposal
+    proposal: SubjectEvaluationProposalVariant
     approved_by: Identity
     approved_at: UtcInstant
     claims_digest: Digest
@@ -191,10 +309,12 @@ class SubjectEvaluationApproval(StrictAuthorityModel):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_independent_approval(self) -> "SubjectEvaluationApproval":
-        self.proposal = SubjectEvaluationProposal.model_validate(
+    def require_independent_approval(self) -> "SubjectEvaluationApprovalContent":
+        self.proposal = EVALUATION_PROPOSAL_ADAPTER.validate_python(
             self.proposal.model_dump(mode="json")
         )
+        if self.product_version != self.proposal.product_version:
+            raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
         if self.approved_by == self.proposal.proposed_by:
             raise ValueError("COMPOSITE_ELIGIBILITY_SELF_APPROVAL_FORBIDDEN")
         if datetime.fromisoformat(self.approved_at) < datetime.fromisoformat(
@@ -216,6 +336,80 @@ class SubjectEvaluationApproval(StrictAuthorityModel):
             raise ValueError("COMPOSITE_SUBJECT_VERIFICATION_POSTURE_MISMATCH")
         bind_content(self)
         return self
+
+
+class SubjectEvaluationApproval(SubjectEvaluationApprovalContent):
+    product_version: Literal["v1"] = "v1"
+    proposal: SubjectEvaluationProposal
+
+
+class HistoricalSubjectEvaluationApproval(SubjectEvaluationApprovalContent):
+    product_version: Literal["v2"] = "v2"
+    proposal: HistoricalSubjectEvaluationProposal
+    evidence_kind: Literal["SYNTHETIC_UNSIGNED"] = "SYNTHETIC_UNSIGNED"
+    operation_verification: HistoricalPolicyVerification
+
+    @model_validator(mode="after")
+    def require_historical_operation(self) -> "HistoricalSubjectEvaluationApproval":
+        require_synthetic_receipt(self.verification)
+        require_subject_operation(
+            self.proposal,
+            self.operation_verification,
+            "EVALUATION_APPROVAL",
+            self.approved_by,
+            self.approved_at,
+        )
+        return self
+
+
+SubjectEvaluationApprovalVariant = Annotated[
+    SubjectEvaluationApproval | HistoricalSubjectEvaluationApproval,
+    Field(discriminator="product_version"),
+]
+EVALUATION_APPROVAL_ADAPTER: TypeAdapter[SubjectEvaluationApprovalVariant] = TypeAdapter(
+    SubjectEvaluationApprovalVariant
+)
+
+
+def require_synthetic_history(proof: HistoricalPolicyVerification) -> None:
+    if proof.posture != "SYNTHETIC_NON_CERTIFYING":
+        raise ValueError("COMPOSITE_SUBJECT_HISTORICAL_POLICY_POSTURE_UNAVAILABLE")
+
+
+def require_synthetic_receipt(receipt: VerificationReceipt) -> None:
+    if receipt.posture != "SYNTHETIC_NON_CERTIFYING":
+        raise ValueError("COMPOSITE_SUBJECT_HISTORICAL_POLICY_POSTURE_UNAVAILABLE")
+
+
+def require_subject_operation(
+    proposal: HistoricalSubjectEvaluationProposal,
+    proof: HistoricalPolicyVerification,
+    operation: str,
+    actor: str,
+    instant: str,
+) -> None:
+    require_synthetic_history(proof)
+    policy = proposal.policy_approval.approval
+    if proof.mapping != policy.verification.mapping:
+        raise ValueError("COMPOSITE_HISTORICAL_POLICY_MAPPING_MISMATCH")
+    if datetime.fromisoformat(instant) < datetime.fromisoformat(policy.approved_at):
+        raise ValueError("COMPOSITE_ELIGIBILITY_APPROVAL_BEFORE_PROPOSAL")
+    intent = (
+        hash_canonical_payload(
+            proposal.model_dump(mode="json", exclude={"content_hash", "operation_verification"})
+        )
+        if operation == "EVALUATION_PROPOSAL"
+        else proposal.content_hash
+    )
+    request = proof.request
+    if (
+        request.operation,
+        request.revision,
+        request.actor_id,
+        request.requested_at,
+        request.intent_digest,
+    ) != (operation, proposal.evaluation_revision, actor, instant, intent):
+        raise ValueError("COMPOSITE_HISTORICAL_POLICY_INTENT_MISMATCH")
 
 
 def require_verification_scope(
@@ -250,30 +444,30 @@ def require_verification_scope(
 
 
 StagedControl = Annotated[
-    SubjectPolicyProposal
-    | SubjectPolicyApproval
-    | SubjectEvaluationProposal
-    | SubjectEvaluationApproval,
+    SubjectPolicyProposalVariant
+    | SubjectPolicyApprovalVariant
+    | SubjectEvaluationProposalVariant
+    | SubjectEvaluationApprovalVariant,
     Field(discriminator="product_name"),
 ]
 STAGED_CONTROL_ADAPTER: TypeAdapter[StagedControl] = TypeAdapter(StagedControl)
 
 
 def control_subject(control: StagedControl) -> EligibilitySubject:
-    if isinstance(control, SubjectPolicyProposal):
+    if isinstance(control, SubjectPolicyProposalContent):
         return control.subject
-    if isinstance(control, SubjectPolicyApproval):
+    if isinstance(control, SubjectPolicyApprovalContent):
         return control.proposal.subject
-    if isinstance(control, SubjectEvaluationProposal):
+    if isinstance(control, SubjectEvaluationProposalContent):
         return control.policy_approval.proposal.subject
     return control.proposal.policy_approval.proposal.subject
 
 
 def control_revision(control: StagedControl) -> str:
-    if isinstance(control, SubjectPolicyProposal):
+    if isinstance(control, SubjectPolicyProposalContent):
         return control.proposal.proposal_revision
-    if isinstance(control, SubjectPolicyApproval):
+    if isinstance(control, SubjectPolicyApprovalContent):
         return control.proposal.proposal.proposal_revision
-    if isinstance(control, SubjectEvaluationProposal):
+    if isinstance(control, SubjectEvaluationProposalContent):
         return control.evaluation_revision
     return control.proposal.evaluation_revision

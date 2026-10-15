@@ -90,10 +90,10 @@ def test_registered_resolver_requires_trusted_identity_and_rejects_body_scope_ov
 
 def test_registered_resolver_rejects_unsupported_binding_version_at_schema_boundary(resolver_api):
     client, _, _, binding = resolver_api
-    binding["product_version"] = "v2"
+    binding["product_version"] = "v9"
     response = client.post(RESOLVE, json=binding, headers=HEADERS)
     assert response.status_code == 422
-    # The resolver now has two schema variants; the subject binding still admits v1 only.
+    # The dedicated historical subject v2 binding does not admit unknown versions.
     assert any(
         error["loc"][0] == "body" and error["loc"][-1] == "product_version"
         for error in response.json()["detail"]

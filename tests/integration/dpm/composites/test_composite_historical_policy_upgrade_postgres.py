@@ -133,7 +133,7 @@ def test_populated_0044_upgrade_preserves_old_roots_corrections_and_staged_histo
                     assert payload_rows(connection) == before
                     assert (
                         connection.execute(
-                            "SELECT version, checksum FROM schema_migrations WHERE version != 'dpm:0045' ORDER BY version"
+                            "SELECT version, checksum FROM schema_migrations WHERE version <= 'dpm:0044' ORDER BY version"
                         ).fetchall()
                         == checksums
                     )
@@ -143,4 +143,13 @@ def test_populated_0044_upgrade_preserves_old_roots_corrections_and_staged_histo
                         ).fetchone()["count"]
                         == 1
                     )
+                    for migration in loader(namespace="dpm"):
+                        if migration.version in {"0045", "0046"}:
+                            assert (
+                                connection.execute(
+                                    "SELECT checksum FROM schema_migrations WHERE version=%s",
+                                    ("dpm:" + migration.version,),
+                                ).fetchone()["checksum"]
+                                == migration.checksum
+                            )
                 assert resolve(PostgresDpmCompositeRepository(dsn=dsn)) == issued

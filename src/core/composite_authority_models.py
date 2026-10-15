@@ -29,6 +29,15 @@ class EvidenceBinding(StrictAuthorityModel):
     digest: Digest
 
 
+class HistoricalSubjectApprovalBinding(StrictAuthorityModel):
+    """Only historical first-subject approval uses the additive v2 binding."""
+
+    product_name: Literal["CompositeSubjectEvaluationApproval"]
+    product_version: Literal["v2"]
+    revision: Identity
+    digest: Digest
+
+
 class ProviderRegistrationBinding(StrictAuthorityModel):
     provider_id: Identity
     source_kind: SourceKind
@@ -81,7 +90,7 @@ class CompositeEconomicAuthorityPayload(StrictAuthorityModel):
     member_identities: list[CompositeMemberIdentity] = Field(min_length=1, max_length=1000)
     providers: list[ProviderRegistrationBinding] = Field(min_length=1, max_length=16)
     selections: list[CompositeFactSelection] = Field(min_length=2, max_length=256)
-    eligibility_evaluation_binding: EvidenceBinding
+    eligibility_evaluation_binding: EvidenceBinding | HistoricalSubjectApprovalBinding
     return_method_binding: EvidenceBinding
 
     @model_validator(mode="after")
