@@ -193,6 +193,55 @@ def test_controlled_scenario_refuses_mixed_temporal_and_authority_claims(
         decode_subject_receipt(wire)
 
 
+@pytest.mark.parametrize("lf_rule", [False, True], ids=["old-attributes-refuse", "lf-rule-retains"])
+def test_raw_contract_family_survives_real_git_checkout_with_autocrlf(tmp_path, lf_rule):
+    import hashlib
+    import os
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[4]
+    relative = Path("docs/contracts/composite-controlled-scenario")
+    source = root / relative
+    originals = {path.name: path.read_bytes() for path in source.glob("*.json")}
+    assert len(originals) == 6
+    rule = "docs/contracts/composite-controlled-scenario/*.json text eol=lf"
+    attributes = (root / ".gitattributes").read_text(encoding="utf-8")
+    if not lf_rule:
+        attributes = "\n".join(line for line in attributes.splitlines() if line != rule) + "\n"
+    environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+
+    def git(*arguments):
+        subprocess.run(
+            ["git", *arguments],
+            cwd=tmp_path,
+            env=environment,
+            check=True,
+            capture_output=True,
+        )
+
+    git("init", "--quiet")
+    git("config", "core.autocrlf", "true")
+    (tmp_path / ".gitattributes").write_text(attributes, encoding="utf-8", newline="\n")
+    target = tmp_path / relative
+    target.mkdir(parents=True)
+    for name, raw in originals.items():
+        (target / name).write_bytes(raw)
+    git("add", "--all")
+    for name in originals:
+        (target / name).unlink()
+    git("checkout-index", "--all", "--force")
+    for name, expected in originals.items():
+        actual = (target / name).read_bytes()
+        if lf_rule:
+            assert actual == expected, name
+            assert hashlib.sha256(actual).digest() == hashlib.sha256(expected).digest(), name
+        else:
+            assert actual != expected and b"\r\n" in actual, name
+            assert hashlib.sha256(actual).digest() != hashlib.sha256(expected).digest(), name
+
+
 def test_exported_controlled_scenario_graph_schema_hashes_and_bad_vectors():
     import hashlib
     import json

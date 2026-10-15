@@ -56,6 +56,7 @@ STATIC_QUALITY_GATE_TARGETS = {
     "workflow-policy-gate",
     "quality-report-gate",
     "test-family-inventory",
+    "docker-supply-chain-gate",
 }
 
 
