@@ -1,93 +1,107 @@
 """Subject-scoped orchestration; existing monthly engine owns every financial rule."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Callable, TypeVar
+from datetime import UTC, datetime
+from typing import TypeVar
 
 from src.api.services.composite_subject_requests import (
-    SubjectRequest,
-    SubjectPolicyRequest,
     SubjectApprovalRequest,
     SubjectEvaluationRequest,
     SubjectFinalizationRequest,
     SubjectHistoricalPolicyRequest,
+    SubjectPolicyRequest,
+    SubjectRequest,
 )
+from src.api.services.historical_subject_policy import HistoricalSubjectPolicyApplicationService
 from src.core.common.canonical import hash_canonical_payload
-from src.core.composite_authority_models import EvidenceBinding
-from src.core.composite_definition_versions import DpmCompositeDefinitionV2
-from src.core.composite_repository import DpmCompositeConflictError
-from src.core.composite_eligibility.approval import MonthlyPolicyProposal, MonthlyPolicyApproval
+from src.core.composite_authority_models import (
+    ControlledScenarioSubjectApprovalBinding,
+    EvidenceBinding,
+    HistoricalSubjectApprovalBinding,
+)
+from src.core.composite_definition_versions import (
+    DpmCompositeDefinitionV2,
+    CompositeDefinitionContent,
+    ControlledScenarioDefinitionV3,
+    decode_composite_definition,
+)
+from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
 from src.core.composite_eligibility.evaluation import evaluate_monthly_eligibility
-from src.core.composite_eligibility.policy import (
-    MonthlyPolicyScope,
-    resolve_monthly_policy,
-    month_window,
-)
-from src.core.composite_eligibility.source import (
-    MonthlyEligibilitySourcePort,
-    UnavailableMonthlyEligibilitySource,
-    MonthlyEligibilitySourceRequest,
-    admitted_source_snapshot,
-)
-from src.core.composite_eligibility.staged_subject import EligibilitySubject, CandidateUniverse
-from src.core.composite_eligibility.staged_ports import (
-    SubjectKey,
-    ControlKind,
-    StagedCompositeRepository,
-    CandidateUniverseSource,
-    CandidateUniverseRequest,
-    UnavailableCandidateUniverseSource,
-)
-from src.core.composite_eligibility.staged_controls import (
-    SubjectPolicyProposal,
-    SubjectPolicyProposalContent,
-    SubjectPolicyApproval,
-    SubjectPolicyApprovalContent,
-    SubjectEvaluationProposal,
-    SubjectEvaluationProposalContent,
-    SubjectEvaluationApproval,
-    SubjectEvaluationApprovalContent,
-    HistoricalSubjectPolicyApproval,
-    HistoricalSubjectPolicyProposal,
-    HistoricalSubjectEvaluationProposal,
-    HistoricalSubjectEvaluationApproval,
-    subject_approval_claims,
-)
-from src.core.composite_eligibility.staged_publication import (
-    SubjectFinalization,
-    HistoricalSubjectFinalization,
-    InstitutionalSubjectFinalization,
-    SubjectFinalizationRecord,
-    SubjectFinalizationProof,
-    institutional_finalization_request,
-    initial_projection,
-    finalization_verification_requests,
-    require_definition_subject,
-    authority_approval_follows_evaluation,
-)
-from src.core.composite_eligibility.verification import (
-    CompositeEvidenceVerifier,
-    UnavailableCompositeEvidenceVerifier,
-    VerificationRequest,
-    VerificationPurpose,
-    require_verification,
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalPolicyAdmissionPort,
+    UnavailableHistoricalPolicyAdmission,
 )
 from src.core.composite_eligibility.institutional_verification import (
     InstitutionalEvidenceVerifier,
     UnavailableInstitutionalEvidenceVerifier,
 )
-from src.core.composite_universe import DpmCompositeUniverseSourceProduct
-from src.api.services.historical_subject_policy import HistoricalSubjectPolicyApplicationService
-from src.core.composite_eligibility.historical_policy import (
-    HistoricalPolicyAdmissionPort,
-    UnavailableHistoricalPolicyAdmission,
-)
-from src.core.composite_authority_models import HistoricalSubjectApprovalBinding
-from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationReceipt
 from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyApprovalBinding,
     HistoricalMonthlyApprovalBinding,
+    MonthlyApprovalBinding,
 )
+from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationReceipt
+from src.core.composite_eligibility.policy import (
+    MonthlyPolicyScope,
+    month_window,
+    resolve_monthly_policy,
+)
+from src.core.composite_eligibility.source import (
+    MonthlyEligibilitySourcePort,
+    MonthlyEligibilitySourceRequest,
+    UnavailableMonthlyEligibilitySource,
+    admitted_source_snapshot,
+)
+from src.core.composite_eligibility.staged_controls import (
+    ControlledScenarioSubjectEvaluationApproval,
+    ControlledScenarioSubjectEvaluationProposal,
+    ControlledScenarioSubjectPolicyApproval,
+    ControlledScenarioSubjectPolicyProposal,
+    HistoricalSubjectEvaluationApproval,
+    HistoricalSubjectEvaluationProposal,
+    HistoricalSubjectPolicyApproval,
+    HistoricalSubjectPolicyProposal,
+    SubjectEvaluationApproval,
+    SubjectEvaluationApprovalContent,
+    SubjectEvaluationProposal,
+    SubjectEvaluationProposalContent,
+    SubjectPolicyApproval,
+    SubjectPolicyApprovalContent,
+    SubjectPolicyProposal,
+    SubjectPolicyProposalContent,
+    subject_approval_claims,
+)
+from src.core.composite_eligibility.staged_ports import (
+    CandidateUniverseRequest,
+    CandidateUniverseSource,
+    ControlKind,
+    StagedCompositeRepository,
+    SubjectKey,
+    UnavailableCandidateUniverseSource,
+)
+from src.core.composite_eligibility.staged_publication import (
+    ControlledScenarioSubjectFinalization,
+    HistoricalSubjectFinalization,
+    InstitutionalSubjectFinalization,
+    SubjectFinalization,
+    SubjectFinalizationProof,
+    SubjectFinalizationRecord,
+    authority_approval_follows_evaluation,
+    finalization_verification_requests,
+    initial_projection,
+    institutional_finalization_request,
+    require_definition_subject,
+)
+from src.core.composite_eligibility.staged_subject import CandidateUniverse, EligibilitySubject
+from src.core.composite_eligibility.verification import (
+    CompositeEvidenceVerifier,
+    UnavailableCompositeEvidenceVerifier,
+    VerificationPurpose,
+    VerificationRequest,
+    require_verification,
+)
+from src.core.composite_repository import DpmCompositeConflictError
+from src.core.composite_universe import DpmCompositeUniverseSourceProduct
 
 ControlT = TypeVar(
     "ControlT",
@@ -99,7 +113,7 @@ ControlT = TypeVar(
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 
 @dataclass(frozen=True)
@@ -127,7 +141,7 @@ class CompositeSubjectApplicationService:
 
     def propose_historical_policy(
         self, key: SubjectKey, revision: str, actor: str, command: SubjectHistoricalPolicyRequest
-    ) -> HistoricalSubjectPolicyProposal:
+    ) -> HistoricalSubjectPolicyProposal | ControlledScenarioSubjectPolicyProposal:
         return self.historical().propose(key, revision, actor, command)
 
     def subject(self, key: SubjectKey) -> EligibilitySubject:
@@ -144,10 +158,12 @@ class CompositeSubjectApplicationService:
 
     def _control(self, key: SubjectKey, revision: str, model: type[ControlT]) -> ControlT | None:
         kinds: dict[
-            type[SubjectPolicyProposalContent]
-            | type[SubjectPolicyApprovalContent]
-            | type[SubjectEvaluationProposalContent]
-            | type[SubjectEvaluationApprovalContent],
+            type[
+                SubjectPolicyProposalContent
+                | SubjectPolicyApprovalContent
+                | SubjectEvaluationProposalContent
+                | SubjectEvaluationApprovalContent
+            ],
             ControlKind,
         ] = {
             SubjectPolicyProposal: "CompositeSubjectPolicyProposal",
@@ -251,7 +267,9 @@ class CompositeSubjectApplicationService:
             if existing.proposal != proposal or existing.approval.approved_by != actor:
                 raise ValueError("COMPOSITE_SUBJECT_IMMUTABLE_CONFLICT")
             return existing
-        if isinstance(proposal, HistoricalSubjectPolicyProposal):
+        if isinstance(
+            proposal, (HistoricalSubjectPolicyProposal, ControlledScenarioSubjectPolicyProposal)
+        ):
             return self.historical().approve(proposal, actor)
         if not isinstance(proposal, SubjectPolicyProposal):
             raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
@@ -329,25 +347,33 @@ class CompositeSubjectApplicationService:
             source_watermark=snapshot.source_revision,
             content_hash=command.source_content_hash,
         )
-        proposal_wire = dict(
-            source_assembly_evidence=resolution.source_assembly_evidence,
-            policy_approval=policy.model_dump(mode="json"),
-            evaluation_revision=revision,
-            target_membership_revision=command.target_membership_revision,
-            observations=snapshot,
-            observation_binding=binding,
-            evaluation=evaluation,
-            proposed_by=actor,
-            proposed_at=instant,
-        )
+        proposal_wire = {
+            "source_assembly_evidence": resolution.source_assembly_evidence,
+            "policy_approval": policy.model_dump(mode="json"),
+            "evaluation_revision": revision,
+            "target_membership_revision": command.target_membership_revision,
+            "observations": snapshot,
+            "observation_binding": binding,
+            "evaluation": evaluation,
+            "proposed_by": actor,
+            "proposed_at": instant,
+        }
         proposal = (
             self.historical().evaluation_proposal(proposal_wire)
-            if isinstance(policy, HistoricalSubjectPolicyApproval)
+            if isinstance(
+                policy, (HistoricalSubjectPolicyApproval, ControlledScenarioSubjectPolicyApproval)
+            )
             else SubjectEvaluationProposal.model_validate(proposal_wire)
         )
-        if isinstance(proposal, HistoricalSubjectEvaluationProposal):
+        if isinstance(
+            proposal,
+            (HistoricalSubjectEvaluationProposal, ControlledScenarioSubjectEvaluationProposal),
+        ):
             retained_proposal = self.historical().save_evaluation(key, proposal)
-            if not isinstance(retained_proposal, HistoricalSubjectEvaluationProposal):
+            if not isinstance(
+                retained_proposal,
+                (HistoricalSubjectEvaluationProposal, ControlledScenarioSubjectEvaluationProposal),
+            ):
                 raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
             return retained_proposal
         self.repository.save_subject_control(control=proposal)
@@ -370,26 +396,37 @@ class CompositeSubjectApplicationService:
             self.verifier, _verification(subject, "ELIGIBILITY_POLICY_EVALUATION", claims)
         )
         membership, universe = initial_projection(proposal, claims, actor, instant)
-        approval_wire = dict(
-            proposal=proposal.model_dump(mode="json"),
-            approved_by=actor,
-            approved_at=instant,
-            evidence_kind="SYNTHETIC_UNSIGNED"
+        approval_wire = {
+            "proposal": proposal.model_dump(mode="json"),
+            "approved_by": actor,
+            "approved_at": instant,
+            "evidence_kind": "SYNTHETIC_UNSIGNED"
             if verification.posture == "SYNTHETIC_NON_CERTIFYING"
             else "QUALIFIED_VERIFICATION_RECEIPT",
-            claims_digest=claims,
-            membership_content_hash=membership.content_hash,
-            universe_content_hash=universe.content_hash,
-            verification=verification,
-        )
+            "claims_digest": claims,
+            "membership_content_hash": membership.content_hash,
+            "universe_content_hash": universe.content_hash,
+            "verification": verification,
+        }
         result = (
-            self.historical().evaluation_approval(approval_wire | {"product_version": "v2"})
-            if isinstance(proposal, HistoricalSubjectEvaluationProposal)
+            self.historical().evaluation_approval(
+                approval_wire | {"product_version": proposal.product_version}
+            )
+            if isinstance(
+                proposal,
+                (HistoricalSubjectEvaluationProposal, ControlledScenarioSubjectEvaluationProposal),
+            )
             else SubjectEvaluationApproval.model_validate(approval_wire)
         )
-        if isinstance(result, HistoricalSubjectEvaluationApproval):
+        if isinstance(
+            result,
+            (HistoricalSubjectEvaluationApproval, ControlledScenarioSubjectEvaluationApproval),
+        ):
             retained_approval = self.historical().save_evaluation(key, result)
-            if not isinstance(retained_approval, HistoricalSubjectEvaluationApproval):
+            if not isinstance(
+                retained_approval,
+                (HistoricalSubjectEvaluationApproval, ControlledScenarioSubjectEvaluationApproval),
+            ):
                 raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
             return retained_approval
         self.repository.save_subject_control(control=result)
@@ -403,7 +440,7 @@ class CompositeSubjectApplicationService:
         approval = self.control(key, command.evaluation_revision, SubjectEvaluationApprovalContent)
         if approval.content_hash != command.expected_approval_content_hash:
             raise ValueError("COMPOSITE_SUBJECT_STALE_CONTENT_CONFLICT")
-        definition = DpmCompositeDefinitionV2.model_validate(
+        definition = decode_composite_definition(
             command.definition.model_dump(mode="json")
             | {
                 "product_name": "CompositeDefinition",
@@ -413,6 +450,8 @@ class CompositeSubjectApplicationService:
                 "created_by": subject.created_by,
             }
         )
+        if not isinstance(definition, (DpmCompositeDefinitionV2, ControlledScenarioDefinitionV3)):
+            raise ValueError("COMPOSITE_SUBJECT_DEFINITION_BINDING_MISMATCH")
         if (
             actor != approval.approved_by
             or definition.authority_approval.claims.approving_identity != actor
@@ -434,22 +473,34 @@ class CompositeSubjectApplicationService:
 
     def _verified_finalization(
         self,
-        definition: DpmCompositeDefinitionV2,
+        definition: CompositeDefinitionContent,
         subject: EligibilitySubject,
         approval: SubjectEvaluationApprovalContent,
     ) -> SubjectFinalizationRecord:
         requests = finalization_verification_requests(definition, subject)
-        if isinstance(approval, HistoricalSubjectEvaluationApproval):
-            return HistoricalSubjectFinalization(
-                subject=subject,
-                evaluation_approval=approval,
-                definition=definition,
-                verifications=[
-                    require_verification(self.verifier, request) for request in requests
-                ],
+        if isinstance(
+            approval,
+            (HistoricalSubjectEvaluationApproval, ControlledScenarioSubjectEvaluationApproval),
+        ):
+            finalization_type = (
+                ControlledScenarioSubjectFinalization
+                if approval.product_version == "v3"
+                else HistoricalSubjectFinalization
+            )
+            return finalization_type.model_validate(
+                {
+                    "subject": subject,
+                    "evaluation_approval": approval,
+                    "definition": definition,
+                    "verifications": [
+                        require_verification(self.verifier, request) for request in requests
+                    ],
+                }
             )
         if not isinstance(approval, SubjectEvaluationApproval):
             raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
+        if not isinstance(definition, DpmCompositeDefinitionV2):
+            raise ValueError("COMPOSITE_SUBJECT_DEFINITION_BINDING_MISMATCH")
         if definition.authority_approval.evidence_kind == "INSTITUTIONAL_ATTESTATION_REFERENCE":
             authority = self.attestations.verify(
                 institutional_finalization_request(definition, subject, approval)
@@ -502,6 +553,7 @@ class CompositeSubjectApplicationService:
         definition_version: str,
         binding: EvidenceBinding
         | HistoricalSubjectApprovalBinding
+        | ControlledScenarioSubjectApprovalBinding
         | MonthlyApprovalBinding
         | HistoricalMonthlyApprovalBinding,
     ) -> SubjectFinalizationProof | MonthlyPublicationReceipt:
@@ -520,7 +572,7 @@ class CompositeSubjectApplicationService:
             return result_monthly
         if (
             binding.product_name != "CompositeSubjectEvaluationApproval"
-            or binding.product_version not in {"v1", "v2"}
+            or binding.product_version not in {"v1", "v2", "v3"}
         ):
             raise ValueError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
         result = self.repository.resolve_eligibility_evidence(

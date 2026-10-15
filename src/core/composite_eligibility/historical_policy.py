@@ -1,13 +1,15 @@
 """Normalized historical policy admission; original formats remain source-owned."""
 
+from __future__ import annotations
+
 import base64
 import hashlib
 from datetime import datetime, timedelta
-from typing import Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol, overload
 
-from pydantic import Field, model_validator
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from pydantic import Field, model_validator
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import (
@@ -22,6 +24,12 @@ from src.core.composite_eligibility.policy import (
     ResolvedMonthlyPolicy,
     month_window,
 )
+
+if TYPE_CHECKING:
+    from src.core.composite_eligibility.controlled_scenario import (
+        ControlledScenarioVerification,
+        ControlledScenarioVerificationRequest,
+    )
 
 
 class HistoricalContent(StrictAuthorityModel):
@@ -60,7 +68,7 @@ class HistoricalPolicyMapping(HistoricalContent):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_original_mapping(self) -> "HistoricalPolicyMapping":
+    def require_original_mapping(self) -> HistoricalPolicyMapping:
         try:
             raw = base64.b64decode(self.raw_original_base64, validate=True)
         except ValueError as exc:
@@ -142,7 +150,7 @@ class HistoricalPolicyVerification(HistoricalContent):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_exact_mapping_and_admission(self) -> "HistoricalPolicyVerification":
+    def require_exact_mapping_and_admission(self) -> HistoricalPolicyVerification:
         self.mapping = HistoricalPolicyMapping.model_validate(self.mapping.model_dump(mode="json"))
         request, mapping = self.request, self.mapping
         if (
@@ -177,17 +185,23 @@ class HistoricalPolicyVerification(HistoricalContent):
         return self
 
     def require_verifier_signature(self) -> None:
-        try:
-            key = base64.b64decode(self.verifier_public_key_base64, validate=True)
-            if "sha256:" + hashlib.sha256(key).hexdigest() != self.verifier_key_digest:
-                raise ValueError("verifier key digest differs")
-            credential = base64.b64decode(self.verifier_credential, validate=True)
-            unsigned = self.model_dump(mode="json", exclude={"content_hash", "verifier_credential"})
-            Ed25519PublicKey.from_public_bytes(key).verify(
-                credential, hash_canonical_payload(unsigned).encode()
-            )
-        except (ValueError, InvalidSignature) as exc:
-            raise ValueError("COMPOSITE_HISTORICAL_POLICY_VERIFIER_SIGNATURE_INVALID") from exc
+        require_historical_verifier_signature(self)
+
+
+def require_historical_verifier_signature(
+    proof: HistoricalPolicyVerification | ControlledScenarioVerification,
+) -> None:
+    try:
+        key = base64.b64decode(proof.verifier_public_key_base64, validate=True)
+        if "sha256:" + hashlib.sha256(key).hexdigest() != proof.verifier_key_digest:
+            raise ValueError("verifier key digest differs")
+        credential = base64.b64decode(proof.verifier_credential, validate=True)
+        unsigned = proof.model_dump(mode="json", exclude={"content_hash", "verifier_credential"})
+        Ed25519PublicKey.from_public_bytes(key).verify(
+            credential, hash_canonical_payload(unsigned).encode()
+        )
+    except (ValueError, InvalidSignature) as exc:
+        raise ValueError("COMPOSITE_HISTORICAL_POLICY_VERIFIER_SIGNATURE_INVALID") from exc
 
 
 class HistoricalPolicyTrust(StrictAuthorityModel):
@@ -206,8 +220,8 @@ class HistoricalPolicyAdmissionPort(Protocol):
     def trust(self) -> HistoricalPolicyTrust | None: ...
 
     def verify(
-        self, request: HistoricalPolicyVerificationRequest
-    ) -> HistoricalPolicyVerification | None:
+        self, request: HistoricalPolicyVerificationRequest | ControlledScenarioVerificationRequest
+    ) -> HistoricalPolicyVerification | ControlledScenarioVerification | None:
         """Verify actual original format and return independently attested normalized mapping."""
 
 
@@ -215,18 +229,38 @@ class UnavailableHistoricalPolicyAdmission:
     trust: HistoricalPolicyTrust | None = None
 
     def verify(
-        self, request: HistoricalPolicyVerificationRequest
-    ) -> HistoricalPolicyVerification | None:
+        self, request: HistoricalPolicyVerificationRequest | ControlledScenarioVerificationRequest
+    ) -> HistoricalPolicyVerification | ControlledScenarioVerification | None:
         return None
 
 
+@overload
 def admitted_historical_policy(
     port: HistoricalPolicyAdmissionPort, request: HistoricalPolicyVerificationRequest
-) -> HistoricalPolicyVerification:
+) -> HistoricalPolicyVerification: ...
+
+
+@overload
+def admitted_historical_policy(
+    port: HistoricalPolicyAdmissionPort, request: ControlledScenarioVerificationRequest
+) -> ControlledScenarioVerification: ...
+
+
+def admitted_historical_policy(
+    port: HistoricalPolicyAdmissionPort,
+    request: HistoricalPolicyVerificationRequest | ControlledScenarioVerificationRequest,
+) -> HistoricalPolicyVerification | ControlledScenarioVerification:
+    from src.core.composite_eligibility.controlled_scenario import ControlledScenarioVerification
+
     result = port.verify(request)
     if result is None:
         raise ValueError("COMPOSITE_HISTORICAL_POLICY_ADMISSION_UNAVAILABLE")
-    result = HistoricalPolicyVerification.model_validate(result.model_dump(mode="json"))
+    proof_type = (
+        ControlledScenarioVerification
+        if request.product_version == "v2"
+        else HistoricalPolicyVerification
+    )
+    result = proof_type.model_validate(result.model_dump(mode="json"))
     if result.request != request:
         raise ValueError("COMPOSITE_HISTORICAL_POLICY_REQUEST_MISMATCH")
     trust = port.trust
@@ -266,7 +300,7 @@ class HistoricalMonthlyPolicyProposal(HistoricalContent):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_present_admission(self) -> "HistoricalMonthlyPolicyProposal":
+    def require_present_admission(self) -> HistoricalMonthlyPolicyProposal:
         proof = HistoricalPolicyVerification.model_validate(
             self.verification.model_dump(mode="json")
         )
@@ -308,7 +342,7 @@ class HistoricalMonthlyPolicyApproval(HistoricalContent):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_independent_current_approval(self) -> "HistoricalMonthlyPolicyApproval":
+    def require_independent_current_approval(self) -> HistoricalMonthlyPolicyApproval:
         self.proposal = HistoricalMonthlyPolicyProposal.model_validate(
             self.proposal.model_dump(mode="json")
         )

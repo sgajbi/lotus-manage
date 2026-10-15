@@ -5,14 +5,14 @@ Frozen source-owned graph fixtures exercise custody, not native admission covera
 The separate native HTTP test owns empty-scope admission and source-off recovery.
 """
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import psycopg
+import pytest
 from psycopg import sql
 from psycopg.rows import dict_row
-import pytest
 
 import src.infrastructure.postgres_migrations as migrations
 from src.core.composite_eligibility.staged_controls import STAGED_CONTROL_ADAPTER
@@ -23,7 +23,6 @@ from tests.composite_staged_eligibility_helpers import finalization_material
 from tests.integration.dpm.composites.test_composite_staged_upgrade_postgres import payload_rows
 from tests.integration.dpm.network_runtime import disposable_database
 
-
 CONTRACTS = Path(__file__).resolve().parents[4] / "docs/contracts/composite-historical-subject"
 PRODUCTS = (
     "CompositeSubjectPolicyProposal",
@@ -33,7 +32,18 @@ PRODUCTS = (
 )
 
 
-def historical_controls():
+def historical_controls(profile="historical_v1"):
+    if profile == "controlled_scenario":
+        receipt = json.loads(
+            (CONTRACTS.parent / "composite-controlled-scenario/valid-graph.json").read_bytes()
+        )
+        approval = receipt["finalization"]["evaluation_approval"]
+        evaluation = approval["proposal"]
+        policy = evaluation["policy_approval"]
+        return [
+            STAGED_CONTROL_ADAPTER.validate_python(wire)
+            for wire in (policy["proposal"], policy, evaluation, approval)
+        ]
     return [
         STAGED_CONTROL_ADAPTER.validate_python(
             json.loads((CONTRACTS / f"{product}.v2.controlled.json").read_text(encoding="utf-8"))
@@ -42,34 +52,65 @@ def historical_controls():
     ]
 
 
-@pytest.fixture(params=["fresh", "upgrade_0045"])
+@pytest.fixture(
+    params=[
+        ("fresh", "historical_v1"),
+        ("upgrade_0045", "historical_v1"),
+        ("fresh", "controlled_scenario"),
+        ("upgrade_0046", "controlled_scenario"),
+    ],
+    ids=["fresh_legacy", "upgrade0045_legacy", "fresh_scenario", "upgrade0046_scenario"],
+)
 def retained_historical_controls(monkeypatch, request):
     loader = migrations._load_migrations
+    mode, profile = request.param
     with monkeypatch.context() as previous:
-        if request.param == "upgrade_0045":
+        if mode.startswith("upgrade_"):
             previous.setattr(
                 migrations,
                 "_load_migrations",
                 lambda *, namespace: [
-                    m for m in loader(namespace=namespace) if m.version <= "0045"
+                    m
+                    for m in loader(namespace=namespace)
+                    if m.version <= mode.removeprefix("upgrade_")
                 ],
             )
         with disposable_database() as dsn:
             repository = PostgresDpmCompositeRepository(dsn=dsn)
-            controls = historical_controls()
+            controls = historical_controls(profile)
             repository.save_eligibility_subject(subject=controls[0].subject)
             for control in controls[:2]:
                 repository.save_subject_control(control=control)
-            if request.param == "upgrade_0045":
+            if mode.startswith("upgrade_"):
                 with pytest.raises(psycopg.errors.CheckViolation) as refused:
                     repository.save_subject_control(control=controls[2])
                 assert refused.value.diag.constraint_name == "monthly_evaluation_amendment_wire"
                 with psycopg.connect(dsn, row_factory=dict_row) as connection:
                     before = payload_rows(connection)
+                    old_checksums = connection.execute(
+                        "SELECT version,checksum FROM schema_migrations ORDER BY version"
+                    ).fetchall()
                 previous.undo()
                 with psycopg.connect(dsn, row_factory=dict_row) as connection:
                     migrations.apply_postgres_migrations(connection=connection, namespace="dpm")
                     assert payload_rows(connection) == before
+                    assert (
+                        connection.execute(
+                            "SELECT version,checksum FROM schema_migrations WHERE version <= %s ORDER BY version",
+                            ("dpm:" + mode.removeprefix("upgrade_"),),
+                        ).fetchall()
+                        == old_checksums
+                    )
+                    new_row = connection.execute(
+                        "SELECT checksum FROM schema_migrations WHERE version=%s", ("dpm:0047",)
+                    ).fetchall()
+                    assert new_row == [
+                        {
+                            "checksum": next(
+                                m.checksum for m in loader(namespace="dpm") if m.version == "0047"
+                            )
+                        }
+                    ]
             for control in controls[2:]:
                 repository.save_subject_control(control=control)
             with psycopg.connect(dsn, row_factory=dict_row) as connection:
@@ -216,3 +257,65 @@ def test_populated_0045_upgrade_preserves_exact_rows_checksums_and_receipts(monk
                     )
                 )
                 assert reopened.model_dump(mode="json") == issued.model_dump(mode="json")
+
+
+@pytest.mark.parametrize(
+    "retained_historical_controls",
+    [("fresh", "controlled_scenario"), ("upgrade_0046", "controlled_scenario")],
+    indirect=True,
+    ids=["fresh_scenario", "upgrade0046_scenario"],
+)
+@pytest.mark.parametrize("family", ["proposals", "approvals"])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "old-purpose",
+        "old-status",
+        "qualified",
+        "scenario-clock",
+        "issued-clock",
+        "nested-proof",
+        "mixed-monthly",
+        "old-alias",
+        "missing-scenario",
+        "key-collision",
+    ],
+)
+def test_controlled_scenario_storage_refuses_false_temporal_or_mixed_authority(
+    retained_historical_controls, family, mutation
+):
+    dsn, controls = retained_historical_controls
+    wire = deepcopy(controls[2 if family == "proposals" else 3].model_dump(mode="json"))
+    proposal = wire if family == "proposals" else wire["proposal"]
+    proof = wire["operation_verification"]
+    if mutation == "old-purpose":
+        proof["request"]["purpose"] = "COMPOSITE_HISTORICAL_MONTHLY_POLICY_ADMISSION"
+    elif mutation == "old-status":
+        proof["original_signature_status"] = "VERIFIED_AT_ORIGINAL_APPROVAL"
+    elif mutation == "qualified":
+        proof["posture"] = "QUALIFIED_RECEIPT"
+    elif mutation == "scenario-clock":
+        proof["mapping"]["scenario_approved_at"] = "2099-01-01T00:00:00.000000Z"
+    elif mutation == "issued-clock":
+        proof["mapping"]["actual_issued_at"] = "2099-01-01T00:00:00.000000Z"
+    elif mutation == "nested-proof":
+        proposal["policy_approval"]["approval"]["verification"]["product_version"] = "v1"
+    elif mutation == "mixed-monthly":
+        proposal["policy_approval"]["approval"]["proposal"]["product_version"] = "v2"
+    elif mutation == "old-alias":
+        proof["mapping"]["original_approved_at"] = proof["mapping"]["scenario_approved_at"]
+    elif mutation == "missing-scenario":
+        proof["mapping"].pop("scenario_approved_at")
+    else:
+        proof["verifier_key_digest"] = proof["signer_key_digest"]
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        before = payload_rows(connection)
+    with pytest.raises(psycopg.errors.CheckViolation), psycopg.connect(dsn) as connection:
+        connection.execute(
+            sql.SQL("UPDATE {} SET payload_json=%s::jsonb").format(
+                sql.Identifier("dpm_composite_monthly_evaluation_" + family)
+            ),
+            (json.dumps(wire),),
+        )
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        assert payload_rows(connection) == before

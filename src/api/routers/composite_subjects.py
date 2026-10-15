@@ -1,6 +1,8 @@
 """Registered staging and server-resolved published eligibility evidence."""
 
-from typing import Annotated, Callable, TypeVar
+from collections.abc import Callable
+from typing import Annotated, TypeVar
+
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import Field, ValidationError
 
@@ -12,39 +14,44 @@ from src.api.composite_identity import (
 from src.api.dependencies import get_composite_subject_service
 from src.api.services.composite_subject_application import CompositeSubjectApplicationService
 from src.api.services.composite_subject_requests import (
-    SubjectRequest,
-    SubjectPolicyRequest,
     SubjectApprovalRequest,
     SubjectEvaluationRequest,
     SubjectFinalizationRequest,
     SubjectHistoricalPolicyRequest,
+    SubjectPolicyRequest,
+    SubjectRequest,
 )
-from src.core.composite_authority_models import EvidenceBinding, HistoricalSubjectApprovalBinding
-from src.core.composite_eligibility.staged_subject import EligibilitySubject
+from src.core.composite_authority_models import (
+    ControlledScenarioSubjectApprovalBinding,
+    EvidenceBinding,
+    HistoricalSubjectApprovalBinding,
+)
+from src.core.composite_eligibility.monthly_amendment import (
+    HistoricalMonthlyApprovalBinding,
+    MonthlyApprovalBinding,
+)
+from src.core.composite_eligibility.monthly_evidence import (
+    MonthlyEligibilityReceiptContent,
+    MonthlyPublicationReceipt,
+)
 from src.core.composite_eligibility.staged_controls import (
-    SubjectPolicyProposal,
-    SubjectPolicyProposalVariant,
-    SubjectPolicyApprovalVariant,
-    SubjectEvaluationProposalVariant,
-    SubjectEvaluationApprovalVariant,
-    SubjectPolicyProposalContent,
-    SubjectPolicyApprovalContent,
-    SubjectEvaluationProposalContent,
-    SubjectEvaluationApprovalContent,
+    ControlledScenarioSubjectPolicyProposal,
     HistoricalSubjectPolicyProposal,
+    SubjectEvaluationApprovalContent,
+    SubjectEvaluationApprovalVariant,
+    SubjectEvaluationProposalContent,
+    SubjectEvaluationProposalVariant,
+    SubjectPolicyApprovalContent,
+    SubjectPolicyApprovalVariant,
+    SubjectPolicyProposal,
+    SubjectPolicyProposalContent,
+    SubjectPolicyProposalVariant,
 )
 from src.core.composite_eligibility.staged_publication import (
     SubjectFinalizationProof,
     authority_approval_follows_evaluation,
 )
-from src.core.composite_eligibility.monthly_evidence import (
-    MonthlyPublicationReceipt,
-)
-from src.core.composite_eligibility.monthly_amendment import (
-    MonthlyApprovalBinding,
-    HistoricalMonthlyApprovalBinding,
-)
-from src.core.composite_eligibility.monthly_evidence import MonthlyEligibilityReceiptContent
+from src.core.composite_eligibility.staged_subject import EligibilitySubject
 
 MonthlyReceiptResponse = Annotated[
     MonthlyPublicationReceipt, Field(discriminator="product_version")
@@ -145,7 +152,7 @@ def propose_policy(
 
 @router.put(
     PREFIX + "/policies/{proposal_revision}/historical-admission",
-    response_model=HistoricalSubjectPolicyProposal,
+    response_model=HistoricalSubjectPolicyProposal | ControlledScenarioSubjectPolicyProposal,
     summary="Admit verified historical policy for one exact unpublished subject",
     description="Current server admission is separate from original signed historical dates. Synthetic only; source and trust default unavailable.",
 )
@@ -157,7 +164,7 @@ def propose_historical_policy(
     request: SubjectHistoricalPolicyRequest,
     identity: CompositeTrustedIdentity = Depends(composite_write_identity_required),
     service: CompositeSubjectApplicationService = Depends(get_composite_subject_service),
-) -> HistoricalSubjectPolicyProposal:
+) -> HistoricalSubjectPolicyProposal | ControlledScenarioSubjectPolicyProposal:
     return _call(
         lambda: service.propose_historical_policy(
             (identity.tenant_id, composite_id, definition_version, subject_revision),
@@ -388,6 +395,7 @@ def resolve_evidence(
     definition_version: str,
     binding: EvidenceBinding
     | HistoricalSubjectApprovalBinding
+    | ControlledScenarioSubjectApprovalBinding
     | MonthlyApprovalBinding
     | HistoricalMonthlyApprovalBinding,
     response: Response,
@@ -416,6 +424,21 @@ def _historical_receipt_response(
 
 
 PUBLIC_CODES = {
+    "COMPOSITE_NATIVE_ORIGINAL_IDENTITY_MISMATCH",
+    "COMPOSITE_NATIVE_ORIGINAL_ISSUANCE_INVALID",
+    "COMPOSITE_NATIVE_ORIGINAL_SIGNATURE_INVALID",
+    "COMPOSITE_NATIVE_HISTORICAL_REVOKED",
+    "COMPOSITE_NATIVE_VERIFIER_KEY_MISMATCH",
+    "COMPOSITE_NATIVE_CUSTODY_CHANGED",
+    "COMPOSITE_NATIVE_CUSTODY_LINK_FORBIDDEN",
+    "COMPOSITE_NATIVE_CUSTODY_PATH_INVALID",
+    "COMPOSITE_NATIVE_CUSTODY_REGULAR_FILE_REQUIRED",
+    "COMPOSITE_NATIVE_CUSTODY_SIZE_INVALID",
+    "COMPOSITE_NATIVE_CUSTODY_UNAVAILABLE",
+    "COMPOSITE_NATIVE_JSON_DUPLICATE_MEMBER",
+    "COMPOSITE_NATIVE_REVOCATION_WINDOW_INVALID",
+    "COMPOSITE_NATIVE_SECRET_ACCESS_INVALID",
+    "COMPOSITE_NATIVE_SECRET_READ_ONLY_REQUIRED",
     "COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH",
     "COMPOSITE_SUBJECT_HISTORICAL_POLICY_POSTURE_UNAVAILABLE",
     "COMPOSITE_HISTORICAL_POLICY_ADMISSION_UNAVAILABLE",
@@ -491,7 +514,7 @@ PUBLIC_CODES = {
 }
 
 
-def _call(action: Callable[[], T]) -> T:
+def _call[T](action: Callable[[], T]) -> T:
     try:
         return action()
     except ValueError as exc:

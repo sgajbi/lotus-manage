@@ -24,6 +24,21 @@ security requirements.
 
 ### Composite configuration delivery practice
 
+Historical admission can explicitly select `CONTROLLED_SYNTHETIC_POLICY_V1` in the existing
+historical JSON channel. The native infrastructure adapter independently verifies exact signed
+source bytes and scenario/actual issuance separation, then signs current operation-bound evidence
+with only a separately provisioned verifier key. Source signing keys remain outside Manage.
+The tracked opt-in `docker-compose.composite-controlled.yml` supplies read-only originals and a
+fixed verifier secret target; bounded file validation checks effective read-only custody rather
+than assuming host POSIX modes. ACL confidentiality and actual container mounts require separate
+operator proof. Defaults and the strict HTTP mode remain unchanged. Controlled scenario request/proof
+v2 distinguishes actual issuance from scenario chronology, uses policy/subject/evaluation v3 and
+dedicated definition/authority payload v3 and finalization/receipt v4 with binding v3, and requires forward0047 for typed STAGED custody. The
+existing historical family retains original-approval semantics and canonical hashes. Full Core-backed
+candidate/monthly assembly implementation remains separate under1227/714/778; native historical
+admission alone does not earn population, bank authority or downstream READY. See
+`docs/guides/composite-historical-provider.md` for exact format/configuration and custody limits.
+
 Tracked base/production application Compose and isolated `ci-local` environment blocks forward
 the existing `DPM_COMPOSITE_SOURCES_JSON`, `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` and
 `DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON` settings with blank defaults. Unconfigured channels

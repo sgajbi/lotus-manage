@@ -12,6 +12,8 @@ from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import (
     BusinessDate,
     CompositeSourceAuthorityV2,
+    CompositeSourceAuthorityContent,
+    ControlledScenarioSourceAuthorityV3,
     Digest,
     Identity,
     StrictAuthorityModel,
@@ -75,9 +77,9 @@ CompositeAuthorityApproval = Annotated[
 ]
 
 
-class DpmCompositeDefinitionV2(StrictAuthorityModel):
+class CompositeDefinitionContent(StrictAuthorityModel):
     product_name: Literal["CompositeDefinition"]
-    product_version: Literal["v2"]
+    product_version: Literal["v2", "v3"]
     tenant_id: Identity
     composite_id: Identity
     definition_version: Identity
@@ -88,7 +90,7 @@ class DpmCompositeDefinitionV2(StrictAuthorityModel):
     termination_date: BusinessDate | None
     calculation_method: Literal["ASSET_WEIGHTED"]
     eligibility_policy_version: Identity
-    source_authority: CompositeSourceAuthorityV2
+    source_authority: CompositeSourceAuthorityContent
     created_at: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$")
     created_by: Identity
     correlation_id: Identity
@@ -97,7 +99,7 @@ class DpmCompositeDefinitionV2(StrictAuthorityModel):
     content_hash: Digest
 
     @model_validator(mode="after")
-    def require_bound_immutable_content(self) -> DpmCompositeDefinitionV2:
+    def require_bound_immutable_content(self) -> CompositeDefinitionContent:
         p, c = self.source_authority.payload, self.authority_approval.claims
         if (p.tenant_id, p.composite_id) != (self.tenant_id, self.composite_id):
             raise ValueError("COMPOSITE_AUTHORITY_SCOPE_MISMATCH")
@@ -154,15 +156,27 @@ class DpmCompositeDefinitionV2(StrictAuthorityModel):
         return self
 
 
+class DpmCompositeDefinitionV2(CompositeDefinitionContent):
+    product_version: Literal["v2"]
+    source_authority: CompositeSourceAuthorityV2
+
+
+class ControlledScenarioDefinitionV3(CompositeDefinitionContent):
+    product_version: Literal["v3"]
+    source_authority: ControlledScenarioSourceAuthorityV3
+    authority_approval: CompositeSyntheticAuthorityApproval
+
+
 CompositeDefinition = Annotated[
-    DpmCompositeDefinition | DpmCompositeDefinitionV2, Field(discriminator="product_version")
+    DpmCompositeDefinition | DpmCompositeDefinitionV2 | ControlledScenarioDefinitionV3,
+    Field(discriminator="product_version"),
 ]
 
 
 def validated_definition_snapshot(definition: CompositeDefinition) -> CompositeDefinition:
     """Revalidate v2 mutable nested data before admission/storage; leave v1 unchanged."""
-    if isinstance(definition, DpmCompositeDefinitionV2):
-        return DpmCompositeDefinitionV2.model_validate(definition.model_dump(mode="json"))
+    if isinstance(definition, CompositeDefinitionContent):
+        return decode_composite_definition(definition.model_dump(mode="json"))
     return definition
 
 
@@ -175,7 +189,9 @@ def parse_composite_definition_json(payload: str) -> dict[str, Any]:
         nonlocal duplicate_keys, contains_v2
         keys = [key for key, _ in pairs]
         duplicate_keys |= len(keys) != len(set(keys))
-        contains_v2 |= any(key == "product_version" and value == "v2" for key, value in pairs)
+        contains_v2 |= any(
+            key == "product_version" and value in {"v2", "v3"} for key, value in pairs
+        )
         return dict(pairs)
 
     def refuse_nonfinite(value: str) -> None:
@@ -203,4 +219,6 @@ def decode_composite_definition(payload: str | dict[str, Any]) -> CompositeDefin
         return DpmCompositeDefinition.model_validate(raw)
     if version == "v2":
         return DpmCompositeDefinitionV2.model_validate(raw)
+    if version == "v3":
+        return ControlledScenarioDefinitionV3.model_validate(raw)
     raise ValueError("COMPOSITE_DEFINITION_PRODUCT_VERSION_UNSUPPORTED")

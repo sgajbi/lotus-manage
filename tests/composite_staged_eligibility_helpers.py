@@ -22,7 +22,6 @@ from src.core.composite_eligibility.staged_publication import (
     finalization_verification_requests,
 )
 from src.core.composite_eligibility.verification import VerificationRequest, VerificationReceipt
-from src.core.composite_definition_versions import DpmCompositeDefinitionV2
 from src.core.composite_universe import DpmCompositeUniverseSourceProduct
 from tests.composite_monthly_eligibility_helpers import source_snapshot, command
 from tests.composite_authority_helpers import independent_digest
@@ -255,7 +254,7 @@ def final_definition(subject, approval, *, authority_approved_at=None):
     )
     profile = {
         "product_name": "CompositeSourceAuthority",
-        "product_version": "v2",
+        "product_version": "v3" if approval.product_version == "v3" else "v2",
         "profile_id": "synthetic.subject.authority",
         "profile_revision": "synthetic.subject.authority.r1",
         "tenant_id": subject.tenant_id,
@@ -328,7 +327,7 @@ def final_definition(subject, approval, *, authority_approved_at=None):
     }
     wire.update(
         product_name="CompositeDefinition",
-        product_version="v2",
+        product_version="v3" if approval.product_version == "v3" else "v2",
         calculation_method="ASSET_WEIGHTED",
         source_authority={"payload": profile, "profile_digest": independent_digest(profile)},
     )
@@ -359,4 +358,6 @@ def final_definition(subject, approval, *, authority_approved_at=None):
         },
     )
     wire["content_hash"] = independent_digest(wire)
-    return DpmCompositeDefinitionV2.model_validate(wire)
+    from src.core.composite_definition_versions import decode_composite_definition
+
+    return decode_composite_definition(wire)

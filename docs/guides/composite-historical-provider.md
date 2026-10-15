@@ -1,5 +1,90 @@
 # Historical monthly-policy normalized provider
 
+## Native controlled-original admission
+
+The existing `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` channel also admits an explicit
+`adapter: CONTROLLED_SYNTHETIC_POLICY_V1` configuration. Absence remains unavailable; an unknown
+adapter or malformed native document refuses. The existing HTTP document has no `adapter` field
+and retains its existing strict transport shape. Native admission implements the same
+`HistoricalPolicyAdmissionPort` with dedicated request/proof v2; it adds no ledger, API or deployable service.
+Candidate/monthly source assembly is separate and remains unavailable without its own admitted
+source composition. Core per-fact verification cannot certify that assembly.
+
+Native configuration contains exactly `adapter`, existing `trust`, `source_public_key_base64`,
+`source_key_valid_from`, `source_key_valid_to`, `verifier_id`, `verifier_key_file`,
+`originals_directory` and `revocation`. Trust is synthetic only, its signing contract matches the
+adapter, and source/verifier principals and public-key digests differ. The source key is canonical
+standard base64 of the 32-byte Ed25519 public key. The deployment's `configuration_digest` is
+`native_configuration_digest(document)` over the complete document excluding only that nested
+trust digest. It includes paths, public trust and current revocation, never private key bytes.
+The revocation snapshot supplies revision, checked/expiry instants, revoked principals, key
+digests and original digests, including explicit empty lists. Its window is at most five minutes
+and must cover actual request/admission time; the operator must supply a current reviewed snapshot.
+
+The source-policy author supplies an envelope named `<raw_sha256_hex>.json` in the read-only
+originals directory. Its two fields are `raw_original_base64` and `original_credential` (canonical
+standard-base64 Ed25519 signature over the exact decoded original bytes). Raw originals are bounded
+to 2MB. Duplicate JSON members, malformed signatures, changed digest/identity/purpose/scope or
+revoked/expired material refuse. Manage receives only source public keys and signed bytes; source
+private keys never enter this process.
+
+The strict signed original contains `format: CONTROLLED_SYNTHETIC_POLICY_V1`,
+`posture: SYNTHETIC_NON_CERTIFYING`, purpose `COMPOSITE_CONTROLLED_SCENARIO_POLICY_ADMISSION`,
+`signature_semantics: SCENARIO_DECLARATION_AT_ACTUAL_ISSUANCE`, issuer/artifact/revision,
+signer principal, `actual_issued_at`, resolved `policy`, policy version, currency, attachments and
+`scenario_proposed_by/at` plus `scenario_approved_by/at`. Scenario approval precedes the policy
+month and uses a different actor; actual issuance must follow that scenario approval, fall within
+the trusted source key window and precede current admission. These are declared synthetic scenario
+events, not backdated actual bank approval. The dedicated normalized mapping retains
+`actual_issued_at` and the four explicit `scenario_*` fields. It has no original proposal/approval
+time or actor aliases. Proof v2 fixes `VERIFIED_AT_ACTUAL_ISSUANCE` and
+`SCENARIO_DECLARATION_AT_ACTUAL_ISSUANCE`; it never asserts a physical historical signature.
+
+The independent verifier loads only its separately provisioned 32-byte raw Ed25519 private key,
+checks its public digest against verifier trust, and signs the complete new verification
+request/mapping/current-revocation proof, excluding only top-level content_hash and verifier_credential.
+It cannot reuse the source key or approve an assembler's declaration. Existing HTTP proof v1
+and historical graph versions keep their original-approval semantics; scenario proofs refuse there.
+
+The normal unpublished subject lifecycle selects monthly policy proposal/approval v3, subject
+policy/evaluation proposal/approval v3, and finalization/receipt v4, with a dedicated evaluation
+approval binding v3 and dedicated definition/authority payload v3. Old definition/authority v2
+refuse scenario bindings and retain exact exported schemas. Existing route bodies still accept only reference/hash and admitted inputs;
+current actor/time come from the existing application. Independent policy/evaluation approval,
+all-rule evaluation, final publication and source-off retained replay remain required. Forward
+migration0047 preserves0046 predicates and adds only typed STAGED controlled-scenario branches.
+The native contract table, exact canonical graph and mixed/tampered vectors live in
+[controlled-scenario contracts](../contracts/composite-controlled-scenario/README.md).
+
+### Explicit container custody
+
+`docker-compose.composite-controlled.yml` is an opt-in overlay for the existing `lotus-manage`
+service. It mounts `MANAGE_COMPOSITE_ORIGINALS_DIRECTORY` read-only at
+`/run/lotus/composite-originals` with automatic host-path creation disabled, and supplies the
+operator's `MANAGE_COMPOSITE_VERIFIER_KEY_FILE` as a Compose secret at
+`/run/secrets/manage_composite_verifier_key`. Native JSON must explicitly select those container
+paths; host paths alone do not configure the application. Neither the overlay nor public variable
+names create a key, original, trust, credential or authority. There is no automatic enablement.
+Select this tracked overlay only through the existing reviewed canonical Compose/model admission;
+preserve project/ports/DB/Core bindings and keep evaluated configuration private.
+
+Custody reads reject links/reparse points, nonregular or multiply linked files, changed file
+identity, empty/oversized bytes and missing inputs. Verifier keys additionally require effective
+write-open denial (permission or read-only filesystem), without writing the file or assuming host
+POSIX ownership/mode survives Docker Desktop. Host ACL confidentiality, access by other principals
+and actual secret-mount behavior remain operator/container qualification requirements; the reader
+does not claim to certify them. No private key is included in model errors, configuration hashes
+or retained evidence. Key/original reads are lazy for new admission: retained policy/approval reads
+and exact replay can survive original-source withdrawal without signing new evidence.
+
+Existing native unit and staged-route tests exercise generated independent test authors, actual
+bounded file reads and normal production composition. Other candidate/verification sources remain
+controlled test inputs in that route proof. This is not Docker, real PostgreSQL, full native Core
+population or Performance READY acceptance. Operator-owned originals/trust/principals, current
+revocation and actual protected key delivery remain unprovided until Root admits them.
+
+## Existing HTTP provider
+
 Manage supports dedicated HTTPS transport for its existing historical verification port. The
 independent provider resolves the immutable original, verifies its actual source-owned signing
 format and returns a signed normalized proof. Manage validates the proof and retains exact custody.

@@ -1,0 +1,262 @@
+"""Current-issued synthetic declarations: scenario dates never assert historical signatures."""
+
+import base64
+import hashlib
+from datetime import datetime, timedelta
+from typing import Literal
+
+from pydantic import Field, model_validator
+
+from src.core.common.canonical import hash_canonical_payload
+from src.core.composite_authority_models import (
+    Digest,
+    EvidenceBinding,
+    Identity,
+    StrictAuthorityModel,
+)
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalContent,
+    HistoricalPolicyReference,
+    bind_historical_content,
+    require_historical_verifier_signature,
+)
+from src.core.composite_eligibility.observations import UtcInstant
+from src.core.composite_eligibility.policy import (
+    MonthlyPolicyScope,
+    ResolvedMonthlyPolicy,
+    month_window,
+)
+
+
+class ControlledScenarioPolicyMapping(HistoricalContent):
+    """Verified mapping is separate from the bytes and original signature format."""
+
+    reference: HistoricalPolicyReference
+    raw_original_base64: str = Field(min_length=4, max_length=2_800_000)
+    original_credential: str = Field(min_length=1, max_length=16384)
+    policy: ResolvedMonthlyPolicy
+    eligibility_policy_version: Identity
+    reporting_currency: str = Field(pattern=r"^[A-Z]{3}$")
+    attachments: list[EvidenceBinding] = Field(min_length=1, max_length=20)
+    actual_issued_at: UtcInstant
+    scenario_proposed_by: Identity
+    scenario_proposed_at: UtcInstant
+    scenario_approved_by: Identity
+    scenario_approved_at: UtcInstant
+    content_hash: str = ""
+
+    @model_validator(mode="after")
+    def require_original_mapping(self) -> "ControlledScenarioPolicyMapping":
+        try:
+            raw = base64.b64decode(self.raw_original_base64, validate=True)
+        except ValueError as exc:
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_RAW_INVALID") from exc
+        if (
+            not raw
+            or len(raw) > 2_000_000
+            or base64.b64encode(raw).decode() != self.raw_original_base64
+        ):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_RAW_INVALID")
+        if "sha256:" + hashlib.sha256(raw).hexdigest() != self.reference.raw_digest:
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_RAW_MISMATCH")
+        self.policy = ResolvedMonthlyPolicy.model_validate(self.policy.model_dump(mode="json"))
+        proposed, approved = (
+            datetime.fromisoformat(self.scenario_proposed_at),
+            datetime.fromisoformat(self.scenario_approved_at),
+        )
+        first, _ = month_window(self.policy.month)
+        if (
+            proposed > approved
+            or approved.date().isoformat() >= first
+            or approved > datetime.fromisoformat(self.actual_issued_at)
+        ):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_ORIGINAL_CLOCK_INVALID")
+        if self.scenario_proposed_by == self.scenario_approved_by:
+            raise ValueError("COMPOSITE_ELIGIBILITY_SELF_APPROVAL_FORBIDDEN")
+        keys = [
+            (item.product_name, item.product_version, item.revision) for item in self.attachments
+        ]
+        if keys != sorted(set(keys)):
+            raise ValueError("COMPOSITE_ELIGIBILITY_ATTACHMENTS_NONCANONICAL")
+        bind_historical_content(self)
+        return self
+
+
+class ControlledScenarioVerificationRequest(StrictAuthorityModel):
+    product_name: Literal["CompositeHistoricalPolicyVerificationRequest"] = (
+        "CompositeHistoricalPolicyVerificationRequest"
+    )
+    product_version: Literal["v2"] = "v2"
+    purpose: Literal["COMPOSITE_CONTROLLED_SCENARIO_POLICY_ADMISSION"] = (
+        "COMPOSITE_CONTROLLED_SCENARIO_POLICY_ADMISSION"
+    )
+    operation: Literal[
+        "POLICY_PROPOSAL", "POLICY_APPROVAL", "EVALUATION_PROPOSAL", "EVALUATION_APPROVAL"
+    ]
+    reference: HistoricalPolicyReference
+    scope: MonthlyPolicyScope
+    month: str = Field(pattern=r"^\d{4}-\d{2}$")
+    eligibility_policy_version: Identity
+    reporting_currency: str = Field(pattern=r"^[A-Z]{3}$")
+    revision: Identity
+    actor_id: Identity
+    requested_at: UtcInstant
+    intent_digest: Digest
+
+
+class ControlledScenarioVerification(HistoricalContent):
+    """Only a trusted server port may supply this independently verified mapping."""
+
+    product_name: Literal["CompositeHistoricalPolicyVerification"] = (
+        "CompositeHistoricalPolicyVerification"
+    )
+    product_version: Literal["v2"] = "v2"
+    posture: Literal["SYNTHETIC_NON_CERTIFYING"]
+    original_signature_status: Literal["VERIFIED_AT_ACTUAL_ISSUANCE"]
+    signature_semantics: Literal["SCENARIO_DECLARATION_AT_ACTUAL_ISSUANCE"]
+    current_revocation_status: Literal["CLEAR"]
+    request: ControlledScenarioVerificationRequest
+    mapping: ControlledScenarioPolicyMapping
+    verifier_id: Identity
+    signer_principal_id: Identity
+    verifier_principal_id: Identity
+    configuration_digest: Digest
+    signer_key_digest: Digest
+    verifier_key_digest: Digest
+    verifier_public_key_base64: str = Field(min_length=44, max_length=44)
+    revocation_revision: Identity
+    revocation_digest: Digest
+    checked_at: UtcInstant
+    expires_at: UtcInstant
+    admitted_at: UtcInstant
+    verifier_credential: str = Field(min_length=1, max_length=16384)
+    content_hash: str = ""
+
+    @model_validator(mode="after")
+    def require_exact_mapping_and_admission(self) -> "ControlledScenarioVerification":
+        self.mapping = ControlledScenarioPolicyMapping.model_validate(
+            self.mapping.model_dump(mode="json")
+        )
+        request, mapping = self.request, self.mapping
+        if (
+            request.reference,
+            request.scope,
+            request.month,
+            request.eligibility_policy_version,
+            request.reporting_currency,
+        ) != (
+            mapping.reference,
+            mapping.policy.scope,
+            mapping.policy.month,
+            mapping.eligibility_policy_version,
+            mapping.reporting_currency,
+        ):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_MAPPING_MISMATCH")
+        if (
+            self.signer_principal_id == self.verifier_principal_id
+            or self.signer_key_digest == self.verifier_key_digest
+        ):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_INDEPENDENCE_REQUIRED")
+        checked, admitted, expiry = map(
+            datetime.fromisoformat, (self.checked_at, self.admitted_at, self.expires_at)
+        )
+        requested = datetime.fromisoformat(request.requested_at)
+        if requested < datetime.fromisoformat(mapping.actual_issued_at):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_ORIGINAL_CLOCK_INVALID")
+        if not checked <= requested <= admitted < expiry or expiry > checked + timedelta(minutes=5):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_ADMISSION_WINDOW_INVALID")
+        self.require_verifier_signature()
+        bind_historical_content(self)
+        return self
+
+    def require_verifier_signature(self) -> None:
+        require_historical_verifier_signature(self)
+
+
+class ControlledScenarioMonthlyPolicyProposal(HistoricalContent):
+    product_name: Literal["CompositeMonthlyPolicyProposal"] = "CompositeMonthlyPolicyProposal"
+    product_version: Literal["v3"] = "v3"
+    proposal_revision: Identity
+    eligibility_policy_version: Identity
+    policy: ResolvedMonthlyPolicy
+    attachments: list[EvidenceBinding] = Field(min_length=1, max_length=20)
+    proposed_by: Identity
+    proposed_at: UtcInstant
+    verification: ControlledScenarioVerification
+    content_hash: str = ""
+
+    @model_validator(mode="after")
+    def require_present_admission(self) -> "ControlledScenarioMonthlyPolicyProposal":
+        proof = ControlledScenarioVerification.model_validate(
+            self.verification.model_dump(mode="json")
+        )
+        request, mapping = proof.request, proof.mapping
+        if (self.policy, self.attachments, self.eligibility_policy_version) != (
+            mapping.policy,
+            mapping.attachments,
+            mapping.eligibility_policy_version,
+        ):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_MAPPING_MISMATCH")
+        if (request.operation, request.revision, request.actor_id, request.requested_at) != (
+            "POLICY_PROPOSAL",
+            self.proposal_revision,
+            self.proposed_by,
+            self.proposed_at,
+        ):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_REQUEST_MISMATCH")
+        expected = hash_canonical_payload(
+            {
+                "reference": mapping.reference.model_dump(mode="json"),
+                "proposal_revision": self.proposal_revision,
+            }
+        )
+        if request.intent_digest != expected:
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_INTENT_MISMATCH")
+        bind_historical_content(self)
+        return self
+
+
+class ControlledScenarioMonthlyPolicyApproval(HistoricalContent):
+    product_name: Literal["CompositeMonthlyPolicyApproval"] = "CompositeMonthlyPolicyApproval"
+    product_version: Literal["v3"] = "v3"
+    evidence_kind: Literal["VERIFIED_CONTROLLED_SCENARIO_MAPPING"] = (
+        "VERIFIED_CONTROLLED_SCENARIO_MAPPING"
+    )
+    official_activation: Literal["UNAVAILABLE"] = "UNAVAILABLE"
+    proposal: ControlledScenarioMonthlyPolicyProposal
+    approved_by: Identity
+    approved_at: UtcInstant
+    verification: ControlledScenarioVerification
+    content_hash: str = ""
+
+    @model_validator(mode="after")
+    def require_independent_current_approval(self) -> "ControlledScenarioMonthlyPolicyApproval":
+        self.proposal = ControlledScenarioMonthlyPolicyProposal.model_validate(
+            self.proposal.model_dump(mode="json")
+        )
+        proof = ControlledScenarioVerification.model_validate(
+            self.verification.model_dump(mode="json")
+        )
+        request = proof.request
+        if self.approved_by == self.proposal.proposed_by:
+            raise ValueError("COMPOSITE_ELIGIBILITY_SELF_APPROVAL_FORBIDDEN")
+        if datetime.fromisoformat(self.approved_at) < datetime.fromisoformat(
+            self.proposal.proposed_at
+        ):
+            raise ValueError("COMPOSITE_ELIGIBILITY_APPROVAL_BEFORE_PROPOSAL")
+        if proof.mapping != self.proposal.verification.mapping or (
+            request.operation,
+            request.revision,
+            request.actor_id,
+            request.requested_at,
+            request.intent_digest,
+        ) != (
+            "POLICY_APPROVAL",
+            self.proposal.proposal_revision,
+            self.approved_by,
+            self.approved_at,
+            self.proposal.content_hash,
+        ):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_REQUEST_MISMATCH")
+        bind_historical_content(self)
+        return self

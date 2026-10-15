@@ -5,8 +5,12 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
-from src.core.composite_definition_versions import decode_composite_definition
+from src.core.composite_definition_versions import (
+    ControlledScenarioDefinitionV3,
+    decode_composite_definition,
+)
 from src.infrastructure.composites.postgres import _load_definition
 from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
 from tests.composite_authority_helpers import (
@@ -269,7 +273,7 @@ def test_recomputed_digests_do_not_admit_ambiguous_identity_or_fact_authority(
         ("[]", "COMPOSITE_DEFINITION_JSON_OBJECT_REQUIRED"),
         ("null", "COMPOSITE_DEFINITION_JSON_OBJECT_REQUIRED"),
         ('{"product_version":', "COMPOSITE_DEFINITION_RAW_JSON_INVALID"),
-        ('{"product_version":"v3"}', "COMPOSITE_DEFINITION_PRODUCT_VERSION_UNSUPPORTED"),
+        ('{"product_version":"v999"}', "COMPOSITE_DEFINITION_PRODUCT_VERSION_UNSUPPORTED"),
     ],
 )
 def test_version_dispatch_refuses_nonobjects_malformed_json_and_unknown_versions(
@@ -277,6 +281,28 @@ def test_version_dispatch_refuses_nonobjects_malformed_json_and_unknown_versions
 ) -> None:
     with pytest.raises(ValueError, match=reason):
         decode_composite_definition(raw)
+
+
+def test_supported_v3_refuses_missing_fields_instead_of_unknown_version() -> None:
+    with pytest.raises(ValidationError) as refused:
+        decode_composite_definition('{"product_version":"v3"}')
+    assert any(error["type"] == "missing" for error in refused.value.errors())
+    assert "COMPOSITE_DEFINITION_PRODUCT_VERSION_UNSUPPORTED" not in str(refused.value)
+
+
+def test_valid_controlled_scenario_v3_dispatch_preserves_exact_wire_and_hash() -> None:
+    fixture = Path(__file__).resolve().parents[4] / (
+        "docs/contracts/composite-controlled-scenario/valid-graph.json"
+    )
+    wire = json.loads(fixture.read_text(encoding="utf-8"))["finalization"]["definition"]
+    assert wire["product_version"] == "v3"
+    for material in (wire, json.dumps(wire)):
+        decoded = decode_composite_definition(material)
+        assert type(decoded) is ControlledScenarioDefinitionV3
+        assert decoded.product_version == "v3"
+        assert decoded.model_dump(mode="json") == wire
+        assert decoded.content_hash == wire["content_hash"]
+    assert _load_definition({"payload_json": json.dumps(wire)}).model_dump(mode="json") == wire
 
 
 def test_absent_version_preserves_the_legacy_v1_default_and_wire() -> None:
