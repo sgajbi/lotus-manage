@@ -2,10 +2,10 @@
 
 from src.core.composite_eligibility.staged_controls import (
     StagedControl,
-    SubjectPolicyProposal,
-    SubjectPolicyApproval,
-    SubjectEvaluationProposal,
-    SubjectEvaluationApproval,
+    SubjectPolicyProposalContent,
+    SubjectPolicyApprovalContent,
+    SubjectEvaluationProposalContent,
+    SubjectEvaluationApprovalContent,
     control_subject,
     control_revision,
 )
@@ -23,11 +23,11 @@ from src.core.composite_publication import DpmCompositeMembershipPublication
 
 def predecessor(control: StagedControl) -> tuple[ControlKind, str, str] | None:
     item: StagedControl
-    if isinstance(control, SubjectPolicyProposal):
+    if isinstance(control, SubjectPolicyProposalContent):
         return None
-    if isinstance(control, SubjectPolicyApproval):
+    if isinstance(control, SubjectPolicyApprovalContent):
         item = control.proposal
-    elif isinstance(control, SubjectEvaluationProposal):
+    elif isinstance(control, SubjectEvaluationProposalContent):
         item = control.policy_approval
     else:
         item = control.proposal
@@ -51,7 +51,7 @@ def require_control_custody(
         or subject_key(control_subject(retained_predecessor)) != subject_key(subject)
     ):
         raise ValueError("COMPOSITE_SUBJECT_RETAINED_CONTROL_MISMATCH")
-    if isinstance(control, SubjectEvaluationApproval):
+    if isinstance(control, SubjectEvaluationApprovalContent):
         revision, universe = initial_projection(
             control.proposal, control.claims_digest, control.approved_by, control.approved_at
         )

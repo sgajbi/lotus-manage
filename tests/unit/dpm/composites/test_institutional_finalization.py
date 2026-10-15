@@ -171,7 +171,7 @@ def test_retained_receipt_requires_a_json_object(wire):
         decode_subject_receipt(wire)
 
 
-@pytest.mark.parametrize("version", [None, "v0", "v3"])
+@pytest.mark.parametrize("version", [None, "v0", "v9"])
 def test_finalization_decoder_refuses_unsupported_explicit_version(version):
     with pytest.raises(ValueError, match="COMPOSITE_SUBJECT_FINALIZATION_VERSION_UNSUPPORTED"):
         decode_subject_finalization({"product_version": version})

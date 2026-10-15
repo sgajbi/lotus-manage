@@ -64,6 +64,14 @@ Every new proposal/approval needs its own operation-bound proof; a static file c
 
 ## API and recovery
 
+The unpublished first-subject lifecycle also consumes this configured channel through
+`PUT /api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/policies/{proposal_revision}/historical-admission`.
+It binds `expected_subject_content_hash` plus the same immutable original `reference` before any
+definition is published. Separate current checker/evaluation operations retain fresh operation
+proofs; original dates remain in the original mapping. This additive path is synthetic only and
+returns staged controls v2 and finalization/receipt v3. See the
+[first-month contract](composite-monthly-eligibility.md#historical-first-month-policy).
+
 The caller submits only the original reference to the existing registered operation:
 
 `PUT /api/v1/rebalance/composites/{composite_id}/definitions/{definition_version}/monthly-eligibility/policies/{month}/proposals/{proposal_revision}/historical-admission`

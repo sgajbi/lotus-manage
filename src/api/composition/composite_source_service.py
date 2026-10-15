@@ -44,13 +44,16 @@ def build_composite_subject_service(
     transport = _configured_transport()
     if transport is None:
         return CompositeSubjectApplicationService(
-            repository=repository, attestations=_configured_attestations()
+            repository=repository,
+            attestations=_configured_attestations(),
+            historical_admission=_configured_historical_admission(),
         )
     return CompositeSubjectApplicationService(
         repository=repository,
         candidates=ConfiguredCandidateUniverseSource(transport),
         verifier=ConfiguredCompositeEvidenceVerifier(transport),
         attestations=_configured_attestations(),
+        historical_admission=_configured_historical_admission(),
         observations=ConfiguredMonthlyEligibilitySource(
             transport, ConfiguredCompositeEvidenceVerifier(transport)
         ),

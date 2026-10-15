@@ -10,6 +10,7 @@ from src.api.services.composite_subject_requests import (
     SubjectApprovalRequest,
     SubjectEvaluationRequest,
     SubjectFinalizationRequest,
+    SubjectHistoricalPolicyRequest,
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import EvidenceBinding
@@ -39,13 +40,22 @@ from src.core.composite_eligibility.staged_ports import (
 )
 from src.core.composite_eligibility.staged_controls import (
     SubjectPolicyProposal,
+    SubjectPolicyProposalContent,
     SubjectPolicyApproval,
+    SubjectPolicyApprovalContent,
     SubjectEvaluationProposal,
+    SubjectEvaluationProposalContent,
     SubjectEvaluationApproval,
+    SubjectEvaluationApprovalContent,
+    HistoricalSubjectPolicyApproval,
+    HistoricalSubjectPolicyProposal,
+    HistoricalSubjectEvaluationProposal,
+    HistoricalSubjectEvaluationApproval,
     subject_approval_claims,
 )
 from src.core.composite_eligibility.staged_publication import (
     SubjectFinalization,
+    HistoricalSubjectFinalization,
     InstitutionalSubjectFinalization,
     SubjectFinalizationRecord,
     SubjectFinalizationProof,
@@ -67,6 +77,12 @@ from src.core.composite_eligibility.institutional_verification import (
     UnavailableInstitutionalEvidenceVerifier,
 )
 from src.core.composite_universe import DpmCompositeUniverseSourceProduct
+from src.api.services.historical_subject_policy import HistoricalSubjectPolicyApplicationService
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalPolicyAdmissionPort,
+    UnavailableHistoricalPolicyAdmission,
+)
+from src.core.composite_authority_models import HistoricalSubjectApprovalBinding
 from src.core.composite_eligibility.monthly_evidence import MonthlyPublicationReceipt
 from src.core.composite_eligibility.monthly_amendment import (
     MonthlyApprovalBinding,
@@ -75,10 +91,10 @@ from src.core.composite_eligibility.monthly_amendment import (
 
 ControlT = TypeVar(
     "ControlT",
-    SubjectPolicyProposal,
-    SubjectPolicyApproval,
-    SubjectEvaluationProposal,
-    SubjectEvaluationApproval,
+    SubjectPolicyProposalContent,
+    SubjectPolicyApprovalContent,
+    SubjectEvaluationProposalContent,
+    SubjectEvaluationApprovalContent,
 )
 
 
@@ -99,7 +115,20 @@ class CompositeSubjectApplicationService:
     attestations: InstitutionalEvidenceVerifier = field(
         default_factory=UnavailableInstitutionalEvidenceVerifier
     )
+    historical_admission: HistoricalPolicyAdmissionPort = field(
+        default_factory=UnavailableHistoricalPolicyAdmission
+    )
     clock: Callable[[], str] = utc_now
+
+    def historical(self) -> HistoricalSubjectPolicyApplicationService:
+        return HistoricalSubjectPolicyApplicationService(
+            self.repository, self.historical_admission, self.verifier, self.clock
+        )
+
+    def propose_historical_policy(
+        self, key: SubjectKey, revision: str, actor: str, command: SubjectHistoricalPolicyRequest
+    ) -> HistoricalSubjectPolicyProposal:
+        return self.historical().propose(key, revision, actor, command)
 
     def subject(self, key: SubjectKey) -> EligibilitySubject:
         result = self.repository.get_eligibility_subject(key=key)
@@ -115,16 +144,20 @@ class CompositeSubjectApplicationService:
 
     def _control(self, key: SubjectKey, revision: str, model: type[ControlT]) -> ControlT | None:
         kinds: dict[
-            type[SubjectPolicyProposal]
-            | type[SubjectPolicyApproval]
-            | type[SubjectEvaluationProposal]
-            | type[SubjectEvaluationApproval],
+            type[SubjectPolicyProposalContent]
+            | type[SubjectPolicyApprovalContent]
+            | type[SubjectEvaluationProposalContent]
+            | type[SubjectEvaluationApprovalContent],
             ControlKind,
         ] = {
             SubjectPolicyProposal: "CompositeSubjectPolicyProposal",
             SubjectPolicyApproval: "CompositeSubjectPolicyApproval",
             SubjectEvaluationProposal: "CompositeSubjectEvaluationProposal",
             SubjectEvaluationApproval: "CompositeSubjectEvaluationApproval",
+            SubjectPolicyProposalContent: "CompositeSubjectPolicyProposal",
+            SubjectPolicyApprovalContent: "CompositeSubjectPolicyApproval",
+            SubjectEvaluationProposalContent: "CompositeSubjectEvaluationProposal",
+            SubjectEvaluationApprovalContent: "CompositeSubjectEvaluationApproval",
         }
         result = self.repository.get_subject_control(key=key, kind=kinds[model], revision=revision)
         if result is None:
@@ -171,14 +204,14 @@ class CompositeSubjectApplicationService:
 
     def propose_policy(
         self, key: SubjectKey, revision: str, actor: str, command: SubjectPolicyRequest
-    ) -> SubjectPolicyProposal:
+    ) -> SubjectPolicyProposalContent:
         command = SubjectPolicyRequest.model_validate(command.model_dump(mode="json"))
         subject = self.subject(key)
         if subject.content_hash != command.expected_subject_content_hash:
             raise ValueError("COMPOSITE_SUBJECT_STALE_CONTENT_CONFLICT")
-        existing = self._control(key, revision, SubjectPolicyProposal)
+        existing = self._control(key, revision, SubjectPolicyProposalContent)
         if existing is not None:
-            if (
+            if not isinstance(existing, SubjectPolicyProposal) or (
                 existing.proposal.policy.layers,
                 existing.proposal.attachments,
                 existing.proposal.proposed_by,
@@ -208,16 +241,20 @@ class CompositeSubjectApplicationService:
 
     def approve_policy(
         self, key: SubjectKey, revision: str, actor: str, command: SubjectApprovalRequest
-    ) -> SubjectPolicyApproval:
-        proposal = self.control(key, revision, SubjectPolicyProposal)
+    ) -> SubjectPolicyApprovalContent:
+        proposal = self.control(key, revision, SubjectPolicyProposalContent)
         _require_approval_actor(
             proposal.content_hash, proposal.proposal.proposed_by, actor, command
         )
-        existing = self._control(key, revision, SubjectPolicyApproval)
+        existing = self._control(key, revision, SubjectPolicyApprovalContent)
         if existing is not None:
             if existing.proposal != proposal or existing.approval.approved_by != actor:
                 raise ValueError("COMPOSITE_SUBJECT_IMMUTABLE_CONFLICT")
             return existing
+        if isinstance(proposal, HistoricalSubjectPolicyProposal):
+            return self.historical().approve(proposal, actor)
+        if not isinstance(proposal, SubjectPolicyProposal):
+            raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
         approval = MonthlyPolicyApproval(
             proposal=proposal.proposal, approved_by=actor, approved_at=self.clock()
         )
@@ -238,12 +275,12 @@ class CompositeSubjectApplicationService:
 
     def evaluate(
         self, key: SubjectKey, revision: str, actor: str, command: SubjectEvaluationRequest
-    ) -> SubjectEvaluationProposal:
+    ) -> SubjectEvaluationProposalContent:
         command = SubjectEvaluationRequest.model_validate(command.model_dump(mode="json"))
-        policy = self.control(key, command.policy_proposal_revision, SubjectPolicyApproval)
+        policy = self.control(key, command.policy_proposal_revision, SubjectPolicyApprovalContent)
         if policy.content_hash != command.policy_approval_content_hash:
             raise ValueError("COMPOSITE_SUBJECT_STALE_CONTENT_CONFLICT")
-        existing = self._control(key, revision, SubjectEvaluationProposal)
+        existing = self._control(key, revision, SubjectEvaluationProposalContent)
         if existing is not None:
             binding = existing.observation_binding
             if (
@@ -292,9 +329,9 @@ class CompositeSubjectApplicationService:
             source_watermark=snapshot.source_revision,
             content_hash=command.source_content_hash,
         )
-        proposal = SubjectEvaluationProposal(
+        proposal_wire = dict(
             source_assembly_evidence=resolution.source_assembly_evidence,
-            policy_approval=policy,
+            policy_approval=policy.model_dump(mode="json"),
             evaluation_revision=revision,
             target_membership_revision=command.target_membership_revision,
             observations=snapshot,
@@ -303,15 +340,25 @@ class CompositeSubjectApplicationService:
             proposed_by=actor,
             proposed_at=instant,
         )
+        proposal = (
+            self.historical().evaluation_proposal(proposal_wire)
+            if isinstance(policy, HistoricalSubjectPolicyApproval)
+            else SubjectEvaluationProposal.model_validate(proposal_wire)
+        )
+        if isinstance(proposal, HistoricalSubjectEvaluationProposal):
+            retained_proposal = self.historical().save_evaluation(key, proposal)
+            if not isinstance(retained_proposal, HistoricalSubjectEvaluationProposal):
+                raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
+            return retained_proposal
         self.repository.save_subject_control(control=proposal)
         return proposal
 
     def approve_evaluation(
         self, key: SubjectKey, revision: str, actor: str, command: SubjectApprovalRequest
-    ) -> SubjectEvaluationApproval:
-        proposal = self.control(key, revision, SubjectEvaluationProposal)
+    ) -> SubjectEvaluationApprovalContent:
+        proposal = self.control(key, revision, SubjectEvaluationProposalContent)
         _require_approval_actor(proposal.content_hash, proposal.proposed_by, actor, command)
-        existing = self._control(key, revision, SubjectEvaluationApproval)
+        existing = self._control(key, revision, SubjectEvaluationApprovalContent)
         if existing is not None:
             if existing.proposal != proposal or existing.approved_by != actor:
                 raise ValueError("COMPOSITE_SUBJECT_IMMUTABLE_CONFLICT")
@@ -323,8 +370,8 @@ class CompositeSubjectApplicationService:
             self.verifier, _verification(subject, "ELIGIBILITY_POLICY_EVALUATION", claims)
         )
         membership, universe = initial_projection(proposal, claims, actor, instant)
-        result = SubjectEvaluationApproval(
-            proposal=proposal,
+        approval_wire = dict(
+            proposal=proposal.model_dump(mode="json"),
             approved_by=actor,
             approved_at=instant,
             evidence_kind="SYNTHETIC_UNSIGNED"
@@ -335,6 +382,16 @@ class CompositeSubjectApplicationService:
             universe_content_hash=universe.content_hash,
             verification=verification,
         )
+        result = (
+            self.historical().evaluation_approval(approval_wire | {"product_version": "v2"})
+            if isinstance(proposal, HistoricalSubjectEvaluationProposal)
+            else SubjectEvaluationApproval.model_validate(approval_wire)
+        )
+        if isinstance(result, HistoricalSubjectEvaluationApproval):
+            retained_approval = self.historical().save_evaluation(key, result)
+            if not isinstance(retained_approval, HistoricalSubjectEvaluationApproval):
+                raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
+            return retained_approval
         self.repository.save_subject_control(control=result)
         return result
 
@@ -343,7 +400,7 @@ class CompositeSubjectApplicationService:
     ) -> SubjectFinalizationProof:
         command = SubjectFinalizationRequest.model_validate(command.model_dump(mode="json"))
         subject = self.subject(key)
-        approval = self.control(key, command.evaluation_revision, SubjectEvaluationApproval)
+        approval = self.control(key, command.evaluation_revision, SubjectEvaluationApprovalContent)
         if approval.content_hash != command.expected_approval_content_hash:
             raise ValueError("COMPOSITE_SUBJECT_STALE_CONTENT_CONFLICT")
         definition = DpmCompositeDefinitionV2.model_validate(
@@ -379,9 +436,20 @@ class CompositeSubjectApplicationService:
         self,
         definition: DpmCompositeDefinitionV2,
         subject: EligibilitySubject,
-        approval: SubjectEvaluationApproval,
+        approval: SubjectEvaluationApprovalContent,
     ) -> SubjectFinalizationRecord:
         requests = finalization_verification_requests(definition, subject)
+        if isinstance(approval, HistoricalSubjectEvaluationApproval):
+            return HistoricalSubjectFinalization(
+                subject=subject,
+                evaluation_approval=approval,
+                definition=definition,
+                verifications=[
+                    require_verification(self.verifier, request) for request in requests
+                ],
+            )
+        if not isinstance(approval, SubjectEvaluationApproval):
+            raise ValueError("COMPOSITE_SUBJECT_CONTROL_VERSION_MISMATCH")
         if definition.authority_approval.evidence_kind == "INSTITUTIONAL_ATTESTATION_REFERENCE":
             authority = self.attestations.verify(
                 institutional_finalization_request(definition, subject, approval)
@@ -432,7 +500,10 @@ class CompositeSubjectApplicationService:
         tenant_id: str,
         composite_id: str,
         definition_version: str,
-        binding: EvidenceBinding | MonthlyApprovalBinding | HistoricalMonthlyApprovalBinding,
+        binding: EvidenceBinding
+        | HistoricalSubjectApprovalBinding
+        | MonthlyApprovalBinding
+        | HistoricalMonthlyApprovalBinding,
     ) -> SubjectFinalizationProof | MonthlyPublicationReceipt:
         if binding.product_name == "CompositeMonthlyEvaluationApproval":
             result_monthly = self.repository.resolve_monthly_eligibility_evidence(
@@ -449,7 +520,7 @@ class CompositeSubjectApplicationService:
             return result_monthly
         if (
             binding.product_name != "CompositeSubjectEvaluationApproval"
-            or binding.product_version != "v1"
+            or binding.product_version not in {"v1", "v2"}
         ):
             raise ValueError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
         result = self.repository.resolve_eligibility_evidence(
@@ -461,6 +532,8 @@ class CompositeSubjectApplicationService:
         )
         if result is None:
             raise ValueError("COMPOSITE_SUBJECT_FINALIZATION_NOT_FOUND")
+        if result.finalization.evaluation_approval.product_version != binding.product_version:
+            raise ValueError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
         return result
 
 

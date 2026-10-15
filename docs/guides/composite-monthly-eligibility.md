@@ -78,6 +78,51 @@ boolean. No fabricated boolean or v1 wire change is used.
 ### First Definition: Staged V2 Lifecycle
 
 For a new definition, `S = /api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}`.
+
+#### Historical first-month policy
+
+For an unpublished subject, the reference-only historical admission operation is
+`PUT S/policies/{proposal_revision}/historical-admission`. Its body has exactly
+`expected_subject_content_hash` and `reference` (existing `HistoricalPolicyReference`: issuer,
+artifact, revision, raw digest and original signing contract). The normal subject creation operation
+must already have resolved the source-owned candidate universe; no definition, membership or
+policy rows need to be preseeded. Caller time, population, endpoints and trust are not accepted.
+
+The existing `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` channel independently verifies
+the original policy and returns a fresh operation-bound normalized proof. The original policy's
+approval predates its month; current admission and independent checker times remain current.
+An additional `ELIGIBILITY_POLICY` verification binds the exact subject hash and historical
+proposal hash. The existing policy `/approval` then binds the current historical approval hash
+to that subject, using a different admitted checker. Missing trust/source fails closed.
+
+Historical subject policy/evaluation proposal and approval products are explicit v2. Evaluation
+proposal/approval each retain a fresh `operation_verification`; complete unsigned proposal intent
+excludes only its top-level `content_hash` and `operation_verification`, preserving every nested
+hash/proof. Approval intent is the complete proposal hash. Finalization and its resolver receipt
+are explicit v3. Definition remains v2, membership/universe remain v1, and only the definition's
+eligibility site admits `CompositeSubjectEvaluationApproval/v2`. Generic evidence bindings remain
+v1. Frozen ordinary staged v1 and institutional finalization/receipt v2 remain unchanged.
+
+Continue through the existing evaluation, separate approval and atomic finalization operations.
+The same transaction owns first definition/membership/universe/publication custody. Complete
+declared synthetic coverage does not qualify population or financial authority: new history is
+synthetic/non-certifying, publication completeness is `UNVERIFIED`, and official activation is
+`UNAVAILABLE`. Direct v2 definition PUT, fixture-history restoration and caller clock overrides
+are not historical-subject admission. Ordinary retrospective proposals still refuse.
+
+See the [frozen version graph, canonical examples and refusal vectors](../contracts/composite-historical-subject/README.md)
+and [provider trust/timing protocol](composite-historical-provider.md). From the `lotus-manage`
+checkout, the focused unit command is the same in PowerShell and Bash:
+
+```text
+make test-unit UNIT_TESTS="tests/unit/api/test_composite_historical_subject_routes.py tests/unit/dpm/composites/test_historical_subject_contracts.py"
+```
+
+The authored native empty-scope PostgreSQL/HTTP restart test is
+`tests/integration/dpm/composites/test_historical_subject_http_postgres.py`; execute it only in the
+owning admitted database lane. In-process proof and frozen vectors are not deployed source,
+actual historical-provider, bank IAM, financial or Performance READY acceptance.
+
 This is an unpublished reservation, not a provisional definition or invented parent membership.
 
 | Phase | Operation | Exact Material |
@@ -320,6 +365,17 @@ python -m pytest tests/unit/dpm/composites/test_historical_policy_admission.py t
 
 The owning PostgreSQL lane runs `test_composite_historical_policy_postgres.py` and
 `test_composite_historical_policy_upgrade_postgres.py` in `tests/integration/dpm/composites`.
+
+Historical first-subject custody additionally requires forward migration `0046`. Migration
+`0045` admits historical LEGACY monthly controls, but its evaluation CHECK constraints refuse
+the STAGED subject v2 graph. `0046` adds the exact subject-bound initial v2 proposal/approval
+branches while retaining every ordinary/LEGACY branch, custody foreign key and applied migration
+checksum. It does not rewrite issued rows, hashes or product versions. Apply through the existing
+migration runner before historical first-subject traffic; do not downgrade payloads to v1.
+Database shape checks supplement domain signature, canonical hash and current-clock verification.
+The native HTTP PostgreSQL test checks persisted v2 payload/hash equality through publication and
+source-off restart. `test_historical_subject_control_wire_postgres.py` covers fresh/0045 upgrades,
+retained receipts and mixed/forged/null/amendment refusal cases in the admitted PostgreSQL lane.
 Local runs without an isolated DSN explicitly skip those proofs; skips are not storage qualification.
 These contracts do not admit downstream Report/Render/Archive consumers, genuine institutional
 authority, production sources, bank IAM, methodology or official activation. Those acceptance gates

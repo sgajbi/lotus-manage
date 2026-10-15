@@ -102,6 +102,7 @@ def synthetic_sources(monkeypatch):
             credential_env="SYNTHETIC_CONFIGURED_SOURCE_CREDENTIAL",
             evidence_posture="SYNTHETIC_NON_CERTIFYING",
             verification_purposes=(
+                "ELIGIBILITY_POLICY",
                 "ELIGIBILITY_POLICY_EVALUATION",
                 "COMPOSITE_MONTHLY_SOURCE_CUT",
                 "COMPOSITE_ECONOMIC_AUTHORITY_PROFILE",

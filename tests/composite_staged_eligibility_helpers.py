@@ -280,7 +280,7 @@ def final_definition(subject, approval, *, authority_approved_at=None):
         ],
         "eligibility_evaluation_binding": {
             "product_name": approval.product_name,
-            "product_version": "v1",
+            "product_version": approval.product_version,
             "revision": approval.proposal.evaluation_revision,
             "digest": approval.content_hash,
         },

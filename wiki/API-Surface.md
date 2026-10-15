@@ -597,6 +597,16 @@ Endpoint certification details are tracked in [Endpoint Certification](Endpoint-
 
 ## Monthly Composite Eligibility
 
+Unpublished first subjects can admit independently verified historical policy through
+`eligibility-subjects/.../policies/{proposal_revision}/historical-admission`, binding the exact
+subject hash and original reference. Current admission and checker times remain distinct from
+original pre-month approval. Subject controls v2 and finalization/receipt v3 retain the full
+original/proof/source graph through existing atomic publication and exact resolver custody;
+ordinary staged v1 and institutional v2 histories remain unchanged. This path is synthetic and
+non-certifying, with unavailable official activation. See the
+[first-month operator contract](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md#historical-first-month-policy)
+and [versioned examples and refusals](https://github.com/sgajbi/lotus-manage/blob/main/docs/contracts/composite-historical-subject/README.md).
+
 An additive reference-only `PUT policies/{month}/proposals/{proposal_revision}/historical-admission`
 under the monthly family supports policy v2, ordinary evaluation/receipt v3 and correction v4.
 Original raw evidence and original event times remain separate from fresh current-operation

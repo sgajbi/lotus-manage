@@ -80,6 +80,25 @@ def test_registered_historical_admission_evaluation_and_retained_default_unavail
             assert proposed.status_code == 200, proposed.text
             assert proposed.json() == expected.model_dump(mode="json")
             assert client.get(policy_url, headers=maker).json() == proposed.json()
+            # The ordinary proposal endpoint cannot replace retained historical v2 custody,
+            # even when its policy layers and attachments describe the same original intent.
+            calls = len(port.calls)
+            ordinary = client.put(
+                policy_url,
+                headers=maker,
+                json={
+                    "layers": [layer.model_dump(mode="json") for layer in expected.policy.layers],
+                    "attachments": [item.model_dump(mode="json") for item in expected.attachments],
+                },
+            )
+            assert ordinary.status_code == 409, ordinary.text
+            assert (
+                ordinary.json()["detail"]["code"]
+                == "COMPOSITE_ELIGIBILITY_PROPOSAL_IMMUTABLE_CONFLICT"
+            )
+            assert client.get(policy_url, headers=maker).json() == proposed.json()
+            assert len(port.calls) == calls
+            assert repository.get_monthly_policy_approval(**scope, month="2026-09") is None
             assert (
                 client.put(
                     proposal_url,

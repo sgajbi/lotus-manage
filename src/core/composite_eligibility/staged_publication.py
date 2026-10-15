@@ -7,13 +7,23 @@ from typing import Any, Literal, TypedDict, Sequence
 from pydantic import Field, model_validator
 
 from src.core.common.canonical import hash_canonical_payload
-from src.core.composite_authority_models import Digest, EvidenceBinding, StrictAuthorityModel
+from src.core.composite_authority_models import (
+    Digest,
+    EvidenceBinding,
+    HistoricalSubjectApprovalBinding,
+    StrictAuthorityModel,
+)
 from src.core.composite_definition_versions import DpmCompositeDefinitionV2
 from src.core.composite_eligibility.policy import month_window
 from src.core.composite_eligibility.publication import monthly_decisions
 from src.core.composite_eligibility.staged_controls import (
     SubjectEvaluationApproval,
-    SubjectEvaluationProposal,
+    SubjectEvaluationApprovalContent,
+    SubjectEvaluationProposalContent,
+    SubjectEvaluationApprovalVariant,
+    HistoricalSubjectEvaluationApproval,
+    EVALUATION_APPROVAL_ADAPTER,
+    require_synthetic_receipt,
 )
 from src.core.composite_eligibility.staged_subject import EligibilitySubject, bind_content
 from src.core.composite_eligibility.verification import VerificationReceipt, VerificationRequest
@@ -27,7 +37,7 @@ from src.core.composite_universe import DpmCompositeUniverseAttestation
 
 
 def initial_projection(
-    proposal: SubjectEvaluationProposal, claims: str, actor: str, instant: str
+    proposal: SubjectEvaluationProposalContent, claims: str, actor: str, instant: str
 ) -> tuple[DpmCompositeMembershipRevision, DpmCompositeUniverseAttestation]:
     subject = proposal.policy_approval.proposal.subject
     first, last = month_window(subject.month)
@@ -77,10 +87,10 @@ def initial_projection(
 
 class SubjectFinalizationContent(StrictAuthorityModel):
     product_name: Literal["CompositeEligibilityFinalization"] = "CompositeEligibilityFinalization"
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3"]
     official_activation: Literal["UNAVAILABLE"] = "UNAVAILABLE"
     subject: EligibilitySubject
-    evaluation_approval: SubjectEvaluationApproval
+    evaluation_approval: SubjectEvaluationApprovalVariant
     definition: DpmCompositeDefinitionV2
     verifications: Sequence[VerificationReceipt | InstitutionalVerificationReceipt] = Field(
         min_length=3, max_length=258
@@ -90,7 +100,7 @@ class SubjectFinalizationContent(StrictAuthorityModel):
     @model_validator(mode="after")
     def require_joined_content(self) -> "SubjectFinalizationContent":
         self.subject = EligibilitySubject.model_validate(self.subject.model_dump(mode="json"))
-        self.evaluation_approval = SubjectEvaluationApproval.model_validate(
+        self.evaluation_approval = EVALUATION_APPROVAL_ADAPTER.validate_python(
             self.evaluation_approval.model_dump(mode="json")
         )
         self.definition = DpmCompositeDefinitionV2.model_validate(
@@ -147,23 +157,41 @@ class SubjectFinalizationContent(StrictAuthorityModel):
 
 class SubjectFinalization(SubjectFinalizationContent):
     product_version: Literal["v1"] = "v1"
+    evaluation_approval: SubjectEvaluationApproval
     verifications: list[VerificationReceipt] = Field(min_length=3, max_length=258)
 
 
 class InstitutionalSubjectFinalization(SubjectFinalizationContent):
     product_version: Literal["v2"] = "v2"
+    evaluation_approval: SubjectEvaluationApproval
     verifications: list[VerificationReceipt | InstitutionalVerificationReceipt] = Field(
         min_length=3, max_length=258
     )
 
 
-SubjectFinalizationRecord = SubjectFinalization | InstitutionalSubjectFinalization
+class HistoricalSubjectFinalization(SubjectFinalizationContent):
+    product_version: Literal["v3"] = "v3"
+    evaluation_approval: HistoricalSubjectEvaluationApproval
+    verifications: list[VerificationReceipt] = Field(min_length=3, max_length=258)
+
+    @model_validator(mode="after")
+    def require_noncertifying_finalization(self) -> "HistoricalSubjectFinalization":
+        if self.definition.authority_approval.evidence_kind != "SYNTHETIC_UNSIGNED":
+            raise ValueError("COMPOSITE_SUBJECT_HISTORICAL_POLICY_POSTURE_UNAVAILABLE")
+        for receipt in self.verifications:
+            require_synthetic_receipt(receipt)
+        return self
+
+
+SubjectFinalizationRecord = (
+    SubjectFinalization | InstitutionalSubjectFinalization | HistoricalSubjectFinalization
+)
 
 
 def institutional_finalization_request(
     definition: DpmCompositeDefinitionV2,
     subject: EligibilitySubject,
-    approval: SubjectEvaluationApproval,
+    approval: SubjectEvaluationApprovalContent,
 ) -> InstitutionalVerificationRequest:
     return InstitutionalVerificationRequest(
         definition=definition,
@@ -173,11 +201,13 @@ def institutional_finalization_request(
             revision=subject.subject_revision,
             digest=subject.content_hash,
         ),
-        evaluation_approval_binding=EvidenceBinding(
-            product_name=approval.product_name,
-            product_version=approval.product_version,
-            revision=approval.proposal.evaluation_revision,
-            digest=approval.content_hash,
+        evaluation_approval_binding=EvidenceBinding.model_validate(
+            dict(
+                product_name=approval.product_name,
+                product_version=approval.product_version,
+                revision=approval.proposal.evaluation_revision,
+                digest=approval.content_hash,
+            )
         ),
     )
 
@@ -188,6 +218,8 @@ def decode_subject_finalization(wire: dict[str, Any]) -> SubjectFinalizationReco
         return SubjectFinalization.model_validate(wire)
     if version == "v2":
         return InstitutionalSubjectFinalization.model_validate(wire)
+    if version == "v3":
+        return HistoricalSubjectFinalization.model_validate(wire)
     raise ValueError("COMPOSITE_SUBJECT_FINALIZATION_VERSION_UNSUPPORTED")
 
 
@@ -260,7 +292,7 @@ def finalization_verification_requests(
 def require_definition_subject(
     definition: DpmCompositeDefinitionV2,
     subject: EligibilitySubject,
-    approval: SubjectEvaluationApproval,
+    approval: SubjectEvaluationApprovalContent,
 ) -> None:
     fields = (
         "tenant_id",
@@ -286,18 +318,23 @@ def require_definition_subject(
         subject.universe.members,
     ):
         raise ValueError("COMPOSITE_SUBJECT_PROFILE_BINDING_MISMATCH")
-    binding = EvidenceBinding(
-        product_name=approval.product_name,
-        product_version=approval.product_version,
-        revision=approval.proposal.evaluation_revision,
-        digest=approval.content_hash,
+    binding_type = (
+        HistoricalSubjectApprovalBinding if approval.product_version == "v2" else EvidenceBinding
+    )
+    binding = binding_type.model_validate(
+        dict(
+            product_name=approval.product_name,
+            product_version=approval.product_version,
+            revision=approval.proposal.evaluation_revision,
+            digest=approval.content_hash,
+        )
     )
     if profile.eligibility_evaluation_binding != binding:
         raise ValueError("COMPOSITE_SUBJECT_ELIGIBILITY_BINDING_MISMATCH")
 
 
 def authority_approval_follows_evaluation(
-    definition: DpmCompositeDefinitionV2, approval: SubjectEvaluationApproval
+    definition: DpmCompositeDefinitionV2, approval: SubjectEvaluationApprovalContent
 ) -> bool:
     """Diagnose chronology without changing immutable historical decoding or hashes."""
     return datetime.fromisoformat(
@@ -309,7 +346,7 @@ class SubjectFinalizationReceiptContent(StrictAuthorityModel):
     product_name: Literal["CompositeEligibilityFinalizationReceipt"] = (
         "CompositeEligibilityFinalizationReceipt"
     )
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3"]
     finalization: SubjectFinalizationRecord
     publication_sequence: int = Field(ge=1)
     membership_content_hash: Digest
@@ -340,7 +377,16 @@ class InstitutionalSubjectFinalizationReceipt(SubjectFinalizationReceiptContent)
     finalization: InstitutionalSubjectFinalization
 
 
-SubjectFinalizationProof = SubjectFinalizationReceipt | InstitutionalSubjectFinalizationReceipt
+class HistoricalSubjectFinalizationReceipt(SubjectFinalizationReceiptContent):
+    product_version: Literal["v3"] = "v3"
+    finalization: HistoricalSubjectFinalization
+
+
+SubjectFinalizationProof = (
+    SubjectFinalizationReceipt
+    | InstitutionalSubjectFinalizationReceipt
+    | HistoricalSubjectFinalizationReceipt
+)
 
 
 def decode_subject_receipt(wire: dict[str, Any] | str) -> SubjectFinalizationProof:
@@ -352,6 +398,8 @@ def decode_subject_receipt(wire: dict[str, Any] | str) -> SubjectFinalizationPro
         return SubjectFinalizationReceipt.model_validate(payload)
     if version == "v2":
         return InstitutionalSubjectFinalizationReceipt.model_validate(payload)
+    if version == "v3":
+        return HistoricalSubjectFinalizationReceipt.model_validate(payload)
     raise ValueError("COMPOSITE_SUBJECT_FINALIZATION_VERSION_UNSUPPORTED")
 
 

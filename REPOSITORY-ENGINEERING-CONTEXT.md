@@ -2,6 +2,14 @@
 
 This file provides repository-local engineering context for `lotus-manage`.
 
+Historical first-subject persistence requires forward DPM migration `0046`; `0045` alone refuses
+STAGED historical v2 evaluations. The new migration preserves earlier checksums and issued rows,
+adds only typed initial subject evaluation proposal/approval branches, and retains ordinary and
+LEGACY amendment controls. PostgreSQL shape enforcement supplements domain canonical-hash,
+signature and current-clock admission checks. The native HTTP/restart and wire/0045-upgrade tests
+in `tests/integration/dpm/composites/test_historical_subject_*_postgres.py` require the admitted
+PostgreSQL lane; offline collection is not database execution or certification evidence.
+
 Use the startup sequence in `AGENTS.md`: repository contract, platform quickstart, this repository
 context, then the platform skill-routing map. Load the wider engineering context only for
 cross-repository architecture or shared policy. Use the context reference map to locate a
@@ -97,6 +105,16 @@ owned by `lotus-advise`.
 ## Current-State Summary
 
 ### Monthly Composite Eligibility Practice
+
+Unpublished first subjects admit an independently verified historical policy through the existing
+staged lifecycle's reference/hash-only `policies/{revision}/historical-admission`. Current server
+admission/checker times remain separate from original pre-month source approval. Explicit subject
+controls v2 and finalization/receipt v3 reuse existing JSON custody and atomic publication without
+a migration. The dedicated historical subject v2 approval binding is admitted only at definition
+eligibility and the exact resolver; global `EvidenceBinding` stays v1. Ordinary prospective guards
+and frozen v1/v2 finalization semantics remain unchanged. New source history is synthetic only;
+actual original-provider trust, deployed PostgreSQL/consumer proof and bank authority are separate.
+The owning contract/examples/refusal vectors are `docs/contracts/composite-historical-subject/`.
 
 `src/core/composite_eligibility/` owns bounded Decimal monthly ABS_NET, cash and readiness rules,
 resolved policy inheritance, exact input/evaluation hashes and independent approval. Application

@@ -1,5 +1,17 @@
 # Endpoint Certification
 
+## Current Scope And Evidence Posture
+
+Historical first-subject persistence requires forward migration `0046` before traffic. The
+preceding `0045` CHECK guard rejects STAGED v2 evaluation writes, producing an HTTP 500 in the
+native PostgreSQL lifecycle. `0046` adds narrow initial subject v2 proposal/approval branches
+without rewriting ordinary/LEGACY custody, hashes or prior migration checksums. Native HTTP
+tests check exact persisted payloads through publication and source-off restart; the companion
+wire tests cover fresh/0045 upgrades and malformed graph refusals. Those tests require the
+admitted PostgreSQL lane. Offline checks alone do not establish persistence readiness, real
+provider trust, institutional authority or certification. See the
+[monthly eligibility guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md).
+
 ## Historical Monthly Policy Admission
 
 Registered path:
@@ -16,6 +28,13 @@ IAM, methodology and downstream consumer admission remain open. See the
 
 ## Staged Composite Eligibility: Bounded Proof
 
+Historical first-subject admission uses explicit subject controls v2 and finalization/receipt v3.
+Current-clock registered in-process proof starts with empty business custody and retains original
+historical bytes, independent operation proofs and the complete configured source assembly.
+The authored native PostgreSQL/HTTP restart test is a separate required lane; in-process proof
+does not certify deployed source authority, bank IAM or a Performance READY materialization.
+See [first-month guidance](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md#historical-first-month-policy).
+
 Configured institutional finalization adds explicit v2 responses on the existing finalization and
 eligibility-evidence resolver routes. Offline controlled-signature tests cover independent original
 and fresh verification, exact scope, current revocation, version refusal and unchanged v1 reads.
@@ -31,6 +50,7 @@ independent Performance admission and qualified source evidence are separate acc
 | --- | --- |
 | `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}` | Reserve/read exact unpublished subject |
 | `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/policies/{proposal_revision}` | Retain/read prospective policy |
+| `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/policies/{proposal_revision}/historical-admission` | Admit an independently verified original policy for the exact unpublished subject |
 | `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/policies/{proposal_revision}/approval` | Independent exact policy check/read |
 | `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/evaluations/{evaluation_revision}` | Freeze actual observations and evaluate/read |
 | `/api/v1/rebalance/composites/{composite_id}/eligibility-subjects/{definition_version}/{subject_revision}/evaluations/{evaluation_revision}/approval` | Independently check/read immutable unpublished approval |
