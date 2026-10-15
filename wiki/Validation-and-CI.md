@@ -9,6 +9,19 @@ to `main`.
 
 ## Evidence map
 
+Composite deployment settings are forwarded by the tracked base/production application and
+isolated `ci-local` Compose environments with blank defaults. Source, historical admission and
+attestation verification remain independently configured and fail closed. The controlled profile
+prewires `MANAGE_COMPOSITE_SOURCE_AUTH`, `MANAGE_HISTORICAL_PROVIDER_AUTH` and
+`MANAGE_COMPOSITE_ATTESTATION_AUTH` with blank defaults. Reviewed JSON must explicitly select
+the corresponding `credential_env`, and the operator separately supplies the actual values.
+Missing credentials refuse before transport; arbitrary host variables are not forwarded. The
+[configured-source guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-configured-sources.md#tracked-compose-configuration-delivery)
+owns the settings and boundaries. From the repository root, run
+`make test-unit UNIT_TESTS=tests/unit/test_local_docker_runtime_contract.py` for static tracked-model
+and loader contracts. This does not replace actual evaluated Compose, image/migration or live
+native population proof under the canonical reservation.
+
 | Validation question | Primary command or lane | Evidence posture |
 | --- | --- | --- |
 | Is the branch locally fit for PR? | `make check`, focused tests, targeted contract validators | Blocking local proof before push or PR updates. |

@@ -1,6 +1,164 @@
+import json
 from pathlib import Path
 
+import pytest
+import yaml
+
 from scripts.ci_local_compose_project import compose_project_name
+
+COMPOSITE_SETTINGS = (
+    "DPM_COMPOSITE_SOURCES_JSON",
+    "DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON",
+    "DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON",
+)
+COMPOSITE_CREDENTIALS = (
+    "MANAGE_COMPOSITE_SOURCE_AUTH",
+    "MANAGE_HISTORICAL_PROVIDER_AUTH",
+    "MANAGE_COMPOSITE_ATTESTATION_AUTH",
+)
+
+
+@pytest.mark.parametrize(
+    "filename,service",
+    [
+        ("docker-compose.yml", "lotus-manage"),
+        ("docker-compose.production.yml", "lotus-manage"),
+        ("docker-compose.ci-local.yml", "ci-local"),
+    ],
+)
+def test_compose_composite_settings_are_operator_supplied_only(filename, service) -> None:
+    model = yaml.safe_load(Path(filename).read_text(encoding="utf-8"))
+    environment = model["services"][service]["environment"]
+    if isinstance(environment, list):
+        environment = dict(entry.split("=", 1) for entry in environment)
+    for setting in COMPOSITE_SETTINGS + COMPOSITE_CREDENTIALS:
+        assert environment[setting] == "${" + setting + ":-}"
+    # Provider authority must never be forwarded to the database service.
+    database = model["services"].get("postgres", {}).get("environment", {})
+    assert not any(
+        setting in str(database) for setting in COMPOSITE_SETTINGS + COMPOSITE_CREDENTIALS
+    )
+
+
+@pytest.mark.parametrize("raw", [None, "", "   "])
+def test_absent_composite_configuration_keeps_all_channels_unavailable(monkeypatch, raw) -> None:
+    from src.api.composition.composite_source_service import build_composite_subject_service
+    from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
+
+    for setting in COMPOSITE_SETTINGS:
+        if raw is None:
+            monkeypatch.delenv(setting, raising=False)
+        else:
+            monkeypatch.setenv(setting, raw)
+    service = build_composite_subject_service(InMemoryDpmCompositeRepository())
+    assert type(service.candidates).__name__ == "UnavailableCandidateUniverseSource"
+    assert type(service.historical_admission).__name__ == "UnavailableHistoricalPolicyAdmission"
+    assert type(service.attestations).__name__ == "UnavailableInstitutionalEvidenceVerifier"
+
+
+@pytest.mark.parametrize("setting", COMPOSITE_SETTINGS)
+@pytest.mark.parametrize("raw", ["{", "{}", '{"unsupported_activation":true}'])
+def test_composite_configuration_rejects_malformed_or_unsupported_input(
+    monkeypatch, setting, raw
+) -> None:
+    from src.api.composition.composite_source_service import build_composite_subject_service
+    from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
+
+    for name in COMPOSITE_SETTINGS:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv(setting, raw)
+    with pytest.raises(ValueError):
+        build_composite_subject_service(InMemoryDpmCompositeRepository())
+
+
+def test_supplied_composite_configuration_selects_existing_independent_channels(
+    monkeypatch,
+) -> None:
+    from src.api.composition.composite_source_service import build_composite_subject_service
+    from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
+    from tests.composite_institutional_helpers import configuration_material
+
+    institutional, _, _ = configuration_material()
+    institutional = institutional.model_copy(
+        update={
+            "verifier": institutional.verifier.model_copy(
+                update={"credential_env": COMPOSITE_CREDENTIALS[2]}
+            )
+        }
+    )
+    source = institutional.verifier.model_dump(mode="json")
+    source["evidence_posture"] = "SYNTHETIC_NON_CERTIFYING"
+    source["credential_env"] = COMPOSITE_CREDENTIALS[0]
+    sources = {"bindings": [source]}
+    historical = Path("docs/examples/composite-historical-provider-configuration.json").read_text(
+        encoding="utf-8"
+    )
+    monkeypatch.setenv(COMPOSITE_SETTINGS[0], json.dumps(sources))
+    monkeypatch.setenv(COMPOSITE_SETTINGS[1], historical)
+    monkeypatch.setenv(COMPOSITE_SETTINGS[2], institutional.model_dump_json())
+    service = build_composite_subject_service(InMemoryDpmCompositeRepository())
+    assert service.candidates.transport.configuration.bindings[0].evidence_posture == (
+        "SYNTHETIC_NON_CERTIFYING"
+    )
+    assert (
+        service.historical_admission.configuration.credential_env
+        == "MANAGE_HISTORICAL_PROVIDER_AUTH"
+    )
+    assert service.attestations.configuration == institutional
+    assert (
+        service.candidates.transport.configuration.bindings[0].credential_env
+        == COMPOSITE_CREDENTIALS[0]
+    )
+    assert service.attestations.configuration.verifier.credential_env == COMPOSITE_CREDENTIALS[2]
+    # The separate attestation channel cannot enable qualified financial sources.
+    sources["bindings"][0]["evidence_posture"] = "QUALIFIED_RECEIPT"
+    monkeypatch.setenv(COMPOSITE_SETTINGS[0], json.dumps(sources))
+    with pytest.raises(ValueError, match="COMPOSITE_SOURCE_INSTITUTIONAL_CHANNEL_REQUIRED"):
+        build_composite_subject_service(InMemoryDpmCompositeRepository())
+
+
+@pytest.mark.parametrize("raw", [None, "", "   "])
+def test_missing_controlled_credentials_refuse_before_transport(monkeypatch, raw) -> None:
+    import httpx
+
+    from src.infrastructure.composites.configured_sources import CompositeSourceTransport
+    from src.infrastructure.composites.historical_configuration import HistoricalPolicyConfiguration
+    from src.infrastructure.composites.historical_verifier import ConfiguredHistoricalPolicyVerifier
+    from src.infrastructure.composites.source_configuration import CompositeSourceConfiguration
+    from tests.composite_historical_policy_helpers import historical_contract_material
+    from tests.composite_institutional_helpers import configuration_material
+
+    for name in COMPOSITE_CREDENTIALS:
+        if raw is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, raw)
+    institutional, _, _ = configuration_material()
+    historical = historical_contract_material()
+
+    def unexpected_transport(request):
+        pytest.fail("Missing credential must refuse before transport")
+
+    with httpx.Client(transport=httpx.MockTransport(unexpected_transport)) as client:
+        # Both configured synthetic and institutional channels use this exact transport.
+        for name in (COMPOSITE_CREDENTIALS[0], COMPOSITE_CREDENTIALS[2]):
+            binding = institutional.verifier.model_copy(update={"credential_env": name})
+            transport = CompositeSourceTransport(
+                CompositeSourceConfiguration(bindings=(binding,)), client
+            )
+            assert (
+                transport.resolve(tenant_id=binding.tenant_id, operation="verification", request={})
+                is None
+            )
+        admission = ConfiguredHistoricalPolicyVerifier(
+            HistoricalPolicyConfiguration(
+                endpoint="https://independent.test/historical",
+                credential_env=COMPOSITE_CREDENTIALS[1],
+                trust=historical[0].trust,
+            ),
+            client,
+        )
+        assert admission.verify(historical[1].verification.request) is None
 
 
 def test_compose_profile_default_preserves_explicit_blank() -> None:

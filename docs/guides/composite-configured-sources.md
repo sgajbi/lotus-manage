@@ -18,6 +18,48 @@ qualified complete Core cut remain outstanding under issues #714, #778 and #779.
 
 ## Deployment composition and transport
 
+### Tracked Compose configuration delivery
+
+The `lotus-manage` application environment in `docker-compose.yml` and its
+`docker-compose.production.yml` overlay passes through these operator-supplied settings:
+`DPM_COMPOSITE_SOURCES_JSON`, `DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON` and
+`DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON`. The isolated `ci-local` service in
+`docker-compose.ci-local.yml` exposes the same settings for its owning test process.
+Unset or blank values remain blank; the existing loaders keep the corresponding channel
+unavailable. No fixture, issuer, key, tenant or approval is selected by default. Malformed or
+unsupported configuration still refuses during composition.
+
+Supply the reviewed JSON through the operator's existing Compose interpolation environment
+before the admitted deployment. The same tracked service environments also pass through these
+controlled-profile credential variables with blank defaults:
+
+| JSON channel | Explicit `credential_env` in the reviewed profile |
+| --- | --- |
+| Source-provider binding | `MANAGE_COMPOSITE_SOURCE_AUTH` |
+| Historical admission | `MANAGE_HISTORICAL_PROVIDER_AUTH` |
+| Attestation verifier, when applicable | `MANAGE_COMPOSITE_ATTESTATION_AUTH` |
+
+The loader does not select these names automatically: each controlled JSON binding must name
+its matching variable explicitly. The operator separately provisions its actual credential value;
+no secret, provider, principal, trust or approval is supplied by this wiring. Missing or blank
+credentials remain unavailable before transport. Other arbitrary host credential names are not
+automatically forwarded by Compose. Do not publish evaluated environment JSON or credentials.
+The reader grant remains separate and does not authorize writing or approval.
+
+For canonical deployment, follow Platform's reviewed incremental-refresh runbook and existing
+reservation; preserve port 8001, Core source bindings and migration-first startup. Configuration
+delivery is not provider/trust/principal qualification or live financial acceptance. The static
+Compose and loader contracts can be checked from the repository root in PowerShell or Bash
+using the project Python environment:
+
+```text
+make test-unit UNIT_TESTS=tests/unit/test_local_docker_runtime_contract.py
+```
+
+These checks parse the tracked application models and exercise loader admission/refusal without
+Docker. Actual evaluated Compose, immutable image, PostgreSQL startup and native workflow proof
+remain the deployment owner's responsibility.
+
 ### Read-only Report service
 
 The existing published-evidence resolver uses POST to carry an exact immutable binding; it is a
