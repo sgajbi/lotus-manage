@@ -9,6 +9,21 @@ to `main`.
 
 ## Evidence map
 
+Native controlled historical admission supports one explicit source-signed scenario format through
+the existing historical port. Its independent verifier key is separately provisioned; source signer
+keys stay outside Manage. The opt-in tracked custody overlay changes only existing application
+mounts/secrets and is never automatically selected. Tests cover current request/revocation binding,
+exact bytes, signature/identity refusals and effective read-only file guards; actual container ACL,
+mount and PostgreSQL proof remain separate. The
+[historical provider guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-historical-provider.md#native-controlled-original-admission)
+owns the strict format and limitations. Scenario approval dates are distinct from actual issuance
+and current admission. Dedicated scenario proof v2 uses VERIFIED_AT_ACTUAL_ISSUANCE, policy/subject
+controls v3, dedicated definition/authority payload v3, and finalization/receipt v4 with binding v3. Migration0047 adds typed storage while
+preserving0046 and earlier checksums. Exact schema/graph/refusal vectors are authored under
+`docs/contracts/composite-controlled-scenario/`; in-process admission/replay does not replace actual
+PostgreSQL upgrade and native process restart acceptance. This slice does not supply Core candidate/monthly assembly or
+earn bank authority or Performance READY.
+
 Composite deployment settings are forwarded by the tracked base/production application and
 isolated `ci-local` Compose environments with blank defaults. Source, historical admission and
 attestation verification remain independently configured and fail closed. The controlled profile

@@ -1,7 +1,10 @@
 """Closed commands: scope/actor/time are admitted by routes and server clock."""
 
 from pydantic import Field
-from src.api.composite_definition_requests import CompositeDefinitionV2Request
+from src.api.composite_definition_requests import (
+    CompositeDefinitionV2Request,
+    ControlledScenarioDefinitionV3Request,
+)
 from src.core.composite_authority_models import (
     BusinessDate,
     Digest,
@@ -53,4 +56,4 @@ class SubjectEvaluationRequest(StrictAuthorityModel):
 class SubjectFinalizationRequest(StrictAuthorityModel):
     evaluation_revision: Identity
     expected_approval_content_hash: Digest
-    definition: CompositeDefinitionV2Request
+    definition: CompositeDefinitionV2Request | ControlledScenarioDefinitionV3Request

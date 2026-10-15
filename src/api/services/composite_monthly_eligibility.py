@@ -1,33 +1,36 @@
 """Read-only monthly assessment over retained definitions and universe evidence."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Callable
+from datetime import UTC, datetime
 
 from pydantic import Field
 
+from src.api.services.historical_policy_admission import HistoricalPolicyAdmissionApplicationService
 from src.core.composite_authority_models import (
     Digest,
     EvidenceBinding,
     Identity,
     StrictAuthorityModel,
 )
-from src.core.composite_eligibility.approval import MonthlyPolicyApproval, MonthlyPolicyProposal
+from src.core.composite_definition_versions import CompositeDefinition
 from src.core.composite_eligibility.approval import (
+    MonthlyPolicyApproval,
     MonthlyPolicyApprovalVariant,
+    MonthlyPolicyProposal,
     MonthlyPolicyProposalVariant,
 )
-from src.core.composite_eligibility.historical_policy import (
-    HistoricalPolicyAdmissionPort,
-    UnavailableHistoricalPolicyAdmission,
-    HistoricalMonthlyPolicyProposal,
-)
-from src.api.services.historical_policy_admission import HistoricalPolicyAdmissionApplicationService
+from src.core.composite_eligibility.diff import MonthlyEligibilityDiff, compare_monthly_evaluations
 from src.core.composite_eligibility.evaluation import (
     MonthlyEligibilityEvaluation,
     evaluate_monthly_eligibility,
 )
-from src.core.composite_eligibility.diff import MonthlyEligibilityDiff, compare_monthly_evaluations
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalMonthlyPolicyProposal,
+    HistoricalPolicyAdmissionPort,
+    UnavailableHistoricalPolicyAdmission,
+)
+from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.composite_eligibility.policy import (
     MonthlyPolicyLayer,
     MonthlyPolicyScope,
@@ -41,10 +44,8 @@ from src.core.composite_eligibility.source import (
     UnavailableMonthlyEligibilitySource,
     admitted_source_snapshot,
 )
-from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.composite_eligibility.source_assembly import VerifiedMonthlySourceAssembly
 from src.core.composite_repository import DpmCompositeConflictError, DpmCompositeRepository
-from src.core.composite_definition_versions import CompositeDefinition
 from src.core.composite_universe import DpmCompositeUniverseAttestation
 
 
@@ -73,7 +74,7 @@ class MonthlyApprovalRequest(StrictAuthorityModel):
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 
 @dataclass(frozen=True)
@@ -237,6 +238,8 @@ class CompositeMonthlyEligibilityApplicationService:
             ):
                 raise ValueError("COMPOSITE_ELIGIBILITY_ACTIVE_POLICY_CONFLICT")
             return retained
+        if not isinstance(proposal, (MonthlyPolicyProposal, HistoricalMonthlyPolicyProposal)):
+            raise ValueError("COMPOSITE_MONTHLY_POLICY_VERSION_UNSUPPORTED")
         approval = (
             HistoricalPolicyAdmissionApplicationService(
                 self.repository, self.historical_admission, self.clock

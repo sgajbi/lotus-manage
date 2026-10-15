@@ -38,6 +38,15 @@ class HistoricalSubjectApprovalBinding(StrictAuthorityModel):
     digest: Digest
 
 
+class ControlledScenarioSubjectApprovalBinding(StrictAuthorityModel):
+    """Only controlled scenario approval uses the additive v3 binding."""
+
+    product_name: Literal["CompositeSubjectEvaluationApproval"]
+    product_version: Literal["v3"]
+    revision: Identity
+    digest: Digest
+
+
 class ProviderRegistrationBinding(StrictAuthorityModel):
     provider_id: Identity
     source_kind: SourceKind
@@ -72,9 +81,9 @@ class CompositeFactSelection(StrictAuthorityModel):
     method_profile_binding: EvidenceBinding | None
 
 
-class CompositeEconomicAuthorityPayload(StrictAuthorityModel):
+class CompositeEconomicAuthorityPayloadContent(StrictAuthorityModel):
     product_name: Literal["CompositeSourceAuthority"]
-    product_version: Literal["v2"]
+    product_version: Literal["v2", "v3"]
     profile_id: Identity
     profile_revision: Identity
     tenant_id: Identity
@@ -90,23 +99,45 @@ class CompositeEconomicAuthorityPayload(StrictAuthorityModel):
     member_identities: list[CompositeMemberIdentity] = Field(min_length=1, max_length=1000)
     providers: list[ProviderRegistrationBinding] = Field(min_length=1, max_length=16)
     selections: list[CompositeFactSelection] = Field(min_length=2, max_length=256)
-    eligibility_evaluation_binding: EvidenceBinding | HistoricalSubjectApprovalBinding
+    eligibility_evaluation_binding: (
+        EvidenceBinding
+        | HistoricalSubjectApprovalBinding
+        | ControlledScenarioSubjectApprovalBinding
+    )
     return_method_binding: EvidenceBinding
 
     @model_validator(mode="after")
-    def require_unambiguous_authority(self) -> CompositeEconomicAuthorityPayload:
+    def require_unambiguous_authority(self) -> CompositeEconomicAuthorityPayloadContent:
         date.fromisoformat(self.effective_from)
         date.fromisoformat(self.effective_to)
         require_authority_coverage(self)
         return self
 
 
-class CompositeSourceAuthorityV2(StrictAuthorityModel):
-    payload: CompositeEconomicAuthorityPayload
+class CompositeEconomicAuthorityPayload(CompositeEconomicAuthorityPayloadContent):
+    product_version: Literal["v2"]
+    eligibility_evaluation_binding: EvidenceBinding | HistoricalSubjectApprovalBinding
+
+
+class ControlledScenarioEconomicAuthorityPayloadV3(CompositeEconomicAuthorityPayloadContent):
+    product_version: Literal["v3"]
+    eligibility_evaluation_binding: ControlledScenarioSubjectApprovalBinding
+
+
+class CompositeSourceAuthorityContent(StrictAuthorityModel):
+    payload: CompositeEconomicAuthorityPayloadContent
     profile_digest: Digest
 
     @model_validator(mode="after")
-    def require_profile_digest(self) -> CompositeSourceAuthorityV2:
+    def require_profile_digest(self) -> CompositeSourceAuthorityContent:
         if hash_canonical_payload(self.payload.model_dump(mode="json")) != self.profile_digest:
             raise ValueError("COMPOSITE_PROFILE_DIGEST_MISMATCH")
         return self
+
+
+class CompositeSourceAuthorityV2(CompositeSourceAuthorityContent):
+    payload: CompositeEconomicAuthorityPayload
+
+
+class ControlledScenarioSourceAuthorityV3(CompositeSourceAuthorityContent):
+    payload: ControlledScenarioEconomicAuthorityPayloadV3

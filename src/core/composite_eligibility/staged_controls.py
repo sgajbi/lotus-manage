@@ -1,52 +1,59 @@
 """Subject-bound wrappers reuse the monthly policy and calculation contracts."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import Field, TypeAdapter, model_validator
-from src.core.composite_eligibility.source_assembly import (
-    VerifiedMonthlySourceAssembly,
-    retained_source_assembly,
-)
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import Digest, Identity, StrictAuthorityModel
 from src.core.composite_eligibility.approval import (
     MonthlyPolicyApproval,
-    MonthlyPolicyProposal,
     MonthlyPolicyApprovalVariant,
+    MonthlyPolicyProposal,
     MonthlyPolicyProposalVariant,
     decode_policy_approval,
     decode_policy_proposal,
 )
-from src.core.composite_eligibility.historical_policy import (
-    HistoricalMonthlyPolicyProposal,
-    HistoricalMonthlyPolicyApproval,
-    HistoricalPolicyVerification,
+from src.core.composite_eligibility.controlled_scenario import (
+    ControlledScenarioMonthlyPolicyApproval,
+    ControlledScenarioMonthlyPolicyProposal,
+    ControlledScenarioVerification,
 )
 from src.core.composite_eligibility.evaluation import (
     MonthlyEligibilityEvaluation,
     evaluate_monthly_eligibility,
 )
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalMonthlyPolicyApproval,
+    HistoricalMonthlyPolicyProposal,
+    HistoricalPolicyVerification,
+)
 from src.core.composite_eligibility.observations import MonthlyEligibilityObservations, UtcInstant
+from src.core.composite_eligibility.source_assembly import (
+    VerifiedMonthlySourceAssembly,
+    retained_source_assembly,
+)
 from src.core.composite_eligibility.staged_subject import EligibilitySubject, bind_content
 from src.core.composite_eligibility.verification import (
+    VerificationPurpose,
     VerificationReceipt,
     VerificationRequest,
-    VerificationPurpose,
 )
 from src.core.composite_universe import DpmCompositeUniverseSourceProduct
 
 
 class SubjectPolicyProposalContent(StrictAuthorityModel):
     product_name: Literal["CompositeSubjectPolicyProposal"] = "CompositeSubjectPolicyProposal"
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3"]
     subject: EligibilitySubject
     proposal: MonthlyPolicyProposalVariant
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_subject_policy(self) -> "SubjectPolicyProposalContent":
+    def require_subject_policy(self) -> SubjectPolicyProposalContent:
         self.subject = EligibilitySubject.model_validate(self.subject.model_dump(mode="json"))
         self.proposal = decode_policy_proposal(self.proposal.model_dump(mode="json"))
         scope, subject = self.proposal.policy.scope, self.subject
@@ -86,27 +93,27 @@ class HistoricalSubjectPolicyProposal(SubjectPolicyProposalContent):
     verification: VerificationReceipt
 
     @model_validator(mode="after")
-    def require_historical_subject_admission(self) -> "HistoricalSubjectPolicyProposal":
-        require_synthetic_history(self.proposal.verification)
-        if self.proposal.verification.mapping.reporting_currency != self.subject.reporting_currency:
-            raise ValueError("COMPOSITE_SUBJECT_POLICY_MISMATCH")
-        require_synthetic_receipt(self.verification)
-        require_verification_scope(
-            self.verification.request,
-            self.subject,
-            "ELIGIBILITY_POLICY",
-            hash_canonical_payload(
-                {
-                    "subject_content_hash": self.subject.content_hash,
-                    "proposal_content_hash": self.proposal.content_hash,
-                }
-            ),
-        )
+    def require_historical_subject_admission(self) -> HistoricalSubjectPolicyProposal:
+        require_historical_subject_admission(self)
+        return self
+
+
+class ControlledScenarioSubjectPolicyProposal(SubjectPolicyProposalContent):
+    product_version: Literal["v3"] = "v3"
+    proposal: ControlledScenarioMonthlyPolicyProposal
+    verification: VerificationReceipt
+
+    @model_validator(mode="after")
+    def require_historical_subject_admission(self) -> ControlledScenarioSubjectPolicyProposal:
+        require_historical_subject_admission(self)
         return self
 
 
 SubjectPolicyProposalVariant = Annotated[
-    SubjectPolicyProposal | HistoricalSubjectPolicyProposal, Field(discriminator="product_version")
+    SubjectPolicyProposal
+    | HistoricalSubjectPolicyProposal
+    | ControlledScenarioSubjectPolicyProposal,
+    Field(discriminator="product_version"),
 ]
 POLICY_PROPOSAL_ADAPTER: TypeAdapter[SubjectPolicyProposalVariant] = TypeAdapter(
     SubjectPolicyProposalVariant
@@ -115,14 +122,14 @@ POLICY_PROPOSAL_ADAPTER: TypeAdapter[SubjectPolicyProposalVariant] = TypeAdapter
 
 class SubjectPolicyApprovalContent(StrictAuthorityModel):
     product_name: Literal["CompositeSubjectPolicyApproval"] = "CompositeSubjectPolicyApproval"
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3"]
     proposal: SubjectPolicyProposalVariant
     approval: MonthlyPolicyApprovalVariant
     verification: VerificationReceipt
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_exact_policy_approval(self) -> "SubjectPolicyApprovalContent":
+    def require_exact_policy_approval(self) -> SubjectPolicyApprovalContent:
         self.proposal = POLICY_PROPOSAL_ADAPTER.validate_python(
             self.proposal.model_dump(mode="json")
         )
@@ -159,14 +166,29 @@ class HistoricalSubjectPolicyApproval(SubjectPolicyApprovalContent):
     approval: HistoricalMonthlyPolicyApproval
 
     @model_validator(mode="after")
-    def require_noncertifying_approval(self) -> "HistoricalSubjectPolicyApproval":
+    def require_noncertifying_approval(self) -> HistoricalSubjectPolicyApproval:
+        require_synthetic_history(self.approval.verification)
+        require_synthetic_receipt(self.verification)
+        return self
+
+
+class ControlledScenarioSubjectPolicyApproval(SubjectPolicyApprovalContent):
+    product_version: Literal["v3"] = "v3"
+    proposal: ControlledScenarioSubjectPolicyProposal
+    approval: ControlledScenarioMonthlyPolicyApproval
+
+    @model_validator(mode="after")
+    def require_noncertifying_approval(self) -> ControlledScenarioSubjectPolicyApproval:
         require_synthetic_history(self.approval.verification)
         require_synthetic_receipt(self.verification)
         return self
 
 
 SubjectPolicyApprovalVariant = Annotated[
-    SubjectPolicyApproval | HistoricalSubjectPolicyApproval, Field(discriminator="product_version")
+    SubjectPolicyApproval
+    | HistoricalSubjectPolicyApproval
+    | ControlledScenarioSubjectPolicyApproval,
+    Field(discriminator="product_version"),
 ]
 POLICY_APPROVAL_ADAPTER: TypeAdapter[SubjectPolicyApprovalVariant] = TypeAdapter(
     SubjectPolicyApprovalVariant
@@ -177,7 +199,7 @@ class SubjectEvaluationProposalContent(StrictAuthorityModel):
     product_name: Literal["CompositeSubjectEvaluationProposal"] = (
         "CompositeSubjectEvaluationProposal"
     )
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3"]
     evaluation_kind: Literal["INITIAL"] = "INITIAL"
     policy_approval: SubjectPolicyApprovalVariant
     evaluation_revision: Identity
@@ -193,7 +215,7 @@ class SubjectEvaluationProposalContent(StrictAuthorityModel):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_reproducible_evaluation(self) -> "SubjectEvaluationProposalContent":
+    def require_reproducible_evaluation(self) -> SubjectEvaluationProposalContent:
         self.policy_approval = POLICY_APPROVAL_ADAPTER.validate_python(
             self.policy_approval.model_dump(mode="json")
         )
@@ -256,19 +278,26 @@ class HistoricalSubjectEvaluationProposal(SubjectEvaluationProposalContent):
     operation_verification: HistoricalPolicyVerification
 
     @model_validator(mode="after")
-    def require_historical_operation(self) -> "HistoricalSubjectEvaluationProposal":
-        require_subject_operation(
-            self,
-            self.operation_verification,
-            "EVALUATION_PROPOSAL",
-            self.proposed_by,
-            self.proposed_at,
-        )
+    def require_historical_operation(self) -> HistoricalSubjectEvaluationProposal:
+        require_evaluation_proposal_operation(self)
+        return self
+
+
+class ControlledScenarioSubjectEvaluationProposal(SubjectEvaluationProposalContent):
+    product_version: Literal["v3"] = "v3"
+    policy_approval: ControlledScenarioSubjectPolicyApproval
+    operation_verification: ControlledScenarioVerification
+
+    @model_validator(mode="after")
+    def require_historical_operation(self) -> ControlledScenarioSubjectEvaluationProposal:
+        require_evaluation_proposal_operation(self)
         return self
 
 
 SubjectEvaluationProposalVariant = Annotated[
-    SubjectEvaluationProposal | HistoricalSubjectEvaluationProposal,
+    SubjectEvaluationProposal
+    | HistoricalSubjectEvaluationProposal
+    | ControlledScenarioSubjectEvaluationProposal,
     Field(discriminator="product_version"),
 ]
 EVALUATION_PROPOSAL_ADAPTER: TypeAdapter[SubjectEvaluationProposalVariant] = TypeAdapter(
@@ -295,7 +324,7 @@ class SubjectEvaluationApprovalContent(StrictAuthorityModel):
     product_name: Literal["CompositeSubjectEvaluationApproval"] = (
         "CompositeSubjectEvaluationApproval"
     )
-    product_version: Literal["v1", "v2"]
+    product_version: Literal["v1", "v2", "v3"]
     evidence_kind: Literal["SYNTHETIC_UNSIGNED", "QUALIFIED_VERIFICATION_RECEIPT"]
     official_activation: Literal["UNAVAILABLE"] = "UNAVAILABLE"
     publication_posture: Literal["NOT_PUBLISHED"] = "NOT_PUBLISHED"
@@ -309,7 +338,7 @@ class SubjectEvaluationApprovalContent(StrictAuthorityModel):
     content_hash: str = ""
 
     @model_validator(mode="after")
-    def require_independent_approval(self) -> "SubjectEvaluationApprovalContent":
+    def require_independent_approval(self) -> SubjectEvaluationApprovalContent:
         self.proposal = EVALUATION_PROPOSAL_ADAPTER.validate_python(
             self.proposal.model_dump(mode="json")
         )
@@ -350,20 +379,27 @@ class HistoricalSubjectEvaluationApproval(SubjectEvaluationApprovalContent):
     operation_verification: HistoricalPolicyVerification
 
     @model_validator(mode="after")
-    def require_historical_operation(self) -> "HistoricalSubjectEvaluationApproval":
-        require_synthetic_receipt(self.verification)
-        require_subject_operation(
-            self.proposal,
-            self.operation_verification,
-            "EVALUATION_APPROVAL",
-            self.approved_by,
-            self.approved_at,
-        )
+    def require_historical_operation(self) -> HistoricalSubjectEvaluationApproval:
+        require_evaluation_approval_operation(self)
+        return self
+
+
+class ControlledScenarioSubjectEvaluationApproval(SubjectEvaluationApprovalContent):
+    product_version: Literal["v3"] = "v3"
+    proposal: ControlledScenarioSubjectEvaluationProposal
+    evidence_kind: Literal["SYNTHETIC_UNSIGNED"] = "SYNTHETIC_UNSIGNED"
+    operation_verification: ControlledScenarioVerification
+
+    @model_validator(mode="after")
+    def require_historical_operation(self) -> ControlledScenarioSubjectEvaluationApproval:
+        require_evaluation_approval_operation(self)
         return self
 
 
 SubjectEvaluationApprovalVariant = Annotated[
-    SubjectEvaluationApproval | HistoricalSubjectEvaluationApproval,
+    SubjectEvaluationApproval
+    | HistoricalSubjectEvaluationApproval
+    | ControlledScenarioSubjectEvaluationApproval,
     Field(discriminator="product_version"),
 ]
 EVALUATION_APPROVAL_ADAPTER: TypeAdapter[SubjectEvaluationApprovalVariant] = TypeAdapter(
@@ -371,7 +407,9 @@ EVALUATION_APPROVAL_ADAPTER: TypeAdapter[SubjectEvaluationApprovalVariant] = Typ
 )
 
 
-def require_synthetic_history(proof: HistoricalPolicyVerification) -> None:
+def require_synthetic_history(
+    proof: HistoricalPolicyVerification | ControlledScenarioVerification,
+) -> None:
     if proof.posture != "SYNTHETIC_NON_CERTIFYING":
         raise ValueError("COMPOSITE_SUBJECT_HISTORICAL_POLICY_POSTURE_UNAVAILABLE")
 
@@ -382,8 +420,8 @@ def require_synthetic_receipt(receipt: VerificationReceipt) -> None:
 
 
 def require_subject_operation(
-    proposal: HistoricalSubjectEvaluationProposal,
-    proof: HistoricalPolicyVerification,
+    proposal: HistoricalSubjectEvaluationProposal | ControlledScenarioSubjectEvaluationProposal,
+    proof: HistoricalPolicyVerification | ControlledScenarioVerification,
     operation: str,
     actor: str,
     instant: str,
@@ -471,3 +509,51 @@ def control_revision(control: StagedControl) -> str:
     if isinstance(control, SubjectEvaluationProposalContent):
         return control.evaluation_revision
     return control.proposal.evaluation_revision
+
+
+def require_historical_subject_admission(
+    proposal: HistoricalSubjectPolicyProposal | ControlledScenarioSubjectPolicyProposal,
+) -> None:
+    require_synthetic_history(proposal.proposal.verification)
+    if (
+        proposal.proposal.verification.mapping.reporting_currency
+        != proposal.subject.reporting_currency
+    ):
+        raise ValueError("COMPOSITE_SUBJECT_POLICY_MISMATCH")
+    require_synthetic_receipt(proposal.verification)
+    require_verification_scope(
+        proposal.verification.request,
+        proposal.subject,
+        "ELIGIBILITY_POLICY",
+        hash_canonical_payload(
+            {
+                "subject_content_hash": proposal.subject.content_hash,
+                "proposal_content_hash": proposal.proposal.content_hash,
+            }
+        ),
+    )
+
+
+def require_evaluation_proposal_operation(
+    proposal: HistoricalSubjectEvaluationProposal | ControlledScenarioSubjectEvaluationProposal,
+) -> None:
+    require_subject_operation(
+        proposal,
+        proposal.operation_verification,
+        "EVALUATION_PROPOSAL",
+        proposal.proposed_by,
+        proposal.proposed_at,
+    )
+
+
+def require_evaluation_approval_operation(
+    approval: HistoricalSubjectEvaluationApproval | ControlledScenarioSubjectEvaluationApproval,
+) -> None:
+    require_synthetic_receipt(approval.verification)
+    require_subject_operation(
+        approval.proposal,
+        approval.operation_verification,
+        "EVALUATION_APPROVAL",
+        approval.approved_by,
+        approval.approved_at,
+    )

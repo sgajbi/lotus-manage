@@ -1,0 +1,17 @@
+# Explicit opt-in custody only; JSON configuration and independent approvals remain required.
+services:
+  lotus-manage:
+    volumes:
+      - type: bind
+        source: ${MANAGE_COMPOSITE_ORIGINALS_DIRECTORY:?Operator-owned original directory required}
+        target: /run/lotus/composite-originals
+        read_only: true
+        bind:
+          create_host_path: false
+    secrets:
+      - source: manage_composite_verifier_key
+        target: manage_composite_verifier_key
+
+secrets:
+  manage_composite_verifier_key:
+    file: ${MANAGE_COMPOSITE_VERIFIER_KEY_FILE:?Operator-owned verifier key required}

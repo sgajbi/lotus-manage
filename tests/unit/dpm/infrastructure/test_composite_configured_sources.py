@@ -9,20 +9,20 @@ import httpx
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from pydantic import ValidationError
 from prometheus_client import REGISTRY
+from pydantic import ValidationError
 
+from src.api.composition.composite_source_service import build_composite_subject_service
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_eligibility.staged_ports import CandidateUniverseRequest
 from src.core.composite_eligibility.verification import VerificationReceipt
-from src.api.composition.composite_source_service import build_composite_subject_service
-from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
 from src.infrastructure.authority_http import AuthorityHttpError
 from src.infrastructure.composites.configured_sources import (
     CompositeSourceTransport,
     ConfiguredCandidateUniverseSource,
     ConfiguredCompositeEvidenceVerifier,
 )
+from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
 from src.infrastructure.composites.source_configuration import (
     CompositeSourceConfiguration,
     SourceBinding,
@@ -38,6 +38,26 @@ from tests.composite_staged_eligibility_helpers import (
 def encoded(value):
     raw = value if isinstance(value, bytes) else json.dumps(value, separators=(",", ":")).encode()
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+
+
+def test_controlled_custody_overlay_only_extends_existing_application_read_only_inputs():
+    import yaml
+
+    model = yaml.safe_load(
+        Path("docker-compose.composite-controlled.yml").read_text(encoding="utf-8")
+    )
+    assert set(model["services"]) == {"lotus-manage"}
+    application = model["services"]["lotus-manage"]
+    assert set(application) == {"volumes", "secrets"}
+    volume = application["volumes"][0]
+    assert volume["target"] == "/run/lotus/composite-originals"
+    assert volume["read_only"] is True and volume["bind"]["create_host_path"] is False
+    assert application["secrets"] == [
+        {"source": "manage_composite_verifier_key", "target": "manage_composite_verifier_key"}
+    ]
+    assert model["secrets"]["manage_composite_verifier_key"]["file"] == (
+        "${MANAGE_COMPOSITE_VERIFIER_KEY_FILE:?Operator-owned verifier key required}"
+    )
 
 
 @pytest.fixture
@@ -63,21 +83,21 @@ def signing():
 
 
 def signed(key, binding, request, payload, *, change=None, header_change=None):
-    claims = dict(
-        iss=binding.issuer,
-        aud="lotus-manage",
-        sub=binding.principal_id,
-        tenant=binding.tenant_id,
-        principal_kind="service",
-        jti="test-credential",
-        exp=int(time.time()) + 60,
-        operation=binding.operation,
-        request_digest=hash_canonical_payload(request),
-        payload_digest=hash_canonical_payload(payload),
-        evidence_posture=binding.evidence_posture,
-    )
+    claims = {
+        "iss": binding.issuer,
+        "aud": "lotus-manage",
+        "sub": binding.principal_id,
+        "tenant": binding.tenant_id,
+        "principal_kind": "service",
+        "jti": "test-credential",
+        "exp": int(time.time()) + 60,
+        "operation": binding.operation,
+        "request_digest": hash_canonical_payload(request),
+        "payload_digest": hash_canonical_payload(payload),
+        "evidence_posture": binding.evidence_posture,
+    }
     claims.update(change or {})
-    header = dict(alg="EdDSA", kid="test-key", typ="JWT")
+    header = {"alg": "EdDSA", "kid": "test-key", "typ": "JWT"}
     header.update(header_change or {})
     signing_input = f"{encoded(header)}.{encoded(claims)}"
     return f"{signing_input}.{encoded(key.sign(signing_input.encode()))}"

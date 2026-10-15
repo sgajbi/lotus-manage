@@ -1,12 +1,12 @@
 """Current-clock registered first-subject history from empty business custody."""
 
 import base64
-
+import json
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import replace
-from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
 from functools import partial
+from threading import Barrier
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,7 +14,14 @@ from pydantic import ValidationError
 
 from src.api.dependencies import get_composite_subject_service
 from src.api.main import app
+from src.api.services.composite_subject_requests import (
+    SubjectApprovalRequest,
+    SubjectEvaluationRequest,
+    SubjectFinalizationRequest,
+    SubjectHistoricalPolicyRequest,
+)
 from src.core.common.canonical import hash_canonical_payload
+from src.core.composite_eligibility.historical_policy import UnavailableHistoricalPolicyAdmission
 from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.composite_eligibility.source import MonthlyEligibilitySourceResolution
 from src.core.composite_eligibility.staged_controls import (
@@ -24,21 +31,71 @@ from src.core.composite_eligibility.staged_controls import (
 from src.core.composite_eligibility.staged_publication import decode_subject_receipt
 from src.core.composite_eligibility.staged_subject import subject_key
 from src.core.composite_repository import DpmCompositeConflictError
-from src.core.composite_eligibility.historical_policy import UnavailableHistoricalPolicyAdmission
-from src.api.services.composite_subject_requests import (
-    SubjectHistoricalPolicyRequest,
-    SubjectApprovalRequest,
-    SubjectEvaluationRequest,
-    SubjectFinalizationRequest,
-)
 from tests.composite_historical_subject_helpers import empty_historical_subject_service
 from tests.composite_historical_subject_sources import configured_historical_subject_service
-from tests.composite_staged_eligibility_helpers import BASE, HEADERS, CHECKER, final_definition
+from tests.composite_staged_eligibility_helpers import BASE, CHECKER, HEADERS, final_definition
 from tests.unit.api.test_composite_subject_lifecycle_routes import (
-    subject_body,
     policy_body,
     retained_state,
+    subject_body,
 )
+
+
+def test_native_controlled_original_enters_registered_staging_via_normal_factory(
+    tmp_path, monkeypatch
+):
+    from src.api.composition import composite_source_service
+    from tests.unit.dpm.infrastructure.test_historical_policy_verifier import (
+        native_controlled_configuration,
+    )
+
+    with configured_historical_subject_service(monkeypatch) as fixture:
+        _, repository, historical, subject, *_ = fixture
+        document, reference, raw, original_file, _ = native_controlled_configuration(
+            tmp_path, historical.mapping
+        )
+        monkeypatch.setenv("DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON", json.dumps(document))
+        service = composite_source_service.build_composite_subject_service(repository)
+        prior = app.dependency_overrides.copy()
+        app.dependency_overrides[get_composite_subject_service] = lambda: service
+        try:
+            with TestClient(app) as client:
+                created = put(client, BASE, subject_body(subject))
+                proposal = put(
+                    client,
+                    BASE + "/policies/native-r1/historical-admission",
+                    {
+                        "expected_subject_content_hash": created["content_hash"],
+                        "reference": reference.model_dump(mode="json"),
+                    },
+                )
+                proof = proposal["proposal"]["verification"]
+                assert base64.b64decode(proof["mapping"]["raw_original_base64"]) == raw
+                assert proof["posture"] == "SYNTHETIC_NON_CERTIFYING"
+                approved = put(
+                    client,
+                    BASE + "/policies/native-r1/approval",
+                    {
+                        "expected_proposal_content_hash": proposal["content_hash"],
+                    },
+                    checker=True,
+                )
+                assert approved["product_version"] == "v3"
+                original_file.unlink()
+                service = composite_source_service.build_composite_subject_service(repository)
+                retained = client.get(BASE + "/policies/native-r1", headers=HEADERS)
+                assert retained.status_code == 200 and retained.json() == proposal
+                replay = put(
+                    client,
+                    BASE + "/policies/native-r1/approval",
+                    {"expected_proposal_content_hash": proposal["content_hash"]},
+                    checker=True,
+                )
+                assert replay == approved
+                assert client.get(BASE + "/finalization", headers=HEADERS).status_code == 404
+        finally:
+            app.dependency_overrides.clear()
+            app.dependency_overrides.update(prior)
 
 
 @pytest.fixture
@@ -66,7 +123,7 @@ def put(client, path, body, *, checker=False):
 
 def test_empty_scope_signed_configured_sources_retain_complete_assembly(monkeypatch):
     with configured_historical_subject_service(monkeypatch) as material:
-        service, repository, provider, subject, policy, evaluation, state = material
+        service, repository, _provider, _subject, _policy, _evaluation, state = material
         prior = app.dependency_overrides.copy()
         app.dependency_overrides[get_composite_subject_service] = lambda: service
         try:
@@ -128,7 +185,7 @@ def evaluated(fixture):
 
 
 def finalized(fixture, *, publish=True):
-    subject, path, body, policy, approved_policy, url, command, evaluation = evaluated(fixture)
+    subject, _path, _body, policy, approved_policy, url, _command, evaluation = evaluated(fixture)
     client, service, repository, _, _, _, _ = fixture
     approval = put(
         client,
@@ -223,7 +280,7 @@ def test_empty_scope_current_clock_historical_first_publication_and_offline_repl
 
 @pytest.mark.parametrize("change", ["subject", "reference", "unavailable", "self", "stale"])
 def test_historical_subject_refusals_preserve_control_custody(historical_subject_api, change):
-    client, service, repository, provider, source_subject, _, source_evaluation = (
+    client, _service, repository, provider, source_subject, _, _source_evaluation = (
         historical_subject_api
     )
     subject = put(client, BASE, subject_body(source_subject))
@@ -568,7 +625,7 @@ def test_historical_control_store_conflict_without_winner_preserves_prior_custod
 def test_competing_historical_evaluation_intents_do_not_return_the_wrong_winner(
     historical_subject_api, monkeypatch
 ):
-    client, service, repository, _, source_subject, _, source_evaluation = historical_subject_api
+    _client, service, repository, _, source_subject, _, source_evaluation = historical_subject_api
     _, _, _, _, approval = admitted_policy(historical_subject_api)
     source = source_evaluation.observation_binding
     command = SubjectEvaluationRequest(
@@ -728,3 +785,39 @@ def test_historical_checker_role_and_corrupt_control_kind_refuse_without_mutatio
     assert corrupt.status_code == 409, corrupt.text
     assert corrupt.json()["detail"]["code"] == "COMPOSITE_SUBJECT_CONTROL_INTEGRITY_CONFLICT"
     assert retained_state(repository) == before
+
+
+def test_native_missing_original_is_typed_unavailable_without_control_write(tmp_path, monkeypatch):
+    from src.api.composition import composite_source_service
+    from tests.unit.dpm.infrastructure.test_historical_policy_verifier import (
+        native_controlled_configuration,
+    )
+
+    with configured_historical_subject_service(monkeypatch) as material:
+        _, repository, historical, subject, *_ = material
+        document, reference, _, original_file, _ = native_controlled_configuration(
+            tmp_path, historical.mapping
+        )
+        monkeypatch.setenv("DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON", json.dumps(document))
+        service = composite_source_service.build_composite_subject_service(repository)
+        prior = app.dependency_overrides.copy()
+        app.dependency_overrides[get_composite_subject_service] = lambda: service
+        try:
+            with TestClient(app) as client:
+                created = put(client, BASE, subject_body(subject))
+                original_file.unlink()
+                before = retained_state(repository)
+                response = client.put(
+                    BASE + "/policies/missing/historical-admission",
+                    headers=HEADERS,
+                    json={
+                        "expected_subject_content_hash": created["content_hash"],
+                        "reference": reference.model_dump(mode="json"),
+                    },
+                )
+                assert response.status_code == 503, response.text
+                assert response.json()["detail"]["code"] == "COMPOSITE_NATIVE_CUSTODY_UNAVAILABLE"
+                assert retained_state(repository) == before
+        finally:
+            app.dependency_overrides.clear()
+            app.dependency_overrides.update(prior)

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.core.composite_authority_models import (
-        CompositeEconomicAuthorityPayload,
+        CompositeEconomicAuthorityPayloadContent,
         CompositeFactSelection,
         ProviderRegistrationBinding,
     )
@@ -18,7 +18,7 @@ def _canonical_ids(values: list[str], code: str) -> None:
         raise ValueError(code)
 
 
-def require_authority_coverage(payload: CompositeEconomicAuthorityPayload) -> None:
+def require_authority_coverage(payload: CompositeEconomicAuthorityPayloadContent) -> None:
     start, end = (
         date.fromisoformat(payload.effective_from),
         date.fromisoformat(payload.effective_to),
@@ -36,7 +36,7 @@ def require_authority_coverage(payload: CompositeEconomicAuthorityPayload) -> No
             _require_continuous_window(windows.get((member.member_id, fact), []), start, end)
 
 
-def _require_identity_registry(payload: CompositeEconomicAuthorityPayload) -> None:
+def _require_identity_registry(payload: CompositeEconomicAuthorityPayloadContent) -> None:
     members = [item.member_id for item in payload.member_identities]
     _canonical_ids(members, "COMPOSITE_AUTHORITY_MEMBERS_NONCANONICAL")
     provider_ids = [item.provider_id for item in payload.providers]
@@ -65,7 +65,7 @@ def _require_internal_owners(providers: dict[str, ProviderRegistrationBinding]) 
 
 
 def _selected_fact_windows(
-    payload: CompositeEconomicAuthorityPayload, start: date, end: date
+    payload: CompositeEconomicAuthorityPayloadContent, start: date, end: date
 ) -> dict[tuple[str, str], list[tuple[date, date]]]:
     providers = {item.provider_id: item for item in payload.providers}
     members = {item.member_id for item in payload.member_identities}
@@ -106,7 +106,7 @@ def _require_selected_members(selection: CompositeFactSelection, members: set[st
 def _require_fact_source(
     selection: CompositeFactSelection,
     provider: ProviderRegistrationBinding,
-    payload: CompositeEconomicAuthorityPayload,
+    payload: CompositeEconomicAuthorityPayloadContent,
 ) -> None:
     internal_kind = "LOTUS_CORE"
     if selection.fact == "MEMBER_RETURN":

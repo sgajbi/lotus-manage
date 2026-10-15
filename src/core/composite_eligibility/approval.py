@@ -9,12 +9,16 @@ from pydantic import Field, model_validator
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.composite_authority_models import EvidenceBinding, Identity, StrictAuthorityModel
+from src.core.composite_eligibility.controlled_scenario import (
+    ControlledScenarioMonthlyPolicyApproval,
+    ControlledScenarioMonthlyPolicyProposal,
+)
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalMonthlyPolicyApproval,
+    HistoricalMonthlyPolicyProposal,
+)
 from src.core.composite_eligibility.observations import UtcInstant
 from src.core.composite_eligibility.policy import ResolvedMonthlyPolicy, month_window
-from src.core.composite_eligibility.historical_policy import (
-    HistoricalMonthlyPolicyProposal,
-    HistoricalMonthlyPolicyApproval,
-)
 
 
 class MonthlyPolicyProposal(StrictAuthorityModel):
@@ -74,8 +78,16 @@ class MonthlyPolicyApproval(StrictAuthorityModel):
         return self
 
 
-MonthlyPolicyProposalVariant = MonthlyPolicyProposal | HistoricalMonthlyPolicyProposal
-MonthlyPolicyApprovalVariant = MonthlyPolicyApproval | HistoricalMonthlyPolicyApproval
+MonthlyPolicyProposalVariant = (
+    MonthlyPolicyProposal
+    | HistoricalMonthlyPolicyProposal
+    | ControlledScenarioMonthlyPolicyProposal
+)
+MonthlyPolicyApprovalVariant = (
+    MonthlyPolicyApproval
+    | HistoricalMonthlyPolicyApproval
+    | ControlledScenarioMonthlyPolicyApproval
+)
 
 
 def decode_policy_proposal(wire: dict[str, Any]) -> MonthlyPolicyProposalVariant:
@@ -84,6 +96,8 @@ def decode_policy_proposal(wire: dict[str, Any]) -> MonthlyPolicyProposalVariant
         return MonthlyPolicyProposal.model_validate(wire)
     if version == "v2":
         return HistoricalMonthlyPolicyProposal.model_validate(wire)
+    if version == "v3":
+        return ControlledScenarioMonthlyPolicyProposal.model_validate(wire)
     raise ValueError("COMPOSITE_MONTHLY_POLICY_VERSION_UNSUPPORTED")
 
 
@@ -93,4 +107,6 @@ def decode_policy_approval(wire: dict[str, Any]) -> MonthlyPolicyApprovalVariant
         return MonthlyPolicyApproval.model_validate(wire)
     if version == "v2":
         return HistoricalMonthlyPolicyApproval.model_validate(wire)
+    if version == "v3":
+        return ControlledScenarioMonthlyPolicyApproval.model_validate(wire)
     raise ValueError("COMPOSITE_MONTHLY_POLICY_VERSION_UNSUPPORTED")

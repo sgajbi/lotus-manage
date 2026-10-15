@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import httpx
 from pydantic import ValidationError
 
+from src.core.composite_eligibility.controlled_scenario import ControlledScenarioVerificationRequest
 from src.core.composite_eligibility.historical_policy import (
     HistoricalPolicyTrust,
     HistoricalPolicyVerification,
@@ -25,8 +26,10 @@ class ConfiguredHistoricalPolicyVerifier:
         return self.configuration.trust
 
     def verify(
-        self, request: HistoricalPolicyVerificationRequest
+        self, request: HistoricalPolicyVerificationRequest | ControlledScenarioVerificationRequest
     ) -> HistoricalPolicyVerification | None:
+        if not isinstance(request, HistoricalPolicyVerificationRequest):
+            raise ValueError("COMPOSITE_HISTORICAL_POLICY_REQUEST_MISMATCH")
         if request.scope.tenant_id != self.trust.tenant_id or (
             request.reference.signing_contract != self.trust.signing_contract
         ):

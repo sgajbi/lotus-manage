@@ -2,35 +2,42 @@
 
 import os
 
-from src.api.services.composite_subject_application import CompositeSubjectApplicationService
 from src.api.services.composite_monthly_eligibility import (
     CompositeMonthlyEligibilityApplicationService,
 )
-from src.core.composite_repository import DpmCompositeRepository
+from src.api.services.composite_subject_application import CompositeSubjectApplicationService
+from src.core.composite_eligibility.historical_policy import (
+    HistoricalPolicyAdmissionPort,
+    UnavailableHistoricalPolicyAdmission,
+)
+from src.core.composite_eligibility.institutional_verification import (
+    InstitutionalEvidenceVerifier,
+    UnavailableInstitutionalEvidenceVerifier,
+)
 from src.core.composite_eligibility.staged_ports import StagedCompositeRepository
+from src.core.composite_repository import DpmCompositeRepository
 from src.infrastructure.composites.configured_sources import (
     CompositeSourceTransport,
     ConfiguredCandidateUniverseSource,
     ConfiguredCompositeEvidenceVerifier,
     ConfiguredMonthlyEligibilitySource,
 )
-from src.infrastructure.composites.source_configuration import CompositeSourceConfiguration
-from src.core.composite_eligibility.institutional_verification import (
-    InstitutionalEvidenceVerifier,
-    UnavailableInstitutionalEvidenceVerifier,
+from src.infrastructure.composites.controlled_source_verifier import (
+    NativeControlledHistoricalVerifier,
 )
+from src.infrastructure.composites.historical_configuration import HistoricalPolicyConfiguration
+from src.infrastructure.composites.historical_verifier import ConfiguredHistoricalPolicyVerifier
 from src.infrastructure.composites.institutional_configuration import (
     InstitutionalVerificationConfiguration,
 )
 from src.infrastructure.composites.institutional_verifier import (
     ConfiguredInstitutionalEvidenceVerifier,
 )
-from src.infrastructure.composites.historical_configuration import HistoricalPolicyConfiguration
-from src.infrastructure.composites.historical_verifier import ConfiguredHistoricalPolicyVerifier
-from src.core.composite_eligibility.historical_policy import (
-    HistoricalPolicyAdmissionPort,
-    UnavailableHistoricalPolicyAdmission,
+from src.infrastructure.composites.native_source_configuration import (
+    NativeHistoricalConfiguration,
+    strict_controlled_json,
 )
+from src.infrastructure.composites.source_configuration import CompositeSourceConfiguration
 from src.infrastructure.source_http_clients import (
     build_source_http_client_policy,
     get_shared_source_http_client,
@@ -82,6 +89,11 @@ def _configured_historical_admission() -> HistoricalPolicyAdmissionPort:
     raw = os.getenv("DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON", "")
     if not raw.strip():
         return UnavailableHistoricalPolicyAdmission()
+    document = strict_controlled_json(raw)
+    if "adapter" in document:
+        return NativeControlledHistoricalVerifier(
+            NativeHistoricalConfiguration.model_validate(document)
+        )
     configuration = HistoricalPolicyConfiguration.model_validate_json(raw)
     client = get_shared_source_http_client(
         "composite",

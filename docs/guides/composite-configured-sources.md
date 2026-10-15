@@ -2,6 +2,9 @@
 
 Historical monthly-policy verification uses its own
 [normalized provider configuration and protocol](composite-historical-provider.md).
+That channel can explicitly select the native controlled-original adapter and opt-in read-only
+custody overlay described there. It supplies independent historical admission only; it does not
+create the missing Core-backed candidate/monthly assembly or upgrade per-fact authority.
 It does not widen the source operations or verification purposes described here.
 
 Manage owns immutable candidate selection, monthly assembly identity, eligibility rules and

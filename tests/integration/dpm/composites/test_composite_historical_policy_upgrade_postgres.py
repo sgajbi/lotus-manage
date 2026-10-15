@@ -3,9 +3,9 @@
 import json
 
 import psycopg
+import pytest
 from psycopg import sql
 from psycopg.rows import dict_row
-import pytest
 
 import src.infrastructure.postgres_migrations as migrations
 from src.infrastructure.composites.postgres import PostgresDpmCompositeRepository
@@ -144,7 +144,7 @@ def test_populated_0044_upgrade_preserves_old_roots_corrections_and_staged_histo
                         == 1
                     )
                     for migration in loader(namespace="dpm"):
-                        if migration.version in {"0045", "0046"}:
+                        if migration.version in {"0045", "0046", "0047"}:
                             assert (
                                 connection.execute(
                                     "SELECT checksum FROM schema_migrations WHERE version=%s",

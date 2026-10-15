@@ -4,24 +4,30 @@ Requires the independently admitted PostgreSQL test lane. No business history is
 Source fixtures are explicit synthetic original history, never institutional approval.
 """
 
+import json
+
 import psycopg
+import pytest
 from psycopg.rows import dict_row
 
-from src.core.composite_eligibility.staged_subject import EligibilitySubject
 from src.core.composite_eligibility.staged_controls import EVALUATION_APPROVAL_ADAPTER
 from src.core.composite_eligibility.staged_publication import decode_subject_receipt
+from src.core.composite_eligibility.staged_subject import EligibilitySubject
 from tests.composite_historical_subject_helpers import empty_historical_subject_service
 from tests.composite_monthly_source_helpers import assembly_material
-from tests.composite_staged_eligibility_helpers import BASE, HEADERS, CHECKER, final_definition
+from tests.composite_staged_eligibility_helpers import BASE, CHECKER, HEADERS, final_definition
 from tests.integration.dpm.composites.historical_provider import historical_provider
 from tests.integration.dpm.composites.test_composite_configured_sources_postgres import (
     synthetic_sources,
 )
 from tests.integration.dpm.network_runtime import disposable_database, native_api
-from tests.unit.api.test_composite_subject_lifecycle_routes import subject_body, policy_body
+from tests.unit.api.test_composite_subject_lifecycle_routes import policy_body, subject_body
 
 
-def test_empty_native_historical_subject_publication_and_source_off_restart(tmp_path, monkeypatch):
+@pytest.mark.parametrize("profile", ["historical_v1", "controlled_scenario"])
+def test_empty_native_historical_subject_publication_and_source_off_restart(
+    tmp_path, monkeypatch, profile
+):
     _, _, original, source_subject, source_policy, source_evaluation = (
         empty_historical_subject_service()
     )
@@ -33,13 +39,24 @@ def test_empty_native_historical_subject_publication_and_source_off_restart(tmp_
     checker = maker | {"X-Actor-Id": CHECKER}
     with (
         disposable_database() as dsn,
-        synthetic_sources(monkeypatch) as (sources, source_state),
+        synthetic_sources(monkeypatch) as (sources, _source_state),
         historical_provider(tmp_path, monkeypatch, original.mapping) as (
             history,
             provider_state,
             provider,
         ),
     ):
+        reference = provider.mapping.reference
+        original_file = None
+        if profile == "controlled_scenario":
+            from tests.unit.dpm.infrastructure.test_historical_policy_verifier import (
+                native_controlled_configuration,
+            )
+
+            document, reference, _, original_file, _ = native_controlled_configuration(
+                tmp_path, original.mapping
+            )
+            history = json.dumps(document)
         with native_api(dsn, composite_config=sources, historical_config=history) as (client, _):
             publications = "/api/v1/rebalance/composites/publications"
             before = client.get(publications, headers=maker)
@@ -58,7 +75,7 @@ def test_empty_native_historical_subject_publication_and_source_off_restart(tmp_
             policy_url = BASE + "/policies/historical-first-policy"
             historical_body = {
                 "expected_subject_content_hash": subject.content_hash,
-                "reference": provider.mapping.reference.model_dump(mode="json"),
+                "reference": reference.model_dump(mode="json"),
             }
             proposed = client.put(
                 policy_url + "/historical-admission", headers=maker, json=historical_body
@@ -102,7 +119,9 @@ def test_empty_native_historical_subject_publication_and_source_off_restart(tmp_
                     assert row["custody_mode"] == "STAGED"
                     assert row["content_hash"] == response.json()["content_hash"]
                     assert row["payload_json"] == response.json()
-                    assert row["payload_json"]["product_version"] == "v2"
+                    assert row["payload_json"]["product_version"] == (
+                        "v3" if profile == "controlled_scenario" else "v2"
+                    )
             approval = EVALUATION_APPROVAL_ADAPTER.validate_python(checked.json())
             definition = final_definition(subject, approval)
             finalization_body = {
@@ -144,7 +163,9 @@ def test_empty_native_historical_subject_publication_and_source_off_restart(tmp_
             published = client.put(BASE + "/finalization", headers=checker, json=finalization_body)
             assert published.status_code == 200, published.text
             receipt = published.json()
-            assert receipt["product_version"] == "v3"
+            assert receipt["product_version"] == (
+                "v4" if profile == "controlled_scenario" else "v3"
+            )
             assert decode_subject_receipt(receipt).model_dump(mode="json") == receipt
             assert len(client.get(publications, headers=maker).json()["items"]) == 1
             resolver = "/api/v1/rebalance/composites/synthetic-composite/definitions/synthetic-definition/eligibility-evidence/resolve"
@@ -155,6 +176,8 @@ def test_empty_native_historical_subject_publication_and_source_off_restart(tmp_
             )
             assert client.post(resolver, headers=maker, json=eligibility).json() == receipt
             provider_count = len(provider_state["calls"])
+        if original_file is not None:
+            original_file.unlink()
         # No source configuration or seeded controls in the second actual process.
         with native_api(dsn) as (client, _):
             assert client.post(resolver, headers=maker, json=eligibility).json() == receipt
