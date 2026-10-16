@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 from pathlib import Path
 from typing import Any
@@ -556,7 +557,23 @@ def test_native_inventory_preserves_every_distinct_usage_in_first_occurrence_ord
     inventory = build_inventory()
 
     assert inventory["attributeCatalog"] == baseline["attributeCatalog"]
-    assert inventory["controlsCatalog"] == baseline["controlsCatalog"]
+    expected_controls: list[dict[str, Any]] = []
+    for control in baseline["controlsCatalog"]:
+        if control not in expected_controls:
+            expected_controls.append(control)
+    assert inventory["controlsCatalog"] == expected_controls
+    assert len(inventory["controlsCatalog"]) == 203
+    assert len({control["name"] for control in inventory["controlsCatalog"]}) == 107
+    assert (
+        len(
+            [
+                control
+                for control in inventory["controlsCatalog"]
+                if control["name"] == "x_tenant_id"
+            ]
+        )
+        == 10
+    )
     assert len(inventory["endpoints"]) == len(baseline["endpoints"])
     for actual, previous in zip(inventory["endpoints"], baseline["endpoints"], strict=True):
         assert {
@@ -569,3 +586,95 @@ def test_native_inventory_preserves_every_distinct_usage_in_first_occurrence_ord
                     expected.append(field)
             assert actual[direction]["fields"] == expected
     assert validate_inventory(inventory) == []
+
+
+def _control(**overrides: Any) -> dict[str, Any]:
+    return {
+        "name": "x_tenant_id",
+        "kind": "request_option",
+        "location": "header",
+        "required": True,
+        "type": "string",
+        "description": "Tenant scope for the request.",
+        "example": {"scope": {"enabled": False, "count": 0}},
+        "allowedValues": ["TENANT_A", "TENANT_B"],
+        "semanticId": "lotus.x_tenant_id",
+        "attributeRef": "#/attributeCatalog/lotus.x_tenant_id",
+        **overrides,
+    }
+
+
+def test_inventory_validator_rejects_complete_control_duplicates_despite_object_key_order() -> None:
+    first = _control()
+    duplicate = dict(reversed(list(first.items())))
+    duplicate["example"] = {"scope": {"count": 0, "enabled": False}}
+    inventory = {"controlsCatalog": [first, duplicate]}
+    before = deepcopy(inventory)
+
+    assert validate_inventory(inventory) == ["duplicate controlsCatalog definition: x_tenant_id"]
+    assert inventory == before
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("kind", "response_option"),
+        ("location", "query"),
+        ("required", False),
+        ("type", "integer"),
+        ("description", "A different tenant scope."),
+        ("example", {"scope": {"enabled": 0, "count": 0}}),
+        ("example", None),
+        ("allowedValues", ["TENANT_B", "TENANT_A"]),
+        ("semanticId", "lotus.another_tenant"),
+        ("attributeRef", "#/attributeCatalog/lotus.another_tenant"),
+        ("sourceMetadata", {"owner": "manage"}),
+    ],
+)
+def test_inventory_validator_accepts_same_name_with_distinct_complete_definitions(
+    key: str, value: Any
+) -> None:
+    inventory = {"controlsCatalog": [_control(), _control(**{key: value})]}
+    before = deepcopy(inventory)
+
+    assert validate_inventory(inventory) == []
+    assert inventory == before
+
+
+def test_inventory_controls_keep_first_definition_order_and_source_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first = {
+        "name": "X-Tenant-Id",
+        "in": "header",
+        "required": True,
+        "description": "Tenant scope.",
+        "example": {"scope": {"enabled": False, "count": 0}},
+        "schema": {"type": "string", "enum": ["TENANT_A", "TENANT_B"]},
+    }
+    other = {**first, "description": "Distinct tenant scope."}
+    duplicate = dict(reversed(list(first.items())))
+    duplicate["example"] = {"scope": {"count": 0, "enabled": False}}
+    typed_variant = {**first, "example": {"scope": {"enabled": 0, "count": 0}}}
+    schema = {
+        "paths": {
+            "/first": {"get": {"parameters": [first, other]}},
+            "/second": {"get": {"parameters": [duplicate, typed_variant, other]}},
+        }
+    }
+    before = deepcopy(schema)
+    monkeypatch.setattr(app, "openapi", lambda: schema)
+    expected = [
+        _extract_request_fields({"parameters": [parameter]}, {})[1][0]
+        for parameter in (first, other, typed_variant)
+    ]
+
+    inventory = build_inventory()
+    assert inventory["controlsCatalog"] == expected
+    assert inventory["controlsCatalog"][0]["example"] is first["example"]
+    assert len(inventory["endpoints"]) == 2
+    assert len(inventory["attributeCatalog"]) == 1
+    assert all(len(endpoint["request"]["fields"]) == 1 for endpoint in inventory["endpoints"])
+    assert build_inventory()["controlsCatalog"] == expected
+    assert validate_inventory(inventory) == []
+    assert schema == before
