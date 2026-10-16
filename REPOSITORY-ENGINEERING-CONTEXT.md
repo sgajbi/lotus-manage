@@ -583,6 +583,13 @@ or financial certification.
 
 API vocabulary publication practice: property examples use the existing declaration/reference/composition/collection resolver, preserving valid Decimal strings and explicit false, zero, empty and nullable values. Endpoint usages retain one copy of each complete six-field mapping (`name`, `location`, `required`, `type`, `semanticId`, `attributeRef`) per request or response side, in first occurrence order; attribute metadata keeps its first source occurrence. From the repository root with the supported Python environment active, `python scripts/api_vocabulary_inventory.py` generates the native catalog and `make api-vocabulary-gate` rejects duplicate usages and stale output. Run the owning suites with `make test-unit UNIT_TESTS="tests/unit/test_api_vocabulary_inventory.py tests/unit/api/test_openapi_enrichment_helpers.py"` in PowerShell or a POSIX shell.
 
+The global `controlsCatalog` retains each complete JSON definition once, in first occurrence
+order. Object key order is immaterial, including nested examples; array order, JSON value types
+and every descriptor field remain part of the definition. Controls with the same name or semantic
+identifier remain distinct when any field differs. The native inventory validator rejects exact
+duplicate definitions without changing endpoint usages or attribute metadata. Regenerate through
+the source script before publishing an exact committed downstream mirror.
+
 The opt-in [Core cohort consumer proof](docs/operations/core-cohort-consumer-proof.md) runs actual
 Core cohort selection through registered Manage wave preview/create and PostgreSQL persistence.
 Use the pinned archive, owned runtime and mandatory prerequisite flags documented there; never

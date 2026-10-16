@@ -30,6 +30,16 @@ and source-owner methodology remain explicit boundaries unless a route section s
 | Operations or support | Run supportability, portfolio memory, and endpoint certification links | Current routes expose bounded supportability, source lineage, and no-claim boundaries. |
 | Future agent or engineer | Route family sections plus README and endpoint certification | Keep route descriptions aligned with code, OpenAPI, API vocabulary, and tests. |
 
+## API vocabulary catalog
+
+The generated API vocabulary catalog publishes one copy of each complete control definition in
+first occurrence order. Same-name controls remain separate when their description, example,
+allowed values or other metadata differs. Nested JSON object key order does not create a variant;
+array order and JSON value types remain significant. The source inventory validator rejects exact
+duplicate definitions. Endpoint request/response usages and attribute metadata retain their own
+existing identity rules. See `scripts/api_vocabulary_inventory.py` and the repository engineering
+context for native generation and validation commands.
+
 ## Core management surfaces
 
 - `POST /api/v1/rebalance/simulate`

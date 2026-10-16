@@ -343,16 +343,18 @@ def _domain(path: str, tags: list[str]) -> str:
     return _to_snake_case(root)
 
 
+def _row_key(row: dict[str, Any]) -> str:
+    return json.dumps(row, sort_keys=True, separators=(",", ":"))
+
+
 def _usage_field_key(field: dict[str, Any]) -> str:
-    return json.dumps(
-        [field.get(key) for key in USAGE_FIELD_KEYS], sort_keys=True, separators=(",", ":")
-    )
+    return _row_key({key: field.get(key) for key in USAGE_FIELD_KEYS})
 
 
-def _unique_usage_fields(fields: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _unique_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     unique: dict[str, dict[str, Any]] = {}
-    for field in fields:
-        unique.setdefault(_usage_field_key(field), field)
+    for row in rows:
+        unique.setdefault(_row_key(row), row)
     return list(unique.values())
 
 
@@ -429,8 +431,8 @@ def build_inventory() -> dict[str, Any]:
                     "path": path,
                     "operationId": operation.get("operationId"),
                     "summary": operation.get("summary") or "",
-                    "request": {"fields": _unique_usage_fields(endpoint_request_fields)},
-                    "response": {"fields": _unique_usage_fields(endpoint_response_fields)},
+                    "request": {"fields": _unique_rows(endpoint_request_fields)},
+                    "response": {"fields": _unique_rows(endpoint_response_fields)},
                 }
             )
             controls_catalog.extend(controls)
@@ -447,7 +449,7 @@ def build_inventory() -> dict[str, Any]:
         ],
         "generatedAt": datetime.now(UTC).isoformat(),
         "attributeCatalog": sorted(attribute_catalog_map.values(), key=lambda x: x["semanticId"]),
-        "controlsCatalog": controls_catalog,
+        "controlsCatalog": _unique_rows(controls_catalog),
         "endpoints": endpoints,
     }
 
@@ -482,6 +484,13 @@ def _duplicate_usage_errors(
 
 def validate_inventory(inventory: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+
+    seen_controls: set[str] = set()
+    for control in inventory.get("controlsCatalog", []):
+        key = _row_key(control)
+        if key in seen_controls:
+            errors.append(f"duplicate controlsCatalog definition: {control.get('name')}")
+        seen_controls.add(key)
 
     semantic_ids: set[str] = set()
     for attr in inventory.get("attributeCatalog", []):
