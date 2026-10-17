@@ -238,6 +238,83 @@ def test_concurrent_admitted_tenants_never_mutate_pool():
     resolver._client.close()
 
 
+@pytest.mark.parametrize("admitted", [None, "", "   "])
+@pytest.mark.parametrize("selector", [{}, {"tenant_id": None}])
+@pytest.mark.parametrize("origin", [QCP, QUERY])
+def test_missing_admitted_tenant_never_inherits_allowed_pooled_default(admitted, selector, origin):
+    seen = []
+    resolver = _resolver(
+        lambda request: seen.append(request) or httpx.Response(200, json={"ok": True})
+    )
+    resolver._client.headers["X-Tenant-Id"] = "tenant-b"
+    resolver._client.cookies.set("pooled-session", "synthetic-cookie")
+    before_headers = list(resolver._client.headers.multi_items())
+    before_cookies = list(resolver._client.cookies.items())
+    refused = False
+    try:
+        try:
+            _request(resolver, tenant=admitted, selector=selector, url=origin + "/integration/test")
+        except CoreExecutionError:
+            refused = True
+        assert seen == []
+        assert refused
+        assert list(resolver._client.headers.multi_items()) == before_headers
+        assert list(resolver._client.cookies.items()) == before_cookies
+    finally:
+        resolver._client.close()
+
+
+@pytest.mark.parametrize("selector", [{}, {"tenant_id": None}])
+@pytest.mark.parametrize("origin", [QCP, QUERY])
+def test_explicit_admitted_tenant_overrides_pooled_default_without_pool_mutation(selector, origin):
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        assert request.headers["x-tenant-id"] == "tenant-a"
+        assert json.loads(request.content) == selector
+        assert "cookie" not in request.headers
+        if origin == QCP:
+            assert request.headers["x-enterprise-auth-signature"] == _independent_signature(
+                request, ENV["CORE_EXECUTION_SECRET"]
+            )
+        else:
+            assert not any(name.startswith("x-enterprise-auth-") for name in request.headers)
+        return httpx.Response(200, json={"ok": True})
+
+    resolver = _resolver(handler)
+    resolver._client.headers["X-Tenant-Id"] = "tenant-b"
+    resolver._client.cookies.set("pooled-session", "synthetic-cookie")
+    before_headers = list(resolver._client.headers.multi_items())
+    before_cookies = list(resolver._client.cookies.items())
+    try:
+        assert _request(
+            resolver, tenant="tenant-a", selector=selector, url=origin + "/integration/test"
+        ) == {"ok": True}
+        assert len(seen) == 1
+        assert list(resolver._client.headers.multi_items()) == before_headers
+        assert list(resolver._client.cookies.items()) == before_cookies
+    finally:
+        resolver._client.close()
+
+
+@pytest.mark.parametrize("origin", [QCP, QUERY])
+def test_default_off_pooled_tenant_behavior_remains_unsigned(monkeypatch, origin):
+    monkeypatch.setenv("CORE_EXECUTION_ENABLED", "false")
+
+    def handler(request):
+        assert request.headers["x-tenant-id"] == "tenant-b"
+        assert not any(name.startswith("x-enterprise-auth-") for name in request.headers)
+        return httpx.Response(200, json={"legacy": True})
+
+    resolver = _resolver(handler)
+    resolver._client.headers["X-Tenant-Id"] = "tenant-b"
+    try:
+        assert _request(resolver, tenant=None, url=origin + "/integration/test") == {"legacy": True}
+    finally:
+        resolver._client.close()
+
+
 @pytest.mark.parametrize("status", [301, 302, 307, 308, 401, 403])
 def test_auth_and_redirect_refusals_never_retry_or_follow(status):
     seen = []

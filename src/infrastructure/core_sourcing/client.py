@@ -173,6 +173,8 @@ class DpmCoreResolverClient:
         incomplete_code: str,
     ) -> dict[str, Any]:
         attempts = max(self._config.max_attempts, 1)
+        if self._execution_auth is not None:
+            admitted_tenant_id = self._execution_auth.require_admitted_tenant(admitted_tenant_id)
         headers = _source_product_headers(
             correlation_id,
             admitted_tenant_id=admitted_tenant_id,
