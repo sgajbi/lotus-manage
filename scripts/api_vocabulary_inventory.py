@@ -95,6 +95,29 @@ def _schema_type(schema: dict[str, Any]) -> str:
     return str(variant["type"]) if variant is not None else "object"
 
 
+def _schema_observed_types(schema: dict[str, Any]) -> list[str]:
+    fallback = [_schema_type(schema)]
+    if "$ref" in schema or "type" in schema:
+        return fallback
+    for composition in ("anyOf", "oneOf"):
+        variants = schema.get(composition)
+        if not isinstance(variants, list) or not variants:
+            continue
+        observed: list[str] = []
+        for variant in variants:
+            if not isinstance(variant, dict) or "$ref" in variant:
+                return fallback
+            declared = variant.get("type")
+            if declared == "null":
+                continue
+            if declared not in ("string", "integer", "number", "boolean", "array", "object"):
+                return fallback
+            if declared not in observed:
+                observed.append(declared)
+        return observed or fallback
+    return fallback
+
+
 def _resolve_schema(schema: dict[str, Any], components: dict[str, Any]) -> dict[str, Any]:
     ref = schema.get("$ref")
     if not isinstance(ref, str):
@@ -203,6 +226,7 @@ def _extract_fields(
             "location": location,
             "required": prop_name in required,
             "type": _schema_type(prop_schema),
+            "observedTypes": _schema_observed_types(prop_schema),
             "semanticId": _semantic_id(prop_name),
             "attributeRef": f"#/attributeCatalog/{_semantic_id(prop_name)}",
             "description": prop_resolved.get("description") or _fallback_description(field_name),
@@ -269,6 +293,7 @@ def _extract_request_fields(
                 "location": parameter.get("in", "query"),
                 "required": bool(parameter.get("required", False)),
                 "type": _schema_type(schema),
+                "observedTypes": _schema_observed_types(schema),
                 "semanticId": _semantic_id(name),
                 "attributeRef": f"#/attributeCatalog/{_semantic_id(name)}",
             }
@@ -376,16 +401,16 @@ def build_inventory() -> dict[str, Any]:
                         "example": field.get("example"),
                         "type": field.get("type", "string"),
                         "locations": [field.get("location", "body")],
-                        "observedTypes": [field.get("type", "string")],
+                        "observedTypes": list(field["observedTypes"]),
                     }
                 else:
                     item = attribute_catalog_map[semantic_id]
                     location = field.get("location", "body")
-                    observed_type = field.get("type", "string")
                     if location not in item["locations"]:
                         item["locations"].append(location)
-                    if observed_type not in item["observedTypes"]:
-                        item["observedTypes"].append(observed_type)
+                    for observed_type in field["observedTypes"]:
+                        if observed_type not in item["observedTypes"]:
+                            item["observedTypes"].append(observed_type)
 
             endpoint_request_fields = [
                 {

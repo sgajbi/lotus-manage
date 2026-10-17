@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-17T20:32:12.018510+00:00",
+  "generatedAt": "2026-10-17T21:37:27.333725+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -251,7 +251,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -878,7 +879,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -1977,7 +1978,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -2005,7 +2007,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -2019,7 +2022,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -2581,7 +2585,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -2595,7 +2600,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -2866,7 +2872,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -3870,7 +3877,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -3885,7 +3892,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -3998,7 +4005,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -4012,7 +4020,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -4027,7 +4036,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -4055,7 +4064,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -4648,7 +4658,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -4877,7 +4888,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -5108,7 +5120,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -5545,7 +5558,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -5560,7 +5574,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -9363,7 +9377,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -9440,6 +9454,7 @@
         "body"
       ],
       "observedTypes": [
+        "array",
         "object"
       ]
     },
@@ -9872,7 +9887,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -10431,7 +10447,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -10568,7 +10584,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -10582,7 +10599,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -11752,7 +11770,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -13010,7 +13028,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -13828,7 +13846,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -13857,7 +13875,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -13899,7 +13917,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -13944,7 +13963,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -13959,7 +13978,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -13974,7 +13993,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -14002,7 +14021,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -14016,7 +14036,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -14030,7 +14051,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -14045,7 +14066,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -14101,8 +14123,8 @@
         "body"
       ],
       "observedTypes": [
-        "object",
-        "string"
+        "string",
+        "integer"
       ]
     },
     {
@@ -14543,7 +14565,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -14557,7 +14580,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -14619,7 +14643,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -14633,7 +14658,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -14718,7 +14744,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -16654,7 +16680,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -17742,7 +17768,9 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "number",
+        "string"
       ]
     },
     {
@@ -18000,7 +18028,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -18495,7 +18524,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -18539,7 +18568,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -18731,7 +18761,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -19352,7 +19382,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -21485,7 +21515,7 @@
       "observedTypes": [
         "string",
         "integer",
-        "object"
+        "number"
       ]
     },
     {
@@ -21851,7 +21881,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -22310,7 +22340,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -22560,7 +22590,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -22646,7 +22676,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -24190,7 +24220,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -25267,7 +25298,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -25344,7 +25375,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -25552,8 +25584,8 @@
         "body"
       ],
       "observedTypes": [
-        "object",
-        "string"
+        "string",
+        "integer"
       ]
     },
     {
@@ -25698,7 +25730,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -25780,7 +25813,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -25838,7 +25872,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -25900,7 +25935,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -26227,7 +26263,7 @@
       ],
       "observedTypes": [
         "string",
-        "object"
+        "number"
       ]
     },
     {
@@ -26283,7 +26319,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
@@ -26905,7 +26942,7 @@
         "body"
       ],
       "observedTypes": [
-        "object",
+        "number",
         "string"
       ]
     },
@@ -27026,7 +27063,7 @@
       ],
       "observedTypes": [
         "string",
-        "object",
+        "number",
         "integer"
       ]
     },
@@ -27363,7 +27400,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "number",
+        "string"
       ]
     },
     {
