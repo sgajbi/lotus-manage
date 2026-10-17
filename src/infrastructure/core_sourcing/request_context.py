@@ -131,6 +131,13 @@ class OrdinaryCoreReadAuth(httpx.Auth):
         self._credential_resolver = credential_resolver
         self._clock = clock
 
+    def require_admitted_tenant(self, tenant_id: str | None) -> str:
+        """Validate the explicit request fence without selecting pooled authority."""
+        tenant = context_value(tenant_id or "")
+        if tenant not in self.policy.allowed_tenants:
+            raise CoreExecutionError("CORE_EXECUTION_TENANT_REFUSED")
+        return tenant
+
     def validate_target(self, url: str) -> None:
         if (
             any(ord(char) <= 32 or ord(char) == 127 for char in url)
@@ -179,9 +186,7 @@ class OrdinaryCoreReadAuth(httpx.Auth):
                 and len(request.headers.get_list(name)) != 1
             ):
                 raise CoreExecutionError("CORE_EXECUTION_AMBIGUOUS_CONTEXT")
-        tenant = context_value(request.headers.get("X-Tenant-Id", ""))
-        if tenant not in self.policy.allowed_tenants:
-            raise CoreExecutionError("CORE_EXECUTION_TENANT_REFUSED")
+        tenant = self.require_admitted_tenant(request.headers.get("X-Tenant-Id"))
         return {
             "X-Tenant-Id": tenant,
             "X-Correlation-Id": context_value(
