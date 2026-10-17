@@ -120,7 +120,7 @@ def _membership_response(
             state="READY",
             reason="PM_BOOK_SCOPE_MATERIALIZED",
             returned_portfolio_count=1,
-            filters_applied={"portfolio_types": ["DPM"]},
+            filters_applied=["portfolio_types"],
         ),
         snapshot_id=snapshot_id,
         source_batch_fingerprint="sha256:pm-book",
@@ -580,7 +580,7 @@ def test_pm_quality_service_materializes_pm_book_scope_with_resolver() -> None:
 
     assert score_run.book_scope_evidence is not None
     assert score_run.book_scope_evidence.source_id == "pm-book-snapshot-20260512"
-    assert score_run.book_scope_evidence.filters_applied == {"portfolio_types": ["DPM"]}
+    assert score_run.book_scope_evidence.filters_applied == ["portfolio_types"]
     assert score_run.score_run_id.startswith("pmq_")
     assert resolver.last_as_of_date == date(2026, 5, 12)
 
@@ -627,7 +627,7 @@ def test_pm_book_scope_evidence_helper_limits_member_refs_and_preserves_filters(
     assert member_refs[0].source_id == "member-source-000"
     assert evidence.returned_portfolio_count == 105
     assert evidence.member_portfolio_ids[-1] == "PF_099"
-    assert evidence.filters_applied == {"portfolio_types": ["DPM"]}
+    assert evidence.filters_applied == ["portfolio_types"]
     assert evidence.source_refs[0].source_type == "PortfolioManagerBookMembership"
 
 

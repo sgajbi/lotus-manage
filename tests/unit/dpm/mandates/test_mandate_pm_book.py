@@ -48,7 +48,7 @@ def _membership(
                 "state": "READY",
                 "reason": "PM_BOOK_MEMBERSHIP_READY",
                 "returned_portfolio_count": len(portfolio_ids),
-                "filters_applied": {"portfolio_types": ["DISCRETIONARY"]},
+                "filters_applied": ["portfolio_types"],
             },
         }
     )

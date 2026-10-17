@@ -560,4 +560,12 @@ The implementation handoff contract is maintained in
 
 ## Reference
 
+PM operating-quality book materialization consumes Core's canonical string array of applied
+filter names. Malformed successful membership replies fail closed as incomplete source (424),
+while unavailable transport remains 503. Immutable score-run reads preserve historical filter
+objects, original IDs, hashes and lineage; historical compatibility never broadens live Core
+wire acceptance. See the
+[PM quality methodology](https://github.com/sgajbi/lotus-manage/blob/main/docs/methodologies/pm-quality/scoring-and-fairness.md)
+for the two stored/public evidence shapes and omission behavior.
+
 - [docs/standards/RFC-0082-upstream-contract-family-map.md](https://github.com/sgajbi/lotus-manage/blob/main/docs/standards/RFC-0082-upstream-contract-family-map.md)

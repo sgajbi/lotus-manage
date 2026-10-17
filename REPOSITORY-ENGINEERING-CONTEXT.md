@@ -974,6 +974,16 @@ Most relevant current governance:
     numeric amounts. Diagnostics preserve the configured threshold, normalized threshold, observed
     quote, applied conversion rate, direction, candidate side, and outcome.
 
+## PM-book filter evidence practice
+
+The live Core PM-book membership DTO requires `filters_applied: list[str]`; malformed successful
+responses become the existing incomplete-source refusal. New PM-quality evidence copies the
+producer array. Only stored/public score-run evidence retains the named legacy dictionary
+alternative, including nested values and the historical missing-field empty-object default.
+Do not convert retained dictionaries, rewrite rows, recompute IDs/hashes, or broaden the upstream
+transport union. Production repository get/list and registered API regressions must cover mixed
+legacy/canonical pages and tenant isolation.
+
 ## Instruction-package retry practice
 
 Instruction-package release retries reconcile an exact-key committed winner when it arrives

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-10-16T18:00:11.830914+00:00",
+  "generatedAt": "2026-10-17T20:32:12.018510+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3067,9 +3067,9 @@
         "member_portfolio_ids": [
           "sample_member_portfolio_ids_item"
         ],
-        "filters_applied": {
-          "sample_key": "sample_value"
-        },
+        "filters_applied": [
+          "sample_filters_applied_item"
+        ],
         "reason_codes": [
           "sample_reason_codes_item"
         ],
@@ -9431,10 +9431,10 @@
       "semanticId": "lotus.filters_applied",
       "canonicalTerm": "filters_applied",
       "preferredName": "filters_applied",
-      "description": "Source-applied filters returned by lotus-core for replay and audit.",
-      "example": {
-        "sample_key": "sample_value"
-      },
+      "description": "Canonical Core-applied filter names for new evidence, or the unchanged legacy selector-value object retained in immutable score runs. Historical omission retains the empty-object default; reads never convert or recompute evidence.",
+      "example": [
+        "sample_filters_applied_item"
+      ],
       "type": "object",
       "locations": [
         "body"
@@ -21636,9 +21636,9 @@
             "member_portfolio_ids": [
               "sample_member_portfolio_ids_item"
             ],
-            "filters_applied": {
-              "sample_key": "sample_value"
-            },
+            "filters_applied": [
+              "sample_filters_applied_item"
+            ],
             "reason_codes": [
               "sample_reason_codes_item"
             ],

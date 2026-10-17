@@ -15,6 +15,18 @@ execution, OMS, risk-model, performance-attribution, tax, or source-owner method
 
 ## Endpoint and Mode Coverage
 
+PM-book membership uses Core's canonical `supportability.filters_applied` string array of
+applied filter names. New score-run book-scope evidence copies that array unchanged, including
+an explicitly empty array. A malformed successful Core reply fails as
+`DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE` (HTTP 424); unavailable transport remains HTTP 503.
+
+Stored/public `book_scope_evidence.filters_applied` also retains the explicitly named legacy
+selector-value dictionary alternative. Tenant-scoped score-run GET/list preserve that object,
+including nested values, rather than converting selectors into filter names. Historical omission
+retains the existing empty-object default. Reads never rewrite retained rows or recompute IDs,
+content hashes or lineage. Existing `v1` metadata does not distinguish these two evidence shapes;
+the legacy alternative is not accepted from the live Core membership transport.
+
 Score-run preview and create use the same computation:
 
 - `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview`

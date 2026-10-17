@@ -251,9 +251,8 @@ class DpmCorePortfolioManagerBookSupportability(BaseModel):
     returned_portfolio_count: int = Field(
         description="Number of portfolio memberships returned by lotus-core."
     )
-    filters_applied: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Core-applied filters used to resolve the book membership.",
+    filters_applied: list[str] = Field(
+        description="Core-applied filter names used to resolve the book membership.",
     )
 
 

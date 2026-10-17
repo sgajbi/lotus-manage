@@ -435,7 +435,7 @@ def _pm_book_membership_payload(
                 else "PM_BOOK_MEMBERSHIP_INCOMPLETE"
             ),
             "returned_portfolio_count": 0 if members == [] else 1,
-            "filters_applied": {"portfolio_types": ["DISCRETIONARY"]},
+            "filters_applied": ["portfolio_types"],
         },
         "lineage": {"source_system": "relationship_book", "contract_version": "rfc_041_v1"},
         "data_quality_status": "COMPLETE",

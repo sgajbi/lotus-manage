@@ -29,7 +29,7 @@ def _membership_response(member_count: int) -> DpmCorePortfolioManagerBookMember
             state="READY",
             reason="PM_BOOK_SCOPE_MATERIALIZED",
             returned_portfolio_count=member_count,
-            filters_applied={"portfolio_types": ["DPM"]},
+            filters_applied=["portfolio_types"],
         ),
         snapshot_id="pm-book-snapshot-20260512",
         source_batch_fingerprint="sha256:pm-book",
