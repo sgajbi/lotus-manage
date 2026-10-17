@@ -1,10 +1,10 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-10-16T00:37:35+00:00`
+- Generated at: `2026-10-17T14:37:52+00:00`
 
-- Baseline source snapshot: `02b603f86e96d314132d22d8fc294773083d9be8`
+- Baseline source snapshot: `c6477b8954c935549de7ec2a8f346eb8c888cdf6`
 
-- Report source snapshot: `02b603f8+worktree`
+- Report source snapshot: `7e80b6cf+worktree`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -12,9 +12,9 @@
 
 | Metric | Value |
 | --- | --- |
-| Python files | 1172 |
-| Total Python LOC | 294601 |
-| Test functions | 4069 |
+| Python files | 1203 |
+| Total Python LOC | 308538 |
+| Test functions | 4300 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
 
@@ -38,7 +38,7 @@
 | OpenAPI completeness | `scripts/openapi_quality_gate.py` plus this report | 2 - active/new-regression |
 | Service boundary leakage | service leakage scan plus this report | 2 - active/new-regression |
 | Router infrastructure imports | `scripts/router_infrastructure_gate.py` plus this report | 2 - active/new-regression |
-| Complexity/maintainability | `quality/complexity_report.md` | 2 - active source C gate; broader metrics baseline |
+| Complexity/maintainability | `quality/complexity_report.md` | 2 - active Radon function non-degradation; broader metrics baseline |
 | Duplicate implementation hotspots | `quality/duplicate_code_inventory.md` and `make duplicate-implementation-gate` | 2 - active exact-duplicate non-regression gate |
 | Dead code | `make dead-code-gate` plus vulture baseline capture via `quality-baseline.yml` | 2 - active/new-regression |
 | Dependency hygiene | `make dependency-hygiene-gate`, `pip check`, and `make security-audit` | 2 - active/new-regression |

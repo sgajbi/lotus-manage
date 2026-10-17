@@ -1,14 +1,20 @@
 """Explicit source-cut assembly evidence; matching business dates is not compatibility."""
 
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
-from src.core.composite_authority_models import EvidenceBinding, Identity, StrictAuthorityModel
-from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.common.canonical import hash_canonical_payload
+from src.core.composite_authority_models import EvidenceBinding, Identity, StrictAuthorityModel
+from src.core.composite_eligibility.native_source_custody import (
+    MonthlyNativeCustody,
+    native_role_set_digest,
+    require_native_observation_scope,
+)
+from src.core.composite_eligibility.native_source_verification import MonthlySourceAdmissionProof
+from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.composite_eligibility.policy import month_window
-from src.core.composite_eligibility.verification import VerificationRequest, VerificationReceipt
+from src.core.composite_eligibility.verification import VerificationReceipt, VerificationRequest
 
 InputKind = Literal["PRIOR_ASSETS", "MONTH_END_ASSETS", "CASH", "READINESS", "FLOWS"]
 
@@ -20,16 +26,16 @@ class MonthlyInputBinding(StrictAuthorityModel):
     evidence: EvidenceBinding
 
 
-class MonthlySourceAssembly(StrictAuthorityModel):
+class _MonthlySourceAssembly[AssemblyVersion: str](StrictAuthorityModel):
     product_name: Literal["CompositeMonthlyEligibilityAssembly"]
-    product_version: Literal["v1"]
+    product_version: AssemblyVersion
     observations: MonthlyEligibilityObservations
     inputs: list[MonthlyInputBinding] = Field(min_length=5, max_length=5)
     compatibility_binding: EvidenceBinding
     compatibility_posture: Literal["SYNTHETIC_UNQUALIFIED", "SOURCE_UNVERIFIED", "UNAVAILABLE"]
 
     @model_validator(mode="after")
-    def require_all_input_authorities(self) -> "MonthlySourceAssembly":
+    def require_all_input_authorities(self) -> "_MonthlySourceAssembly[AssemblyVersion]":
         if {item.kind for item in self.inputs} != {
             "PRIOR_ASSETS",
             "MONTH_END_ASSETS",
@@ -51,7 +57,36 @@ class MonthlySourceAssembly(StrictAuthorityModel):
         return self
 
 
-def assembly_verification_request(assembly: MonthlySourceAssembly) -> VerificationRequest:
+class MonthlySourceAssembly(_MonthlySourceAssembly[Literal["v1"]]):
+    # Keep the original v1 schema as well as its wire field order.
+    pass
+
+
+class NativeMonthlySourceAssembly(_MonthlySourceAssembly[Literal["v2"]]):
+    native_custody: MonthlyNativeCustody
+
+    @model_validator(mode="after")
+    def require_native_role_sets(self) -> "NativeMonthlySourceAssembly":
+        custody = MonthlyNativeCustody.model_validate(self.native_custody.model_dump(mode="json"))
+        require_native_observation_scope(custody, self.observations)
+        for binding in self.inputs:
+            if (
+                binding.owner_service != "lotus-manage"
+                or binding.source_cut_id != self.observations.source_cut_id
+                or binding.evidence.product_name != "CompositeMonthlyRoleSet"
+                or binding.evidence.revision != self.observations.source_revision
+                or binding.evidence.digest != native_role_set_digest(custody, binding.kind)
+            ):
+                raise ValueError("COMPOSITE_NATIVE_ROLE_SET_MISMATCH")
+        return self
+
+
+MonthlyAssemblyVariant = Annotated[
+    MonthlySourceAssembly | NativeMonthlySourceAssembly, Field(discriminator="product_version")
+]
+
+
+def assembly_verification_request(assembly: MonthlyAssemblyVariant) -> VerificationRequest:
     """Bind every constituent and normalized fact to one exact whole-month verification."""
     snapshot = assembly.observations
     first, last = month_window(snapshot.month)
@@ -72,12 +107,60 @@ def assembly_verification_request(assembly: MonthlySourceAssembly) -> Verificati
 class VerifiedMonthlySourceAssembly(StrictAuthorityModel):
     """Retained non-certifying manifest and independently admitted verification receipt."""
 
-    assembly: MonthlySourceAssembly
+    model_config = ConfigDict(
+        extra="forbid",
+        strict=True,
+        json_schema_extra={
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "assembly": {
+                                "properties": {"product_version": {"const": "v1"}},
+                                "required": ["product_version"],
+                            }
+                        },
+                        "required": ["assembly"],
+                    },
+                    "then": {"not": {"required": ["native_proof"]}},
+                    "else": {
+                        "required": ["native_proof"],
+                        "properties": {"native_proof": {"not": {"type": "null"}}},
+                    },
+                }
+            ]
+        },
+    )
+    assembly: MonthlyAssemblyVariant
     verification: VerificationReceipt
+    native_proof: MonthlySourceAdmissionProof | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def require_versioned_proof_presence(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            assembly = value.get("assembly")
+            version = (
+                assembly.get("product_version")
+                if isinstance(assembly, dict)
+                else getattr(assembly, "product_version", None)
+            )
+            if version == "v1" and "native_proof" in value:
+                raise ValueError("COMPOSITE_NATIVE_PROOF_FORBIDDEN_V1")
+            if version == "v2" and value.get("native_proof") is None:
+                raise ValueError("COMPOSITE_NATIVE_PROOF_REQUIRED_V2")
+        return value
 
     @model_validator(mode="after")
     def require_complete_verification(self) -> "VerifiedMonthlySourceAssembly":
-        self.assembly = MonthlySourceAssembly.model_validate(self.assembly.model_dump(mode="json"))
+        assembly_type = (
+            NativeMonthlySourceAssembly
+            if self.assembly.product_version == "v2"
+            else MonthlySourceAssembly
+        )
+        self.assembly = assembly_type.model_validate(self.assembly.model_dump(mode="json"))
         self.verification = VerificationReceipt.model_validate(
             self.verification.model_dump(mode="json")
         )
@@ -88,7 +171,24 @@ class VerifiedMonthlySourceAssembly(StrictAuthorityModel):
             or self.verification.request != assembly_verification_request(self.assembly)
         ):
             raise ValueError("COMPOSITE_SOURCE_ASSEMBLY_VERIFICATION_MISMATCH")
+        if isinstance(self.assembly, NativeMonthlySourceAssembly):
+            self._require_native_proof(self.assembly)
+        elif self.native_proof is not None:
+            raise ValueError("COMPOSITE_NATIVE_PROOF_FORBIDDEN_V1")
         return self
+
+    def _require_native_proof(self, assembly: NativeMonthlySourceAssembly) -> None:
+        if self.native_proof is None:
+            raise ValueError("COMPOSITE_NATIVE_PROOF_REQUIRED_V2")
+        proof = MonthlySourceAdmissionProof.model_validate(
+            self.native_proof.model_dump(mode="json")
+        )
+        if (
+            proof.result.receipt != self.verification
+            or proof.result.native_custody_digest != assembly.native_custody.content_hash
+            or self.verification.artifact_revision != assembly.observations.source_revision
+        ):
+            raise ValueError("COMPOSITE_NATIVE_PROOF_ASSEMBLY_MISMATCH")
 
 
 def retained_source_assembly(

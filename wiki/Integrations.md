@@ -1,5 +1,62 @@
 # Integrations
 
+## Current Scope And Evidence Posture
+
+Native Composite integration is explicit, default-off and synthetic/non-certifying. Operators
+start with the [configured source deployment guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-configured-sources.md#native-deployment-document);
+engineers retain the source-owned trust and evidence boundaries below. Core/IAM/financial and
+Performance admission remain separate from consumer transport proof.
+
+| Reader | First Action |
+| --- | --- |
+| Operations | Review native configuration, credential references and separate monthly signer custody in the linked guide. |
+| Integration engineer | Use the fixed Core consumer/routes and independent C2 trust; preserve legacy and institutional authority boundaries. |
+| Evidence reviewer | Read [Endpoint Certification](Endpoint-Certification) and the owning qualified campaign before making a live-readiness claim. |
+
+## Controlled Native Composite Sources
+
+The ordinary factories select `CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2` from the existing
+`DPM_COMPOSITE_SOURCES_JSON`; blank values and legacy signed-provider documents retain their
+behavior. Separately managed assembler A and independent verifier C clients read exactly pinned
+Core cuts as consumer `lotus-manage`. Both use real deployment credential references and Core's
+existing context HMAC-v1, with no Authorization header, redirects or implicit proxies. C2 independently
+rebuilds the cut against deployment-owned expected observations and current trust/revocation;
+the separately provisioned monthly Ed25519 key never goes to Core. Source and monthly verifier
+principals remain distinct authorities. HMAC signs context, not financial approval or replay protection.
+
+```mermaid
+flowchart LR
+    Factory[Ordinary Manage factories] --> A[Assembler reader A]
+    Factory --> C[Independent reader C and C2]
+    A --> Core[Pinned Core retained cuts]
+    C --> Core
+    C --> Proof[Monthly receipt and signed proof]
+    A --> Custody[Native assembly v2]
+    Proof --> Ledger[Existing monthly custody and publication]
+    Custody --> Ledger
+```
+
+| Boundary | Current behavior |
+| --- | --- |
+| Deployment | Base/prod/CI forward explicit blank-default A/C credential references; the opt-in native overlay mounts only a separate monthly signer. No authority goes to PostgreSQL. |
+| Admission | Missing credentials/signer stays unavailable before network or subject reservation; malformed/mismatched/unsafe custody refuses. |
+| Provenance | Assemblyv2 requires monthly proofv1; assemblyv1 and legacy hashes remain frozen. Generic policy, historical and institutional authorities stay separate. |
+| Financial membership | Every exact pinned manifest needs its complete consumed input group with matching count and ordered root. Complete shared/single-input batches and disjoint complete groups work; incomplete, superset or overlapping incomplete groups refuse before assembly/proof signing. |
+| Evidence | Controlled synthetic Docker/HTTP/PostgreSQL staged and recurring campaigns passed. Their retained owner evidence, rather than fixtures or mock receipts, establishes that bounded consumer result. |
+
+Use [Endpoint Certification](Endpoint-Certification) for evidence classes and
+[API Surface](API-Surface) for unchanged registered route ownership. See
+[issue778 owner evidence](https://github.com/sgajbi/lotus-manage/issues/778#issuecomment-6220647430) for qualified campaign results.
+
+Core's selected INPUTS response proves the selected view, not membership in the full financial
+batch. Complete monthly registry membership does not replace that proof. Manage binds product
+definitions to the graph and checks every consumed batch independently; individual selected reads
+remain intermediate evidence. General selected-subset support needs an agreed producer evidence
+contract through Core #1227 and Manage #778. See the
+[configured source guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-configured-sources.md)
+for supported populations and failure behavior. This consumer boundary establishes no live financial
+acceptance, and both broader workstreams remain open.
+
 ## Institutional attestation verification
 
 The separate deployment setting `DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON` enables verification

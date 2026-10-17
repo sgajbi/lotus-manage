@@ -550,6 +550,21 @@ def test_credential_issuer_and_receipt_issuer_are_distinct_contract_bindings(sig
         )
 
 
+def test_extracted_credential_primitive_keeps_deployment_binding_refusal_order(signing):
+    from src.core.common.artifact_credentials import verified_artifact as pure_verified_artifact
+
+    assert verified_artifact is pure_verified_artifact
+    key, binding = signing
+    token = signed(key, binding, {"fixed": "request"}, {"fixed": "payload"})
+    pure_verified_artifact(
+        token, binding=binding, request={"fixed": "request"}, payload={"fixed": "payload"}
+    )
+    with pytest.raises(ValueError, match="ARTIFACT_BINDING_MISMATCH"):
+        pure_verified_artifact(
+            token, binding=binding, request={"fixed": "changed"}, payload={"fixed": "payload"}
+        )
+
+
 @pytest.mark.parametrize(
     "name,error",
     [("valid_service", "wrong_audience"), ("present_but_unverified", "present_but_unverified")],
@@ -605,3 +620,120 @@ def test_configured_source_metrics_keep_bound_owner_and_normalize_external_owner
     )
     assert transport.resolve(tenant_id=binding.tenant_id, operation="candidates", request={}) == {}
     assert REGISTRY.get_sample_value(metric, labels) == before + 1
+
+
+def test_native_composition_keeps_policy_verifier_separate_and_reuses_public_partitions(
+    monkeypatch, tmp_path
+):
+    from src.api.composition.composite_source_service import build_composite_monthly_service
+    from src.infrastructure.composites import native_assembly_configuration as native
+    from src.infrastructure.source_http_clients import close_shared_source_http_clients
+    from tests.integration.dpm.composites.native_source_provider import (
+        CREDENTIALS,
+        MONTHLY_SEED,
+        deployment_material,
+    )
+
+    material, *_ = deployment_material(tmp_path / "key", policy=True)
+    monkeypatch.setenv("DPM_COMPOSITE_SOURCES_JSON", json.dumps(material))
+    for name, value in CREDENTIALS.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.delenv("DPM_COMPOSITE_HISTORICAL_POLICY_ADMISSION_JSON", raising=False)
+    monkeypatch.delenv("DPM_COMPOSITE_ATTESTATION_VERIFICATION_JSON", raising=False)
+    monkeypatch.setattr(native, "read_custody_file", lambda *_args, **_kwargs: MONTHLY_SEED)
+    close_shared_source_http_clients()
+    try:
+        repository = InMemoryDpmCompositeRepository()
+        service = build_composite_subject_service(repository)
+        assert isinstance(service.verifier, ConfiguredCompositeEvidenceVerifier)
+        policy_binding = service.verifier.transport.configuration.bindings[0]
+        assert "COMPOSITE_MONTHLY_SOURCE_CUT" not in policy_binding.verification_purposes
+        assert (
+            policy_binding.principal_id
+            != service.observations.verifier.configuration.trust.principal_id
+        )
+        reader_client = service.observations.reader.client
+        verifier_client = service.observations.verifier.client
+        material["verification"]["revocation"]["revision"] = "synthetic-next-current"
+        monkeypatch.setenv("DPM_COMPOSITE_SOURCES_JSON", json.dumps(material))
+        next_service = build_composite_monthly_service(repository)
+        assert next_service.source.reader.client is reader_client
+        assert next_service.source.verifier.client is verifier_client
+        assert (
+            next_service.source.verifier.configuration.revocation.revision
+            == "synthetic-next-current"
+        )
+        assert (
+            service.observations.verifier.configuration.revocation.revision
+            == "synthetic-current-r1"
+        )
+    finally:
+        close_shared_source_http_clients()
+
+
+def test_native_managed_auth_rotates_fresh_without_bearer_or_result_fallback(monkeypatch, tmp_path):
+    import hmac
+
+    from src.api.composition import composite_source_service as composition
+    from src.infrastructure import source_http_clients as clients
+    from src.infrastructure.composites import native_assembly_configuration as native
+    from tests.integration.dpm.composites.native_source_provider import (
+        CREDENTIALS,
+        MONTHLY_SEED,
+        deployment_material,
+    )
+
+    material, *_ = deployment_material(tmp_path / "key")
+    monkeypatch.setenv("DPM_COMPOSITE_SOURCES_JSON", json.dumps(material))
+    for name, value in CREDENTIALS.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(native, "read_custody_file", lambda *_args, **_kwargs: MONTHLY_SEED)
+    real_client = httpx.Client
+    captured = []
+
+    def handle(request):
+        assert "Authorization" not in request.headers
+        captured.append(request)
+        return httpx.Response(200, json={})
+
+    monkeypatch.setattr(
+        clients.httpx,
+        "Client",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handle), **kwargs),
+    )
+    clients.close_shared_source_http_clients()
+    try:
+        service = composition.build_composite_subject_service(InMemoryDpmCompositeRepository())
+        client = service.observations.reader.client
+        path = "https://core.test/integration/financial-source-cuts/query"
+        for secret in (CREDENTIALS["SYNTHETIC_NATIVE_ASSEMBLY_AUTH"], "synthetic-rotated"):
+            monkeypatch.setenv("SYNTHETIC_NATIVE_ASSEMBLY_AUTH", secret)
+            assert client.post(path, json={}).status_code == 200
+            request = captured[-1]
+            fields = (
+                "X-Enterprise-Auth-Key-Id",
+                "X-Service-Identity",
+                "X-Actor-Id",
+                "X-Tenant-Id",
+                "X-Role",
+                "X-Correlation-Id",
+                "X-Enterprise-Auth-Timestamp",
+            )
+            context = "\n".join(
+                (
+                    "lotus-enterprise-auth-context-v1",
+                    *(request.headers[name] for name in fields),
+                    request.headers["X-Capabilities"],
+                )
+            ).encode()
+            assert (
+                request.headers["X-Enterprise-Auth-Signature"]
+                == hmac.digest(secret.encode(), context, "sha256").hex()
+            )
+        assert captured[0].headers["X-Correlation-Id"] != captured[1].headers["X-Correlation-Id"]
+        monkeypatch.delenv("SYNTHETIC_NATIVE_ASSEMBLY_AUTH")
+        with pytest.raises(ValueError, match="CREDENTIAL_UNAVAILABLE"):
+            client.post(path, json={})
+        assert len(captured) == 2
+    finally:
+        clients.close_shared_source_http_clients()

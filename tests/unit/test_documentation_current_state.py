@@ -6,6 +6,73 @@ from src.api.main import app
 
 ROOT = Path(__file__).resolve().parents[2]
 
+
+def test_native_deployment_guide_fields_follow_the_closed_model() -> None:
+    from src.infrastructure.composites.native_assembly_configuration import (
+        NativeAssemblyConfiguration,
+    )
+
+    guide = (ROOT / "docs/guides/composite-configured-sources.md").read_text(encoding="utf-8")
+    section = guide.split("### Native deployment document", 1)[1].split(
+        "### Native Core transport and monthly proof", 1
+    )[0]
+    documented = set(re.findall(r"^\| `([^`]+)` \|", section, re.MULTILINE))
+    assert documented == set(NativeAssemblyConfiguration.model_fields)
+    schema = NativeAssemblyConfiguration.model_json_schema()
+    discriminator = schema["properties"]["adapter"]["const"]
+    assert discriminator == "CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2"
+    for path in (
+        "docs/guides/composite-monthly-eligibility.md",
+        "REPOSITORY-ENGINEERING-CONTEXT.md",
+        "wiki/Integrations.md",
+        "wiki/Endpoint-Certification.md",
+        "wiki/API-Surface.md",
+    ):
+        assert discriminator in (ROOT / path).read_text(encoding="utf-8"), path
+
+
+def test_native_deployment_docs_bind_credentials_mount_and_real_proof_inventory() -> None:
+    import yaml
+
+    guide = (ROOT / "docs/guides/composite-configured-sources.md").read_text(encoding="utf-8")
+    native = yaml.safe_load(
+        (ROOT / "docker-compose.composite-native.yml").read_text(encoding="utf-8")
+    )
+    secret = native["services"]["lotus-manage"]["secrets"][0]
+    assert "/run/secrets/" + secret["target"] in guide
+    refs = {"MANAGE_COMPOSITE_CORE_ASSEMBLY_AUTH", "MANAGE_COMPOSITE_CORE_VERIFIER_AUTH"}
+    for filename, service in (
+        ("docker-compose.yml", "lotus-manage"),
+        ("docker-compose.production.yml", "lotus-manage"),
+        ("docker-compose.ci-local.yml", "ci-local"),
+    ):
+        model = yaml.safe_load((ROOT / filename).read_text(encoding="utf-8"))
+        environment = model["services"][service]["environment"]
+        if isinstance(environment, list):
+            environment = dict(entry.split("=", 1) for entry in environment)
+        for reference in refs:
+            assert environment[reference] == "${" + reference + ":-}"
+            assert "`" + reference + "`" in guide
+        database = model["services"].get("postgres", {}).get("environment", {})
+        if isinstance(database, list):
+            database = dict(entry.split("=", 1) for entry in database)
+        assert not refs.intersection(database)
+    assert (
+        "docker compose -f docker-compose.yml -f docker-compose.composite-native.yml config --quiet"
+        in guide
+    )
+    test = (
+        ROOT / "tests/integration/dpm/composites/test_core_financial_sources_postgres.py"
+    ).read_text(encoding="utf-8")
+    assert "def test_registered_native_staged_admission_and_default_off_restart" in test
+    assert (
+        "def test_registered_native_recurring_refusal_publication_and_default_off_restart" in test
+    )
+    endpoint = (ROOT / "wiki/Endpoint-Certification.md").read_text(encoding="utf-8")
+    assert "entire publication page/status unchanged" in endpoint
+    assert "Test existence or source/mock receipts do not establish" in guide
+
+
 WTBD_PARTIAL_IDS: set[str] = set()
 
 WTBD_OPEN_IDS = {

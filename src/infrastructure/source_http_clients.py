@@ -34,7 +34,9 @@ class SourceHttpClientPolicy:
         )
 
 
-_SHARED_SOURCE_HTTP_CLIENTS: dict[SourceHttpClientName, httpx.Client] = {}
+_SHARED_SOURCE_HTTP_CLIENTS: dict[
+    SourceHttpClientName | tuple[SourceHttpClientName, str, SourceHttpClientPolicy], httpx.Client
+] = {}
 _SHARED_SOURCE_HTTP_CLIENTS_LOCK = RLock()
 
 
@@ -110,6 +112,32 @@ def close_shared_source_http_clients() -> None:
             if not client.is_closed:
                 client.close()
         _SHARED_SOURCE_HTTP_CLIENTS.clear()
+
+
+def get_partitioned_source_http_client(
+    source: SourceHttpClientName,
+    *,
+    partition: str,
+    policy: SourceHttpClientPolicy,
+    auth: httpx.Auth,
+) -> httpx.Client:
+    """Own distinct public-policy partitions; credentials remain fresh in Auth, never keys."""
+    if not partition:
+        raise ValueError("SOURCE_HTTP_CLIENT_PARTITION_REQUIRED")
+    key = (source, partition, policy)
+    with _SHARED_SOURCE_HTTP_CLIENTS_LOCK:
+        client = _SHARED_SOURCE_HTTP_CLIENTS.get(key)
+        if client is None or client.is_closed:
+            client = httpx.Client(
+                timeout=policy.timeout(),
+                limits=policy.limits(),
+                auth=auth,
+                follow_redirects=False,
+                trust_env=False,
+                verify=True,
+            )
+            _SHARED_SOURCE_HTTP_CLIENTS[key] = client
+        return client
 
 
 def _source_env_prefix(source: SourceHttpClientName) -> str:

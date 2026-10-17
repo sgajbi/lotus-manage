@@ -552,7 +552,9 @@ def build_refactor_report(context: HealthReportContext) -> str:
         ),
         "## Notes",
         "- This report is intentionally dependency-free and repeatable in local and CI environments.",
-        "- It is a first measurable baseline; future phases can add radon, vulture, deptry, bandit, pip-audit, Spectral, import-linter, and coverage thresholds.",
+        "- Dependency-free AST rankings are report-only. The separate Radon function/method "
+        "non-degradation gate is enforced by `make complexity-gate`; class aggregates and "
+        "maintainability index remain report-only.",
     ]
     return "\n\n".join(sections) + "\n"
 
@@ -617,7 +619,7 @@ def build_baseline_report(context: HealthReportContext) -> str:
                 [
                     "Complexity/maintainability",
                     "`quality/complexity_report.md`",
-                    "2 - active source C gate; broader metrics baseline",
+                    "2 - active Radon function non-degradation; broader metrics baseline",
                 ],
                 [
                     "Duplicate implementation hotspots",
@@ -679,8 +681,11 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Complexity",
-            "Active source C gate",
-            "`make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only.",
+            "Active function non-degradation gate",
+            "`make complexity-gate` requires new source functions/methods to have Radon CC <= 10 "
+            "and prevents existing high complexity from increasing against an immutable Git baseline. "
+            "Unchanged/improved legacy findings remain explicit measured debt; class aggregates, "
+            "maintainability index and broader AST metrics remain report-only.",
         ],
         [
             "Duplicate implementation hotspots",
@@ -799,8 +804,8 @@ def build_complexity_report(context: HealthReportContext) -> str:
         f"- Generated at: `{context.generated_at}`",
         f"- Baseline source snapshot: `{context.base_source_ref}`",
         f"- Report source snapshot: `{context.current_ref}`",
-        "- Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free "
-        "AST branch metrics remain report-only.",
+        "- Mode: active Radon function/method non-degradation via `make complexity-gate`; "
+        "the dependency-free AST branch metrics below remain report-only and are not Radon scores.",
         "## Summary",
         _table(
             ["Metric", context.base_ref, "current branch", "Delta"],
@@ -835,8 +840,23 @@ def build_complexity_report(context: HealthReportContext) -> str:
             current.most_complex_test_functions,
         ),
         "## Gate Posture",
-        "- Source functions at Radon C-or-worse are actively blocked by `make complexity-gate` "
-        "(`python -m radon cc src -s -n C`).",
+        "- `make complexity-gate` runs `python scripts/complexity_gate.py`: new source "
+        "functions/methods must have Radon CC <= 10; existing functions/methods above 10 "
+        "cannot increase against the exact immutable Git baseline. No headroom or allowlist applies.",
+        "- Unchanged/improved legacy findings remain explicit measured debt, printed by the gate. "
+        "Renamed/moved functions are new identities. Class aggregates and maintainability index "
+        "remain report-only.",
+        "- Feature branches compare with the exact resolved `origin/main` tip; pull requests use "
+        "their actual base-branch tip. A shared ancestor must resolve, but the target tip supplies "
+        "the scores. Clean main compares with `HEAD^`; main source edits compare with committed "
+        "HEAD. Recorded report provenance cannot grant stale complexity allowances. Automatic "
+        "HEAD comparisons require demonstrably different worktree source; explicit self refs are "
+        "refused. Missing/unresolved/empty baselines, identical-source comparisons, malformed source "
+        "and scanner failures fail closed. The blocking command writes no artifacts.",
+        "- Clean Main audits every first-parent released revision against its predecessor, using "
+        "the immutable push-before commit or recorded reviewed release baseline. Missing/empty "
+        "release provenance fails closed; an intermediate new C-rank function cannot be hidden by "
+        "a later repair. Uncommitted Main comparisons are development proof only.",
         "- Broader source/test complexity rankings in this report remain report-only until "
         "baselines, false positives, lane placement, and exception policy are clear.",
     ]

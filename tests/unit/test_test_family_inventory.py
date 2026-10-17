@@ -24,6 +24,11 @@ def test_test_family_classifier_covers_representative_proof_families() -> None:
         assert classify_test_file(Path(path)) == expected_family
 
 
+def test_complexity_gate_proof_is_contract_governance_without_broad_complexity_allowance() -> None:
+    assert classify_test_file(Path("tests/unit/test_complexity_gate.py")) == "contract_governance"
+    assert classify_test_file(Path("tests/unit/test_unrelated_complexity.py")) == "uncategorized"
+
+
 def test_test_family_inventory_counts_files_by_family(tmp_path: Path) -> None:
     tests_root = tmp_path / "tests"
     for relative in [

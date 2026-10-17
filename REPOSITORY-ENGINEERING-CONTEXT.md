@@ -175,6 +175,58 @@ receipt decoding preserves exact historical bodies/hashes; premature historical 
 granting new authority. Consumer financial admission remains separately strict. Default sources remain
 unavailable, Core unqualified inputs refuse, and legacy hashes omit absent new provenance fields.
 See [configured source guide](docs/guides/composite-configured-sources.md) for contract and proof.
+
+### Controlled Native Source Deployment Practice
+
+`DPM_COMPOSITE_SOURCES_JSON` additionally admits the closed discriminator
+`CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2` through `native_assembly_configuration.py` and the
+ordinary subject/monthly factories. Legacy documents without `adapter` and blank defaults remain
+unchanged. A/C financial pins must match; each reader/auth policy must agree on tenant, origin,
+`core_enterprise_hmac_v1`, credential reference and explicit synthetic loopback admission. The
+current Core consumer is `lotus-manage`; source principals and monthly verifier principal are
+separate deployment trust, not aliases for network actors. Explicit source key inventory `[]` is
+valid for unsigned native artifacts; omission/null is not.
+
+Base, production and CI Compose forward blank-default `MANAGE_COMPOSITE_CORE_ASSEMBLY_AUTH` and
+`MANAGE_COMPOSITE_CORE_VERIFIER_AUTH`, selected only by explicit reader/auth `credential_env`.
+The opt-in `docker-compose.composite-native.yml` requires public configuration and Compose-only
+`MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE`, mounting a separate monthly key at
+`/run/secrets/manage_composite_monthly_verifier_key`. Historical originals/key custody remains
+separate. Missing either credential or matching signer leaves native candidates/monthly sources
+unavailable before network/reservation. Unsafe custody and malformed policy refuse; never generate
+a fallback key, fabricate Bearer, transmit the monthly signer to Core or use `verify=False`.
+
+Separate role/public-policy partitions reuse managed bounded HTTP clients and existing shutdown,
+with explicit no-follow, no environment proxies and TLS verification. Credentials are resolved
+per request; C2 objects/readers/results/proofs are not cached. Independently supplied C2 expected
+observations, source inventory and current at-most-five-minute revocation remain deployment-owned.
+Generic policy, historical and institutional authorities remain separate. HMAC signs context only;
+Core signature/tenant/capability/feature/grant admission and financial qualification are separate.
+
+`MonthlyNativeCustody` admits financial membership only for complete consumed per-manifest groups.
+Group by tenant and the complete product/version/source-address/revision/batch-hash locator, retain
+consistent manifest bodies, and reproduce each manifest's exact input count and ordered root from
+unique portfolio declarations in canonical portfolio order. Complete single/shared batches and
+disjoint complete groups work; superset and incomplete overlapping cuts fail closed before assembly
+and C2 proof signing. Registry completeness and a selected INPUTS view root cannot substitute for
+financial membership. Observation/flow definition versions must match the selected graph. Current
+Core selected reads supply no generic population/inclusion witness; broader subset proof support
+belongs to Core #1227 and Manage #778. Do not infer IDs, read latest, or duplicate witness arrays.
+Owning synthetic reader/aggregate/verifier tests establish this bounded consumer behavior, not live
+Core or financial readiness. See the configured source guide for the operator support constraint.
+
+Keep `test_core_financial_sources_postgres.py` staged and recurring fixtures in distinct disposable
+databases. A fresh unavailable staged request reserves nothing; a published definition blocks
+staging. Recurring seed membership already publishes sequence1, so a denied evaluation must leave
+the complete seeded page unchanged as well as no proposal. Preserve accepted staged AST/evidence
+when fixing only recurring setup. Docs/runtime-config regression tests live in
+`test_documentation_current_state.py` and `test_local_docker_runtime_contract.py`; derive documented
+native fields/credentials from models/Compose rather than checking mentions alone. Root owns
+qualified Docker/PostgreSQL/Core execution and exact-main closure. Source/mock/config evaluation
+and synthetic consumer proof do not establish Core/IAM/financial/Performance production acceptance.
+
+### Composite Read Service Practice
+
 Composite read services use deployment-owned `DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON` enrollment
 with fixed `REPORT_COMPOSITE_READER`/`manage.read`, exact pinned definition, membership, universe,
 evaluation and publication GETs and the read-only resolver
@@ -675,6 +727,23 @@ Important validation expectations:
    while a separate blocking job checks report freshness on the immutable pull-request head; this
    prevents unrelated base-branch changes from making branch-owned evidence stale. Dirty worktrees
    and missing recorded refs retain the safe `origin/main` fallback.
+   `make complexity-gate` separately enforces Radon function/method non-degradation through
+   `python scripts/complexity_gate.py`: new source functions/methods require CC <= 10 and existing
+   high complexity cannot increase against the immutable baseline. Unchanged/improved legacy
+   findings remain explicit measured debt; class aggregates, maintainability index and broader
+   generated AST rankings remain report-only. Feature branches use the exact resolved `origin/main`
+   tip and PRs use their actual base-branch tip; a shared ancestor must resolve, but target-tip
+   scores enforce the current ratchet. Clean main uses `HEAD^`; main source edits use committed HEAD.
+   Recorded report provenance cannot grant stale complexity allowances. Automatic HEAD comparison
+   requires demonstrably different worktree source; explicit self refs and identical-source
+   comparisons are refused. Missing/unresolved/empty baseline or source, malformed syntax,
+   scanner failures and invalid arguments fail closed; the gate writes no report artifacts.
+   Clean Main additionally audits every first-parent released revision against its predecessor,
+   pinned by the push-before commit or recorded reviewed release baseline. Missing/empty release
+   provenance fails closed; a later repair cannot hide an intermediate rebased violation.
+   Uncommitted Main comparisons remain development proof only.
+   Run `make complexity-gate` from the repository root in PowerShell or Bash; focused proof is
+   `python -m pytest tests/unit/test_complexity_gate.py -q` on either shell.
 4. PR-grade validation includes coverage-backed full test execution,
    Solver tests load a shared `cvxpy`/`numpy` prerequisite directly during collection and execute
    unconditionally because those packages are required `dev` dependencies for test lanes (and

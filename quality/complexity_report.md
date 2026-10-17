@@ -1,12 +1,12 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-16T00:37:35+00:00`
+- Generated at: `2026-10-16T20:03:50+00:00`
 
-- Baseline source snapshot: `02b603f86e96d314132d22d8fc294773083d9be8`
+- Baseline source snapshot: `c6477b8954c935549de7ec2a8f346eb8c888cdf6`
 
-- Report source snapshot: `02b603f8+worktree`
+- Report source snapshot: `9b496e79+worktree`
 
-- Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
+- Mode: active Radon function/method non-degradation via `make complexity-gate`; the dependency-free AST branch metrics below remain report-only and are not Radon scores.
 
 ## Summary
 
@@ -24,7 +24,7 @@
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
 | 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 120 | 426 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
-| 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
+| 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 155 |
 | 7 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 83 | 145 |
 | 8 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
 | 9 | test_pm_operating_quality_openapi_contract_is_documented | tests/unit/api/test_pm_operating_quality_api.py | 73 | 142 |
@@ -54,7 +54,7 @@
 | 3 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 146 | 380 |
 | 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 120 | 426 |
 | 5 | test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery | tests/unit/dpm/api/test_portfolio_memory_api.py | 102 | 231 |
-| 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 153 |
+| 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 89 | 155 |
 | 7 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 83 | 145 |
 | 8 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
 | 9 | test_pm_operating_quality_openapi_contract_is_documented | tests/unit/api/test_pm_operating_quality_api.py | 73 | 142 |
@@ -62,6 +62,12 @@
 
 ## Gate Posture
 
-- Source functions at Radon C-or-worse are actively blocked by `make complexity-gate` (`python -m radon cc src -s -n C`).
+- `make complexity-gate` runs `python scripts/complexity_gate.py`: new source functions/methods must have Radon CC <= 10; existing functions/methods above 10 cannot increase against the exact immutable Git baseline. No headroom or allowlist applies.
+
+- Unchanged/improved legacy findings remain explicit measured debt, printed by the gate. Renamed/moved functions are new identities. Class aggregates and maintainability index remain report-only.
+
+- Feature branches compare with the exact resolved `origin/main` tip; pull requests use their actual base-branch tip. A shared ancestor must resolve, but the target tip supplies the scores. Clean main compares with `HEAD^`; main source edits compare with committed HEAD. Recorded report provenance cannot grant stale complexity allowances. Automatic HEAD comparisons require demonstrably different worktree source; explicit self refs are refused. Missing/unresolved/empty baselines, identical-source comparisons, malformed source and scanner failures fail closed. The blocking command writes no artifacts.
+
+- Clean Main audits every first-parent released revision against its predecessor, using the immutable push-before commit or recorded reviewed release baseline. Missing/empty release provenance fails closed; an intermediate new C-rank function cannot be hidden by a later repair. Uncommitted Main comparisons are development proof only.
 
 - Broader source/test complexity rankings in this report remain report-only until baselines, false positives, lane placement, and exception policy are clear.

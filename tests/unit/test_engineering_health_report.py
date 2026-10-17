@@ -339,7 +339,7 @@ def test_baseline_report_declares_report_only_quality_coverage() -> None:
         in report
     )
     assert (
-        "| Complexity/maintainability | `quality/complexity_report.md` | 2 - active source C gate; broader metrics baseline |"
+        "| Complexity/maintainability | `quality/complexity_report.md` | 2 - active Radon function non-degradation; broader metrics baseline |"
         in report
     )
     assert "does not enforce thresholds by itself" in report
@@ -361,8 +361,14 @@ def test_quality_scorecard_separates_active_gates_from_planned_gates() -> None:
     assert "| Quality report freshness | Active gate |" in scorecard
     assert "| Workflow policy | Active gate |" in scorecard
     assert "| Local CI parity | Active gate |" in scorecard
-    assert "| Complexity | Active source C gate |" in scorecard
-    assert "`make complexity-gate` blocks Radon C-or-worse source functions" in scorecard
+    assert "| Complexity | Active function non-degradation gate |" in scorecard
+    assert "new source functions/methods to have Radon CC <= 10" in scorecard
+    assert "prevents existing high complexity from increasing" in scorecard
+    assert "Unchanged/improved legacy findings remain explicit measured debt" in scorecard
+    assert (
+        "class aggregates, maintainability index and broader AST metrics remain report-only"
+        in scorecard
+    )
     assert (
         "| 4 - enterprise-readiness gates | Block release on full readiness posture." in scorecard
     )
@@ -400,7 +406,21 @@ def test_complexity_report_is_report_only() -> None:
     assert "| Highest complexity | 4 | 4 | +0 |" in report
     assert "### Most Complex Current Source Functions" in report
     assert "### Most Complex Current Test Functions" in report
-    assert "active source C-or-worse gate via `make complexity-gate`" in report
+    assert "active Radon function/method non-degradation via `make complexity-gate`" in report
+    assert "new source functions/methods must have Radon CC <= 10" in report
+    assert "cannot increase against the exact immutable Git baseline" in report
+    assert "Unchanged/improved legacy findings remain explicit measured debt" in report
+    assert "Class aggregates and maintainability index remain report-only" in report
+    assert (
+        "identical-source comparisons, malformed source and scanner failures fail closed" in report
+    )
+    assert "target tip supplies the scores" in report
+    assert "Recorded report provenance cannot grant stale complexity allowances" in report
+    assert "Automatic HEAD comparisons require demonstrably different worktree source" in report
+    assert (
+        "Clean Main audits every first-parent released revision against its predecessor" in report
+    )
+    assert "Uncommitted Main comparisons are development proof only" in report
     assert "Broader source/test complexity rankings in this report remain report-only" in report
 
 

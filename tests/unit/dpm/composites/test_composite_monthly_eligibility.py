@@ -1,6 +1,16 @@
 """Independent monthly policy oracles; synthetic choices are not bank approval."""
 
-from decimal import Decimal, DefaultContext, Inexact, Rounded, ROUND_DOWN, ROUND_UP, Subnormal
+from datetime import datetime
+from decimal import (
+    Decimal,
+    DefaultContext,
+    Inexact,
+    Rounded,
+    ROUND_DOWN,
+    ROUND_HALF_EVEN,
+    ROUND_UP,
+    Subnormal,
+)
 from decimal import localcontext
 
 import pytest
@@ -13,6 +23,7 @@ from src.core.composite_eligibility.policy import (
 from src.core.composite_eligibility.observations import MonthlyPortfolioObservations
 from src.core.composite_eligibility.observations import MonthlyEligibilityObservations
 from src.core.composite_eligibility.rules import evaluate_monthly_rules
+from src.core.composite_eligibility.flows import admitted_monthly_flows
 from src.core.composite_eligibility.evaluation import (
     MonthlyEligibilityEvaluation,
     evaluate_monthly_eligibility as _evaluate_monthly_eligibility,
@@ -582,3 +593,48 @@ def _decimal_context_state(context):
         dict(context.traps),
         dict(context.flags),
     )
+
+
+@pytest.mark.parametrize(
+    "precision,rounding,traps",
+    [
+        (28, ROUND_HALF_EVEN, False),
+        (2, ROUND_HALF_EVEN, False),
+        (2, ROUND_DOWN, True),
+        (2, ROUND_UP, True),
+    ],
+)
+@pytest.mark.parametrize(
+    "original_amount,reversal_amount,valid",
+    [
+        ("123", "-123", True),
+        ("120", "-123", False),
+        ("123456789012345678901234.123456789012", "-123456789012345678901234.123456789012", True),
+        ("123456789012345678901234.123456789012", "-123456789012345678901234.123456789013", False),
+        ("123456789012345678901234.1235", "-123456789012345678901234.123456789012", False),
+    ],
+)
+def test_direct_flow_reversal_comparison_is_exact_outside_the_rules_decimal_context(
+    precision, rounding, traps, original_amount, reversal_amount, valid
+):
+    member = observations(original_amount, reversal_amount)
+    member.flows[1].classification = "REVERSAL"
+    member.flows[1].reverses_event_id = member.flows[0].event_id
+    generated_at = datetime.fromisoformat("2026-10-01T00:00:00.000000Z")
+    with localcontext() as caller:
+        caller.prec, caller.rounding = precision, rounding
+        caller.Emin, caller.Emax, caller.clamp = -2, 2, 1
+        caller.traps[Inexact] = caller.traps[Rounded] = traps
+        caller.flags[Inexact] = True
+        before = _decimal_context_state(caller)
+        admitted, reasons = admitted_monthly_flows(
+            member.flows,
+            start="2026-09-01",
+            end="2026-09-30",
+            currency=member.currency,
+            evaluated_at=generated_at,
+            source_generated_at=generated_at,
+        )
+        assert reasons == ([] if valid else ["FLOW_REVERSAL_BINDING_INVALID"])
+        assert [flow.amount for flow in admitted] == [original_amount, reversal_amount]
+        assert _decimal_context_state(caller) == before

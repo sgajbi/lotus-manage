@@ -5,6 +5,68 @@
   "consumer_repository": "lotus-manage",
   "dependencies": [
     {
+      "product_name": "PortfolioHistoricalRegistry",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "tenant_id",
+        "generated_at",
+        "as_of_date",
+        "restatement_version",
+        "reconciliation_status",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "content_hash",
+        "policy_version",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "api_read",
+      "business_purpose": "Read exact retained historical registry revisions, membership and original native captures through the default-off Core query boundary with exact-scope consumer grants. Preserve UNQUALIFIED source, UNVERIFIED population, DECLARED_UNVERIFIED or UNAVAILABLE compatibility and authoritative_use_available=false; custody confers no bank, supplier, financial or official authority. Missing, rejected, mismatched or incomplete evidence cannot issue monthly eligibility.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "PortfolioFinancialSourceCut",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "tenant_id",
+        "generated_at",
+        "as_of_date",
+        "restatement_version",
+        "reconciliation_status",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "content_hash",
+        "policy_version",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "api_read",
+      "business_purpose": "Read an exact retained financial source-cut manifest, selected five-role graph and original native captures through the default-off Core query boundary with exact-scope consumer grants. Preserve UNQUALIFIED source, UNVERIFIED population, DECLARED_UNVERIFIED or UNAVAILABLE compatibility and authoritative_use_available=false; custody confers no bank, supplier, financial or official authority. Missing, rejected, mismatched or incomplete evidence cannot issue monthly eligibility.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
       "product_name": "PortfolioStateSnapshot",
       "producer_repository": "lotus-core",
       "required_product_version": "v1",

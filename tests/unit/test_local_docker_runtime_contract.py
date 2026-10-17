@@ -15,7 +15,125 @@ COMPOSITE_CREDENTIALS = (
     "MANAGE_COMPOSITE_SOURCE_AUTH",
     "MANAGE_HISTORICAL_PROVIDER_AUTH",
     "MANAGE_COMPOSITE_ATTESTATION_AUTH",
+    "MANAGE_COMPOSITE_CORE_ASSEMBLY_AUTH",
+    "MANAGE_COMPOSITE_CORE_VERIFIER_AUTH",
 )
+
+
+def test_native_overlay_requires_public_config_and_separate_monthly_signer_only() -> None:
+    native = yaml.safe_load(Path("docker-compose.composite-native.yml").read_text(encoding="utf-8"))
+    historical = yaml.safe_load(
+        Path("docker-compose.composite-controlled.yml").read_text(encoding="utf-8")
+    )
+    assert set(native["services"]) == {"lotus-manage"}
+    application = native["services"]["lotus-manage"]
+    assert set(application) == {"environment", "secrets"}
+    assert application["environment"] == {
+        "DPM_COMPOSITE_SOURCES_JSON": "${DPM_COMPOSITE_SOURCES_JSON:?Reviewed native assembly configuration required}"
+    }
+    assert application["secrets"] == [
+        {
+            "source": "manage_composite_monthly_verifier_key",
+            "target": "manage_composite_monthly_verifier_key",
+            "mode": 0o400,
+        }
+    ]
+    assert native["secrets"] == {
+        "manage_composite_monthly_verifier_key": {
+            "file": "${MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE:?Operator-owned monthly verifier key required}"
+        }
+    }
+    assert set(native["secrets"]).isdisjoint(historical["secrets"])
+    for filename in (
+        "docker-compose.yml",
+        "docker-compose.production.yml",
+        "docker-compose.ci-local.yml",
+    ):
+        model = yaml.safe_load(Path(filename).read_text(encoding="utf-8"))
+        assert "manage_composite_monthly_verifier_key" not in str(model)
+        assert "MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE" not in str(model)
+
+
+@pytest.mark.parametrize("mismatch", [None, "assembly", "verification"])
+def test_native_compose_credential_refs_match_real_closed_loader_without_io(
+    monkeypatch, tmp_path, mismatch
+) -> None:
+    from src.api.composition import composite_source_service as composition
+    from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
+    from src.infrastructure.composites.native_assembly_configuration import (
+        NativeAssemblyConfiguration,
+    )
+    from tests.integration.dpm.composites.native_source_provider import deployment_material
+
+    material, *_ = deployment_material(tmp_path / "synthetic-unmounted-monthly-key")
+    for setting in COMPOSITE_SETTINGS[1:]:
+        monkeypatch.delenv(setting, raising=False)
+    for role, reader in (
+        ("assembly", material["reader"]),
+        ("verification", material["verification"]["reader"]),
+    ):
+        reference = (
+            "MANAGE_COMPOSITE_CORE_ASSEMBLY_AUTH"
+            if role == "assembly"
+            else "MANAGE_COMPOSITE_CORE_VERIFIER_AUTH"
+        )
+        reader["credential_env"] = reference
+        material[role + "_authorization"]["credential_env"] = reference
+        monkeypatch.delenv(reference, raising=False)
+    monkeypatch.setattr(
+        composition,
+        "get_partitioned_source_http_client",
+        lambda *_a, **_k: pytest.fail(
+            "No unavailable/malformed deployment may construct a native client"
+        ),
+    )
+    if mismatch:
+        material[mismatch + "_authorization"]["credential_env"] = "MANAGE_COMPOSITE_SOURCE_AUTH"
+    monkeypatch.setenv("DPM_COMPOSITE_SOURCES_JSON", json.dumps(material))
+    if mismatch:
+        with pytest.raises(ValueError, match="READER_AUTH_CONFIGURATION_MISMATCH"):
+            composition.build_composite_subject_service(InMemoryDpmCompositeRepository())
+    else:
+        configuration = NativeAssemblyConfiguration.model_validate_json(json.dumps(material))
+        assert configuration.reader.credential_env == COMPOSITE_CREDENTIALS[3]
+        assert configuration.verification.reader.credential_env == COMPOSITE_CREDENTIALS[4]
+        service = composition.build_composite_subject_service(InMemoryDpmCompositeRepository())
+        assert type(service.candidates).__name__ == "UnavailableCandidateUniverseSource"
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        '{"adapter":"unsupported"}',
+        '{"adapter":"CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2"}',
+        '{"adapter":"CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2","adapter":"unsupported"}',
+        '{"bindings":[],"bindings":[]}',
+    ],
+)
+def test_native_discriminator_is_explicit_closed_and_duplicate_safe(monkeypatch, raw):
+    from src.api.composition.composite_source_service import build_composite_subject_service
+    from src.infrastructure.composites.in_memory import InMemoryDpmCompositeRepository
+
+    monkeypatch.setenv("DPM_COMPOSITE_SOURCES_JSON", raw)
+    with pytest.raises(ValueError):
+        build_composite_subject_service(InMemoryDpmCompositeRepository())
+
+
+def test_native_runtime_credentials_are_declared_explicit_and_mask_inherited_values(tmp_path):
+    from tests.integration.dpm.network_runtime import NativeCompositeRuntimeConfiguration
+    from tests.integration.dpm.composites.native_source_provider import deployment_material
+
+    material, *_ = deployment_material(tmp_path / "key")
+    runtime = NativeCompositeRuntimeConfiguration(
+        json.dumps(material), {"SYNTHETIC_NATIVE_ASSEMBLY_AUTH": "synthetic-explicit-only"}
+    )
+    environment = runtime.environment()
+    assert environment["SYNTHETIC_NATIVE_ASSEMBLY_AUTH"] == "synthetic-explicit-only"
+    assert environment["SYNTHETIC_NATIVE_VERIFICATION_AUTH"] == ""
+    with pytest.raises(ValueError, match="undeclared credentials"):
+        NativeCompositeRuntimeConfiguration(
+            json.dumps(material), {"PATH": "forbidden"}
+        ).environment()
 
 
 @pytest.mark.parametrize(

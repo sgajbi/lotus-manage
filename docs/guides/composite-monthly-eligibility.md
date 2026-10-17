@@ -5,6 +5,33 @@ through its existing immutable membership ledger. It does not calculate composit
 Official activation remains `UNAVAILABLE`: the default source adapter is unavailable, population
 qualification and bank IAM are not established, and institutional policy applicability requires approval.
 
+## Controlled Native Source Admission
+
+The normal subject and monthly factories also support the explicit
+`CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2` document in `DPM_COMPOSITE_SOURCES_JSON`.
+See [native deployment, trust and evidence boundaries](composite-configured-sources.md#native-deployment-document).
+Blank configuration remains unavailable; no caller or fixture enables it. Separate assembler A and
+independent verifier C clients authenticate as Core consumer `lotus-manage`, using deployment-owned
+credential references, no Authorization header, no redirects/proxy inheritance and verified TLS.
+Both read the same pinned financial cuts; C2 independently supplied expected observations and current
+trust/revocation govern fresh monthly admission. The separately mounted monthly Ed25519 signer is
+never a Core credential and does not enable historical or institutional verification.
+
+`CompositeMonthlyEligibilityAssembly/v2` retains native registry/member/capture/input/role-root
+custody and requires `CompositeMonthlySourceAdmissionProof/v1`. The immutable receipt/proof pair is
+retained in `source_assembly_evidence`; the existing rule engine and atomic publication owners stay
+unchanged. Legacy assemblyv1 forbids native proof, and absent legacy provenance remains omitted so
+issued v1 hashes do not change. No source principal, artifact key or bank approval is inferred.
+
+Staged admission requires a clean unpublished definition scope: an existing published definition or
+another staged reservation is a conflict. Native tests isolate staging and published recurring
+history in separate UUID databases. Saving the initial recurring membership legitimately publishes
+sequence1; a refused C2 evaluation must preserve that exact seeded publication page and leave no
+proposal. Exact retained proposal/approval/resolver replay uses recorded custody after source-off
+and process restart; a fresh operation still requires current source admission. These controlled
+proofs remain synthetic/non-certifying and do not establish actual Core financial/IAM acceptance,
+Performance calculation readiness or merged-main release qualification.
+
 ## Rule And Source Dictionary
 
 All money is bounded decimal text in the definition's reporting currency. No FX conversion,

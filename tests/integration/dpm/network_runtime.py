@@ -10,7 +10,7 @@ import threading
 import time
 import uuid
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import httpx
 import psycopg
@@ -19,6 +19,7 @@ from psycopg.conninfo import make_conninfo
 from psycopg.rows import dict_row
 
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
+from src.infrastructure.composites.native_assembly_configuration import NativeAssemblyConfiguration
 from tests.integration.dpm.postgres_prerequisite import postgres_dsn_or_skip
 
 
@@ -40,6 +41,28 @@ class RiskRuntimeConfiguration:
             "ENTERPRISE_POLICY_VERSION": self.policy_version,
             "PRINCIPAL_RESOLUTION_POSTURE": self.posture,
             "ENVIRONMENT": "local",
+        }
+
+
+@dataclass(frozen=True)
+class NativeCompositeRuntimeConfiguration:
+    """Explicit synthetic deployment inputs, restricted to the document's credential refs."""
+
+    document: str
+    credentials: dict[str, str] = field(repr=False)
+
+    def environment(self) -> dict[str, str]:
+        config = NativeAssemblyConfiguration.model_validate_json(self.document)
+        refs = {config.reader.credential_env, config.verification.reader.credential_env}
+        if config.policy_verification is not None:
+            refs.update(binding.credential_env for binding in config.policy_verification.bindings)
+        if not self.credentials.keys() <= refs:
+            raise ValueError("Native runtime cannot forward undeclared credentials")
+        # Empty explicitly masks any inherited value for omitted credential refs.
+        return {
+            "DPM_COMPOSITE_SOURCES_JSON": self.document,
+            **dict.fromkeys(refs, ""),
+            **self.credentials,
         }
 
 
@@ -74,6 +97,7 @@ def _serve(
     institutional_config=None,
     historical_test_admission=False,
     historical_config=None,
+    native_composite_config=None,
 ):
     # Spawned interpreters do not inherit parent's in-process dependency overrides.
     for name in list(os.environ):
@@ -100,6 +124,8 @@ def _serve(
         os.environ.update(risk_config.environment())
     if composite_config is not None:
         os.environ["DPM_COMPOSITE_SOURCES_JSON"] = composite_config
+    if native_composite_config is not None:
+        os.environ.update(native_composite_config.environment())
     if composite_read_grants is not None:
         os.environ["DPM_COMPOSITE_READ_SERVICE_GRANTS_JSON"] = composite_read_grants
     if institutional_config is not None:
@@ -140,7 +166,10 @@ def native_api(
     institutional_config: str | None = None,
     historical_test_admission: bool = False,
     historical_config: str | None = None,
+    native_composite_config: NativeCompositeRuntimeConfiguration | None = None,
 ):
+    if native_composite_config is not None and composite_config is not None:
+        raise ValueError("Select one composite runtime document")
     if os.environ.get("DPM_NETWORK_IMAGE_ID"):
         if historical_test_admission or any(
             value is not None
@@ -151,6 +180,7 @@ def native_api(
                 composite_read_grants,
                 institutional_config,
                 historical_config,
+                native_composite_config,
             )
         ):
             raise ValueError("Controlled source proof requires the native installed API.")
@@ -175,6 +205,7 @@ def native_api(
             institutional_config,
             historical_test_admission,
             historical_config,
+            native_composite_config,
         ),
     )
     process.start()

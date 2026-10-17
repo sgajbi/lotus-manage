@@ -1388,6 +1388,46 @@
       "title": "MonthlyInputBinding",
       "type": "object"
     },
+    "MonthlyNativeCustody": {
+      "additionalProperties": false,
+      "properties": {
+        "content_hash": {
+          "default": "",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "portfolios": {
+          "items": {
+            "$ref": "#/$defs/NativePortfolioCustody"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "title": "Portfolios",
+          "type": "array"
+        },
+        "product_name": {
+          "const": "CompositeMonthlyNativeCustody",
+          "default": "CompositeMonthlyNativeCustody",
+          "title": "Product Name",
+          "type": "string"
+        },
+        "product_version": {
+          "const": "v1",
+          "default": "v1",
+          "title": "Product Version",
+          "type": "string"
+        },
+        "registry": {
+          "$ref": "#/$defs/NativeRegistryCustody"
+        }
+      },
+      "required": [
+        "registry",
+        "portfolios"
+      ],
+      "title": "MonthlyNativeCustody",
+      "type": "object"
+    },
     "MonthlyPolicyLayer": {
       "additionalProperties": false,
       "description": "Exact versioned configuration material, not a mutable catalogue lookup.",
@@ -1930,6 +1970,150 @@
       "title": "MonthlyRuleAssessment",
       "type": "object"
     },
+    "MonthlySourceAdmissionContext": {
+      "additionalProperties": false,
+      "properties": {
+        "admitted_at": {
+          "title": "Admitted At",
+          "type": "string"
+        },
+        "audience": {
+          "const": "lotus-manage",
+          "default": "lotus-manage",
+          "title": "Audience",
+          "type": "string"
+        },
+        "configuration_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Configuration Digest",
+          "type": "string"
+        },
+        "current_revocation_status": {
+          "const": "CLEAR",
+          "default": "CLEAR",
+          "title": "Current Revocation Status",
+          "type": "string"
+        },
+        "evidence_posture": {
+          "const": "SYNTHETIC_NON_CERTIFYING",
+          "default": "SYNTHETIC_NON_CERTIFYING",
+          "title": "Evidence Posture",
+          "type": "string"
+        },
+        "issuer": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Issuer",
+          "type": "string"
+        },
+        "operation": {
+          "const": "verification",
+          "default": "verification",
+          "title": "Operation",
+          "type": "string"
+        },
+        "principal_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Principal Id",
+          "type": "string"
+        },
+        "purpose": {
+          "const": "COMPOSITE_MONTHLY_SOURCE_CUT",
+          "default": "COMPOSITE_MONTHLY_SOURCE_CUT",
+          "title": "Purpose",
+          "type": "string"
+        },
+        "revocation_checked_at": {
+          "title": "Revocation Checked At",
+          "type": "string"
+        },
+        "revocation_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Revocation Digest",
+          "type": "string"
+        },
+        "revocation_expires_at": {
+          "title": "Revocation Expires At",
+          "type": "string"
+        },
+        "revocation_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Revocation Revision",
+          "type": "string"
+        },
+        "tenant_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "verifier_key": {
+          "$ref": "#/$defs/MonthlySourceVerifierKey"
+        },
+        "verifier_key_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Verifier Key Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "configuration_digest",
+        "issuer",
+        "principal_id",
+        "tenant_id",
+        "verifier_key",
+        "verifier_key_digest",
+        "revocation_revision",
+        "revocation_digest",
+        "revocation_checked_at",
+        "revocation_expires_at",
+        "admitted_at"
+      ],
+      "title": "MonthlySourceAdmissionContext",
+      "type": "object"
+    },
+    "MonthlySourceAdmissionProof": {
+      "additionalProperties": false,
+      "properties": {
+        "content_hash": {
+          "default": "",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "product_name": {
+          "const": "CompositeMonthlySourceAdmissionProof",
+          "default": "CompositeMonthlySourceAdmissionProof",
+          "title": "Product Name",
+          "type": "string"
+        },
+        "product_version": {
+          "const": "v1",
+          "default": "v1",
+          "title": "Product Version",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/MonthlySourceVerificationResult"
+        },
+        "verifier_credential": {
+          "maxLength": 16384,
+          "minLength": 1,
+          "title": "Verifier Credential",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result",
+        "verifier_credential"
+      ],
+      "title": "MonthlySourceAdmissionProof",
+      "type": "object"
+    },
     "MonthlySourceAssembly": {
       "additionalProperties": false,
       "properties": {
@@ -1977,6 +2161,1253 @@
         "compatibility_posture"
       ],
       "title": "MonthlySourceAssembly",
+      "type": "object"
+    },
+    "MonthlySourceVerificationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "admission": {
+          "$ref": "#/$defs/MonthlySourceAdmissionContext"
+        },
+        "native_custody_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Native Custody Digest",
+          "type": "string"
+        },
+        "product_name": {
+          "const": "CompositeMonthlySourceVerificationResult",
+          "default": "CompositeMonthlySourceVerificationResult",
+          "title": "Product Name",
+          "type": "string"
+        },
+        "product_version": {
+          "const": "v1",
+          "default": "v1",
+          "title": "Product Version",
+          "type": "string"
+        },
+        "receipt": {
+          "$ref": "#/$defs/VerificationReceipt"
+        }
+      },
+      "required": [
+        "receipt",
+        "native_custody_digest",
+        "admission"
+      ],
+      "title": "MonthlySourceVerificationResult",
+      "type": "object"
+    },
+    "MonthlySourceVerifierKey": {
+      "additionalProperties": false,
+      "properties": {
+        "alg": {
+          "const": "EdDSA",
+          "default": "EdDSA",
+          "title": "Alg",
+          "type": "string"
+        },
+        "crv": {
+          "const": "Ed25519",
+          "default": "Ed25519",
+          "title": "Crv",
+          "type": "string"
+        },
+        "kid": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Kid",
+          "type": "string"
+        },
+        "kty": {
+          "const": "OKP",
+          "default": "OKP",
+          "title": "Kty",
+          "type": "string"
+        },
+        "revoked": {
+          "const": false,
+          "default": false,
+          "title": "Revoked",
+          "type": "boolean"
+        },
+        "x": {
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "title": "X",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kid",
+        "x"
+      ],
+      "title": "MonthlySourceVerifierKey",
+      "type": "object"
+    },
+    "NativeCaptureCommitment": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_count": {
+          "minimum": 1,
+          "title": "Byte Count",
+          "type": "integer"
+        },
+        "capture_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Capture Id",
+          "type": "string"
+        },
+        "mime_type": {
+          "enum": [
+            "application/json",
+            "application/x-ndjson"
+          ],
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "original_supplier_digest": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Original Supplier Digest"
+        },
+        "original_supplier_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Original Supplier Reference"
+        },
+        "product_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Product Version",
+          "type": "string"
+        },
+        "raw_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Raw Hash",
+          "type": "string"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "enum": [
+                "PRIOR_ASSETS",
+                "MONTH_END_ASSETS",
+                "CASH",
+                "READINESS",
+                "FLOWS"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Role"
+        },
+        "schema_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "segment_count": {
+          "minimum": 1,
+          "title": "Segment Count",
+          "type": "integer"
+        },
+        "selector_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Selector Hash"
+        },
+        "serializer_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Serializer Id",
+          "type": "string"
+        },
+        "source_context": {
+          "$ref": "#/$defs/NativeCaptureContext"
+        },
+        "source_page_index": {
+          "minimum": 0,
+          "title": "Source Page Index",
+          "type": "integer"
+        },
+        "source_product": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Product",
+          "type": "string"
+        },
+        "typed_content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Typed Content Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "capture_id",
+        "role",
+        "source_page_index",
+        "source_product",
+        "product_version",
+        "selector_hash",
+        "typed_content_hash",
+        "raw_hash",
+        "byte_count",
+        "segment_count",
+        "serializer_id",
+        "schema_version",
+        "mime_type",
+        "source_context",
+        "original_supplier_digest",
+        "original_supplier_reference"
+      ],
+      "title": "NativeCaptureCommitment",
+      "type": "object"
+    },
+    "NativeCaptureContext": {
+      "additionalProperties": false,
+      "properties": {
+        "capture_origin": {
+          "enum": [
+            "ACQUIRED_NATIVE_DTO",
+            "INGRESS_JSON"
+          ],
+          "title": "Capture Origin",
+          "type": "string"
+        },
+        "captured_at": {
+          "title": "Captured At",
+          "type": "string"
+        },
+        "export_job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Export Job Id"
+        },
+        "next_page_token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Page Token"
+        },
+        "receipt_job_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Receipt Job Id",
+          "type": "string"
+        },
+        "refresh_of_job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Refresh Of Job Id"
+        },
+        "request_scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Request Scope"
+        },
+        "returned_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Returned Count"
+        },
+        "selector_json": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Selector Json"
+        },
+        "snapshot_epoch": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Snapshot Epoch"
+        },
+        "source_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Revision"
+        },
+        "total_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Total Count"
+        }
+      },
+      "required": [
+        "capture_origin",
+        "captured_at",
+        "snapshot_epoch",
+        "request_scope",
+        "receipt_job_id",
+        "source_revision",
+        "selector_json",
+        "export_job_id",
+        "refresh_of_job_id",
+        "returned_count",
+        "total_count",
+        "next_page_token"
+      ],
+      "title": "NativeCaptureContext",
+      "type": "object"
+    },
+    "NativeCashDeclaration": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "pattern": "^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Amount"
+        },
+        "business_date": {
+          "title": "Business Date",
+          "type": "string"
+        },
+        "currency": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "producer_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Producer Revision",
+          "type": "string"
+        },
+        "semantic_definition": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Semantic Definition",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount",
+        "currency",
+        "business_date",
+        "semantic_definition",
+        "producer_revision"
+      ],
+      "title": "NativeCashDeclaration",
+      "type": "object"
+    },
+    "NativeCompatibilityDeclaration": {
+      "additionalProperties": false,
+      "properties": {
+        "basis_reference": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Basis Reference",
+          "type": "string"
+        },
+        "coverage_from": {
+          "title": "Coverage From",
+          "type": "string"
+        },
+        "coverage_to": {
+          "title": "Coverage To",
+          "type": "string"
+        },
+        "currency": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "definition_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Definition Version",
+          "type": "string"
+        },
+        "original_evidence_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Original Evidence Digest",
+          "type": "string"
+        },
+        "registry_root": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Registry Root",
+          "type": "string"
+        },
+        "role_roots": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "enum": [
+                  "PRIOR_ASSETS",
+                  "MONTH_END_ASSETS",
+                  "CASH",
+                  "READINESS",
+                  "FLOWS"
+                ],
+                "type": "string"
+              },
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "title": "Role Roots",
+          "type": "array"
+        },
+        "scope_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Scope Id",
+          "type": "string"
+        },
+        "source_system": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source System",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_system",
+        "scope_id",
+        "definition_version",
+        "registry_root",
+        "role_roots",
+        "coverage_from",
+        "coverage_to",
+        "currency",
+        "basis_reference",
+        "original_evidence_digest"
+      ],
+      "title": "NativeCompatibilityDeclaration",
+      "type": "object"
+    },
+    "NativeCutLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "batch_manifest_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Batch Manifest Hash",
+          "type": "string"
+        },
+        "product_name": {
+          "enum": [
+            "PortfolioHistoricalRegistry",
+            "PortfolioFinancialSourceCut"
+          ],
+          "title": "Product Name",
+          "type": "string"
+        },
+        "product_version": {
+          "const": "v1",
+          "default": "v1",
+          "title": "Product Version",
+          "type": "string"
+        },
+        "source_address": {
+          "$ref": "#/$defs/NativeSourceAddress"
+        }
+      },
+      "required": [
+        "product_name",
+        "source_address",
+        "batch_manifest_hash"
+      ],
+      "title": "NativeCutLocator",
+      "type": "object"
+    },
+    "NativeCutReceipt": {
+      "additionalProperties": false,
+      "properties": {
+        "completed_at": {
+          "title": "Completed At",
+          "type": "string"
+        },
+        "generated_at": {
+          "title": "Generated At",
+          "type": "string"
+        },
+        "receipt_job_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Receipt Job Id",
+          "type": "string"
+        },
+        "received_at": {
+          "title": "Received At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "receipt_job_id",
+        "received_at",
+        "completed_at",
+        "generated_at"
+      ],
+      "title": "NativeCutReceipt",
+      "type": "object"
+    },
+    "NativeExpectedPopulation": {
+      "additionalProperties": false,
+      "properties": {
+        "content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "definition_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Definition Version",
+          "type": "string"
+        },
+        "reference": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference",
+        "definition_version",
+        "count",
+        "content_hash"
+      ],
+      "title": "NativeExpectedPopulation",
+      "type": "object"
+    },
+    "NativeFinancialGraph": {
+      "additionalProperties": false,
+      "properties": {
+        "compatibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeCompatibilityDeclaration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "identity": {
+          "$ref": "#/$defs/NativeSourceIdentity"
+        },
+        "member_revision": {
+          "minimum": 1,
+          "title": "Member Revision",
+          "type": "integer"
+        },
+        "month_end_date": {
+          "title": "Month End Date",
+          "type": "string"
+        },
+        "portfolio_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Portfolio Id",
+          "type": "string"
+        },
+        "prior_date": {
+          "title": "Prior Date",
+          "type": "string"
+        },
+        "registry_root": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Registry Root",
+          "type": "string"
+        },
+        "selections": {
+          "items": {
+            "$ref": "#/$defs/NativeProductSelection"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "title": "Selections",
+          "type": "array"
+        },
+        "settled_unencumbered": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeCashDeclaration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "identity",
+        "portfolio_id",
+        "currency",
+        "prior_date",
+        "month_end_date",
+        "registry_root",
+        "member_revision",
+        "selections",
+        "settled_unencumbered",
+        "compatibility"
+      ],
+      "title": "NativeFinancialGraph",
+      "type": "object"
+    },
+    "NativeFinancialManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_count": {
+          "minimum": 0,
+          "title": "Chunk Count",
+          "type": "integer"
+        },
+        "chunks_root": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Chunks Root",
+          "type": "string"
+        },
+        "identity": {
+          "$ref": "#/$defs/NativeSourceIdentity"
+        },
+        "selection_count": {
+          "minimum": 0,
+          "title": "Selection Count",
+          "type": "integer"
+        },
+        "selections_root": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Selections Root",
+          "type": "string"
+        }
+      },
+      "required": [
+        "identity",
+        "selection_count",
+        "selections_root",
+        "chunk_count",
+        "chunks_root"
+      ],
+      "title": "NativeFinancialManifest",
+      "type": "object"
+    },
+    "NativeMonthlySourceAssembly": {
+      "additionalProperties": false,
+      "properties": {
+        "compatibility_binding": {
+          "$ref": "#/$defs/EvidenceBinding"
+        },
+        "compatibility_posture": {
+          "enum": [
+            "SYNTHETIC_UNQUALIFIED",
+            "SOURCE_UNVERIFIED",
+            "UNAVAILABLE"
+          ],
+          "title": "Compatibility Posture",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/MonthlyInputBinding"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "title": "Inputs",
+          "type": "array"
+        },
+        "native_custody": {
+          "$ref": "#/$defs/MonthlyNativeCustody"
+        },
+        "observations": {
+          "$ref": "#/$defs/MonthlyEligibilityObservations"
+        },
+        "product_name": {
+          "const": "CompositeMonthlyEligibilityAssembly",
+          "title": "Product Name",
+          "type": "string"
+        },
+        "product_version": {
+          "const": "v2",
+          "title": "Product Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product_name",
+        "product_version",
+        "observations",
+        "inputs",
+        "compatibility_binding",
+        "compatibility_posture",
+        "native_custody"
+      ],
+      "title": "NativeMonthlySourceAssembly",
+      "type": "object"
+    },
+    "NativePortfolioCustody": {
+      "additionalProperties": false,
+      "properties": {
+        "captures": {
+          "items": {
+            "$ref": "#/$defs/NativeCaptureCommitment"
+          },
+          "title": "Captures",
+          "type": "array"
+        },
+        "graph": {
+          "$ref": "#/$defs/NativeFinancialGraph"
+        },
+        "graph_content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Graph Content Hash",
+          "type": "string"
+        },
+        "input_content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Input Content Hash",
+          "type": "string"
+        },
+        "locator": {
+          "$ref": "#/$defs/NativeCutLocator"
+        },
+        "manifest": {
+          "$ref": "#/$defs/NativeFinancialManifest"
+        },
+        "portfolio_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Portfolio Id",
+          "type": "string"
+        },
+        "receipt": {
+          "$ref": "#/$defs/NativeCutReceipt"
+        },
+        "view_roots": {
+          "items": {
+            "$ref": "#/$defs/NativeViewRoot"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "View Roots",
+          "type": "array"
+        }
+      },
+      "required": [
+        "portfolio_id",
+        "locator",
+        "manifest",
+        "receipt",
+        "view_roots",
+        "input_content_hash",
+        "graph",
+        "graph_content_hash",
+        "captures"
+      ],
+      "title": "NativePortfolioCustody",
+      "type": "object"
+    },
+    "NativeProductSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "product_name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Product Name",
+          "type": "string"
+        },
+        "product_version": {
+          "const": "v1",
+          "title": "Product Version",
+          "type": "string"
+        },
+        "receipt_job_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Receipt Job Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "PRIOR_ASSETS",
+            "MONTH_END_ASSETS",
+            "CASH",
+            "READINESS",
+            "FLOWS"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "selector_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Selector Hash",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "product_name",
+        "product_version",
+        "selector_hash",
+        "content_hash",
+        "receipt_job_id",
+        "source_revision"
+      ],
+      "title": "NativeProductSelection",
+      "type": "object"
+    },
+    "NativeRegistryCustody": {
+      "additionalProperties": false,
+      "properties": {
+        "captures": {
+          "items": {
+            "$ref": "#/$defs/NativeCaptureCommitment"
+          },
+          "title": "Captures",
+          "type": "array"
+        },
+        "locator": {
+          "$ref": "#/$defs/NativeCutLocator"
+        },
+        "manifest": {
+          "$ref": "#/$defs/NativeRegistryManifest"
+        },
+        "member_bindings": {
+          "items": {
+            "$ref": "#/$defs/NativeRegistryMemberBinding"
+          },
+          "maxItems": 1000,
+          "title": "Member Bindings",
+          "type": "array"
+        },
+        "receipt": {
+          "$ref": "#/$defs/NativeCutReceipt"
+        },
+        "view_roots": {
+          "items": {
+            "$ref": "#/$defs/NativeViewRoot"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "View Roots",
+          "type": "array"
+        }
+      },
+      "required": [
+        "locator",
+        "manifest",
+        "receipt",
+        "view_roots",
+        "member_bindings",
+        "captures"
+      ],
+      "title": "NativeRegistryCustody",
+      "type": "object"
+    },
+    "NativeRegistryManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_count": {
+          "minimum": 0,
+          "title": "Chunk Count",
+          "type": "integer"
+        },
+        "chunks_root": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Chunks Root",
+          "type": "string"
+        },
+        "declared_coverage": {
+          "enum": [
+            "COMPLETE",
+            "PARTIAL",
+            "MISSING"
+          ],
+          "title": "Declared Coverage",
+          "type": "string"
+        },
+        "expected_population": {
+          "$ref": "#/$defs/NativeExpectedPopulation"
+        },
+        "identity": {
+          "$ref": "#/$defs/NativeSourceIdentity"
+        },
+        "members_root": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Members Root",
+          "type": "string"
+        },
+        "supplied_count": {
+          "minimum": 0,
+          "title": "Supplied Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "identity",
+        "expected_population",
+        "declared_coverage",
+        "supplied_count",
+        "members_root",
+        "chunk_count",
+        "chunks_root"
+      ],
+      "title": "NativeRegistryManifest",
+      "type": "object"
+    },
+    "NativeRegistryMemberBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "member_content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Member Content Hash",
+          "type": "string"
+        },
+        "member_revision": {
+          "minimum": 1,
+          "title": "Member Revision",
+          "type": "integer"
+        },
+        "portfolio_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Portfolio Id",
+          "type": "string"
+        },
+        "provider_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "provider_namespace": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider Namespace",
+          "type": "string"
+        },
+        "source_member_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Member Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "portfolio_id",
+        "provider_id",
+        "provider_namespace",
+        "source_member_id",
+        "member_revision",
+        "member_content_hash"
+      ],
+      "title": "NativeRegistryMemberBinding",
+      "type": "object"
+    },
+    "NativeSourceAddress": {
+      "additionalProperties": false,
+      "properties": {
+        "registry_scope_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Registry Scope Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "source_cut_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Cut Id",
+          "type": "string"
+        },
+        "source_system": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source System",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_system",
+        "registry_scope_id",
+        "source_cut_id",
+        "revision"
+      ],
+      "title": "NativeSourceAddress",
+      "type": "object"
+    },
+    "NativeSourceIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "calendar": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Calendar",
+          "type": "string"
+        },
+        "coverage_from": {
+          "title": "Coverage From",
+          "type": "string"
+        },
+        "coverage_to": {
+          "title": "Coverage To",
+          "type": "string"
+        },
+        "definition_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Definition Version",
+          "type": "string"
+        },
+        "expected_head_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expected Head Hash"
+        },
+        "generated_at": {
+          "title": "Generated At",
+          "type": "string"
+        },
+        "observed_at": {
+          "title": "Observed At",
+          "type": "string"
+        },
+        "predecessor_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Predecessor Hash"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "scope_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Scope Id",
+          "type": "string"
+        },
+        "source_cut_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Cut Id",
+          "type": "string"
+        },
+        "source_system": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source System",
+          "type": "string"
+        },
+        "tenant_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "source_system",
+        "scope_id",
+        "source_cut_id",
+        "revision",
+        "definition_version",
+        "coverage_from",
+        "coverage_to",
+        "calendar",
+        "observed_at",
+        "generated_at",
+        "predecessor_hash",
+        "expected_head_hash"
+      ],
+      "title": "NativeSourceIdentity",
+      "type": "object"
+    },
+    "NativeViewRoot": {
+      "additionalProperties": false,
+      "properties": {
+        "ordered_set_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Ordered Set Hash",
+          "type": "string"
+        },
+        "ordering": {
+          "enum": [
+            "single_cut",
+            "provider_namespace,source_member_id",
+            "selected_portfolio",
+            "role,source_page_index,capture_id,segment_index"
+          ],
+          "title": "Ordering",
+          "type": "string"
+        },
+        "root_item_count": {
+          "minimum": 0,
+          "title": "Root Item Count",
+          "type": "integer"
+        },
+        "root_kind": {
+          "enum": [
+            "CUT_HEADERS",
+            "REGISTRY_MEMBERS",
+            "SELECTED_FINANCIAL_INPUTS",
+            "CAPTURE_ARTIFACTS"
+          ],
+          "title": "Root Kind",
+          "type": "string"
+        },
+        "total_count": {
+          "minimum": 0,
+          "title": "Total Count",
+          "type": "integer"
+        },
+        "view": {
+          "enum": [
+            "CUT",
+            "MEMBERS",
+            "INPUTS",
+            "CAPTURES"
+          ],
+          "title": "View",
+          "type": "string"
+        }
+      },
+      "required": [
+        "view",
+        "total_count",
+        "ordered_set_hash",
+        "root_item_count",
+        "root_kind",
+        "ordering"
+      ],
+      "title": "NativeViewRoot",
       "type": "object"
     },
     "ResolvedMonthlyPolicy": {
@@ -2310,10 +3741,76 @@
     },
     "VerifiedMonthlySourceAssembly": {
       "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "properties": {
+              "native_proof": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            },
+            "required": [
+              "native_proof"
+            ]
+          },
+          "if": {
+            "properties": {
+              "assembly": {
+                "properties": {
+                  "product_version": {
+                    "const": "v1"
+                  }
+                },
+                "required": [
+                  "product_version"
+                ]
+              }
+            },
+            "required": [
+              "assembly"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "native_proof"
+              ]
+            }
+          }
+        }
+      ],
       "description": "Retained non-certifying manifest and independently admitted verification receipt.",
       "properties": {
         "assembly": {
-          "$ref": "#/$defs/MonthlySourceAssembly"
+          "discriminator": {
+            "mapping": {
+              "v1": "#/$defs/MonthlySourceAssembly",
+              "v2": "#/$defs/NativeMonthlySourceAssembly"
+            },
+            "propertyName": "product_version"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/MonthlySourceAssembly"
+            },
+            {
+              "$ref": "#/$defs/NativeMonthlySourceAssembly"
+            }
+          ],
+          "title": "Assembly"
+        },
+        "native_proof": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MonthlySourceAdmissionProof"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "verification": {
           "$ref": "#/$defs/VerificationReceipt"

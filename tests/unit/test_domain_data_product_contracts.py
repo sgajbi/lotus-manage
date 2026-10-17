@@ -11,7 +11,6 @@ from scripts.validate_domain_data_product_contracts import (
     validate_repo_native_contracts,
 )
 
-
 ROOT = Path(__file__).resolve().parents[2]
 CONSUMER_DECLARATION_PATH = (
     ROOT / "contracts" / "domain-data-products" / "lotus-manage-consumers.v1.json"
@@ -47,6 +46,8 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
 
     assert payload["consumer_repository"] == "lotus-manage"
     assert set(by_name) == {
+        "PortfolioHistoricalRegistry",
+        "PortfolioFinancialSourceCut",
         "PortfolioStateSnapshot",
         "DpmModelPortfolioTarget",
         "DiscretionaryMandateBinding",
@@ -193,6 +194,55 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
 
     request_models = REQUEST_MODELS_PATH.read_text(encoding="utf-8")
     assert "portfolio_snapshot: PortfolioSnapshot" in request_models
+
+
+@pytest.mark.parametrize(
+    "product_name", ["PortfolioHistoricalRegistry", "PortfolioFinancialSourceCut"]
+)
+def test_manage_neutral_core_reads_preserve_version_trust_and_fail_closed_posture(
+    product_name: str,
+) -> None:
+    from src.infrastructure.composites.core_source_wire import ReadResponse
+
+    dependency = next(
+        item
+        for item in _load_consumer_declaration()["dependencies"]
+        if item["product_name"] == product_name
+    )
+    assert dependency["producer_repository"] == "lotus-core"
+    assert dependency["required_product_version"] == "v1"
+    assert dependency["consumption_mode"] == "api_read"
+    assert dependency["failure_posture"] == "fail_closed"
+    assert dependency["validation_lanes"] == ["feature", "pr-merge"]
+    assert dependency["migration_posture"] == {"status": "current"}
+    assert dependency["required_trust_metadata"] == [
+        "product_name",
+        "product_version",
+        "tenant_id",
+        "generated_at",
+        "as_of_date",
+        "restatement_version",
+        "reconciliation_status",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "content_hash",
+        "policy_version",
+        "correlation_id",
+    ]
+    assert set(dependency["required_trust_metadata"]) <= ReadResponse.model_fields.keys()
+    for boundary in (
+        "default-off",
+        "exact-scope consumer grants",
+        "UNQUALIFIED",
+        "UNVERIFIED",
+        "DECLARED_UNVERIFIED or UNAVAILABLE",
+        "authoritative_use_available=false",
+        "no bank, supplier, financial or official authority",
+        "Missing, rejected, mismatched or incomplete evidence cannot issue monthly eligibility",
+    ):
+        assert boundary in dependency["business_purpose"]
 
 
 def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profiles() -> None:

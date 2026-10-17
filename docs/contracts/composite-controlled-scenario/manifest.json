@@ -3,7 +3,7 @@
     "CompositeMembership.v1.controlled.json": "sha256:1b6b1080e95714058bfab655f04931d17f7664792e4017010356d7d95c5699b4",
     "CompositeUniverseAttestation.v1.controlled.json": "sha256:ea3bad2b93d23d5a9e17a76ccb77341c0cb2643c8a2bc3bc1db4ce426d7a21de",
     "refusal-vectors.json": "sha256:2eecf67a6be371a65e3fc64e0b359f66c8ef27b5d4fa92b2ef166d9feae09c82",
-    "schemas.json": "sha256:02b0e9f236f19ec96d47ebc6d60da88cb6cbf43cd63d26c9e99ee8815d27920a",
+    "schemas.json": "sha256:7683eb4121229628d4d3e389b7f83124c84d30bc3cb7fee91bd1ce7a02d11eb7",
     "valid-graph.json": "sha256:c334914aab282a494cfa6fe81cc537b75f306fdcf76e62a23605dbc3f1462afb"
   },
   "consumer_enablement": "NOT_ADMITTED",
@@ -24,7 +24,7 @@
     "CompositeMembership.v1.controlled.json": "02b98d025c324a4e65d3258055b6675608bef5bb200a6ca9ba62811e03d184e5",
     "CompositeUniverseAttestation.v1.controlled.json": "aed1cb15d22ad9b098f19b746dad91bc911bdf010e639771acfe02cb6dc83307",
     "refusal-vectors.json": "067e9afb4d6b62ca800e32bd698add870e8a7e85bcce5c34a126edb1d27b66f3",
-    "schemas.json": "452e2e104eb2b01c8a7ece9ee9d23db081d45e82ea155fbd28e81865df956024",
+    "schemas.json": "bf1bd4135b8a7d139db0da433f15e34f1321bcec00968fb325babab0a4c7d62c",
     "valid-graph.json": "0828e66f3bfb73b1671ebb9a5ef4e74822aa5f2f70a3d130c3cd3f835eed899f"
   },
   "source_base": "b3cd6411017bea22d5e21cfbb60de25ebd5431ba"
