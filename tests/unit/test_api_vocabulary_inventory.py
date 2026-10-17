@@ -11,11 +11,109 @@ from scripts.api_vocabulary_inventory import (
     _extract_request_fields,
     _fallback_example,
     _schema_type,
+    _schema_observed_types,
     app,
     build_inventory,
     validate_inventory,
 )
 from src.core.rebalance_runs import models as run_models
+
+
+@pytest.mark.parametrize(
+    ("schema", "scalar", "observed"),
+    [
+        ({"type": "array", "items": {"type": "string"}}, "array", ["array"]),
+        ({"type": "object"}, "object", ["object"]),
+        ({"anyOf": [{"type": "string"}, {"type": "null"}]}, "string", ["string"]),
+        ({"anyOf": [{"type": "number"}, {"type": "string"}]}, "object", ["number", "string"]),
+        ({"oneOf": [{"type": "string"}, {"type": "string"}]}, "object", ["string"]),
+        ({"$ref": "#/components/schemas/SourceRecord"}, "SourceRecord", ["SourceRecord"]),
+        (
+            {"anyOf": [{"type": "array"}, {"$ref": "#/components/schemas/SourceRecord"}]},
+            "object",
+            ["object"],
+        ),
+        ({"anyOf": [{"type": "array"}, False]}, "object", ["object"]),
+        ({"anyOf": [{"type": "array"}, {}]}, "object", ["object"]),
+        ({"anyOf": [{"type": "array"}, {"type": "unsupported"}]}, "object", ["object"]),
+        ({"anyOf": [{"type": "null"}]}, "object", ["object"]),
+        ({"anyOf": []}, "object", ["object"]),
+        ({"anyOf": {"type": "array"}}, "object", ["object"]),
+        ({"allOf": [{"type": "array"}, {"type": "object"}]}, "object", ["object"]),
+        ({"type": "object", "anyOf": [{"type": "array"}, {"type": "null"}]}, "object", ["object"]),
+    ],
+)
+def test_declared_alternatives_preserve_scalar_and_unsupported_fallbacks(
+    schema: dict[str, Any], scalar: str, observed: list[str]
+) -> None:
+    assert _schema_type(schema) == scalar
+    assert _schema_observed_types(schema) == observed
+
+
+@pytest.mark.parametrize("composition", ["anyOf", "oneOf"])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_inventory_retains_declared_nonnull_composition_types(
+    monkeypatch: pytest.MonkeyPatch, composition: str, reverse: bool
+) -> None:
+    variants = [
+        {"type": "array", "items": {"type": "string"}},
+        {"type": "object", "additionalProperties": True},
+        {"type": "null"},
+    ]
+    if reverse:
+        variants.reverse()
+    declaration = {composition: variants, "example": ["tenant_id"]}
+    schema = {"type": "object", "properties": {"declared_evidence": declaration}}
+    operation = {
+        "requestBody": {"content": {"application/json": {"schema": schema}}},
+        "responses": {"200": {"content": {"application/json": {"schema": schema}}}},
+    }
+    monkeypatch.setattr(app, "openapi", lambda: {"paths": {"/evidence": {"post": operation}}})
+
+    inventory = build_inventory()
+    assert len(inventory["attributeCatalog"]) == 1
+    attribute = inventory["attributeCatalog"][0]
+    assert attribute["observedTypes"] == [v["type"] for v in variants if v["type"] != "null"]
+    assert attribute["type"] == "object"
+    assert attribute["example"] == ["tenant_id"]
+    assert "array" in attribute["observedTypes"]
+    for direction in ("request", "response"):
+        usages = inventory["endpoints"][0][direction]["fields"]
+        assert len(usages) == 1
+        assert usages[0]["semanticId"] == "lotus.declared_evidence"
+        assert usages[0]["type"] == "object"
+        assert set(usages[0]) == {
+            "name",
+            "location",
+            "required",
+            "type",
+            "semanticId",
+            "attributeRef",
+        }
+    assert validate_inventory(inventory) == []
+
+
+def test_pm_book_filter_inventory_retains_canonical_and_legacy_alternatives() -> None:
+    schema = app.openapi()["components"]["schemas"]["DpmPmQualityBookScopeEvidence"]
+    declaration = schema["properties"]["filters_applied"]
+    assert [branch["type"] for branch in declaration["anyOf"]] == ["array", "object"]
+    inventory = build_inventory()
+    attributes = [
+        row for row in inventory["attributeCatalog"] if row["semanticId"] == "lotus.filters_applied"
+    ]
+    assert len(attributes) == 1
+    assert attributes[0]["observedTypes"] == ["array", "object"]
+    assert isinstance(attributes[0]["example"], list)
+    usages = [
+        field
+        for endpoint in inventory["endpoints"]
+        for field in endpoint["response"]["fields"]
+        if field["semanticId"] == "lotus.filters_applied"
+    ]
+    assert usages
+    for endpoint in inventory["endpoints"]:
+        fields = endpoint["response"]["fields"]
+        assert len(fields) == len({json.dumps(field, sort_keys=True) for field in fields})
 
 
 @pytest.mark.parametrize("name", ["artifact", "async_operation", "idempotency_history"])
