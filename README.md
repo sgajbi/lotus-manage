@@ -6,6 +6,8 @@ supportability service for the Lotus ecosystem.
 Repository-local engineering context:
 [REPOSITORY-ENGINEERING-CONTEXT.md](REPOSITORY-ENGINEERING-CONTEXT.md)
 
+Operator enrollment: [ordinary Core request context](docs/operations/core-request-context.md).
+
 RFC-0082 upstream contract-family map:
 [docs/standards/RFC-0082-upstream-contract-family-map.md](docs/standards/RFC-0082-upstream-contract-family-map.md)
 

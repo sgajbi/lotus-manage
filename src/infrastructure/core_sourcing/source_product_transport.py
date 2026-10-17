@@ -63,10 +63,15 @@ def source_product_request(
     url: str,
     selector: dict[str, Any],
     headers: dict[str, str],
+    auth: httpx.Auth | None = None,
+    timeout_seconds: float | None = None,
 ) -> httpx.Response:
+    options: dict[str, Any] = {}
+    if auth is not None:
+        options.update(auth=auth, follow_redirects=False, timeout=timeout_seconds)
     if method == "post":
-        return cast(httpx.Response, client.post(url, json=selector, headers=headers))
-    return cast(httpx.Response, client.get(url, params=selector, headers=headers))
+        return cast(httpx.Response, client.post(url, json=selector, headers=headers, **options))
+    return cast(httpx.Response, client.get(url, params=selector, headers=headers, **options))
 
 
 def final_source_product_attempt(*, attempt_index: int, attempts: int) -> bool:
@@ -85,6 +90,20 @@ def should_retry_transient_source_status(
     )
 
 
+def _execution_timeout(
+    started_at: float,
+    auth: httpx.Auth | None,
+    timeout_seconds: float | None,
+    unavailable_code: str,
+) -> float | None:
+    if auth is None:
+        return None
+    remaining = started_at + 290.0 - time.perf_counter()
+    if remaining <= 0:
+        raise DpmCoreResolverUnavailableError(unavailable_code)
+    return min(2.0 if timeout_seconds is None else timeout_seconds, remaining)
+
+
 def source_product_payload_with_retries(
     client: Any,
     *,
@@ -96,10 +115,13 @@ def source_product_payload_with_retries(
     unavailable_code: str,
     incomplete_code: str,
     source_service: str = "lotus-core",
+    auth: httpx.Auth | None = None,
+    timeout_seconds: float | None = None,
 ) -> dict[str, Any]:
     started_at = time.perf_counter()
     last_error: Exception | None = None
     for attempt in range(attempts):
+        remaining_timeout = _execution_timeout(started_at, auth, timeout_seconds, unavailable_code)
         try:
             response = source_product_request(
                 client,
@@ -107,6 +129,8 @@ def source_product_payload_with_retries(
                 url=url,
                 selector=selector,
                 headers=headers,
+                auth=auth,
+                timeout_seconds=remaining_timeout,
             )
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             last_error = exc
@@ -124,6 +148,7 @@ def source_product_payload_with_retries(
                 reason="transport_error",
             )
             continue
+        _execution_timeout(started_at, auth, timeout_seconds, unavailable_code)
         if should_retry_transient_source_status(
             response,
             attempt_index=attempt,

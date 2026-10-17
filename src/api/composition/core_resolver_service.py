@@ -14,6 +14,11 @@ from src.infrastructure.core_sourcing import (
     build_source_http_client_policy,
     get_shared_source_http_client,
 )
+from src.infrastructure.core_sourcing.request_context import (
+    OrdinaryCoreReadAuth,
+    load_core_execution_policy,
+)
+from src.infrastructure.source_http_clients import get_partitioned_source_http_client
 
 
 CoreResolverClient = DpmCoreResolverClient
@@ -64,15 +69,24 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
         timeout_seconds=env_float("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", 2.0),
         max_attempts=env_int("DPM_CORE_RESOLVER_MAX_ATTEMPTS", 2),
     )
+    execution = load_core_execution_policy(config.base_url, config.query_base_url)
+    http_policy = build_source_http_client_policy(
+        "core",
+        request_timeout_seconds=config.timeout_seconds,
+    )
+    shared_client = (
+        get_partitioned_source_http_client(
+            "core",
+            partition=execution.partition,
+            policy=http_policy,
+            auth=OrdinaryCoreReadAuth(execution),
+        )
+        if execution is not None
+        else get_shared_source_http_client("core", policy=http_policy)
+    )
     return DpmCoreResolverClient(
         config=config,
-        client=get_shared_source_http_client(
-            "core",
-            policy=build_source_http_client_policy(
-                "core",
-                request_timeout_seconds=config.timeout_seconds,
-            ),
-        ),
+        client=shared_client,
     )
 
 

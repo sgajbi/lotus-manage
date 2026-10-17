@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-10-16T20:03:50+00:00`
+- Generated at: `2026-10-17T17:15:22+00:00`
 
-- Baseline source snapshot: `c6477b8954c935549de7ec2a8f346eb8c888cdf6`
+- Baseline source snapshot: `866e3131569e5a8dec0b254db302d342c7395465`
 
-- Report source snapshot: `9b496e79+worktree`
+- Report source snapshot: `866e3131+worktree`
 
 - Mode: active Radon function/method non-degradation via `make complexity-gate`; the dependency-free AST branch metrics below remain report-only and are not Radon scores.
 

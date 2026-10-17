@@ -43,6 +43,14 @@ scope unless a future source-owning service publishes and certifies that capabil
 
 ## Operational truths
 
+Ordinary Core signing is opt-in through the eight `CORE_EXECUTION_*` settings, false/blank in
+tracked base/production/CI Compose. Enabled enrollment requires exact server-owned tenant and
+capability arrays plus explicit distinct QCP/query origins. Query remains unsigned; native A/C
+retained readers keep separate policies and credentials. Core owns capability-to-route admission.
+Use the [ordinary Core context guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/operations/core-request-context.md)
+for strict validation, fresh credentials, bounded retry/deadline and activation evidence. Source
+tests do not replace Root's actual canonical live flow or exact resource preservation.
+
 - host/runtime coexistence with `lotus-advise` is part of the service contract
 - supportability flows depend on truthful run persistence, lineage, and idempotency history
 - capability discovery is backend-owned and should not be inferred by downstream callers
