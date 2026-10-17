@@ -241,7 +241,12 @@ def _pm_book_membership_payload() -> dict:
             "state": "READY",
             "reason": "PM_BOOK_MEMBERSHIP_READY",
             "returned_portfolio_count": 1,
-            "filters_applied": {"portfolio_types": ["DISCRETIONARY"]},
+            "filters_applied": [
+                "tenant_id",
+                "portfolio_manager_id",
+                "as_of_date",
+                "portfolio_types",
+            ],
         },
         "lineage": {"source_system": "relationship_book", "contract_version": "rfc_041_v1"},
         "data_quality_status": "COMPLETE",
@@ -2195,6 +2200,11 @@ def test_core_resolver_fetches_portfolio_manager_book_membership_source_product(
     assert response.supportability.state == "READY"
     assert response.members[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
 
+    assert (
+        response.supportability.filters_applied
+        == _pm_book_membership_payload()["supportability"]["filters_applied"]
+    )
+
 
 def test_core_resolver_fetches_dpm_portfolio_universe_candidates_source_product():
     seen: dict[str, object] = {}
@@ -3098,6 +3108,25 @@ def test_get_source_product_closes_transient_owned_http_client(monkeypatch: pyte
     assert closed["value"] is True
 
 
+@pytest.mark.parametrize("filters", [{"portfolio_types": ["DPM"]}, "tenant_id", None, [1]])
+def test_pm_book_transport_refuses_malformed_filter_evidence(filters):
+    payload = _pm_book_membership_payload()
+    payload["supportability"]["filters_applied"] = filters
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+        ),
+    )
+    with pytest.raises(DpmCoreResolverError, match="^DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE$"):
+        client.resolve_portfolio_manager_book_membership(
+            portfolio_manager_id="PM_SG_DPM_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="default",
+            correlation_id="corr-malformed-book",
+        )
+
+
 def test_optional_resolvers_suppress_unavailable_source_products() -> None:
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(
@@ -3129,6 +3158,7 @@ def test_optional_resolvers_suppress_unavailable_source_products() -> None:
         )
         is None
     )
+
     assert (
         client._try_resolve_external_hedge_execution_readiness(
             portfolio_id="PB_SG_GLOBAL_BAL_001",

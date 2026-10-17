@@ -378,6 +378,11 @@ class DpmPmQualityIndicatorResult(BaseModel):
     source_refs: list[DpmOutcomeSourceRef] = Field(description="Source refs used by the indicator.")
 
 
+# Historical immutable score runs retained selector-value objects. This alternative
+# belongs only to stored/public evidence; the live Core transport is list-only.
+LegacyPmBookFilterEvidence = dict[str, object]
+
+
 class DpmPmQualityBookScopeEvidence(BaseModel):
     """Source-owned PM-book scope evidence attached to a score run."""
 
@@ -403,9 +408,13 @@ class DpmPmQualityBookScopeEvidence(BaseModel):
             "projection. Empty means member identity was not retained in this score-run record."
         ),
     )
-    filters_applied: dict[str, object] = Field(
+    filters_applied: list[str] | LegacyPmBookFilterEvidence = Field(
         default_factory=dict,
-        description="Source-applied filters returned by lotus-core for replay and audit.",
+        description=(
+            "Canonical Core-applied filter names for new evidence, or the unchanged legacy "
+            "selector-value object retained in immutable score runs. Historical omission "
+            "retains the empty-object default; reads never convert or recompute evidence."
+        ),
     )
     reason_codes: list[str] = Field(
         default_factory=list,

@@ -3,6 +3,7 @@ from typing import Any, Optional
 import math
 
 import httpx
+from pydantic import ValidationError
 
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
@@ -593,7 +594,10 @@ class DpmCoreResolverClient:
             unavailable_code="DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
             incomplete_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
         )
-        return DpmCorePortfolioManagerBookMembershipResponse.model_validate(response)
+        try:
+            return DpmCorePortfolioManagerBookMembershipResponse.model_validate(response)
+        except ValidationError as exc:
+            raise DpmCoreResolverError("DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE") from exc
 
     def resolve_cio_model_change_affected_cohort(
         self,

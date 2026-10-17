@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 import json
+from copy import deepcopy
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -9,6 +10,12 @@ from types import ModuleType
 from typing import Any
 
 import pytest
+from fastapi.testclient import TestClient
+from src.api.main import app
+from src.api.dependencies import get_pm_quality_score_run_application_service
+from src.api.services.pm_operating_quality_service import DpmPmOperatingQualityApplicationService
+from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
+from src.core.pm_quality.models import DpmPmQualityBookScopeEvidence
 
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
@@ -85,7 +92,7 @@ def _governance_approval() -> DpmPmQualityGovernanceApproval:
     )
 
 
-def _score_run(*, pm_id: str = "pm_001", policy_id: str = "pmq_sg_dpm"):
+def _score_run(*, pm_id: str = "pm_001", policy_id: str = "pmq_sg_dpm", book_scope_evidence=None):
     policy = DpmPmOperatingQualityPolicy(
         tenant_id=TENANT_ID,
         policy_id=policy_id,
@@ -112,6 +119,7 @@ def _score_run(*, pm_id: str = "pm_001", policy_id: str = "pmq_sg_dpm"):
         outcome_reviews=[],
         generated_by="ops",
         correlation_id=f"corr-{pm_id}",
+        book_scope_evidence=book_scope_evidence,
     )
 
 
@@ -903,6 +911,99 @@ def test_postgres_pm_quality_policy_repository_conflict_and_configuration_paths(
     monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
     with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING"):
         PostgresDpmPmQualityPolicyRepository(dsn="postgresql://unit-test")
+
+
+def test_pm_book_persisted_evidence_get_list_and_registered_reads_preserve_shapes(
+    fake_postgres_score_run_repository,
+) -> None:
+    repository, connection = fake_postgres_score_run_repository
+    shapes = [
+        {"portfolio_types": ["DPM"], "nested": {"enabled": False}},
+        {},
+        ["tenant_id", "as_of_date"],
+        [],
+    ]
+    expected = {}
+    expected_payloads = {}
+    for index, filters in enumerate(shapes + [None]):
+        scope = {
+            "source_id": "retained-membership",
+            "product_version": "v1",
+            "supportability_state": "READY",
+            "returned_portfolio_count": 1,
+            "member_portfolio_ids": ["retained-portfolio"],
+            "source_refs": [],
+        }
+        if filters is not None:
+            scope["filters_applied"] = filters
+        run = _score_run(
+            pm_id=f"pm-retained-{index}",
+            book_scope_evidence=DpmPmQualityBookScopeEvidence.model_validate(scope),
+        )
+        _seed_score_run_parent(connection, run)
+        row = connection.score_runs[(TENANT_ID, run.score_run_id)]
+        if filters is None:
+            del row["payload_json"]["book_scope_evidence"]["filters_applied"]
+        expected[run.score_run_id] = (run.content_hash, filters if filters is not None else {})
+        expected_payloads[run.score_run_id] = run.model_dump(mode="json")
+    foreign = _score_run(pm_id="foreign-retained").model_copy(update={"tenant_id": TENANT_OTHER})
+    _seed_score_run_parent(connection, foreign)
+    before = deepcopy(connection.score_runs)
+    for run_id, (content_hash, filters) in expected.items():
+        loaded = repository.get_score_run(tenant_id=TENANT_ID, score_run_id=run_id)
+        assert loaded.content_hash == content_hash
+        assert loaded.score_run_id == run_id
+        assert loaded.book_scope_evidence.filters_applied == filters
+        assert loaded.book_scope_evidence.member_portfolio_ids == ["retained-portfolio"]
+        assert loaded.model_dump(mode="json") == expected_payloads[run_id]
+    listed = repository.list_score_runs(tenant_id=TENANT_ID)
+    assert {run.score_run_id for run in listed} == set(expected)
+    for run in listed:
+        assert (run.content_hash, run.book_scope_evidence.filters_applied) == expected[
+            run.score_run_id
+        ]
+    service = DpmPmOperatingQualityApplicationService(
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        score_run_repository=repository,
+    )
+    app.dependency_overrides[get_pm_quality_score_run_application_service] = lambda: service
+    headers = {
+        "X-Tenant-Id": TENANT_ID,
+        "X-Actor-Id": "ops",
+        "X-Role": "operator",
+        "X-Service-Identity": "lotus-gateway",
+        "X-Capabilities": "pm_quality.read",
+    }
+    try:
+        with TestClient(app) as client:
+            response = client.get(
+                "/api/v1/rebalance/pm-operating-quality/score-runs", headers=headers
+            )
+            assert response.status_code == 200
+            assert response.json()["count"] == len(expected)
+            public_runs = response.json()["score_runs"]
+            assert (
+                client.get(
+                    f"/api/v1/rebalance/pm-operating-quality/score-runs/{foreign.score_run_id}",
+                    headers=headers,
+                ).status_code
+                == 404
+            )
+            for run_id, (content_hash, filters) in expected.items():
+                response = client.get(
+                    f"/api/v1/rebalance/pm-operating-quality/score-runs/{run_id}", headers=headers
+                )
+                assert response.status_code == 200
+                public_runs.append(response.json()["score_run"])
+            for run in public_runs:
+                content_hash, filters = expected[run["score_run_id"]]
+                assert run["content_hash"] == content_hash
+                assert run["book_scope_evidence"]["filters_applied"] == filters
+                assert run == expected_payloads[run["score_run_id"]]
+    finally:
+        app.dependency_overrides.clear()
+    assert connection.score_runs == before
+    assert connection.commits == 0
 
 
 def test_postgres_pm_quality_score_run_repository_round_trips_score_runs(

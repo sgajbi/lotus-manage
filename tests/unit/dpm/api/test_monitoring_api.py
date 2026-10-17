@@ -92,7 +92,7 @@ def _pm_book_membership_payload(
             if supportability_state == "READY"
             else "PM_BOOK_MEMBERSHIP_INCOMPLETE",
             "returned_portfolio_count": 1 if members is None else len(members),
-            "filters_applied": {"portfolio_types": ["DISCRETIONARY"]},
+            "filters_applied": ["portfolio_types"],
         },
         "lineage": {"source": "portfolio_master"},
         "source_batch_fingerprint": "sha256:pm-book-membership",

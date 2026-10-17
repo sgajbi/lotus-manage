@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import httpx
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
@@ -49,7 +50,12 @@ from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityServiceError,
 )
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.infrastructure.core_sourcing import (
+    DpmCoreResolverClient,
+    DpmCoreResolverConfig,
+    DpmCoreResolverError,
+    DpmCoreResolverUnavailableError,
+)
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityFairnessAnalysisRepository,
@@ -349,7 +355,12 @@ def _pm_book_membership_payload(
             if supportability_state == "READY"
             else "DPM_CORE_PM_BOOK_INCOMPLETE",
             "returned_portfolio_count": 2 if members is None else len(members),
-            "filters_applied": {"portfolio_types": ["DPM"], "include_inactive": False},
+            "filters_applied": [
+                "tenant_id",
+                "portfolio_manager_id",
+                "as_of_date",
+                "portfolio_types",
+            ],
         },
         "lineage": {"source_system": "relationship_book", "contract_version": "rfc_041_v1"},
         "source_batch_fingerprint": "sha256:pm-book",
@@ -879,6 +890,95 @@ def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> 
     assert "autonomous_pm_ranking" in score_run["forbidden_uses"]
 
 
+@pytest.mark.parametrize(
+    "wire_case",
+    ["canonical", "empty", "dict", "scalar", "null", "element", "missing", "missing_product"],
+)
+def test_pm_book_registered_preview_uses_real_transport(wire_case):
+    payload = _pm_book_membership_payload()
+    values = {
+        "empty": [],
+        "dict": {"portfolio_types": ["DPM"]},
+        "scalar": "tenant_id",
+        "null": None,
+        "element": [1],
+    }
+    if wire_case == "missing":
+        del payload["supportability"]["filters_applied"]
+    elif wire_case == "missing_product":
+        del payload["product_version"]
+    elif wire_case in values:
+        payload["supportability"]["filters_applied"] = values[wire_case]
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json=payload)
+
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    service = DpmPmOperatingQualityApplicationService(
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        policy_repository=InMemoryDpmPmQualityPolicyRepository(),
+        core_resolver_factory=lambda: resolver,
+    )
+    assert service.score_run_repository is None
+    app.dependency_overrides[get_pm_quality_score_run_preview_application_service] = lambda: service
+    request = {
+        **_request(),
+        "policy": _policy(enabled=False),
+        "outcome_review_ids": [],
+        "pm_book_scope": {"tenant_id": "tenant-sg"},
+    }
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.post(
+            "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+            json=request,
+            headers=_trusted_pm_quality_headers(correlation_id="corr-wire-book"),
+        )
+    assert len(calls) == 1
+    assert calls[0].url.path == "/integration/portfolio-manager-books/pm_001/memberships"
+    if wire_case in {"canonical", "empty"}:
+        assert response.status_code == 200
+        run = response.json()["score_run"]
+        assert run["state"] == "DISABLED"
+        assert run["score"] is None
+        assert (
+            run["book_scope_evidence"]["filters_applied"]
+            == payload["supportability"]["filters_applied"]
+        )
+        assert run["book_scope_evidence"]["member_portfolio_ids"] == [
+            "PB_SG_GLOBAL_BAL_001",
+            "PB_SG_GLOBAL_INC_002",
+        ]
+        assert any(
+            ref["source_type"] == "PortfolioManagerBookMembership" for ref in run["source_refs"]
+        )
+    else:
+        _assert_pm_quality_problem(
+            response, status_code=424, reason_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"
+        )
+        assert "ValidationError" not in response.text
+        assert "portfolio_types" not in response.text
+
+
+def test_pm_book_schema_separates_live_arrays_from_legacy_stored_objects():
+    wire = DpmCorePortfolioManagerBookMembershipResponse.model_json_schema()["$defs"][
+        "DpmCorePortfolioManagerBookSupportability"
+    ]
+    assert "filters_applied" in wire["required"]
+    assert wire["properties"]["filters_applied"]["type"] == "array"
+    assert wire["properties"]["filters_applied"]["items"]["type"] == "string"
+    stored = app.openapi()["components"]["schemas"]["DpmPmQualityBookScopeEvidence"]
+    alternatives = stored["properties"]["filters_applied"]["anyOf"]
+    assert {item["type"] for item in alternatives} == {"array", "object"}
+    assert next(item for item in alternatives if item["type"] == "array")["items"] == {
+        "type": "string"
+    }
+
+
 def test_pm_operating_quality_api_materializes_pm_book_scope(
     _pm_quality_policy_repository_override: InMemoryDpmPmQualityPolicyRepository,
 ) -> None:
@@ -918,7 +1018,10 @@ def test_pm_operating_quality_api_materializes_pm_book_scope(
         "PB_SG_GLOBAL_BAL_001",
         "PB_SG_GLOBAL_INC_002",
     ]
-    assert score_run["book_scope_evidence"]["filters_applied"]["portfolio_types"] == ["DPM"]
+    assert (
+        score_run["book_scope_evidence"]["filters_applied"]
+        == _pm_book_membership_payload()["supportability"]["filters_applied"]
+    )
     assert any(
         ref["source_type"] == "PortfolioManagerBookMembership" for ref in score_run["source_refs"]
     )
