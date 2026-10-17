@@ -9,6 +9,19 @@ analytics, advisory-only workflows, reporting, or UI composition.
 
 Current declarations:
 
+The consumer inventory also declares `lotus-core:PortfolioHistoricalRegistry:v1` and
+`lotus-core:PortfolioFinancialSourceCut:v1` as `api_read` dependencies for the native composite
+source adapter. It reads exact retained revisions through
+`/integration/portfolio-historical-registries/query` and `/integration/financial-source-cuts/query`,
+including bounded membership, selected five-role graphs and original native captures. Core reads
+are default-off with empty exact-scope consumer grants by default. Missing, rejected, mismatched or
+incomplete evidence fails closed before monthly eligibility issuance. The closed response preserves
+`UNQUALIFIED`, `UNVERIFIED` population, `DECLARED_UNVERIFIED` or `UNAVAILABLE` compatibility and
+`authoritative_use_available=false`; custody confers no bank, supplier, financial or official
+authority. These declarations establish the consumer edge, not financial qualification or live
+producer certification. Release validation requires matching independently accepted Core Main and
+Platform-published declarations for both products under `lotus-platform#967`.
+
 1. `lotus-manage-consumers.v1.json`
    Consumer declaration for governed `lotus-core` products used by management execution workflows.
    It includes the request-payload `PortfolioStateSnapshot:v1` dependency, stateful

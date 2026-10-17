@@ -27,7 +27,9 @@ The following commands are active repository gates:
   - `python scripts/router_infrastructure_gate.py`
   - `make mesh-contract-validate`
   - `make architecture-gate` (`python -m importlinter.cli import-linter lint --config .importlinter`)
-  - `make complexity-gate` (`python -m radon cc src -s -n C`, `python -m radon mi src -s`)
+  - `make complexity-gate` (`python scripts/complexity_gate.py`; new source functions/methods
+    require Radon CC <= 10, and existing functions/methods above 10 cannot increase against the
+    immutable Git baseline; unchanged/improved legacy findings remain explicit measured debt)
   - `make duplicate-implementation-gate` (`python scripts/duplicate_implementation_gate.py`;
     blocks newly introduced exact non-trivial first-party Python function-body duplicates against
     `quality/duplicate_implementation_baseline.json`)
@@ -106,6 +108,28 @@ The following commands are active repository gates:
 - Same validation profile as PR Merge Gate, intended for pushed mainline changes.
 
 ## Report-Only Expansion
+
+The blocking complexity command is read-only. Feature branches compare with the exact resolved
+`origin/main` tip; pull requests use their actual base-branch tip. A shared ancestor must resolve,
+but the target tip supplies the scores. Clean main compares with `HEAD^`; uncommitted main source
+edits compare with committed HEAD. Recorded report provenance is validated and cannot grant stale
+complexity allowances. Automatic HEAD comparisons require demonstrably different worktree source;
+explicit self refs and identical-source comparisons are refused. A missing or unresolved recorded
+commit, empty baseline/source, malformed source, scanner failure or invalid argument fails closed.
+Renamed/moved functions are new identities. There is no threshold
+override, allowlist, feature grandfathering or numeric headroom. Class aggregates, maintainability
+index and the dependency-free AST rankings in generated reports remain report-only.
+
+Clean Main audits every first-parent released revision against its predecessor, using the exact
+push-before commit or recorded reviewed release baseline (including manual dispatch). Missing,
+unresolved or empty release provenance fails closed. A bad intermediate rebased commit remains
+a violation even if a later commit repairs it. Uncommitted Main comparisons are development proof
+only; side-branch commits merged atomically are governed by their released merge revision.
+
+From the `lotus-manage` repository root, run `make complexity-gate` on PowerShell or Bash. Focused
+policy proof on either shell is `python -m pytest tests/unit/test_complexity_gate.py -q`.
+For report-only inspection, run `python -m radon cc src -s -n C` and
+`python -m radon mi src -s`. Those Radon CLI reports alone do not reject findings.
 
 The `quality-baseline.yml` workflow runs additional quality snapshots in report-only mode:
 

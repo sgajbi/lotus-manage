@@ -678,3 +678,139 @@ def test_inventory_controls_keep_first_definition_order_and_source_schema(
     assert build_inventory()["controlsCatalog"] == expected
     assert validate_inventory(inventory) == []
     assert schema == before
+
+
+def _conditional_proof_constraint() -> dict[str, Any]:
+    return {
+        "if": {"properties": {"predicate_only": {"const": "v1"}}},
+        "then": {"properties": {"then_only": {"type": "string"}}},
+        "else": {"required": ["native_proof"]},
+    }
+
+
+def test_conditional_allof_preserves_declared_properties_without_predicate_fields() -> None:
+    base = {
+        "type": "object",
+        "required": ["assembly", "verification"],
+        "properties": {
+            "assembly": {"type": "string", "example": "LEGACY"},
+            "verification": {"type": "string", "example": "VERIFIED"},
+            "native_proof": {"type": "string", "example": "SIGNED"},
+        },
+    }
+    conditional = {**base, "allOf": [_conditional_proof_constraint()]}
+    before = deepcopy(conditional)
+
+    fields = _extract_fields(conditional, components={})
+
+    assert fields == _extract_fields(base, components={})
+    assert [(field["name"], field["required"]) for field in fields] == [
+        ("assembly", True),
+        ("verification", True),
+        ("native_proof", False),
+    ]
+    assert conditional == before
+
+
+@pytest.mark.parametrize("composition", [None, "anyOf", "oneOf"])
+def test_conditional_allof_keeps_sibling_and_referenced_composition_fields(
+    composition: str | None,
+) -> None:
+    child = {"$ref": "#/components/schemas/Child"}
+    if composition is not None:
+        child = {composition: [child, {"type": "null"}]}
+    schema = {
+        "type": "object",
+        "required": ["base"],
+        "properties": {"base": {"type": "string", "example": ""}},
+        "allOf": [_conditional_proof_constraint(), {"$ref": "#/components/schemas/Extra"}],
+    }
+    components = {
+        "schemas": {
+            "Extra": {"type": "object", "required": ["nested"], "properties": {"nested": child}},
+            "Child": {
+                "type": "object",
+                "properties": {
+                    "count": {"anyOf": [{"type": "integer"}, {"type": "null"}], "example": 0},
+                    "enabled": {"type": "boolean", "example": False},
+                },
+                "allOf": [
+                    _conditional_proof_constraint(),
+                    {
+                        "properties": {"label": {"type": "string", "example": "EXTRA"}},
+                        "required": ["label"],
+                    },
+                ],
+            },
+        }
+    }
+    before = deepcopy((schema, components))
+
+    fields = _extract_fields(schema, components=components)
+
+    assert [(field["name"], field["required"]) for field in fields] == [
+        ("base", True),
+        ("nested", True),
+        ("nested.count", False),
+        ("nested.enabled", False),
+        ("nested.label", True),
+    ]
+    assert [field["example"] for field in fields if field["name"] != "nested"] == [
+        "",
+        0,
+        False,
+        "EXTRA",
+    ]
+    assert (schema, components) == before
+
+
+def test_conditional_allof_projects_actual_verified_monthly_source_assembly() -> None:
+    from src.core.composite_eligibility.source_assembly import VerifiedMonthlySourceAssembly
+
+    schema = VerifiedMonthlySourceAssembly.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )
+    before = deepcopy(schema)
+    fields = _extract_fields(schema, components={"schemas": schema["$defs"]})
+    names = {field["name"] for field in fields}
+
+    assert {
+        "assembly",
+        "assembly.inputs[].kind",
+        "assembly.compatibility_binding.digest",
+        "assembly.native_custody",
+        "verification.request.claims_digest",
+        "native_proof",
+        "native_proof.result.native_custody_digest",
+        "native_proof.result.admission.verifier_key.kid",
+    } <= names
+    assert next(field for field in fields if field["name"] == "native_proof")["required"] is False
+    assert schema == before
+
+
+def test_conditional_allof_retains_nested_fields_across_real_response_directions() -> None:
+    components = app.openapi()["components"]
+    model_fields = _extract_fields(
+        {"$ref": "#/components/schemas/VerifiedMonthlySourceAssembly"}, components=components
+    )
+    expected_names = {field["name"] for field in model_fields}
+    assert {"assembly", "verification", "native_proof"} <= expected_names
+    inventory = build_inventory()
+    affected = []
+    for endpoint in inventory["endpoints"]:
+        names = {field["name"] for field in endpoint["response"]["fields"]}
+        prefixes = {name for name in names if name.split(".")[-1] == "source_assembly_evidence"}
+        if prefixes:
+            affected.append(endpoint)
+        for prefix in prefixes:
+            assert {f"{prefix}.{name}" for name in expected_names} <= names
+    assert len(affected) == 12
+    assert len(inventory["endpoints"]) == 194
+    assert {
+        "lotus.assembly",
+        "lotus.compatibility_binding",
+        "lotus.compatibility_posture",
+        "lotus.inputs",
+        "lotus.kind",
+    } <= {field["semanticId"] for field in inventory["attributeCatalog"]}
+    assert validate_inventory(inventory) == []

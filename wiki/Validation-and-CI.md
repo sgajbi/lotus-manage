@@ -113,6 +113,25 @@ actual gate entrypoint. Local proof does not replace required GitHub checks on c
   to the current upstream baseline. Pull requests run this check in a separate blocking job on the
   immutable PR head, while static, contract, security, and test gates continue to validate the
   merge result.
+- `make complexity-gate`
+  runs `python scripts/complexity_gate.py` without writing artifacts. New source functions/methods
+  must have Radon CC <= 10; existing high complexity cannot increase against the exact immutable
+  Git baseline. Unchanged/improved legacy findings remain explicit measured debt. Class aggregates,
+  maintainability index and broader AST report rankings remain report-only. Feature branches use
+  the exact resolved `origin/main` tip and PRs use their actual base-branch tip; a shared ancestor
+  must resolve, but target-tip scores enforce the current ratchet. Clean main uses `HEAD^`; main
+  source edits use committed HEAD. Recorded report provenance cannot grant stale allowances.
+  Automatic HEAD comparisons require demonstrably different worktree source; explicit self refs
+  and identical-source comparisons are refused. Missing/unresolved/empty input, malformed syntax,
+  scanner failure and invalid arguments fail closed. There is no
+  headroom, allowlist or feature grandfathering. From the repository root, PowerShell and Bash use
+  the same `make complexity-gate` command; policy tests use
+  `python -m pytest tests/unit/test_complexity_gate.py -q`. The Radon CC/MI CLI remains available for
+  report-only inspection and does not reject findings by itself.
+  Clean Main also audits each first-parent released revision against its predecessor, pinned by
+  push-before or recorded reviewed release provenance; missing/empty provenance fails closed.
+  Later repairs cannot hide intermediate rebased violations. Uncommitted Main comparisons remain
+  development proof only.
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`

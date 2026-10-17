@@ -186,25 +186,11 @@ def _extract_fields(
     prefix: str = "",
     location: str = "body",
 ) -> list[dict[str, Any]]:
-    variants = _schema_variants(schema, components)
-    if variants:
-        variant_fields: list[dict[str, Any]] = []
-        for variant in variants:
-            variant_fields.extend(
-                _extract_fields(
-                    variant,
-                    components=components,
-                    prefix=prefix,
-                    location=location,
-                )
-            )
-        return variant_fields
-
     resolved = _resolve_schema(schema, components)
     properties = resolved.get("properties", {})
     required = set(resolved.get("required", []))
     if not isinstance(properties, dict):
-        return []
+        properties = {}
 
     fields: list[dict[str, Any]] = []
     for prop_name, prop_schema in properties.items():
@@ -230,17 +216,7 @@ def _extract_fields(
 
         nested_type = prop_resolved.get("type")
         variants = _schema_variants(prop_schema, components)
-        if variants:
-            for variant in variants:
-                fields.extend(
-                    _extract_fields(
-                        variant,
-                        components=components,
-                        prefix=field_name,
-                        location=location,
-                    )
-                )
-        elif nested_type == "object" or "$ref" in prop_schema:
+        if variants or nested_type == "object" or "$ref" in prop_schema:
             fields.extend(
                 _extract_fields(
                     prop_schema,
@@ -260,6 +236,16 @@ def _extract_fields(
                         location=location,
                     )
                 )
+    # Composition constraints can accompany declared sibling properties.
+    for variant in _schema_variants(schema, components):
+        fields.extend(
+            _extract_fields(
+                variant,
+                components=components,
+                prefix=prefix,
+                location=location,
+            )
+        )
     return fields
 
 

@@ -1,10 +1,10 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-10-16T00:37:35+00:00`
+- Generated at: `2026-10-16T19:25:40+00:00`
 
-- Baseline source snapshot: `02b603f86e96d314132d22d8fc294773083d9be8`
+- Baseline source snapshot: `c6477b8954c935549de7ec2a8f346eb8c888cdf6`
 
-- Report source snapshot: `02b603f8+worktree`
+- Report source snapshot: `9b496e79+worktree`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -18,7 +18,7 @@
 | Service boundary | Active gate | `scripts/service_boundary_gate.py`. |
 | Router infrastructure imports | Active gate | `scripts/router_infrastructure_gate.py`. |
 | OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 1. |
-| Complexity | Active source C gate | `make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only. |
+| Complexity | Active function non-degradation gate | `make complexity-gate` requires new source functions/methods to have Radon CC <= 10 and prevents existing high complexity from increasing against an immutable Git baseline. Unchanged/improved legacy findings remain explicit measured debt; class aggregates, maintainability index and broader AST metrics remain report-only. |
 | Duplicate implementation hotspots | Active exact-duplicate non-regression gate | `make duplicate-implementation-gate` blocks newly introduced exact non-trivial Python function-body duplicates; `quality/duplicate_implementation_baseline.json` governs current accepted groups. |
 | Quality report freshness | Active gate | `make quality-report-gate` blocks stale checked-in quality reports, pins clean checkouts to the report's recorded baseline, measures pull requests on the immutable PR head, and ignores volatile report provenance. |
 | Workflow policy | Active gate | `make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, non-head PR report checks, raw blocking-workflow pytest shortcuts, coverage-gate drift, and PR evidence drift. |

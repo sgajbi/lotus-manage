@@ -25,6 +25,7 @@ CONTRACT_GOVERNANCE_TOKENS = (
     "contract",
     "contracts",
     "coverage_gate",
+    "complexity_gate",
     "documentation_current_state",
     "domain_data_product",
     "duplicate_implementation",

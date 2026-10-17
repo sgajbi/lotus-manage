@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
+
+import httpx
+import pytest
 
 from src.infrastructure.source_http_clients import (
     build_source_http_client_policy,
     close_shared_source_http_clients,
     get_shared_source_http_client,
+    get_partitioned_source_http_client,
 )
 
 
@@ -92,3 +97,64 @@ def test_shared_source_http_client_creation_is_stable_under_concurrent_resolutio
         assert len(client_ids) == 1
     finally:
         close_shared_source_http_clients()
+
+
+def test_partitioned_native_clients_keep_roles_policy_and_legacy_pool_separate(monkeypatch) -> None:
+    monkeypatch.setenv("HTTPS_PROXY", "http://must-not-be-used.invalid:1234")
+    close_shared_source_http_clients()
+    policy = build_source_http_client_policy("composite", request_timeout_seconds=1)
+    auth = httpx.BasicAuth("synthetic", "unit-only")
+    try:
+        legacy = get_shared_source_http_client("composite", policy=policy)
+        assembly = get_partitioned_source_http_client(
+            "composite", partition="assembly-public-policy", policy=policy, auth=auth
+        )
+        verification = get_partitioned_source_http_client(
+            "composite", partition="verification-public-policy", policy=policy, auth=auth
+        )
+        changed = get_partitioned_source_http_client(
+            "composite",
+            partition="assembly-public-policy",
+            policy=replace(policy, request_timeout_seconds=3),
+            auth=auth,
+        )
+        assert len({id(client) for client in (legacy, assembly, verification, changed)}) == 4
+        assert assembly.follow_redirects is False and assembly.trust_env is False
+        assert verification.follow_redirects is False and verification.trust_env is False
+        assert "Authorization" not in assembly.headers
+        assert assembly.timeout.read == 1 and changed.timeout.read == 3
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            resolved = set(
+                pool.map(
+                    lambda _: id(
+                        get_partitioned_source_http_client(
+                            "composite",
+                            partition="assembly-public-policy",
+                            policy=policy,
+                            auth=auth,
+                        )
+                    ),
+                    range(24),
+                )
+            )
+        assert resolved == {id(assembly)}
+        assembly.close()
+        replacement = get_partitioned_source_http_client(
+            "composite", partition="assembly-public-policy", policy=policy, auth=auth
+        )
+        assert replacement is not assembly
+    finally:
+        close_shared_source_http_clients()
+    assert all(
+        client.is_closed for client in (legacy, assembly, verification, changed, replacement)
+    )
+
+
+def test_native_pool_requires_an_explicit_partition() -> None:
+    with pytest.raises(ValueError, match="PARTITION_REQUIRED"):
+        get_partitioned_source_http_client(
+            "composite",
+            partition="",
+            policy=build_source_http_client_policy("composite", request_timeout_seconds=1),
+            auth=httpx.BasicAuth("synthetic", "unit-only"),
+        )

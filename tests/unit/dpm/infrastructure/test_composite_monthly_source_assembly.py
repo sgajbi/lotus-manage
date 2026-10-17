@@ -1,5 +1,6 @@
 """Complete manifest evidence is independent of business date or individual cut equality."""
 
+import hashlib
 import json
 from dataclasses import replace
 
@@ -30,6 +31,28 @@ from tests.composite_staged_eligibility_helpers import lifecycle_material, synth
 from tests.unit.dpm.infrastructure.test_composite_configured_sources import encoded, signed
 
 
+def test_original_v1_exact_bytes_and_hashes_survive_native_extension():
+    """Pinned before edits from signed 7b870d96; additive v2 must preserve every v1 byte."""
+    assembly = MonthlySourceAssembly.model_validate(assembly_material()[1])
+    request = assembly_verification_request(assembly)
+    wrapper = VerifiedMonthlySourceAssembly(
+        assembly=assembly, verification=synthetic_verification(request)
+    )
+    assert (
+        hashlib.sha256(assembly.model_dump_json().encode()).hexdigest()
+        == "af05e0d0e680b7b259d00b22fa5ac605df94646eb2f12788c73b838ac0806fec"
+    )
+    assert (
+        hashlib.sha256(request.model_dump_json().encode()).hexdigest()
+        == "2b4ceb7e04004105c9c16b474d56589506b97f4b15747daefe306b3571fc4d0b"
+    )
+    assert (
+        hashlib.sha256(wrapper.model_dump_json().encode()).hexdigest()
+        == "a73b1091085eb67184f8bf7e961b3402c3d28d22fca1a4540f943c455fedf668"
+    )
+    assert "native_proof" not in wrapper.model_dump(mode="json")
+
+
 @pytest.mark.parametrize("posture", ["SYNTHETIC_UNQUALIFIED", "SOURCE_UNVERIFIED", "UNAVAILABLE"])
 @pytest.mark.parametrize("allow_purpose", [True, False])
 def test_monthly_signed_assembly_needs_independent_purpose_receipt(
@@ -38,13 +61,13 @@ def test_monthly_signed_assembly_needs_independent_purpose_receipt(
     request, assembly = assembly_material()
     assembly["compatibility_posture"] = posture
     key, verifier_key = Ed25519PrivateKey.generate(), Ed25519PrivateKey.generate()
-    common = dict(
-        tenant_id=request.scope.tenant_id,
-        owner_service="synthetic-source",
-        issuer="urn:synthetic:fixture:issuer",
-        credential_env="TEST_ASSEMBLY_CREDENTIAL",
-        evidence_posture="SYNTHETIC_NON_CERTIFYING",
-    )
+    common = {
+        "tenant_id": request.scope.tenant_id,
+        "owner_service": "synthetic-source",
+        "issuer": "urn:synthetic:fixture:issuer",
+        "credential_env": "TEST_ASSEMBLY_CREDENTIAL",
+        "evidence_posture": "SYNTHETIC_NON_CERTIFYING",
+    }
     source = SourceBinding(
         **common,
         operation="observations",

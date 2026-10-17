@@ -171,8 +171,7 @@ lint:
 architecture-gate:
 	python -c "from pathlib import Path; import sys; from importlinter.cli import lint_imports_command; sys.exit('Architecture source tree missing or empty') if not all(any(p.name != '__init__.py' for p in Path(d).rglob('*.py')) for d in ['src/api/routers', 'src/api/services']) else None; lint_imports_command(['--config', '.importlinter'])"
 complexity-gate:
-	python -m radon cc src -s -n C
-	python -m radon mi src -s
+	python scripts/complexity_gate.py
 
 duplicate-implementation-gate:
 	python scripts/duplicate_implementation_gate.py

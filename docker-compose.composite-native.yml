@@ -1,0 +1,13 @@
+# Opt-in native monthly custody. Public JSON and credentials confer no source qualification.
+services:
+  lotus-manage:
+    environment:
+      DPM_COMPOSITE_SOURCES_JSON: ${DPM_COMPOSITE_SOURCES_JSON:?Reviewed native assembly configuration required}
+    secrets:
+      - source: manage_composite_monthly_verifier_key
+        target: manage_composite_monthly_verifier_key
+        mode: 0400
+
+secrets:
+  manage_composite_monthly_verifier_key:
+    file: ${MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE:?Operator-owned monthly verifier key required}

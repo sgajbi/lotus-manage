@@ -2,6 +2,20 @@
 
 ## Current Scope And Evidence Posture
 
+Controlled native Composite configuration and transport are supported by frozen source/mock
+controls and separately recorded synthetic Docker/HTTP/PostgreSQL evidence. The staged native
+case proved default-off refusal/no reservation, configured candidate admission and exact restart
+replay. The recurring-only synthetic campaign also passed, preserving the seeded sequence1
+publication on C2 denial before recovery/publication/resolution and source-off restart. Neither test
+inventory nor a consumer fixture establishes actual Core/IAM/financial or Performance readiness.
+Start with the [native source guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-configured-sources.md#native-evidence-and-release-boundaries).
+
+| Evidence | Current Boundary |
+| --- | --- |
+| Native staged admission/restart | Controlled synthetic Docker/HTTP/PostgreSQL pass; unchanged source/AST scope. |
+| Native recurring publication | Controlled synthetic Docker/HTTP/PostgreSQL pass with zero skips; source/mock/config checks alone are insufficient. |
+| Actual Core/IAM/financial and Performance readiness | Separate acceptance gates; no bank or production claim follows from consumer proof. |
+
 Historical first-subject persistence requires forward migration `0046` before traffic. The
 preceding `0045` CHECK guard rejects STAGED v2 evaluation writes, producing an HTTP 500 in the
 native PostgreSQL lifecycle. `0046` adds narrow initial subject v2 proposal/approval branches
@@ -11,6 +25,33 @@ wire tests cover fresh/0045 upgrades and malformed graph refusals. Those tests r
 admitted PostgreSQL lane. Offline checks alone do not establish persistence readiness, real
 provider trust, institutional authority or certification. See the
 [monthly eligibility guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-monthly-eligibility.md).
+
+## Controlled Native Source Qualification
+
+Deployment selects `CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2` explicitly; blank configuration is
+unavailable and does not enroll any source or verifier authority.
+
+The existing subject/monthly/resolver routes admit `CompositeMonthlyEligibilityAssembly/v2` with
+required `CompositeMonthlySourceAdmissionProof/v1` through explicit deployment configuration.
+Reader A and C are separate clients/readers; C2 expected observations/current trust are independently
+supplied. Missing credentials or monthly signer leaves fresh native admission unavailable before
+network or reservation. Native proof does not expand historical, generic policy or institutional
+authority; v1 omission/hash semantics remain unchanged.
+
+The owning [native HTTP/PostgreSQL test](https://github.com/sgajbi/lotus-manage/blob/main/tests/integration/dpm/composites/test_core_financial_sources_postgres.py)
+separates clean staged admission from published recurring history in distinct UUID databases.
+The recurring seed already has one membership publication. Denied C2 evaluation must leave the
+entire publication page/status unchanged and no proposal; clearing or filtering the seed is not
+proof of no effects. Recovery must retain native proof/exact economics, checker approval and the
+resolver receipt, then replay retained custody after source-off/default-off restart with zero
+fresh calls. Run only in the admitted isolated PostgreSQL/runtime lane, retaining primary native
+exit, JUnit/logs, immutable source/image pins and exact cleanup evidence.
+
+Compose `config --quiet` and documentation/unit checks prove configuration delivery only. Actual
+Core signatures/grants/features, source provenance/financial applicability, Performance calculation
+and exact-main release qualification remain separate gates. See
+[issue778 retained owner evidence](https://github.com/sgajbi/lotus-manage/issues/778#issuecomment-6220647430) and
+[Integrations](Integrations); this page does not upgrade synthetic evidence into bank certification.
 
 ## Historical Monthly Policy Admission
 

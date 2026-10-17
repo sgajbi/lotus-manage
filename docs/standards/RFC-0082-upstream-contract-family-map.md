@@ -10,6 +10,19 @@ composition.
 
 ## Current Integration Posture
 
+The native composite source adapter declares `lotus-core:PortfolioHistoricalRegistry:v1` and
+`lotus-core:PortfolioFinancialSourceCut:v1` as `api_read` dependencies. The retained query routes
+`/integration/portfolio-historical-registries/query` and `/integration/financial-source-cuts/query`
+bind exact tenant/source/scope/cut/revision/hash and portfolio identity. They preserve original
+native captures and reconstruct the selected five-role graph; missing, rejected, mismatched or
+incomplete evidence fails closed before monthly eligibility issuance. Core reads are default-off
+with empty exact-scope consumer grants by default. `UNQUALIFIED` source, `UNVERIFIED` population,
+`DECLARED_UNVERIFIED` or `UNAVAILABLE` compatibility and `authoritative_use_available=false`
+remain explicit. Custody confers no bank, supplier, financial or official authority. Consumer
+declaration/schema agreement is preparation only: release validation requires matching independently
+accepted Core Main and Platform-published declarations under `lotus-platform#967`, with
+live producer certification and financial qualification retained as separate dependencies.
+
 1. REST/OpenAPI remains the governed integration contract for current `lotus-manage` public and
    integration-facing APIs.
 2. No current `lotus-manage` integration requires or justifies gRPC.

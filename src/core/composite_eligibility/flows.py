@@ -103,5 +103,5 @@ def _matches_original(
         original.classification == "EXTERNAL_CASH"
         and original.status == "POSTED"
         and original.currency == reversal.currency
-        and Decimal(original.amount) == -Decimal(reversal.amount)
+        and Decimal(original.amount) == Decimal(reversal.amount).copy_negate()
     )

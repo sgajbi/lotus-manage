@@ -4,7 +4,7 @@ Historical monthly-policy verification uses its own
 [normalized provider configuration and protocol](composite-historical-provider.md).
 That channel can explicitly select the native controlled-original adapter and opt-in read-only
 custody overlay described there. It supplies independent historical admission only; it does not
-create the missing Core-backed candidate/monthly assembly or upgrade per-fact authority.
+enable the separate native candidate/monthly adapter below or upgrade per-fact authority.
 It does not widen the source operations or verification purposes described here.
 
 Manage owns immutable candidate selection, monthly assembly identity, eligibility rules and
@@ -32,6 +32,9 @@ Unset or blank values remain blank; the existing loaders keep the corresponding 
 unavailable. No fixture, issuer, key, tenant or approval is selected by default. Malformed or
 unsupported configuration still refuses during composition.
 
+The same JSON channel also admits the explicit controlled native v2 document described below.
+It does not enable the unrelated stateful Core rebalance resolver or replace historical admission.
+
 Supply the reviewed JSON through the operator's existing Compose interpolation environment
 before the admitted deployment. The same tracked service environments also pass through these
 controlled-profile credential variables with blank defaults:
@@ -41,6 +44,8 @@ controlled-profile credential variables with blank defaults:
 | Source-provider binding | `MANAGE_COMPOSITE_SOURCE_AUTH` |
 | Historical admission | `MANAGE_HISTORICAL_PROVIDER_AUTH` |
 | Attestation verifier, when applicable | `MANAGE_COMPOSITE_ATTESTATION_AUTH` |
+| Native assembler reader A | `MANAGE_COMPOSITE_CORE_ASSEMBLY_AUTH` |
+| Independent native verifier reader C | `MANAGE_COMPOSITE_CORE_VERIFIER_AUTH` |
 
 The loader does not select these names automatically: each controlled JSON binding must name
 its matching variable explicitly. The operator separately provisions its actual credential value;
@@ -62,6 +67,167 @@ make test-unit UNIT_TESTS=tests/unit/test_local_docker_runtime_contract.py
 These checks parse the tracked application models and exercise loader admission/refusal without
 Docker. Actual evaluated Compose, immutable image, PostgreSQL startup and native workflow proof
 remain the deployment owner's responsibility.
+
+### Native deployment document
+
+Use `adapter: CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2` in the existing
+`DPM_COMPOSITE_SOURCES_JSON`. The closed model is
+[`NativeAssemblyConfiguration`](../../src/infrastructure/composites/native_assembly_configuration.py).
+The ordinary subject and recurring monthly factories select it; no request can select configuration
+or trust. Legacy `CompositeSourceConfiguration` documents without `adapter` remain supported by
+their signed provider protocol below. Blank JSON keeps both native candidate and monthly ports
+unavailable. Duplicate members, unknown fields/discriminators and malformed policy refuse.
+
+| Field | Deployment responsibility |
+| --- | --- |
+| `adapter` | Exactly `CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2`. |
+| `financial` | Exact tenant/composite/definition/strategy/month/currency, registry cut and ordered explicit member→provider/financial-cut mappings; pins come from the admitted producer. |
+| `reader` | Reader A's origin, tenant, real credential reference, `authentication_mode: core_enterprise_hmac_v1`, bounded page/attempt/byte settings and explicit local HTTP admission only for synthetic loopback IPs. |
+| `verification` | Independently supplied C2 `financial`, `reader`, `expected_observations_digest`, `trust` and `revocation`; never derive the expected digest from A's output or a caller. |
+| `assembly_authorization` | Reader A's public Core context policy, with matching origin/tenant/credential reference, service identity `lotus-manage`, actor, role, key ID and both fixed native capabilities. |
+| `verification_authorization` | Reader C's separately configured context policy with the same per-reader agreement; it authenticates the Core consumer, not the monthly verifier principal. |
+| `verifier_key_file` | Absolute runtime path to a separately provisioned, effectively read-only, exact 32-byte Ed25519 monthly signer matching C2's public verifier key. |
+| `timeout_seconds` | Bounded0.1–30 second request timeout; existing `DPM_COMPOSITE_HTTP_*`/`DPM_SOURCE_HTTP_*` connection and pool limits still apply. |
+| `policy_verification` | Optional separate legacy synthetic verification-only bindings for generic policy purposes; no monthly purpose and no shared enrolled source/monthly principal or public key. |
+
+A and C must pin identical financial documents. Each reader and auth policy must agree on tenant,
+origin, credential reference and local HTTP admission. Both real credentials and the matching
+monthly signer are required before native candidate admission can reserve a subject; absence or
+blank credentials/missing custody stays unavailable before network or reservation. Unsafe writable,
+linked, oversize or mismatched signer custody refuses. An OS chmod alone under a privileged user
+does not establish effective read-only custody. No key is generated or replaced by composition.
+
+C2 trust explicitly supplies tenant, issuer, receipt issuer, monthly verifier principal, audience
+`lotus-manage`, purpose `COMPOSITE_MONTHLY_SOURCE_CUT`, operation `verification`, synthetic posture,
+verifier public key/key-validity interval and actual source principal/key inventories. The current
+unsigned native artifact catalog permits explicit `source_keys: []`; omission/null is invalid and
+does not enroll an artifact signer. Source principals remain required and distinct from the monthly
+verifier. Revocation has a named revision, checked/expiry instants within at most five minutes and
+explicit credential/subject/key-digest inventories. Current admission checks use server time.
+Deployment must retain these public pins and snapshots for provenance; no request/proof key enrolls
+fresh trust. C2 independently refetches/rebuilds the entire source cut for each fresh monthly request.
+
+### Native Core transport and monthly proof
+
+Reader A and reader C use separately partitioned managed clients, no shared reader/result/proof
+cache, explicit `follow_redirects=False`, `trust_env=False` and TLS verification. Existing bounded
+timeouts/limits and application shutdown own both clients. Credentials resolve freshly on each
+request; rotation/withdrawal has no last-success fallback. Native HTTPS origins have no user info,
+query, fragment or path prefix. Private CA/routing admission is an operator prerequisite; disabling
+TLS or inheriting a proxy is not a supported workaround.
+
+The current network consumer remains `lotus-manage`. Both readers use Core's existing context
+HMAC-v1 on exactly these POSTs, with both capabilities:
+
+| Native path | Required capability |
+| --- | --- |
+| `/integration/portfolio-historical-registries/query` | `source_data.portfolio_historical_registry.read` |
+| `/integration/financial-source-cuts/query` | `source_data.portfolio_financial_source_cut.read` |
+
+`CoreRetainedReadAuth` supplies fresh timestamp/correlation and the exact governed nine-line UTF-8
+context signature. It sends no `Authorization` header; do not fabricate a bearer credential or put
+an HMAC/private key into that header. Core separately admits signature, service/tenant, capabilities,
+feature flags and exact source-read grants. HMAC signs context, not route/body/replay protection or
+financial approval. The independent monthly Ed25519 signer never travels to Core. An arbitrary
+injected Auth/client is not an IAM claim; owning no-follow clients are required because Auth alone
+cannot constrain an arbitrary client's internal redirect behavior.
+
+Native `CompositeMonthlyEligibilityAssembly/v2` adds complete retained registry/member/raw capture,
+typed financial input, role/root and compatibility custody to the five-role assembly. C2 returns one
+immutable receipt/proof pair; `source_assembly_evidence.native_proof` carries the independently
+admitted `CompositeMonthlySourceAdmissionProof/v1` and its signed result/current admission pins.
+It is monthly-only. Generic policy, historical original and institutional verification keep separate
+authorities. Native proof is required for assemblyv2 and forbidden on assemblyv1. Existing v1
+assembly/evaluation/hash semantics and legacy omission behavior remain unchanged; no historical
+credential or receipt is reissued. All native results remain synthetic/non-certifying and official
+activation unavailable; native custody does not qualify Core facts or a bank population.
+
+Monthly native admission requires a complete consumed financial-input population for every exact
+pinned manifest. Manage groups retained declarations by tenant, product/version and full source
+address/revision/batch hash, then checks that each group's unique, canonically ordered portfolio
+inputs reproduce both the manifest's `selection_count` and `PortfolioFinancialSourceCutInputs:v1`
+ordered root. Observation envelopes and flow cuts must also use the selected graph's definition.
+Complete single-input cuts, complete shared batches and disjoint complete multi-cut groups are
+supported. A complete monthly registry alone does not prove a financial batch's membership.
+
+Core's selected INPUTS view is valid selected-read evidence; its one-input root is not the full
+batch root. A larger/superset batch, incomplete overlapping groups, or a rehashed substituted input
+refuses before monthly assembly or independent proof signing. Manage does not infer missing IDs,
+fetch mutable/latest cuts, or duplicate full witnesses per portfolio. General selected-subset proof
+support requires an agreed producer evidence contract through Core #1227 and Manage #778; it is
+not supplied by this bounded consumer validation. Individual selected reads remain intermediate
+evidence and do not establish signed monthly acceptance.
+
+### Opt-in monthly signer overlay
+
+Base, production and CI environments forward the two named A/C credential references with blank
+defaults. They never mount or select a native signer automatically. The operator provisions actual
+credential values through the admitted secret mechanism and explicitly names the corresponding
+variables in both reader/auth documents. Arbitrary host variables are not forwarded.
+
+Add `docker-compose.composite-native.yml` only for a reviewed native deployment. It requires a
+nonblank `DPM_COMPOSITE_SOURCES_JSON` and host file reference
+`MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE`; the latter is Compose interpolation only, not a new
+application setting. It mounts only the application's `manage_composite_monthly_verifier_key` secret
+at `/run/secrets/manage_composite_monthly_verifier_key` with mode0400. Set the JSON `verifier_key_file`
+to that container path. The historical overlay's `manage_composite_verifier_key` and originals
+directory are separate custody. No credentials or signer are forwarded to PostgreSQL. Compose
+configuration validation checks interpolation/model shape; the loader/current custody checks own
+JSON, effective permissions, key match and live authority admission.
+
+From the `lotus-manage` root, use an existing project environment and separately reviewed public JSON
+file/private-key **file reference**. These commands only evaluate configuration and print no
+expanded credentials. Provision the two A/C environment credentials separately before runtime use.
+
+```powershell
+Set-Location "$env:LOTUS_WORKSPACE_ROOT/lotus-manage"
+$nativeConfigFile = Read-Host "Absolute reviewed public configuration file"
+$env:DPM_COMPOSITE_SOURCES_JSON = Get-Content -LiteralPath $nativeConfigFile -Raw
+$env:MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE = Read-Host "Absolute monthly signer file"
+docker compose -f docker-compose.yml -f docker-compose.composite-native.yml config --quiet
+```
+
+```bash
+cd "$LOTUS_WORKSPACE_ROOT/lotus-manage"
+read -r -p "Absolute reviewed public configuration file: " native_config_file
+export DPM_COMPOSITE_SOURCES_JSON="$(cat "$native_config_file")"
+read -r -p "Absolute monthly signer file: " MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE
+export MANAGE_COMPOSITE_MONTHLY_VERIFIER_KEY_FILE
+docker compose -f docker-compose.yml -f docker-compose.composite-native.yml config --quiet
+```
+
+For the production model insert `-f docker-compose.production.yml` between base and native overlay.
+The overlay targets `lotus-manage`; it is not a `ci-local` signer mount. CI credential forwarding is
+only process environment delivery; the owning isolated test runtime must supply its own explicit
+read-only synthetic custody. Do not dump evaluated Compose environments, print signer bytes, create
+fallback keys, or deploy before the existing runtime reservation/refresh and trust admission.
+
+### Native evidence and release boundaries
+
+[`test_core_financial_sources_postgres.py`](../../tests/integration/dpm/composites/test_core_financial_sources_postgres.py)
+uses separate UUID databases for staged admission and published recurring history. Retained
+controlled Docker/HTTP/PostgreSQL evidence proves clean staged default-off refusal/no reservation,
+identical configured candidate admission and exact source-off/default-off restart replay. The owning
+recurring-only Docker/HTTP/PostgreSQL campaign also passed with zero skips: seeded membership
+already has publication sequence1, and C2 denial preserved that exact baseline and absent proposal.
+Recovery retained independent refetch/native proof, exact economics, checker publication/resolution
+and replay without fresh source calls. Test existence or source/mock receipts do not establish
+that campaign's live result; its [retained owner evidence](https://github.com/sgajbi/lotus-manage/issues/778#issuecomment-6220647430)
+records the actual synthetic consumer pass. This uses a synthetic retained provider, not the actual
+Core service or bank authority.
+
+With an admitted isolated PostgreSQL DSN, effective read-only synthetic custody and owning runtime
+approval, the existing native target can execute that file. Working directory is `lotus-manage`;
+the command is the same in PowerShell and POSIX shells:
+
+```text
+make test-integration INTEGRATION_TESTS=tests/integration/dpm/composites/test_core_financial_sources_postgres.py
+```
+
+Actual Core IAM/native financial acceptance, producer protocol/vector and contract promotion,
+Manage consumer/schema/vocabulary release closure, Performance source admission/calculation and
+merged-main qualification remain separate gates. This guide changes no producer, consumer, issued
+proof, financial methodology or supported-readiness claim.
 
 ### Read-only Report service
 
@@ -114,7 +280,8 @@ refusals. The native economic matrix also checks exact evaluated-only proposal r
 approval/suffix and mutation paths for the same service. Those direct HTTP tests prove Manage behavior; actual configured Report-client transport
 is a separately recorded joined acceptance requirement under #795 and Report #417.
 
-Set `DPM_COMPOSITE_SOURCES_JSON` to a strict `CompositeSourceConfiguration` JSON document. The
+For the legacy signed-provider path, set `DPM_COMPOSITE_SOURCES_JSON` to a strict
+`CompositeSourceConfiguration` JSON document without `adapter`. The
 normal subject and recurring monthly dependencies use the same deployment-owned bindings; request headers and bodies cannot
 select a source, endpoint, issuer, key set, credential or evidence posture. Missing configuration,
 tenant binding, credential environment value or permitted verifier purpose fails closed.
@@ -142,7 +309,7 @@ transport failures and 502/503/504 retry. No credentials enter response errors.
 Source HTTP metrics use the bound upstream owner and the existing governed label normalization;
 recognized Lotus owners retain their labels, while synthetic/external owners normalize to `unknown`.
 
-## Signed response binding
+## Legacy signed response binding
 
 POST request bodies are the exact existing port request serialized as JSON. Response envelopes
 have exactly `owner_service`, `payload` and `credential`. `payload` is the strict existing
@@ -168,7 +335,7 @@ and checked against their respective signed contracts.
 The existing policy, evaluation, economic authority, method calendar and provider purposes and
 their required fields remain valid; this slice adds the Manage-local purpose below.
 
-## Complete monthly assembly contract
+## Legacy complete monthly assembly contract
 
 `CompositeMonthlyEligibilityAssembly/v1` carries:
 

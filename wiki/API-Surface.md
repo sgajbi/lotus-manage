@@ -30,6 +30,29 @@ and source-owner methodology remain explicit boundaries unless a route section s
 | Operations or support | Run supportability, portfolio memory, and endpoint certification links | Current routes expose bounded supportability, source lineage, and no-claim boundaries. |
 | Future agent or engineer | Route family sections plus README and endpoint certification | Keep route descriptions aligned with code, OpenAPI, API vocabulary, and tests. |
 
+## Controlled Native Composite Admission
+
+`CONTROLLED_SYNTHETIC_NATIVE_ASSEMBLY_V2` is an explicit deployment discriminator in
+`DPM_COMPOSITE_SOURCES_JSON`, not a new route or caller option. Ordinary staged subject and recurring
+monthly factories reuse the existing ports/engine/stores. Native assemblyv2 requires monthly
+proofv1 in retained `source_assembly_evidence`; existing assemblyv1/legacy hashes and omission
+semantics stay unchanged. Request bodies cannot supply trust, expected observations, endpoints,
+signer files, credentials or admission clocks.
+
+Native Core reads use separate managed A/C clients and current consumer `lotus-manage`; the two
+native retained POSTs, fixed capabilities, deployment agreement and no-Authorization HMAC context
+are specified in the [configured source guide](https://github.com/sgajbi/lotus-manage/blob/main/docs/guides/composite-configured-sources.md#native-core-transport-and-monthly-proof).
+The monthly verifier's independent trust/key and source principals are separate from network
+identity. Historical, institutional and generic policy authorities are not enabled by that proof.
+
+Default native admission is unavailable. A valid configured candidate can reserve only a clean
+unpublished definition scope; existing published definitions/reservations still conflict. Retained
+published evidence resolves by its exact product/version/revision/digest with no new source call or
+authority renewal. Native synthetic custody does not qualify financial facts, certify population,
+activate official eligibility or establish Performance/Main readiness. Consult
+[Endpoint Certification](Endpoint-Certification) for actual evidence boundaries and
+[Integrations](Integrations) for deployment ownership.
+
 ## API vocabulary catalog
 
 The generated API vocabulary catalog publishes one copy of each complete control definition in

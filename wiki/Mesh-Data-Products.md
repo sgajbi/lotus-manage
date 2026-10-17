@@ -15,6 +15,20 @@
 
 ## Governed products
 
+Manage declares two Core native composite source dependencies:
+`PortfolioHistoricalRegistry:v1` and `PortfolioFinancialSourceCut:v1`. The adapter uses retained
+HTTP API reads for exact source addresses, membership, selected five-role graphs and original
+native captures. Core reads are default-off with empty exact-scope consumer grants by default;
+missing, rejected, mismatched or incomplete evidence fails closed before monthly eligibility
+issuance. The response keeps `UNQUALIFIED` source, `UNVERIFIED` population,
+`DECLARED_UNVERIFIED` or `UNAVAILABLE` compatibility and `authoritative_use_available=false`.
+Custody confers no bank, supplier, financial or official authority. The
+[`consumer declaration`](../contracts/domain-data-products/lotus-manage-consumers.v1.json) records
+the v1 trust metadata; the [contract directory](../contracts/domain-data-products/README.md)
+records routes and boundaries. Release validation requires matching independently accepted Core
+Main and Platform-published declarations under `lotus-platform#967`; this consumer edge does not
+establish live producer certification or financial qualification.
+
 - Product ID: `lotus-manage:PortfolioActionRegister:v1`
 - Product role: governed portfolio action register for management, reporting, gateway,
   Workbench discovery flows, and Lotus Idea opportunity intelligence consumption
