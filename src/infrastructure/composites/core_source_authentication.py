@@ -6,7 +6,6 @@ The signature binds context only, not the route/body, replay, grants or bank IAM
 """
 
 from collections.abc import Callable, Generator, Mapping
-import hmac
 import math
 import os
 import time
@@ -17,6 +16,10 @@ import httpx
 from pydantic import AfterValidator, Field, TypeAdapter, field_validator, model_validator
 
 from src.core.composite_authority_models import Identity
+from src.infrastructure.core_context_signature import (
+    context_bytes,
+    context_signature as _signature,
+)
 from src.infrastructure.composites.core_financial_configuration import (
     ClosedSourceModel,
     CoreReaderConfiguration,
@@ -107,22 +110,7 @@ class CoreSourceAuthenticationPolicy(ClosedSourceModel):
 
 
 def _context_bytes(headers: Mapping[str, str]) -> bytes:
-    """Core's exact nine LF-separated UTF-8 lines, without a trailing LF."""
-    normalized = {str(key).lower(): str(value).strip() for key, value in headers.items()}
-    capabilities = sorted(
-        {part.strip() for part in normalized.get("x-capabilities", "").split(",") if part.strip()}
-    )
-    return "\n".join(
-        (
-            "lotus-enterprise-auth-context-v1",
-            *(normalized.get(name, "") for name in _SIGNED_FIELDS),
-            ",".join(capabilities),
-        )
-    ).encode("utf-8")
-
-
-def _signature(headers: Mapping[str, str], secret: str) -> str:
-    return hmac.digest(secret.encode("utf-8"), _context_bytes(headers), "sha256").hex()
+    return context_bytes(headers)
 
 
 def _policy(configuration: CoreSourceAuthenticationPolicy | None) -> CoreSourceAuthenticationPolicy:

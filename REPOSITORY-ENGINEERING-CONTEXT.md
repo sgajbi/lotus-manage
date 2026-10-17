@@ -22,6 +22,17 @@ security requirements.
 
 ## Repository Role
 
+### Ordinary Core execution context practice
+
+Ordinary stateful resolver transport supports default-off `CORE_EXECUTION_ENABLED` and seven
+blank-default `CORE_EXECUTION_` authority fields: KEY_ID, SECRET, SERVICE_IDENTITY, ACTOR_ID, ROLE,
+ALLOWED_TENANTS and CAPABILITIES. Explicit distinct QCP/query origins are required when enabled;
+query calls remain unsigned. Core owns route admission. Fresh per-attempt ordinary context uses
+existing partitioned HTTP lifecycle and covers injected and fallback clients without pooled
+tenant mutation. Native Composite A/C policy/credentials/targets remain independent; only the
+HMAC wire primitive is shared. See `docs/operations/core-request-context.md` for validation,
+credential rotation, timeout limits and operator-only live acceptance.
+
 ### Composite configuration delivery practice
 
 Historical admission can explicitly select `CONTROLLED_SYNTHETIC_POLICY_V1` in the existing

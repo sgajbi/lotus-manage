@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from typing import Any, Optional
+import math
 
 import httpx
 
@@ -55,6 +56,11 @@ from src.infrastructure.core_sourcing.source_product_transport import (
     source_product_payload_with_retries as _source_product_payload_with_retries,
 )
 from src.infrastructure.core_sourcing import snapshot_mapping as _snapshot_mapping
+from src.infrastructure.core_sourcing.request_context import (
+    CoreExecutionError,
+    OrdinaryCoreReadAuth,
+    load_core_execution_policy,
+)
 
 
 _cash_balance_currencies = _snapshot_mapping.cash_balance_currencies
@@ -98,6 +104,18 @@ class DpmCoreResolverClient:
         self._config = config
         self._client = client
         self._owns_client = client is None
+        execution = load_core_execution_policy(config.base_url, config.query_base_url)
+        self._execution_auth = OrdinaryCoreReadAuth(execution) if execution is not None else None
+        if self._execution_auth is not None:
+            if (
+                not math.isfinite(config.timeout_seconds)
+                or not 0 < config.timeout_seconds <= 60
+                or type(config.max_attempts) is not int
+                or not 1 <= config.max_attempts <= 3
+            ):
+                raise CoreExecutionError("INVALID_CORE_EXECUTION_TIMEOUT")
+            if client is not None and (not isinstance(client, httpx.Client) or client.trust_env):
+                raise CoreExecutionError("CORE_EXECUTION_UNSAFE_CLIENT")
 
     def close(self) -> None:
         if self._owns_client and self._client is not None:
@@ -159,7 +177,24 @@ class DpmCoreResolverClient:
             correlation_id,
             admitted_tenant_id=admitted_tenant_id,
         )
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
+        if (
+            self._execution_auth is not None
+            and selector.get("tenant_id") is not None
+            and selector["tenant_id"] != admitted_tenant_id
+        ):
+            raise CoreExecutionError("CORE_EXECUTION_SELECTOR_TENANT_MISMATCH")
+        if self._execution_auth is not None:
+            self._execution_auth.validate_target(url)
+        client = self._client or (
+            httpx.Client(
+                timeout=self._config.timeout_seconds,
+                trust_env=False,
+                verify=True,
+                follow_redirects=False,
+            )
+            if self._execution_auth is not None
+            else httpx.Client(timeout=self._config.timeout_seconds)
+        )
         try:
             return _source_product_payload_with_retries(
                 client,
@@ -170,6 +205,8 @@ class DpmCoreResolverClient:
                 headers=headers,
                 unavailable_code=unavailable_code,
                 incomplete_code=incomplete_code,
+                auth=self._execution_auth,
+                timeout_seconds=self._config.timeout_seconds,
             )
         finally:
             if self._owns_client:
